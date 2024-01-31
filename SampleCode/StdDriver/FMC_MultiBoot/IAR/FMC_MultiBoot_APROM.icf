@@ -1,0 +1,49 @@
+/*###ICF### Section handled by ICF editor, don't touch! ****/
+/*-Editor annotation file-*/
+/* IcfEditorFile="$TOOLKIT_DIR$\config\ide\IcfEditor\cortex_v1_0.xml" */
+/*-Specials-*/
+/*-Memory Regions-*/
+define symbol __ICFEDIT_region_ITCM_start__ = 0x00000010;
+define symbol __ICFEDIT_region_ITCM_end__   = 0x0000FFFF;
+define symbol __ICFEDIT_region_ROM_start__  = VECMAP_BASE;
+define symbol __ICFEDIT_region_ROM_end__    = VECMAP_BASE + 0x5FFFF;
+
+define symbol __ICFEDIT_region_DTCM_start__ = 0x20000000;
+define symbol __ICFEDIT_region_DTCM_end__   = 0x2001FFFF;
+define symbol __ICFEDIT_region_RAM_start__  = 0x20100000;
+define symbol __ICFEDIT_region_RAM_end__    = 0x2022FFFF;
+
+/* Start address and size of NonCacheable region must be 32 byte alignment */
+define symbol _region_NonCacheable_start__  = (__ICFEDIT_region_RAM_end__ + 1);
+define symbol _region_NonCacheable_end__    = 0x2024FFFF;
+
+export symbol _region_NonCacheable_start__;
+export symbol _region_NonCacheable_end__;
+
+/*-Sizes-*/
+define symbol __ICFEDIT_size_cstack__ = 0x00000800;
+define symbol __ICFEDIT_size_heap__   = 0x00000800;
+/**** End of ICF editor section. ###ICF###*/
+
+define memory mem with size = 4G;
+define region ITCM_region = mem:[from __ICFEDIT_region_ITCM_start__ to __ICFEDIT_region_ITCM_end__];
+define region ROM_region  = mem:[from __ICFEDIT_region_ROM_start__  to __ICFEDIT_region_ROM_end__ ];
+define region DTCM_region = mem:[from __ICFEDIT_region_DTCM_start__ to __ICFEDIT_region_DTCM_end__];
+define region RAM_region  = mem:[from __ICFEDIT_region_RAM_start__  to __ICFEDIT_region_RAM_end__ ];
+define region NonCacheable_region  = mem:[from _region_NonCacheable_start__ to _region_NonCacheable_end__];
+
+define block CSTACK with alignment = 8, size = __ICFEDIT_size_cstack__ { };
+define block HEAP   with alignment = 8, size = __ICFEDIT_size_heap__   { };
+
+initialize by copy { readwrite, section ITCM, section DTCM.init, , section NonCacheable.init };
+
+do not initialize  { section .noinit, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
+
+place at address mem:__ICFEDIT_region_ROM_start__ { readonly section .intvec };
+
+place in ITCM_region { section ITCM };
+place in ROM_region  { readonly } except { section ITCM };
+place in DTCM_region { section DTCM.zi, section DTCM.init };
+place at end of DTCM_region   { block CSTACK };
+place in RAM_region  { readwrite, block HEAP, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
+place in NonCacheable_region { section NonCacheable.zi, section NonCacheable.init };

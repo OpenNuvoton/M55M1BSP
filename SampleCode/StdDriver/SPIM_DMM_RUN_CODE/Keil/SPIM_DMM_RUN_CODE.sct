@@ -1,0 +1,25 @@
+
+LOAD_ROM_1  0x00100000
+{
+	APROM.bin  0x00100000
+	{
+		startup_m55m1.o (RESET, +FIRST)
+		*.o (+RO)
+	}
+	
+	SRAM  0x20000000 0x20000
+	{
+		* (+RW, +ZI)
+	}
+}
+
+LOAD_ROM_2  0x80000000
+{
+	SPIM.bin  0x80000000
+	{
+		spim_code.o (+RO)
+	}
+}
+
+
+

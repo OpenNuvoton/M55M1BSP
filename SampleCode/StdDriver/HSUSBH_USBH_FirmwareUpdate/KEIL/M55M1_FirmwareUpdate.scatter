@@ -1,0 +1,221 @@
+#! armclang -E --target=arm-arm-none-eabi -mcpu=cortex-m55 -xc
+; command above MUST be in first line (no comment above!)
+
+; Note: If any modification needed, please copy to local project folder first.
+; Note: Add '-mcmse' to first line if your software model is "Secure Mode".
+;       #! armclang -E --target=arm-arm-none-eabi -mcpu=cortex-m55 -xc -mcmse
+
+/* https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM/ARMCM55/Source/ARM */
+
+/*
+ * This is a simplified picture of the NuMicro M55M1 memory system.
+ * Please refer to the NuMicro M55M1 Technical Reference Manual for
+ * further information.
+ *
+ * +---------------+   +---------------+  +---------------+
+ * | Ethos-U55     |   | Cortex-M55    +--+ ITCM (64 KB)  |
+ * |               |   |               |  +---------------+
+ * |               |   |               |
+ * |               |   |               |  +---------------+
+ * |  M1      M0   |   |               +--+ DTCM (128 KB) |
+ * +---+-------+---+   +-------+-------+  +---------------+
+ *     |       |               |
+ *     |   +---+---------------+-------+
+ *     |   |   AMBA AXI NIC-400-Lite   |
+ *     |   +---+--------+---------+----+
+ *     |       |        |         |
+ * +---+-------+--+ +---+---+ +---+---+
+ * | AMBA AHB     | | SRAM0 | | SRAM2 |
+ * +---+----------+ | SRAM1 | +-------+
+ *     |            +-------+
+ * +---+---+
+ * | FLASH |
+ * +-------+
+ *
+ * +-----------------------+-------------+-------------+----+------------------------------------------------+
+ * |  Memory region name   | Base addr   |    Size     |IDAU| Description                                    |
+ * +-----------------------+-------------+-------------+----+------------------------------------------------+
+ * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | 64 kiB;                                        |
+ * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | Non-Secure alias for ITCM                      |
+ * | DTCM                  | 0x2000_0000 | 0x0002_0000 | S  | 128 kiB;                                       |
+ * | DTCM                  | 0x3000_0000 | 0x0002_0000 | NS | Non-Secure alias for DTCM                      |
+ * | SRAM01                | 0x2010_0000 | 0x0010_0000 | S  | 2 banks of 512 kiB; (3cc latency)              |
+ * | SRAM01                | 0x3010_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01                    |
+ * | SRAM2                 | 0x2020_0000 | 0x0005_0000 | S  | 320 kiB                                        |
+ * | SRAM2                 | 0x3020_0000 | 0x0005_0000 | NS | Non-Secure alias for SRAM2                     |
+ * | LPSRAM                | 0x2031_0000 | 0x0000_2000 | S  | 8 kiB                                          |
+ * | LPSRAM                | 0x3031_0000 | 0x0000_2000 | NS | Non-Secure alias for LPSRAM                    |
+ * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | 2 MiB                                          |
+ * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash                     |
+ * | EBI                   | 0x6000_0000 | 0x0030_0000 | S  | 3 MiB                                          |
+ * | EBI                   | 0x7000_0000 | 0x0030_0000 | NS | Non-Secure alias for EBI                       |
+ * | SPIM0                 | 0x8000_0000 | 0x0200_0000 | S  | 32 MiB                                         |
+ * | SPIM0                 | 0x9000_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0                     |
+ * | SPIM1                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                                         |
+ * | SPIM1                 | 0x9200_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM1                     |
+ * +-----------------------+-------------+-------------+----+------------------------------------------------+
+ *
+ *  Note: Ethos-U55 can access Flash, internal SRAM 0,1 => activation buffers and
+ *        the model should only be placed in those regions.
+ *
+ *  Note: Alias regions means that secure and non-secure addresses are mapped to the same physical
+ *        memory banks.
+ */
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#include "partition_M55M1.h"
+#endif
+
+/*
+;-------- <<< Use Configuration Wizard in Context Menu >>> -------------------
+*/
+
+/*--------------------- Flash Configuration ----------------------------------
+; <h> Flash Configuration
+;   <o0> Flash Base Address    <0x0-0xFFFFFFFF:8>
+;   <o1> Flash Size (in Bytes) <0x0-0xFFFFFFFF:8>
+; </h>
+ *----------------------------------------------------------------------------*/
+#define FLASH_START     0x00100000
+#define FLASH_SIZE      0x00200000
+
+#define APROM_ISP_START 0x00120000
+#define APROM_ISP_SIZE  0x00020000
+
+#define LDROM_START		0x0F100000
+#define LDROM_SIZE		0x0F102000
+
+/*--------------------- Cacheable SRAM Configuration ---------------------------
+; <h> SRAM Configuration
+;   <o0> SRAM Size (in Bytes)    <0x0-0x00150000:8>
+;   <o0> SRAM Base Address    <0x20100000-0x2024FFFF:8>
+;   <o1> SRAM Size (in Bytes) <0x0-0x00150000:8>
+; </h>
+ *----------------------------------------------------------------------------*/
+#define SRAM_START      0x20100000
+#define SRAM_SIZE       0x00150000
+
+/*--------------------- Stack / Heap Configuration ---------------------------
+; <h> Stack / Heap Configuration
+;   <o0> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
+;   <o1> Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>
+; </h>
+ *----------------------------------------------------------------------------*/
+#define STACK_SIZE      0x00000800
+#define HEAP_SIZE       0x00000800
+
+/*--------------------- CMSE Veneer Configuration ---------------------------
+; <h> CMSE Veneer Configuration
+;   <o0>  CMSE Veneer Size (in Bytes) <0x0-0xFFFFFFFF:32>
+; </h>
+ *----------------------------------------------------------------------------*/
+#define __CMSEVENEER_SIZE    0x200
+
+/*
+;------------- <<< end of configuration section >>> ---------------------------
+*/
+
+#define ITCM_START      0x00000010
+#define ITCM_SIZE       0x00010000
+#define DTCM_START      0x20000000
+#define DTCM_SIZE       0x00020000
+
+/*----------------------------------------------------------------------------
+  User Stack & Heap boundary definition
+ *----------------------------------------------------------------------------*/
+/* Starts at end of DTCM - 8 byte stack seal */
+#define __STACK_TOP    (DTCM_START + DTCM_SIZE - __STACKSEAL_SIZE)
+/* Starts after RW_RAM section, 8 byte aligned */
+#define __HEAP_BASE    (AlignExpr(+0, 8))
+
+/* ----------------------------------------------------------------------------
+  Stack seal size definition
+ *----------------------------------------------------------------------------*/
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define __STACKSEAL_SIZE   ( 8 )
+#else
+#define __STACKSEAL_SIZE   ( 0 )
+#endif
+
+/*----------------------------------------------------------------------------
+  Region base & size definition
+ *----------------------------------------------------------------------------*/
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define TZ_NSC_START        ( FLASH_START + FLASH_SIZE - __CMSEVENEER_SIZE )
+#define TZ_NSC_SIZE         ( __CMSEVENEER_SIZE )
+#else
+#define TZ_NSC_SIZE         ( 0 )
+#endif
+
+#define __LDRO_BASE			( LDROM_START )
+#define __LDRO_SIZE			( LDROM_SIZE )
+
+#define	__APRO_ISP_BASE		( APROM_ISP_START )
+#define __APRO_ISP_SIZE		( APROM_ISP_SIZE )
+
+#define __RO_BASE           ( FLASH_START )
+#define __RO_SIZE           ( FLASH_SIZE - TZ_NSC_SIZE )
+
+#define __RW_BASE           ( SRAM_START )
+#define __RW_SIZE           ( SRAM_SIZE - HEAP_SIZE )
+
+/*----------------------------------------------------------------------------
+  Scatter Region definition
+ *----------------------------------------------------------------------------*/
+LR_ROM_1 __LDRO_BASE __LDRO_SIZE {
+	LDROM_Boot.bin __LDRO_BASE __LDRO_SIZE {
+        *.o (RESET, +First)
+        * (InRoot$$Sections)
+        ; Make sure reset_handler ends up in root segment
+        startup_M55M1.o
+        main.o (+RO)
+    }
+}
+
+LR_ROM_2 __APRO_ISP_BASE __APRO_ISP_SIZE  {                       ; load region size_region
+    APROM_ISP.bin __APRO_ISP_BASE __APRO_ISP_SIZE  {                   ; load address = execution address
+        .ANY (+RO)
+    }
+	
+    ITCM ITCM_START ITCM_SIZE
+    {
+        .ANY (ITCM)
+    }
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    NSC_ROM +0
+    {
+        .ANY (Veneer$$CMSE)
+    }
+#endif
+
+    __RW __RW_BASE __RW_SIZE              ; RW data
+    {
+        .ANY (+RW +ZI)
+    }
+
+#if HEAP_SIZE > 0
+    ARM_LIB_HEAP  __HEAP_BASE EMPTY  HEAP_SIZE {}       ; Reserve empty region for heap
+#endif
+
+    DTCM_VTOR DTCM_START
+    {
+        * (DTCM.VTOR)
+    }
+
+    DTCM AlignExpr(+0, 8)
+    {
+        .ANY (DTCM.Init)
+        .ANY (.bss.DTCM.ZeroInit)
+    }
+
+    ScatterAssert((ImageLength(DTCM_VTOR) + ImageLength(DTCM)) < (DTCM_SIZE - STACK_SIZE - __STACKSEAL_SIZE))	; ImageLength is uncompressed size
+
+    ARM_LIB_STACK __STACK_TOP EMPTY - STACK_SIZE {}     ; Reserve empty region for stack
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+STACKSEAL +0 EMPTY __STACKSEAL_SIZE {
+        ; Reserve empty region for stack seal immediately after stack
+    }
+#endif	
+	
+}

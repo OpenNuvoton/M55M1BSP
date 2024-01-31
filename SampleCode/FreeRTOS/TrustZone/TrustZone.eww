@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspace>
+    <project>
+        <path>$WS_DIR$\NonSecure\IAR\NonSecure.ewp</path>
+    </project>
+    <project>
+        <path>$WS_DIR$\Secure\IAR\Secure.ewp</path>
+    </project>
+    <batchBuild />
+</workspace>

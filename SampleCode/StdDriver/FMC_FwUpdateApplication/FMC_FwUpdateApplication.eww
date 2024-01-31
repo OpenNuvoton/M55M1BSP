@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspace>
+    <project>
+        <path>$WS_DIR$\Loader\IAR\Loader.ewp</path>
+    </project>
+    <project>
+        <path>$WS_DIR$\BackupApp\IAR\BackupApp.ewp</path>
+    </project>
+    <project>
+        <path>$WS_DIR$\NewApp\IAR\NewApp.ewp</path>
+    </project>
+    <batchBuild />
+</workspace>

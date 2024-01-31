@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspace>
+    <project>
+        <path>$WS_DIR$\FMC_IAP_APROM.ewp</path>
+    </project>
+    <project>
+        <path>$WS_DIR$\FMC_IAP_LDROM.ewp</path>
+    </project>
+    <batchBuild />
+</workspace>

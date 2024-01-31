@@ -1,0 +1,180 @@
+#! armclang -E --target=arm-arm-none-eabi -mcpu=cortex-m55 -xc
+; command above MUST be in first line (no comment above!)
+
+; Note: If any modification needed, please copy to local project folder first.
+
+/*
+ * Copyright (c) 2019-2021 Arm Limited. All rights reserved.
+ *
+ * @copyright SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the License); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * This is a simplified picture of the NuMicro M55M1 memory system.
+ * Please refer to the NuMicro M55M1 Technical Reference Manual for
+ * further information.
+ *
+ *
+ * +---------------+   +---------------+  +--------------------------+
+ * | Ethos-U55     |   | Cortex-M55    +--+ ITCM (64 KB)             |
+ * |               |   |               |  +--------------------------+
+ * |               |   |               |
+ * |               |   |               |  +--------------------------+
+ * |  M1      M0   |   |               +--+ DTCM (128 KB)            |
+ * +---+-------+---+   +-------+-------+  +--------------------------+
+ *     |       |               |
+ *     |   +---+---------------+-------+
+ *     |   |   AMBA AXI NIC-400-Lite   |
+ *     |   +---+--------+---------+----+
+ *     |       |        |         |
+ * +---+-------+--+ +---+---+ +---+---+
+ * | AMBA AHB     | | SRAM0 | | SRAM2 |
+ * +---+----------+ | SRAM1 | +-------+
+ *     |            +-------+
+ * +---+---+
+ * | FLASH |
+ * +-------+
+ *
+ * +-----------------------+-------------+-------------+----+------------------------------------------------+
+ * |  Memory region name   | Base addr   |    Size     |IDAU| Description                                    |
+ * +-----------------------+-------------+-------------+----+------------------------------------------------+
+ * | ITCM                  | 0x0000_0000 | 0x0002_0000 | S  | 64 kiB.                                       |
+ * | ITCM                  | 0x1000_0000 | 0x0002_0000 | NS | Non-Secure alias for ITCM                      |
+ * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | 2 MiB                                          |
+ * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash                     |
+ * | DTCM                  | 0x2000_0000 | 0x0002_0000 | S  | 128 kiB                                        |
+ * | DTCM                  | 0x3000_0000 | 0x0002_0000 | NS | Non-Secure alias for DTCM                      |
+ * | SRAM01                | 0x2010_0000 | 0x0010_0000 | S  | 2 banks of 512 kiB; (3cc latency)              |
+ * | SRAM01                | 0x3010_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01                    |
+ * | SRAM2                 | 0x2020_0000 | 0x0008_0000 | S  | 320 kiB                                        |
+ * | SRAM2                 | 0x3020_0000 | 0x0008_0000 | NS | Non-Secure alias for SRAM2                     |
+ * | SRAM3                 | 0x2030_0000 | 0x0002_0000 | S  | 512 kiB                                        |
+ * | SRAM3                 | 0x3030_0000 | 0x0002_0000 | NS | Non-Secure alias for SRAM3                     |
+ * | LPSRAM                | 0x2031_0000 | 0x0008_0000 | S  | 512 kiB                                        |
+ * | LPSRAM                | 0x3031_0000 | 0x0008_0000 | NS | Non-Secure alias for LPSRAM                    |
+ * | EBI                   | 0x6000_0000 | 0x0030_0000 | S  | 3 MiB                                          |
+ * | EBI                   | 0x7000_0000 | 0x0030_0000 | NS | Non-Secure alias for EBI                       |
+ * | SPIM0                 | 0x8000_0000 | 0x0200_0000 | S  | 32 MiB                                         |
+ * | SPIM0                 | 0x9000_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0                     |
+ * | SPIM1                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                                         |
+ * | SPIM1                 | 0x9200_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM1                     |
+ * +-----------------------+-------------+-------------+----+------------------------------------------------+
+ *
+ *  Note: Ethos-U55 can access Flash, internal SRAM 0,1 => activation buffers and
+ *        the model should only be placed in those regions.
+ *
+ *  Note: Alias regions means that secure and non-secure addresses are mapped to the same physical
+ *        memory banks.
+ */
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#include "partition_M55M1.h"
+#endif
+
+#ifndef STACK_SIZE
+#define STACK_SIZE 0x8000
+#endif
+
+#ifndef HEAP_SIZE
+#define HEAP_SIZE 0x10000
+#endif
+
+#define FLASH_START     0x00100000
+#define FLASH_SIZE      0x00200000
+#define SRAM01_START    0x20100000
+#define SRAM01_SIZE     0x00100000
+#define SRAM2_START     0x20200000
+#define SRAM2_SIZE      0x00050000
+#define LPSRAM_START    0x20310000
+#define LPSRAM_SIZE     0x00002000
+
+/* Set ITCM start address to 8 to prevent NULL address access */
+#define ITCM_START      0x00000008
+#define ITCM_SIZE       0x00010000
+#define DTCM_START      0x20000000
+#define DTCM_SIZE       0x00020000
+
+#define STACK_HEAP      0x20020000
+
+/* ----------------------------------------------------------------------------
+  Stack seal size definition
+ *----------------------------------------------------------------------------*/
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+#define __STACKSEAL_SIZE   ( 8 )
+#else
+#define __STACKSEAL_SIZE   ( 0 )
+#endif
+
+APP_IMAGE FLASH_START FLASH_SIZE
+{
+    ; Flash 2 MB
+    rom_exec FLASH_START FLASH_SIZE
+    {
+        *.o (RESET, +First)
+        * (InRoot$$Sections)
+        ; Make sure reset_handler ends up in root segment
+        startup_M55M1.o
+        .ANY (+RO)
+    }
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    ; ITCM 64 KB - Only accessible from the Cortex-M
+    ITCM ITCM_START (ITCM_SIZE - TZ_NSC_SIZE)
+    {
+        .ANY (itcm)
+    }
+
+    NSC_ROM TZ_NSC_START TZ_NSC_SIZE
+    {
+        .ANY (Veneer$$CMSE)
+    }
+#else
+    ITCM ITCM_START ITCM_SIZE
+    {
+        .ANY (itcm)
+    }
+#endif
+    ; DTCM 128 KB - Only accessible from the Cortex-M
+    DTCM DTCM_START (DTCM_SIZE - STACK_SIZE - HEAP_SIZE - __STACKSEAL_SIZE)
+    {
+        .ANY1 (+RW +ZI)
+    }
+
+    ; 1 MB SRAM01 (3 cycles read latency) from M55/U55
+    SRAM01 SRAM01_START UNINIT SRAM01_SIZE
+    {
+        .ANY (+RW +ZI)
+#ifndef ETHOSU_FAST_MEMORY_SIZE
+        ; Place tensor arena in SRAM if we do not have a fast memory area
+        .ANY (.bss.tensor_arena)
+        .ANY (.bss.NoInit.activation_buf_sram)
+#else
+        * (.bss.ethosu_scratch)
+#endif
+    }
+
+    LPSRAM LPSRAM_START LPSRAM_SIZE
+    {
+        .ANY (.lpSram)
+    }
+
+    ARM_LIB_HEAP  (STACK_HEAP - STACK_SIZE - __STACKSEAL_SIZE - HEAP_SIZE) EMPTY ALIGN 8 HEAP_SIZE {}
+    ARM_LIB_STACK (STACK_HEAP - STACK_SIZE - __STACKSEAL_SIZE) EMPTY ALIGN 8 STACK_SIZE {}
+
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+    STACKSEAL +0 EMPTY __STACKSEAL_SIZE {
+        ; Reserve empty region for stack seal immediately after stack
+    }
+#endif
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspace>
+    <project>
+        <path>$WS_DIR$\FMC_MultiBoot.ewp</path>
+    </project>
+    <batchBuild>
+        <batchDefinition>
+            <name>FMC_MultiBoot</name>
+            <member>
+                <project>FMC_MultiBoot</project>
+                <configuration>FMC_MultiBoot_0x100000</configuration>
+            </member>
+            <member>
+                <project>FMC_MultiBoot</project>
+                <configuration>FMC_MultiBoot_0x160000</configuration>
+            </member>
+            <member>
+                <project>FMC_MultiBoot</project>
+                <configuration>FMC_MultiBoot_0x1C0000</configuration>
+            </member>
+            <member>
+                <project>FMC_MultiBoot</project>
+                <configuration>FMC_MultiBoot_0x220000</configuration>
+            </member>
+            <member>
+                <project>FMC_MultiBoot</project>
+                <configuration>FMC_MultiBoot_0x280000</configuration>
+            </member>
+            <member>
+                <project>FMC_MultiBoot</project>
+                <configuration>FMC_MultiBoot_LDROM</configuration>
+            </member>
+        </batchDefinition>
+    </batchBuild>
+</workspace>
