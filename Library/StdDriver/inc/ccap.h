@@ -171,7 +171,7 @@ extern "C"
  *
  * @return    CCAP Wake-up flag
  */
-#define CCAP_GET_WAKEUP_FLAG()  ((CCAP->MDTRG_WK >> CCAP_MDTRG_WK_WKF_Pos) & CCAP_MDTRG_WK_WKF_Msk)
+#define CCAP_GET_WAKEUP_FLAG()  ((CCAP->MDTRG_WK & CCAP_MDTRG_WK_WKF_Msk) >> CCAP_MDTRG_WK_WKF_Pos)
 
 /**
  * @brief     Clear CCAP Wake-up Flag
@@ -187,7 +187,7 @@ extern "C"
  *            2: TTMR0
  *            3: TTMR1
  */
-#define CCAP_GET_WAKEUP_SRC()   ((CCAP->MDTRG_WK >> CCAP_MDTRG_WK_TRGSEL_Pos) & CCAP_MDTRG_WK_TRGSEL_Msk)
+#define CCAP_GET_WAKEUP_SRC()   ((CCAP->MDTRG_WK & CCAP_MDTRG_WK_TRGSEL_Msk) >> CCAP_MDTRG_WK_TRGSEL_Pos)
 
 /**
  * @brief     Get CCAP Wake-up Function
@@ -195,7 +195,7 @@ extern "C"
  * @return    CCAP Wake-up Function Enable State
  *            0: Disabled, 1: Enabled
  */
-#define CCAP_GET_WAKEUP_FUNC()  ((CCAP->MDTRG_WK >> CCAP_MDTRG_WK_WKEN_Pos) & CCAP_MDTRG_WK_WKEN_Msk)
+#define CCAP_GET_WAKEUP_FUNC()  ((CCAP->MDTRG_WK & CCAP_MDTRG_WK_WKEN_Msk) >> CCAP_MDTRG_WK_WKEN_Pos)
 
 /**
  * @brief     Enable CCAP Motion Detection Window
