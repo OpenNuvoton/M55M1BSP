@@ -284,7 +284,8 @@ def build():
           keywords=['development','dsp','cmsis','cmsis-dsp','Arm','signal processing','maths'],
           install_requires=['numpy>=1.19',
           'networkx>=2.5',
-          'jinja2>= 2.0, <3.0',
+          #'jinja2>= 2.0, <3.0',
+          'jinja2>=3.1.4',
           'sympy>=1.6',
           'markupsafe<2.1'
           ],
