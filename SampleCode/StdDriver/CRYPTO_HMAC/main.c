@@ -10,10 +10,20 @@
 #include <string.h>
 #include "NuMicro.h"
 
-__ALIGNED(32) static uint8_t gau8HMACSrc[1024] = {0};    /* Buffer for DMA source */
-__ALIGNED(32) static uint8_t gau8HMAC[1024] = {0};       /* Buffer for HMAC golden pattern */
-static volatile int g_HMAC_done;
 
+// DCache-line related//
+#define HMAC_SRC_SIZE (1024)
+//------------------------------------------------------------------------------
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    uint8_t gau8HMACSrc[DCACHE_ALIGN_LINE_SIZE(HMAC_SRC_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    // Standard buffer alignment when DCache is disabled
+    __ALIGNED(4) uint8_t gau8HMACSrc[HMAC_SRC_SIZE];
+#endif
+__ALIGNED(32) static uint8_t gau8HMAC[1024] = {0};       /* Buffer for HMAC golden pattern */
+
+static volatile int g_HMAC_done;
 void CRYPTO_IRQHandler(void);
 int IsHexChar(char c);
 uint8_t Char2Hex(uint8_t c);
@@ -130,8 +140,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -208,10 +218,17 @@ int  main(void)
     NVIC_EnableIRQ(CRYPTO_IRQn);
     SHA_ENABLE_INT(CRYPTO);
 
+    /* Init Feedback buffer content*/
+    memset(gau8HMACSrc, 0, sizeof(gau8HMACSrc));
+
     /* Prepare the key and message for DMA. The format is key + msg */
     u32KeyLen = Str2Hex(keyStr, &gau8HMACSrc[0], 0);
-    u32MsgLen = Str2Hex(msg, &gau8HMACSrc[(u32KeyLen + 3) & 0xfffffffc], 0);
-    u32MacLen = Str2Hex(hmac, &gau8HMAC[0], 0);
+    u32MsgLen = Str2Hex(msg,    &gau8HMACSrc[(u32KeyLen + 3) & 0xfffffffc], 0);
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(gau8HMACSrc, sizeof(gau8HMACSrc));
+#endif
+    u32MacLen = Str2Hex(hmac,   &gau8HMAC[0], 0);
 
     /* Key alignment for DMA */
     u32KeyLenAlign = ((u32KeyLen + 3) & 0xfffffffc);
@@ -225,7 +242,7 @@ int  main(void)
     SHA_SetDMATransfer(CRYPTO, (uint32_t)&gau8HMACSrc[0], u32MsgLen + u32KeyLenAlign);
 
     g_HMAC_done = 0;
-    CRYPTO->HMAC_CTL |= CRYPTO_HMAC_CTL_START_Msk | CRYPTO_HMAC_CTL_DMAEN_Msk | CRYPTO_HMAC_CTL_DMALAST_Msk;
+    SHA_Start(CRYPTO, CRYPTO_DMA_ONE_SHOT);
     u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
     while (!g_HMAC_done)

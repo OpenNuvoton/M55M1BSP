@@ -20,7 +20,8 @@
 
 #define ETHOS_U_CACHE_BUF_SZ    (0U)
 
-#define ETHOS_U_MEM_BYTE_ALIGNMENT                  16
+//NPU alignment request only 16. In order to consist with cache line alignment, so change to 32
+#define ETHOS_U_MEM_BYTE_ALIGNMENT                  32
 
 /**
  * Activation buffer aka tensor arena section name

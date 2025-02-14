@@ -808,6 +808,14 @@ typedef struct
 #define FMC_APWPROT1_APPROEN63_Pos       (63)                                              /*!< FMC_T::APWPROT1: APPROEN63 Position      */
 #define FMC_APWPROT1_APPROEN63_Msk       (0x1ul << FMC_APWPROT1_APPROEN63_Pos)             /*!< FMC_T::APWPROT1: APPROEN63 Mask          */
 
+#define FMC_APWPKEEP_APWPKEEP0_Pos      (0)                                                /*!< FMC_T::FMC_APWPKEEP: APWPKEEP0 Position  */
+#define FMC_APWPKEEP_APWPKEEP0_Msk      (0xfffful << FMC_APWPKEEP_APWPKEEP0_Pos)           /*!< FMC_T::FMC_APWPKEEP: APWPKEEP0 Mask      */
+
+#define FMC_APWPKEEP_APWPKEEP1_Pos      (16)                                               /*!< FMC_T::FMC_APWPKEEP: APWPKEEP1 Position  */
+#define FMC_APWPKEEP_APWPKEEP1_Msk      (0xfffful << FMC_APWPKEEP_APWPKEEP1_Pos)           /*!< FMC_T::FMC_APWPKEEP: APWPKEEP1 Mask      */
+
+#define FMC_SCACT_SCACT_Pos             (0)                                                /*!< FMC_T::FMC_SCACT: SCACT Position         */
+#define FMC_SCACT_SCACT_Msk             (0x1ul << FMC_SCACT_SCACT_Pos)                     /*!< FMC_T::FMC_SCACT: SCACT Mask             */
 
 /** @} FMC_CONST */
 /** @} end of FMC register group */

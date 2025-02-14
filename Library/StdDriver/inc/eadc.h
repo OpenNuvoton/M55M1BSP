@@ -40,8 +40,8 @@ extern "C"
 /* EADC_SCTL Constant Definitions                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
 #define EADC_SCTL_CHSEL(x)                  ((x) << EADC_SCTL_CHSEL_Pos)       /*!< A/D sample module channel selection \hideinitializer */
-#define EADC_SCTL_TRGDLYDIV(x)              ((x) << EADC_SCTL_TRGDLYDIV_Pos)   /*!< A/D sample module start of conversion trigger delay clock divider selection \hideinitializer */
-#define EADC_SCTL_TRGDLYCNT(x)              ((x) << EADC_SCTL_TRGDLYCNT_Pos)   /*!< A/D sample module start of conversion trigger delay time \hideinitializer */
+#define EADC_SCTL_TRGDLYDIV(x)              ((x) << EADC_SCTL_TRGDLDIV_Pos)    /*!< A/D sample module start of conversion trigger delay clock divider selection \hideinitializer */
+#define EADC_SCTL_TRGDLYCNT(x)              ((x) << EADC_SCTL_TRGDLCNT_Pos)    /*!< A/D sample module start of conversion trigger delay time \hideinitializer */
 
 #define EADC_SOFTWARE_TRIGGER               (0UL<<EADC_SCTL_TRGSEL_Pos)      /*!< Software trigger \hideinitializer */
 #define EADC_FALLING_EDGE_TRIGGER           (EADC_SCTL_EXTFEN_Msk | (1UL<<EADC_SCTL_TRGSEL_Pos))       /*!< STADC pin falling edge trigger \hideinitializer */
@@ -73,10 +73,10 @@ extern "C"
 #define EADC_ACMP3_INT_TRIGGER              (0x25UL<<EADC_SCTL_TRGSEL_Pos)   /*!< ACMP3 interrupt trigger \hideinitializer */
 
 
-#define EADC_SCTL_TRGDLYDIV_DIVIDER_1       (0UL<<EADC_SCTL_TRGDLYDIV_Pos)           /*!< Trigger delay clock frequency is ADC_CLK/1 \hideinitializer */
-#define EADC_SCTL_TRGDLYDIV_DIVIDER_2       (0x1UL<<EADC_SCTL_TRGDLYDIV_Pos)       /*!< Trigger delay clock frequency is ADC_CLK/2 \hideinitializer */
-#define EADC_SCTL_TRGDLYDIV_DIVIDER_4       (0x2UL<<EADC_SCTL_TRGDLYDIV_Pos)       /*!< Trigger delay clock frequency is ADC_CLK/4 \hideinitializer */
-#define EADC_SCTL_TRGDLYDIV_DIVIDER_16      (0x3UL<<EADC_SCTL_TRGDLYDIV_Pos)       /*!< Trigger delay clock frequency is ADC_CLK/16 \hideinitializer */
+#define EADC_SCTL_TRGDLYDIV_DIVIDER_1       (0UL<<EADC_SCTL_TRGDLDIV_Pos)           /*!< Trigger delay clock frequency is ADC_CLK/1 \hideinitializer */
+#define EADC_SCTL_TRGDLYDIV_DIVIDER_2       (0x1UL<<EADC_SCTL_TRGDLDIV_Pos)       /*!< Trigger delay clock frequency is ADC_CLK/2 \hideinitializer */
+#define EADC_SCTL_TRGDLYDIV_DIVIDER_4       (0x2UL<<EADC_SCTL_TRGDLDIV_Pos)       /*!< Trigger delay clock frequency is ADC_CLK/4 \hideinitializer */
+#define EADC_SCTL_TRGDLYDIV_DIVIDER_16      (0x3UL<<EADC_SCTL_TRGDLDIV_Pos)       /*!< Trigger delay clock frequency is ADC_CLK/16 \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* EADC_CMP Constant Definitions                                                                           */
@@ -704,6 +704,7 @@ __STATIC_INLINE uint32_t EADC_GET_DATA_OVERRUN_FLAG(EADC_T *eadc, uint32_t u32Mo
 /* Define EADC functions prototype                                                                         */
 /*---------------------------------------------------------------------------------------------------------*/
 void EADC_Open(EADC_T *eadc, uint32_t u32InputMode);
+void EADC_Calibration(EADC_T *eadc);
 void EADC_Close(EADC_T *eadc);
 void EADC_ConfigSampleModule(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32TriggerSrc, uint32_t u32Channel);
 void EADC_SetTriggerDelayTime(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32TriggerDelayTime, uint32_t u32DelayClockDivider);

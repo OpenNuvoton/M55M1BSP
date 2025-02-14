@@ -312,6 +312,8 @@ void HID_ClassRequest(void)
                     /* Request Type = Feature */
                     USBD_SET_DATA1(EP1);
                     USBD_SET_PAYLOAD_LEN(EP1, 0);
+                    /* Status stage */
+                    USBD_PrepareCtrlIn(0, 0);
                 }
                 else if (au8Buf[3] == 2)
                 {

@@ -21,6 +21,7 @@ volatile uint8_t g_au8SlvData[TEST_LENGTH + 1];
 volatile uint8_t g_au8SlvRxData[3];
 
 volatile uint8_t g_u8SlvDataLen;
+volatile uint8_t g_u8SlvTRxAbortFlag = 0;
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I2C0 IRQ Handler                                                                                       */
@@ -28,7 +29,7 @@ volatile uint8_t g_u8SlvDataLen;
 NVT_ITCM void I2C0_IRQHandler(void)
 {
     uint32_t u32Status, temp;
-    uint8_t u8data;
+    uint8_t u8Data;
 
     if ((I2C0->STATUS1 & I2C_STATUS1_SARCIF_Msk))
     {
@@ -52,18 +53,18 @@ NVT_ITCM void I2C0_IRQHandler(void)
     else if (u32Status == 0x80)                                  /* Previously address with own SLA address
                                                                     Data has been received; ACK has been returned*/
     {
-        u8data = (unsigned char) I2C_GET_DATA(I2C0);
+        u8Data = (unsigned char) I2C_GET_DATA(I2C0);
 
         if (g_u8SlvDataLen < 2)
         {
-            g_au8SlvRxData[g_u8SlvDataLen++] = u8data;
+            g_au8SlvRxData[g_u8SlvDataLen++] = u8Data;
             temp = (g_au8SlvRxData[0] << 8);
             temp += g_au8SlvRxData[1];
             slave_buff_addr =  temp;
         }
         else
         {
-            g_au8SlvData[slave_buff_addr++] = u8data;
+            g_au8SlvData[slave_buff_addr++] = u8Data;
 
             if (slave_buff_addr == TEST_LENGTH)
             {
@@ -86,8 +87,23 @@ NVT_ITCM void I2C0_IRQHandler(void)
     }
     else
     {
-        /* TO DO */
-        printf("Status 0x%x is NOT processed\n", u32Status);
+        printf("[SlaveTRx] Status [0x%x] Unexpected abort!!\n", u32Status);
+
+        if (u32Status == 0x68)              /* Slave receive arbitration lost, clear SI */
+        {
+            I2C_SET_CONTROL_REG(I2C0, I2C_CTL_SI_AA);
+        }
+        else if (u32Status == 0xB0)         /* Address transmit arbitration lost, clear SI  */
+        {
+            I2C_SET_CONTROL_REG(I2C0, I2C_CTL_SI_AA);
+        }
+        else                                /* Slave bus error, stop I2C and clear SI */
+        {
+            I2C_SET_CONTROL_REG(I2C0, I2C_CTL_STO_SI);
+            I2C_SET_CONTROL_REG(I2C0, I2C_CTL_SI);
+        }
+
+        g_u8SlvTRxAbortFlag = 1;
     }
 
     // CPU read interrupt flag register to wait write(clear) instruction completement.
@@ -101,24 +117,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -140,11 +141,11 @@ static void SYS_Init(void)
 
 void I2C0_Init(void)
 {
-    /* Open I2C0 and set clock to 100k */
+    /* Open I2C module and set bus clock */
     I2C_Open(I2C0, 100000);
     /* Get I2C0 Bus Clock */
     printf("I2C clock %d Hz\n", I2C_GetBusClockFreq(I2C0));
-    /* Set I2C0 4 Slave Addresses */
+    /* Set I2C 4 Slave Addresses */
     I2C_SetSlaveAddr(I2C0, 0, 0x15, I2C_GCMODE_DISABLE);   /* Slave Address : 0x15 */
     I2C_SetSlaveAddr(I2C0, 1, 0x35, I2C_GCMODE_DISABLE);   /* Slave Address : 0x35 */
     I2C_SetSlaveAddr(I2C0, 2, 0x55, I2C_GCMODE_DISABLE);   /* Slave Address : 0x55 */
@@ -163,7 +164,7 @@ void I2C0_Init(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
-    uint32_t i;
+    uint32_t i, u32TimeOutCnt;
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();
     /* Init Debug UART to 115200-8N1 for print message */
@@ -200,7 +201,24 @@ int32_t main(void)
     printf("\n");
     printf("I2C Slave Mode is Running.\n");
 
-    while (1);
+    while (1)
+    {
+        /* When I2C abort, clear SI to enter non-addressed SLV mode*/
+        if (g_u8SlvTRxAbortFlag)
+        {
+            g_u8SlvTRxAbortFlag = 0;
+            u32TimeOutCnt = SystemCoreClock;
+
+            while (I2C0->CTL0 & I2C_CTL0_SI_Msk)
+                if (--u32TimeOutCnt == 0)
+                {
+                    break;
+                }
+
+            printf("I2C Slave re-start. status[0x%x]\n", I2C0->STATUS0);
+            I2C_SET_CONTROL_REG(I2C0, I2C_CTL_SI_AA);
+        }
+    }
 }
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

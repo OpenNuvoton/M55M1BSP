@@ -72,6 +72,10 @@ extern "C"
 #define QSPI_CLKSEL_HIRC                (0x3UL)
 #define QSPI_CLKSEL_HIRC48M_DIV4        (0x4UL)
 
+#define QSPI_OK                         (0)
+#define QSPI_ERR_FAIL                   (-1)
+#define QSPI_ERR_TIMEOUT                (-2)
+
 /** @} end of group QSPI_EXPORTED_CONSTANTS */
 
 

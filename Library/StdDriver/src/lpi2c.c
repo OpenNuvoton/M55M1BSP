@@ -190,7 +190,7 @@ uint32_t LPI2C_SetBusClockFreq(LPI2C_T *i2c, uint32_t u32BusClock)
 {
     uint32_t u32Div;
 
-    uint32_t u32Pclk = CLK_GetPCLK2Freq();
+    uint32_t u32Pclk = CLK_GetPCLK4Freq();
     u32Div = (uint32_t)(((u32Pclk * 10U) / (u32BusClock * 4U) + 5U) / 10U - 1U); /* Compute proper divider for I2C clock */
     i2c->CLKDIV = u32Div;
     return (u32Pclk / ((u32Div + 1U) << 2U));
@@ -465,6 +465,20 @@ uint8_t LPI2C_WriteByte(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t data)
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                        /* Write controlbit to LPI2C_CTL register */
     }
 
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
+    }
+
     return (u8Err | u8Xfering);                                  /* return (Success)/(Fail) status */
 }
 
@@ -542,6 +556,20 @@ uint32_t LPI2C_WriteMultiBytes(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t data[]
         }
 
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                        /* Write controlbit to LPI2C_CTL register */
+    }
+
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
     }
 
     return u32txLen;                                             /* Return bytes length that have been transmitted */
@@ -628,6 +656,20 @@ uint8_t LPI2C_WriteByteOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataA
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                        /* Write controlbit to LPI2C_CTL register */
     }
 
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
+    }
+
     return (u8Err | u8Xfering);                                  /* return (Success)/(Fail) status */
 }
 
@@ -710,6 +752,20 @@ uint32_t LPI2C_WriteMultiBytesOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t 
         }
 
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                        /* Write controlbit to LPI2C_CTL register */
+    }
+
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
     }
 
     return u32txLen;                                             /* Return bytes length that have been transmitted */
@@ -801,6 +857,20 @@ uint8_t LPI2C_WriteByteTwoRegs(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16Da
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                                   /* Write controlbit to LPI2C_CTL register */
     }
 
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
+    }
+
     return (u8Err | u8Xfering);                                             /* return (Success)/(Fail) status */
 }
 
@@ -890,6 +960,20 @@ uint32_t LPI2C_WriteMultiBytesTwoRegs(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint16_
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                                   /* Write controlbit to LPI2C_CTL register */
     }
 
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
+    }
+
     return u32txLen;                                                        /* Return bytes length that have been transmitted */
 }
 
@@ -959,6 +1043,20 @@ uint8_t LPI2C_ReadByte(LPI2C_T *i2c, uint8_t u8SlaveAddr)
         }
 
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                          /* Write controlbit to LPI2C_CTL register */
+    }
+
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
     }
 
     if (u8Err)
@@ -1054,6 +1152,20 @@ uint32_t LPI2C_ReadMultiBytes(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t rdata[]
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                                 /* Write controlbit to LPI2C_CTL register */
     }
 
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
+    }
+
     return u32rxLen;                                                      /* Return bytes length that have been received */
 }
 
@@ -1144,6 +1256,20 @@ uint8_t LPI2C_ReadByteOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAd
         }
 
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                          /* Write controlbit to LPI2C_CTL register */
+    }
+
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
     }
 
     if (u8Err)
@@ -1258,6 +1384,20 @@ uint32_t LPI2C_ReadMultiBytesOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                          /* Write controlbit to LPI2C_CTL register */
     }
 
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
+    }
+
     return u32rxLen;                                               /* Return bytes length that have been received */
 }
 
@@ -1356,6 +1496,20 @@ uint8_t LPI2C_ReadByteTwoRegs(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16Dat
         }
 
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                                   /* Write controlbit to LPI2C_CTL register */
+    }
+
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
     }
 
     if (u8Err)
@@ -1477,6 +1631,20 @@ uint32_t LPI2C_ReadMultiBytesTwoRegs(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint16_t
         }
 
         LPI2C_SET_CONTROL_REG(i2c, u8Ctrl);                                   /* Write controlbit to LPI2C_CTL register */
+    }
+
+    u32TimeOutCount = LPI2C_TIMEOUT;
+
+    while ((i2c)->CTL0 & LPI2C_CTL0_STO_Msk)
+    {
+        u32TimeOutCount--;
+
+        if (u32TimeOutCount == 0)
+        {
+            g_LPI2C_i32ErrCode = LPI2C_ERR_TIMEOUT;
+            u8Err = 1u;
+            break;
+        }
     }
 
     return u32rxLen;                                                        /* Return bytes length that have been received */

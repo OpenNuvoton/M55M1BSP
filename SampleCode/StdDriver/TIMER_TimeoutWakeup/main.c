@@ -24,8 +24,6 @@ static volatile uint32_t g_u32PDWK;
 NVT_ITCM void TIMER0_IRQHandler(void)
 {
     uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
-    CLK_WaitModuleClockReady(TMR0_MODULE);//TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);//TESTCHIP_ONLY
 
     // Clear wake up flag
     TIMER_ClearWakeupFlag(TIMER0);
@@ -51,7 +49,6 @@ NVT_ITCM void PMC_IRQHandler(void)
 {
     uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
     g_u32PDWK = PMC_GetPMCWKSrc();
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);//TESTCHIP_ONLY
 
     /* check power down wakeup flag */
     if (g_u32PDWK & PMC_INTSTS_PDWKIF_Msk)
@@ -90,8 +87,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -163,7 +160,7 @@ int main(void)
     CLK_SysTickDelay(50);
     /* Unlock protected registers */
     SYS_UnlockReg();
-    PMC_ENABLE_INT();
+    PMC_ENABLE_WKINT();
 
     while (1)
     {

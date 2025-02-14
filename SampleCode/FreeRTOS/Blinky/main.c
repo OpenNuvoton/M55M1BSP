@@ -137,15 +137,7 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
     function is called if a stack overflow is detected. */
     taskDISABLE_INTERRUPTS();
 
-    //__BKPT();
-
-    //printf("Stack overflow task name=%s\n", pcTaskName);
-
-
     for (;;);
-
-
-
 }
 /*-----------------------------------------------------------*/
 

@@ -10,6 +10,12 @@
  */
 #ifndef __ARRAY_H__
 #define __ARRAY_H__
+
+/* Make this header file easier to include in C++ code */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void (*array_dtor_t)(void*);
 typedef int  (*array_comp_t)(const void*, const void*);
 // (left < right) == negative
@@ -34,4 +40,9 @@ void array_erase(array_t *array, int idx);
 void array_resize(array_t *array, int num);
 void array_sort(array_t *array, array_comp_t comp);
 void array_isort(array_t *array, array_comp_t comp);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //__ARRAY_H__

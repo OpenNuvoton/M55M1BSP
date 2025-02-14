@@ -31,6 +31,7 @@ static volatile int32_t   db_state = DB_STATE_DONE; /* dual bank background prog
 static volatile uint32_t  db_length;                /* dual bank program remaining length       */
 static volatile uint32_t  db_addr;                  /* dual bank program current flash address  */
 static volatile uint32_t  g_tick_cnt;               /* timer ticks - 100 ticks per second       */
+static volatile uint32_t  s_u32CRC = 0;
 
 NVT_ITCM void SysTick_Handler(void)
 {
@@ -116,8 +117,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 20MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -209,19 +210,26 @@ uint32_t  func_crc32(uint32_t start, uint32_t len)
 
 void StartTimer0(void)
 {
-    CLK_EnableModuleClock(TMR0_MODULE);     /* Enable TIMER0 clock          */
-    CLK_SetModuleClock(TMR0_MODULE, CLK_TMRSEL_TMR0SEL_HXT, MODULE_NoMsk);
-    TIMER0->CTL = 0;                        /* Disable timer                */
-    TIMER0->INTSTS = (TIMER_INTSTS_TWKF_Msk | TIMER_INTSTS_TIF_Msk);  /* Clear interrupt status */
-    TIMER0->CMP = 0xFFFFFE;                 /* Set maximum time             */
-    TIMER0->CNT = 0;                        /* Clear timer counter          */
-    /* Start TIMER0 */
-    TIMER0->CTL = (11 << TIMER_CTL_PSC_Pos) | TIMER_ONESHOT_MODE | TIMER_CTL_CNTEN_Msk;
-}
+    volatile int32_t i32Timeout = 1000;
 
-uint32_t  GetTimer0Counter(void)
-{
-    return (TIMER0->CNT & TIMER_CNT_CNT_Msk);
+    CLK_EnableModuleClock(TMR0_MODULE);     /* Enable TIMER0 clock          */
+    CLK_SetModuleClock(TMR0_MODULE, CLK_TMRSEL_TMR0SEL_HIRC, MODULE_NoMsk);
+
+    TIMER_Stop(TIMER0);
+    TIMER_ClearIntFlag(TIMER0);
+    TIMER_SET_CMP_VALUE(TIMER0, 0xFFFFFF);
+    TIMER_SET_PRESCALE_VALUE(TIMER0, ((__HIRC / 1000000) << TIMER_CTL_PSC_Pos));
+    TIMER_ResetCounter(TIMER0);
+    TIMER_Start(TIMER0);
+
+    while (TIMER_IS_ACTIVE(TIMER0) == 0)
+    {
+        if (i32Timeout-- < 0)
+        {
+            printf("Timer0 active timeout !\n");
+            break;
+        }
+    }
 }
 
 int main(void)
@@ -244,38 +252,45 @@ int main(void)
     FMC_ENABLE_AP_UPDATE();         /* Enable FMC erase/program APROM   */
 
     db_state = DB_STATE_DONE;       /* Dual bank program state idle     */
+    s_u32CRC = 0;
 
     SysTick_Config(1000);
     StartTimer0();
 
     for (u32LoopCnt = 0; u32LoopCnt < CRC32_LOOP_CNT; u32LoopCnt++)
     {
-        func_crc32(0x0, 0x10000);      /* Calculate 64KB CRC32 value, just to consume CPU time  */
+        s_u32CRC += func_crc32(FMC_APROM_BASE, 0x10000);      /* Calculate 64KB CRC32 value, just to consume CPU time  */
     }
 
-    u32TimerCnt = GetTimer0Counter();
-    printf("u32TimerCnt: 0x%08X\n", u32TimerCnt);
+    u32TimerCnt = TIMER_GetCounter(TIMER0);
+
     /* TIMER0->CNT is the elapsed us */
     printf("\nTime elapsed without program bank1: %d.%d seconds. Ticks: %d\n\n", u32TimerCnt / 1000000, u32TimerCnt / 1000, g_tick_cnt);
 
     db_addr   = FMC_APROM_BANK1_BASE;   /* Dual bank background program address */
     db_length = DB_PROG_LEN;            /* Dual bank background length          */
     db_state  = DB_STATE_START;         /* Start background dual bank program   */
+    s_u32CRC  = 0;
 
     SysTick_Config(1000);
     StartTimer0();
 
     for (u32LoopCnt = 0; u32LoopCnt < CRC32_LOOP_CNT; u32LoopCnt++)
     {
-        func_crc32(0x0, 0x10000);      /* Calculate 64KB CRC32 value, just to consume CPU time  */
+        s_u32CRC += func_crc32(FMC_APROM_BASE, 0x10000);      /* Calculate 64KB CRC32 value, just to consume CPU time  */
     }
 
-    u32TimerCnt = GetTimer0Counter();
+    u32TimerCnt = TIMER_GetCounter(TIMER0);
 
     /* TIMER0->CNT is the elapsed us */
     printf("\nTime elapsed with program bank1: %d.%d seconds. Ticks: %d\n\n", u32TimerCnt / 1000000, u32TimerCnt / 1000, g_tick_cnt);
 
-    while (db_state != DB_STATE_DONE) ;
+    while (db_state != DB_STATE_DONE) ;  /* Wait until the dual bank program is done */
+
+#if  (NVT_DCACHE_ON == 1)
+    // Invalidate the D-Cache for the programmed region to ensure data consistency when D-Cache is enabled
+    SCB_InvalidateDCache_by_Addr((void *)FMC_APROM_BANK1_BASE, DB_PROG_LEN);
+#endif
 
     /*
      *  Verify ...

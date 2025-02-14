@@ -174,6 +174,14 @@ int ethosu_semaphore_take(void *sem);
 int ethosu_semaphore_give(void *sem);
 
 /**
+ * Give semaphore from ISR.
+ *
+ * @param sem       Pointer to semaphore handle
+ * @returns 0 on success, else negative error code
+ */
+int ethosu_semaphore_give_from_ISR(void *sem);
+
+/**
  * Callback invoked just before the inference is started.
  *
  * @param drv       Pointer to driver handle

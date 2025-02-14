@@ -65,10 +65,6 @@ extern "C"
 #define AES_IN_SWAP             2UL     /*!< AES swap input data                     \hideinitializer */
 #define AES_IN_OUT_SWAP         3UL     /*!< AES swap both input and output data     \hideinitializer */
 
-#define CHAPOLY_MODE_CHACHA20   0UL     /*!< CHAPOLY select ChaCha20 mode            \hideinitializer */
-#define CHAPOLY_MODE_POLY1305   1UL     /*!< CHAPOLY select Poly1305 mode            \hideinitializer */
-#define CHAPOLY_MODE_AEAD       2UL     /*!< CHAPOLY select AEAD mode                \hideinitializer */
-
 #define SHA_MODE_SEL_SHA1       0UL     /*!< SHA engine select SHA1                  \hideinitializer */
 #define SHA_MODE_SEL_SHA2       0UL     /*!< SHA engine select SHA2                  \hideinitializer */
 #define SHA_MODE_SEL_SHA3       1UL     /*!< SHA engine select SHA3                  \hideinitializer */
@@ -307,22 +303,6 @@ typedef struct
 #define AES_DISABLE_INT(crypto)       ((crypto)->INTEN &= ~(CRYPTO_INTEN_AESIEN_Msk|CRYPTO_INTEN_AESEIEN_Msk))
 
 /**
-  * @brief This macro enables CHAPOLY interrupt.
-  * @param crypto     Specified crypto module
-  * @return None
-  * \hideinitializer
-  */
-#define CHAPOLY_ENABLE_INT(crypto)    ((crypto)->INTEN |= (CRYPTO_INTEN_CHAPOLYIEN_Msk|CRYPTO_INTEN_CHAPOLYEIEN_Msk))
-
-/**
-  * @brief This macro disables CHAPOLY interrupt.
-  * @param crypto     Specified crypto module
-  * @return None
-  * \hideinitializer
-  */
-#define CHAPOLY_DISABLE_INT(crypto)   ((crypto)->INTEN &= ~(CRYPTO_INTEN_CHAPOLYIEN_Msk|CRYPTO_INTEN_CHAPOLYEIEN_Msk))
-
-/**
   * @brief This macro gets AES interrupt flag.
   * @param crypto     Specified crypto module
   * @return AES interrupt flag.
@@ -337,22 +317,6 @@ typedef struct
   * \hideinitializer
   */
 #define AES_CLR_INT_FLAG(crypto)      ((crypto)->INTSTS = (CRYPTO_INTSTS_AESIF_Msk|CRYPTO_INTSTS_AESEIF_Msk))
-
-/**
-  * @brief This macro gets CHAPOLY interrupt flag.
-  * @param crypto     Specified crypto module
-  * @return CHAPOLY interrupt flag.
-  * \hideinitializer
-  */
-#define CHAPOLY_GET_INT_FLAG(crypto)  ((crypto)->INTSTS & (CRYPTO_INTSTS_CHAPOLYIF_Msk|CRYPTO_INTSTS_CHAPOLYEIF_Msk))
-
-/**
-  * @brief This macro clears CHAPOLY interrupt flag.
-  * @param crypto     Specified crypto module
-  * @return None
-  * \hideinitializer
-  */
-#define CHAPOLY_CLR_INT_FLAG(crypto)  ((crypto)->INTSTS = (CRYPTO_INTSTS_CHAPOLYIF_Msk|CRYPTO_INTSTS_CHAPOLYEIF_Msk))
 
 /**
   * @brief This macro enables AES key protection.
@@ -483,15 +447,6 @@ void AES_SetInitVect(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t au32IV[]);
 void AES_SetDMATransfer(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t u32SrcAddr, uint32_t u32DstAddr, uint32_t u32TransCnt);
 void AES_Start_KS(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t u32DMAMode, int ksel, int knum);
 void AES_SetKey_KS(CRYPTO_T *crypto, KS_MEM_Type mem, int32_t i32KeyIdx);
-
-void CHA_SetKeyandNonce(CRYPTO_T *crypto,  unsigned char *key, unsigned char *nonce, int counter);
-void CHA_SetDMATransfer(CRYPTO_T *crypto, uint8_t *u8pInputData,  uint8_t *u8pOutputData, int src_len);
-void CHA_Start(CRYPTO_T *crypto, int is_encrypt);
-void CHAPOLY_Complete(CRYPTO_T *crypto);
-void CHAPOLY_Start(CRYPTO_T *crypto);
-void POLY1305_SetKeyandClearNonce(CRYPTO_T *crypto,  unsigned char *key);
-void POLY1305_SetDMATransfer(CRYPTO_T *crypto, uint8_t *u8pInputData,  uint8_t *u8pOutputData, int src_len);
-void POLY1305_Start(CRYPTO_T *crypto);
 
 void SHA_Open(CRYPTO_T *crypto, uint32_t u32OpMode, uint32_t u32SwapType, uint32_t hmac_key_len);
 void SHA_Start(CRYPTO_T *crypto, uint32_t u32DMAMode);

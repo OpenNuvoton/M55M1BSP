@@ -9,14 +9,49 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
-#define TEST_NUMBER 1   /* page numbers */
-#define TEST_LENGTH 256 /* length */
+//------------------------------------------------------------------------------
+#define TEST_NUMBER                 1         /* page numbers */
+#define TEST_LENGTH                 256       /* length */
 
-#define SPI_FLASH_PORT  SPI0
+#define SPI_FLASH_PORT              SPI0
 
+/* SPI Flash Operation Code */
+#define OPCODE_DMY                  (0x00U)   /* Dummy data */
+#define OPCODE_WREN                 (0x06U)   /* Write enable */
+#define OPCODE_RDSR                 (0x05U)   /* Read status register #1*/
+#define OPCODE_WRSR                 (0x01U)   /* Write status register #1 */
+#define OPCODE_RDSR2                (0x35U)   /* Read status register #2*/
+#define OPCODE_WRSR2                (0x31U)   /* Write status register #2 */
+#define OPCODE_RDSR3                (0x15U)   /* Read status register #3*/
+#define OPCODE_WRSR3                (0x11U)   /* Write status register #3 */
+#define OPCODE_PP                   (0x02U)   /* Page program (up to 256 bytes) */
+#define OPCODE_SE_4K                (0x20U)   /* Erase 4KB sector */
+#define OPCODE_BE_32K               (0x52U)   /* Erase 32KB block */
+#define OPCODE_CHIP_ERASE           (0xC7U)   /* Erase whole flash chip */
+#define OPCODE_BE_64K               (0xD8U)   /* Erase 64KB block */
+#define OPCODE_READ_ID              (0x90U)   /* Read ID */
+#define OPCODE_RDID                 (0x9fU)   /* Read JEDEC ID */
+
+#define OPCODE_NORM_READ            (0x03U)   /* Read data bytes */
+#define OPCODE_FAST_READ            (0x0BU)   /* Read data bytes */
+#define OPCODE_FAST_DUAL_READ       (0x3BU)   /* Read data bytes */
+#define OPCODE_FAST_QUAD_READ       (0x6BU)   /* Read data bytes */
+#define OPCODE_FAST_QUAD_IO_READ    (0xEBU)  /* Read data bytes */
+
+#define FLH_IS_BUSY                 (0x01)
+
+#define FLH_W25Q80                  (0xEF13)
+#define FLH_W25Q16                  (0xEF14)
+#define FLH_W25Q32                  (0xEF15)
+#define FLH_W25Q64                  (0xEF16)
+#define FLH_W25Q128                 (0xEF17)
+#define FLH_W25Q256                 (0xEF18)
+
+//------------------------------------------------------------------------------
 static uint8_t s_au8SrcArray[TEST_LENGTH] = {0};
 static uint8_t s_au8DestArray[TEST_LENGTH] = {0};
 
+//------------------------------------------------------------------------------
 uint16_t SpiFlash_ReadMidDid(void);
 void SpiFlash_ChipErase(void);
 uint8_t SpiFlash_ReadStatusReg(void);
@@ -26,13 +61,14 @@ void SpiFlash_NormalPageProgram(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
 void SpiFlash_NormalRead(uint32_t u32StartAddress, uint8_t *u8DataBuffer);
 void SYS_Init(void);
 
+//------------------------------------------------------------------------------
 __STATIC_INLINE void wait_SPI_IS_BUSY(SPI_T *spi)
 {
-    volatile uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    volatile int32_t i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
     while (SPI_IS_BUSY(spi))
     {
-        if (--u32TimeOutCnt == 0)
+        if (--i32TimeOutCnt <= 0)
         {
             printf("Wait for SPI time-out!\n");
             break;
@@ -48,16 +84,16 @@ uint16_t SpiFlash_ReadMidDid(void)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x90, Read Manufacturer/Device ID
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x90);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_READ_ID);
 
     // send 24-bit '0', dummy
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
 
     // receive 16-bit
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
 
     // wait tx finish
     wait_SPI_IS_BUSY(SPI_FLASH_PORT);
@@ -77,7 +113,7 @@ void SpiFlash_ChipErase(void)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x06, Write enable
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_WREN);
 
     // wait tx finish
     wait_SPI_IS_BUSY(SPI_FLASH_PORT);
@@ -91,7 +127,7 @@ void SpiFlash_ChipErase(void)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0xC7, Chip Erase
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0xC7);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_CHIP_ERASE);
 
     // wait tx finish
     wait_SPI_IS_BUSY(SPI_FLASH_PORT);
@@ -108,10 +144,10 @@ uint8_t SpiFlash_ReadStatusReg(void)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x05, Read status register
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x05);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_RDSR);
 
     // read status
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
 
     // wait tx finish
     wait_SPI_IS_BUSY(SPI_FLASH_PORT);
@@ -131,7 +167,7 @@ void SpiFlash_WriteStatusReg(uint8_t u8Value)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x06, Write enable
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_WREN);
 
     // wait tx finish
     wait_SPI_IS_BUSY(SPI_FLASH_PORT);
@@ -145,7 +181,7 @@ void SpiFlash_WriteStatusReg(uint8_t u8Value)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x01, Write status register
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x01);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_WRSR);
 
     // write status
     SPI_WRITE_TX(SPI_FLASH_PORT, u8Value);
@@ -160,21 +196,20 @@ void SpiFlash_WriteStatusReg(uint8_t u8Value)
 int32_t SpiFlash_WaitReady(void)
 {
     uint8_t u8ReturnValue;
-    uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    volatile int32_t i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
     do
     {
-        if (--u32TimeOutCnt == 0)
+        if (--i32TimeOutCnt <= 0)
         {
             printf("Wait for SPI time-out!\n");
-            return -1;
+            return SPI_ERR_TIMEOUT;
         }
 
         u8ReturnValue = SpiFlash_ReadStatusReg();
-        u8ReturnValue = u8ReturnValue & 1;
-    } while (u8ReturnValue != 0); // check the BUSY bit
+    } while ((u8ReturnValue & FLH_IS_BUSY) != 0); // check the BUSY bit
 
-    return 0;
+    return SPI_OK;
 }
 
 void SpiFlash_NormalPageProgram(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
@@ -185,7 +220,7 @@ void SpiFlash_NormalPageProgram(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x06, Write enable
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x06);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_WREN);
 
     // wait tx finish
     wait_SPI_IS_BUSY(SPI_FLASH_PORT);
@@ -202,8 +237,8 @@ void SpiFlash_NormalPageProgram(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
 
     // send 24-bit start address
     SPI_WRITE_TX(SPI_FLASH_PORT, (u32StartAddress >> 16) & 0xFF);
-    SPI_WRITE_TX(SPI_FLASH_PORT, (u32StartAddress >> 8)  & 0xFF);
-    SPI_WRITE_TX(SPI_FLASH_PORT, u32StartAddress       & 0xFF);
+    SPI_WRITE_TX(SPI_FLASH_PORT, (u32StartAddress >> 8) & 0xFF);
+    SPI_WRITE_TX(SPI_FLASH_PORT, u32StartAddress & 0xFF);
 
     // write data
     while (1)
@@ -233,12 +268,12 @@ void SpiFlash_NormalRead(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
     SPI_SET_SS_LOW(SPI_FLASH_PORT);
 
     // send Command: 0x03, Read data
-    SPI_WRITE_TX(SPI_FLASH_PORT, 0x03);
+    SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_NORM_READ);
 
     // send 24-bit start address
     SPI_WRITE_TX(SPI_FLASH_PORT, (u32StartAddress >> 16) & 0xFF);
-    SPI_WRITE_TX(SPI_FLASH_PORT, (u32StartAddress >> 8)  & 0xFF);
-    SPI_WRITE_TX(SPI_FLASH_PORT, u32StartAddress       & 0xFF);
+    SPI_WRITE_TX(SPI_FLASH_PORT, (u32StartAddress >> 8) & 0xFF);
+    SPI_WRITE_TX(SPI_FLASH_PORT, u32StartAddress & 0xFF);
 
     wait_SPI_IS_BUSY(SPI_FLASH_PORT);
     // clear RX buffer
@@ -247,7 +282,7 @@ void SpiFlash_NormalRead(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
     // read data
     for (u32Cnt = 0; u32Cnt < 256; u32Cnt++)
     {
-        SPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
+        SPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
         wait_SPI_IS_BUSY(SPI_FLASH_PORT);
         u8DataBuffer[u32Cnt] = (uint8_t)SPI_READ_RX(SPI_FLASH_PORT);
     }
@@ -267,8 +302,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -305,10 +340,10 @@ void SYS_Init(void)
     SetDebugUartMFP();
 
     /* Setup SPI0 multi-function pins */
-    SYS->GPA_MFP0 |= (SYS_GPA_MFP0_PA0MFP_SPI0_MOSI |
-                      SYS_GPA_MFP0_PA1MFP_SPI0_MISO |
-                      SYS_GPA_MFP0_PA2MFP_SPI0_CLK  |
-                      SYS_GPA_MFP0_PA3MFP_SPI0_SS);
+    SET_SPI0_SS_PA3();
+    SET_SPI0_CLK_PA2();
+    SET_SPI0_MOSI_PA0();
+    SET_SPI0_MISO_PA1();
 
     /* Enable SPI0 clock pin (PA2) schmitt trigger */
     PA->SMTEN |= GPIO_SMTEN_SMTEN2_Msk;
@@ -349,16 +384,18 @@ int main(void)
 
     u16ID = SpiFlash_ReadMidDid();
 
-    if (u16ID == 0xEF13)
+    if (u16ID == FLH_W25Q80)
         printf("Flash found: W25Q80 ...\n");
-    else if (u16ID == 0xEF14)
+    else if (u16ID == FLH_W25Q16)
         printf("Flash found: W25Q16 ...\n");
-    else if (u16ID == 0xEF15)
+    else if (u16ID == FLH_W25Q32)
         printf("Flash found: W25Q32 ...\n");
-    else if (u16ID == 0xEF16)
+    else if (u16ID == FLH_W25Q64)
         printf("Flash found: W25Q64 ...\n");
-    else if (u16ID == 0xEF17)
+    else if (u16ID == FLH_W25Q128)
         printf("Flash found: W25Q128 ...\n");
+    else if (u16ID == FLH_W25Q256)
+        printf("Flash found: W25Q256 ...\n");
     else
     {
         printf("Wrong ID, 0x%x\n", u16ID);
@@ -372,7 +409,7 @@ int main(void)
     SpiFlash_ChipErase();
 
     /* Wait ready */
-    if (SpiFlash_WaitReady() < 0) return -1;
+    if (SpiFlash_WaitReady() < 0) return SPI_ERR_FAIL;
 
     printf("[OK]\n");
 
@@ -391,7 +428,7 @@ int main(void)
         /* page program */
         SpiFlash_NormalPageProgram(u32FlashAddress, s_au8SrcArray);
 
-        if (SpiFlash_WaitReady() < 0) return -1;
+        if (SpiFlash_WaitReady() < 0) return SPI_ERR_FAIL;
 
         u32FlashAddress += 0x100;
     }

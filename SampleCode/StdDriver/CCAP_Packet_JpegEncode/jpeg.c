@@ -11,19 +11,18 @@
 #include "jpeglib.h"
 #include "NuMicro.h"
 
-//
-// Encodes a 256 Greyscale image to JPEG directly to a memory buffer
-// libJEPG will malloc() the buffer so the caller must free() it when
-// they are finished with it.
-//
-// image    - the input greyscale image, 1 byte is 1 pixel.
-// width    - the width of the input image
-// height   - the height of the input image
-// quality  - target JPEG 'quality' factor (max 100)
-// comment  - optional JPEG NULL-termoinated comment, pass NULL for no comment.
-// jpegSize - output, the number of bytes in the output JPEG buffer
-// jpegBuf  - output, a pointer to the output JPEG buffer, must call free() when finished with it.
-//
+/* To encode packet image to JPEG directly to a memory buffer
+ * libJEPG will malloc() the buffer so the caller must free() it when
+ * they are finished with it.
+ *
+ * image    - the input greyscale image, 1 byte is 1 pixel.
+ * width    - the width of the input image
+ * height   - the height of the input image
+ * quality  - target JPEG 'quality' factor (max 100)
+ * comment  - optional JPEG NULL-termoinated comment, pass NULL for no comment.
+ * jpegSize - output, the number of bytes in the output JPEG buffer
+ * jpegBuf  - output, a pointer to the output JPEG buffer, must call free() when finished with it.
+ */
 void encode_jpeg_to_memory(unsigned char *image, int width, int height, int quality,
                            const char *comment, unsigned long *jpegSize, unsigned char **jpegBuf)
 {

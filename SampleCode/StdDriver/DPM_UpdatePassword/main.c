@@ -19,7 +19,7 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -59,13 +59,13 @@ int32_t main(void)
     /* Get DPM status */
     printf("Secure DPM manages Secure region debug authority.\n");
     printf("Get Secure DPM status:\n");
-    printf("Secure region debug is %s.\n", DPM_GetDebugDisable(SECURE_DPM) ? "Disabled" : "Enabled");
-    printf("Secure region debug is %s.\n\n", DPM_GetDebugLock(SECURE_DPM) ? "Locked" : "not Locked");
+    printf("Secure region debug is %s.\n", DPM_GetDebugDisable(DPM) ? "Disabled" : "Enabled");
+    printf("Secure region debug is %s.\n\n", DPM_GetDebugLock(DPM) ? "Locked" : "not Locked");
 
     /* Update password */
     printf("Update Secure DPM password:    ");
 
-    i32RetVal = DPM_SetPasswordUpdate(SECURE_DPM, au32Pwd_5);
+    i32RetVal = DPM_SetPasswordUpdate(DPM, au32Pwd_5);
 
     if (i32RetVal == 0)
     {
@@ -85,14 +85,14 @@ int32_t main(void)
     /* Compare password fail */
     printf("Compare with wrong password:   ");
 
-    i32RetVal = DPM_SetPasswordCompare(SECURE_DPM, au32Pwd_A);
+    i32RetVal = DPM_SetPasswordCompare(DPM, au32Pwd_A);
 
     if (i32RetVal == 0)
     {
-        if (DPM_GetPasswordErrorFlag(SECURE_DPM) == 1)
+        if (DPM_GetPasswordErrorFlag(DPM) == 1)
         {
             printf("Password is wrong.\n");
-            DPM_ClearPasswordErrorFlag(SECURE_DPM);
+            DPM_ClearPasswordErrorFlag(DPM);
         }
         else
         {
@@ -113,14 +113,14 @@ int32_t main(void)
     /* Compare password pass */
     printf("Compare with correct password: ");
 
-    i32RetVal = DPM_SetPasswordCompare(SECURE_DPM, au32Pwd_5);
+    i32RetVal = DPM_SetPasswordCompare(DPM, au32Pwd_5);
 
     if (i32RetVal == 0)
     {
-        if (DPM_GetPasswordErrorFlag(SECURE_DPM) == 1)
+        if (DPM_GetPasswordErrorFlag(DPM) == 1)
         {
             printf("Password is wrong.\n");
-            DPM_ClearPasswordErrorFlag(SECURE_DPM);
+            DPM_ClearPasswordErrorFlag(DPM);
         }
         else if (i32RetVal == DPM_TIMEOUT_ERR)
         {

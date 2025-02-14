@@ -90,6 +90,22 @@ typedef struct
      * |        |          |Set this bit as following according to the polarity of off-chip USB VBUS power switch.
      * |        |          |0 = The polarity of off-chip USB VBUS power switch valid status is high.
      * |        |          |1 = The polarity of off-chip USB VBUS power switch valid status is low.
+     * |[10:8]  |FSEL      |Reference Clock Frequency Select
+     * |        |          |Selects OTG PHY reference clock frequency .
+     * |        |          |000 = Reference clock is 19.2 MHz .
+     * |        |          |001 = Reference clock is 20 MHz .
+     * |        |          |010 = Reference clock is 24 MHz .
+     * |        |          |011 = Reference clock is 16 MHz .
+     * |        |          |100 = Reserved .
+     * |        |          |101 = Reserved .
+     * |        |          |110 = Reference clock is 26MHz .
+     * |        |          |111 = Reference clock is 32 MHz .
+     * |[12]    |OCPOL     |Over Current Polarity
+     * |        |          |The polarity of off-chip USB VBUS power switch's overcurrent signal depends on the selected component
+     * |        |          |A USB_VBUS_ST pin is used to monitor the signal of the off-chip USB VBUS power switch's overcurrent signal.Set this bit as following according to the polarity of off-chip USB VBUS power switch's overcurrent
+     * |        |          |The overcurrent signal be used in USB HOST.
+     * |        |          |0 = The polarity of off-chip USB VBUS power switch's overcurrent is low.
+     * |        |          |1 = The polarity of off-chip USB VBUS power switch's overcurrent is high.
      * @var HSOTG_T::INTEN
      * Offset: 0x08  HSOTG Interrupt Enable Register
      * ---------------------------------------------------------------------------------------------------
@@ -287,6 +303,12 @@ typedef struct
 
 #define HSOTG_PHYCTL_VBSTSPOL_Pos        (5)                                               /*!< HSOTG_T::PHYCTL: VBSTSPOL Position     */
 #define HSOTG_PHYCTL_VBSTSPOL_Msk        (0x1ul << HSOTG_PHYCTL_VBSTSPOL_Pos)              /*!< HSOTG_T::PHYCTL: VBSTSPOL Mask         */
+
+#define HSOTG_PHYCTL_FSEL_Pos            (8)                                               /*!< HSOTG_T::PHYCTL: FSEL Position         */
+#define HSOTG_PHYCTL_FSEL_Msk            (0x7ul << HSOTG_PHYCTL_FSEL_Pos)                  /*!< HSOTG_T::PHYCTL: FSEL Mask             */
+
+#define HSOTG_PHYCTL_OCPOL_Pos           (12)                                              /*!< HSOTG_T::PHYCTL: OCPOL Position        */
+#define HSOTG_PHYCTL_OCPOL_Msk           (0x1ul << HSOTG_PHYCTL_OCPOL_Pos)                 /*!< HSOTG_T::PHYCTL: OCPOL Mask            */
 
 #define HSOTG_INTEN_ROLECHGIEN_Pos       (0)                                               /*!< HSOTG_T::INTEN: ROLECHGIEN Position    */
 #define HSOTG_INTEN_ROLECHGIEN_Msk       (0x1ul << HSOTG_INTEN_ROLECHGIEN_Pos)             /*!< HSOTG_T::INTEN: ROLECHGIEN Mask        */

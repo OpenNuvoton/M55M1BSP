@@ -20,19 +20,11 @@
 #include <cinttypes>
 
 /* Initialise the model */
-arm::app::Model::~Model()
-{
-   delete this->m_pInterpreter;
-    /**
-     * No clean-up function available for allocator in TensorFlow Lite Micro yet.
-     **/
-}
 
 arm::app::Model::Model() :
     m_inited (false),
     m_type(kTfLiteNoType)
 {
-    this->m_pErrorReporter = tflite::GetMicroErrorReporter();
 }
 
 bool arm::app::Model::Init(uint8_t* tensorArenaAddr,
@@ -50,10 +42,10 @@ bool arm::app::Model::Init(uint8_t* tensorArenaAddr,
     this->m_pModel = ::tflite::GetModel(nnModelAddr);
 
     if (this->m_pModel->version() != TFLITE_SCHEMA_VERSION) {
-        this->m_pErrorReporter->Report(
-            "[ERROR] model's schema version %d is not equal "
-            "to supported version %d.",
-            this->m_pModel->version(), TFLITE_SCHEMA_VERSION);
+        printf_err("Model's schema version %" PRIu32 " is not equal "
+                   "to supported version %d.",
+                   this->m_pModel->version(),
+                   TFLITE_SCHEMA_VERSION);
         return false;
     }
 
@@ -79,8 +71,7 @@ bool arm::app::Model::Init(uint8_t* tensorArenaAddr,
 
         this->m_pAllocator = tflite::MicroAllocator::Create(
                                         tensorArenaAddr,
-                                        tensorArenaSize,
-                                        this->m_pErrorReporter);
+                                        tensorArenaSize);
 
         if (!this->m_pAllocator) {
             printf_err("Failed to create allocator\n");
@@ -91,9 +82,8 @@ bool arm::app::Model::Init(uint8_t* tensorArenaAddr,
         debug("Using existing allocator @ 0x%p\n", this->m_pAllocator);
     }
 
-    this->m_pInterpreter = new ::tflite::MicroInterpreter(
-        this->m_pModel, this->GetOpResolver(),
-        this->m_pAllocator, this->m_pErrorReporter);
+    this->m_pInterpreter = std::make_unique<tflite::MicroInterpreter>(
+        this->m_pModel, this->GetOpResolver(), this->m_pAllocator);
 
     if (!this->m_pInterpreter) {
         printf_err("Failed to allocate interpreter\n");
@@ -106,7 +96,6 @@ bool arm::app::Model::Init(uint8_t* tensorArenaAddr,
 
     if (allocate_status != kTfLiteOk) {
         printf_err("tensor allocation failed!\n");
-        delete this->m_pInterpreter;
         return false;
     }
 
@@ -209,10 +198,9 @@ void arm::app::Model::LogInterpreterInfo()
     for (size_t i = 0 ; i < nOperators; ++i) {
         const tflite::Operator* op = subgraph->operators()->Get(i);
         const tflite::OperatorCode* opcode = opcodes->Get(op->opcode_index());
-        const TfLiteRegistration* reg = nullptr;
+        const TFLMRegistration* reg = nullptr;
 
-        tflite::GetRegistrationFromOpCode(opcode, this->GetOpResolver(),
-                                          this->m_pErrorReporter, &reg);
+        tflite::GetRegistrationFromOpCode(opcode, this->GetOpResolver(), &reg);
         std::string opName;
 
         if (reg) {

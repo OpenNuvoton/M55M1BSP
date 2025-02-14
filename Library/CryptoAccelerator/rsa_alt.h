@@ -66,9 +66,7 @@ typedef struct mbedtls_rsa_context
     mbedtls_mpi Vi;             /*!<  The cached blinding value. */
     mbedtls_mpi Vf;             /*!<  The cached un-blinding value. */
 
-    int padding;                /*!< Selects padding mode:
-                                     #MBEDTLS_RSA_PKCS_V15 for 1.5 padding and
-                                     #MBEDTLS_RSA_PKCS_V21 for OAEP or PSS. */
+    int padding;                /*!< Selects padding mode. */
     int hash_id;                /*!< Hash identifier of mbedtls_md_type_t type,
                                      as specified in md.h for use in the MGF
                                      mask generating function used in the
@@ -78,7 +76,6 @@ typedef struct mbedtls_rsa_context
 #endif
 
     mbedtls_mpi M;
-
     uint32_t rsa_buf[512 / 4];    //DADDR
 
 }

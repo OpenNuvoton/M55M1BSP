@@ -17,36 +17,11 @@
  */
 
 /*
- * This is a simplified picture of the M55A1 memory system.
- * Please refer to the M55A1 Technical Reference Manual for
- * further information.
- *
- *
- * +---------------+   +---------------+  +-------------------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM/SRAM2        |
- * |               |   |               |  +-------------------+
- * |               |   |               |
- * |               |   |               |  +-------------------+ 
- * |  M1      M0   |   |               +--+ DTCM/SRAM2        |
- * +---+-------+---+   +-------+-------+  +-------------------+
- *     |       |               |
- *     |   +---+---------------+-----+
- *     |   | AMBA AXI NIC-400-Lite   |
- *     |   +---+-----------------+---+
- *     |       |                 |
- * +---+-------+------------+ +--+-------+
- * | AMBA AHB               | | SRAM 0   |
- * +---+--------+--------+--+ | SRAM 1   |
- *     |                      +----------+
- * +---+---+ 
- * | FLASH |
- * +-------+
- *
  * +-----------------------+-------------+-------------+----+-----------------------------------------------------+
  * |  Memory region name   | Base addr   |    Size     |IDAU|  MCC load address + remarks                         |
  * +-----------------------+-------------+-------------+----+-----------------------------------------------------+
- * | ITCM                  | 0x1000_0000 | 0x0002_0000 | NS | 0x1000_0000; 128 kiB.                               |
- * | ITCM                  | 0x0000_0000 | 0x0002_0000 | S  | Secure alias for NS ITCM                            |
+ * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | 0x1000_0000; 64 kiB.                               |
+ * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | Secure alias for NS ITCM                            |
  * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | 0x1010_0000; 2 MiB                                  |
  * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | Secure alias for NS BRAM                            |
  * | SRAM01                | 0x3010_0000 | 0x0010_0000 | NS | 2 banks of 512 kiB; 3cc latency)                    |
@@ -69,6 +44,7 @@ __HEAP_SIZE  = 0x00008000;
 /* System memory brief */
 MEMORY
 {
+  ITCM   (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00008000
   FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x000F0000
   DTCM   (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00010000
   NSC    (rwx) : ORIGIN = 0x001F0000, LENGTH = 0x00010000
@@ -173,6 +149,7 @@ SECTIONS
     __copy_table_end__ = .;
   } > FLASH
 
+  
   __start_NSC = .;
   .gnu.sgstubs :
   {
@@ -182,11 +159,7 @@ SECTIONS
   } > FLASH
   __end_NSC = .;
 
-  __flash_total = ALIGN(4);
-
-  ASSERT( __flash_total < (ORIGIN(FLASH) + LENGTH(FLASH)), "FLASH overflow")
-
-  /**
+/**
    * Location counter can end up 2byte aligned with narrow Thumb code but
    * __etext is assumed by startup code to be the LMA of a section in DTCM
    * which must be 4byte aligned

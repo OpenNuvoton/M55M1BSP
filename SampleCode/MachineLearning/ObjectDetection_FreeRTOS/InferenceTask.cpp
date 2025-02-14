@@ -26,7 +26,7 @@ bool InferenceProcess::RunJob(
     std::vector<object_detection::DetectionResult> *results
 )
 {
-    info("Inference process task run job...\n");
+    //    info("Inference process task run job...\n");
 
 #if defined(__PROFILE__)
     uint64_t u64StartCycle;
@@ -102,7 +102,12 @@ extern "C" {
     int ethosu_semaphore_take(void *sem)
     {
         SemaphoreHandle_t handle = reinterpret_cast<SemaphoreHandle_t>(sem);
-        xSemaphoreTake(handle, portMAX_DELAY);
+
+        if (xSemaphoreTake(handle, portMAX_DELAY) == pdFALSE)
+        {
+            printf("xSemaphoreTake return false \n");
+        }
+
         return 0;
     }
 
@@ -110,6 +115,20 @@ extern "C" {
     {
         SemaphoreHandle_t handle = reinterpret_cast<SemaphoreHandle_t>(sem);
         xSemaphoreGive(handle);
+        return 0;
+    }
+
+    int ethosu_semaphore_give_from_ISR(void *sem)
+    {
+        SemaphoreHandle_t handle = reinterpret_cast<SemaphoreHandle_t>(sem);
+        BaseType_t xHighPriorityTaskWoken = pdFALSE;
+
+        if (xSemaphoreGiveFromISR(handle, &xHighPriorityTaskWoken) == pdFALSE)
+        {
+            printf("xSemaphoreGiveFromISR return false \n");
+        }
+
+        portYIELD_FROM_ISR(xHighPriorityTaskWoken);
         return 0;
     }
 }
@@ -128,13 +147,13 @@ void inferenceProcessTask(void *pvParameters)
         xQueueReceive(params.queueHandle, &xJob, portMAX_DELAY);
 
         inferenceProcess.RunJob(
-            xJob->pPostProc,
-            xJob->modelCols,
-            xJob->mode1Rows,
-            xJob->srcImgWidth,
-            xJob->srcImgHeight,
-            xJob->results
-        );
+                            xJob->pPostProc,
+                            xJob->modelCols,
+                            xJob->mode1Rows,
+                            xJob->srcImgWidth,
+                            xJob->srcImgHeight,
+                            xJob->results
+                        );
 
         xQueueSend(xJob->responseQueue, &xJob, portMAX_DELAY);
     }

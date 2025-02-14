@@ -35,20 +35,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -60,12 +48,6 @@ void SYS_Init(void)
     /* Enable LPADC module clock */
     CLK_EnableModuleClock(LPADC0_MODULE);
 
-
-    /* Workaround(TESTCHIP_ONLY)  */
-    /* To measure the VBG voltage in TC8263, ACMP_N must be set through ACMP to turn on VBG.*/
-    CLK_EnableModuleClock(ACMP01_MODULE);
-    ACMP_Open(ACMP01, 0, ACMP_CTL_NEGSEL_VBG, ACMP_CTL_HYSTERESIS_DISABLE);
-
     /* Debug UART clock setting*/
     SetDebugUartCLK();
     /*----------------------------------------------------------------------*/
@@ -73,7 +55,7 @@ void SYS_Init(void)
     /*----------------------------------------------------------------------*/
 
     /* Set PB multi-function pins for Debug UART RXD and TXD */
-    SetDebugUartMFP();;
+    SetDebugUartMFP();
 
 }
 
@@ -91,12 +73,9 @@ void LPADC_FunctionTest()
     printf("|   LPADC clock divider          = 1                                   |\n");
     printf("|   LPADC clock                  = 12 MHz / 1 = 12 MHz                 |\n");
     printf("|   LPADC extended sampling time = 40                                  |\n");
-    printf("|   LPADC conversion time = 20 + LPADC extended sampling time = 40     |\n");
+    printf("|   LPADC conversion time = 20 + LPADC extended sampling time = 60     |\n");
     printf("|   LPADC conversion rate = 12 MHz / 60 = 200 kSPS                     |\n");
     printf("+----------------------------------------------------------------------+\n");
-
-    /* LPADC Calibration */
-    LPADC_Calibration(LPADC0);
 
     /* Set input mode as single-end, Single mode, and select channel 31 (band-gap voltage) */
     LPADC_Open(LPADC0, LPADC_ADCR_DIFFEN_SINGLE_END, LPADC_ADCR_ADMD_SINGLE, BIT31);

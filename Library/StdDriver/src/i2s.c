@@ -34,15 +34,10 @@ uint32_t I2S_GetSourceClockFreq(I2S_T *i2s)
     if (i2s == I2S0)
     {
         /* get I2S selection clock source */
-        //u32ClkSrcSel = (CLK->I2SSEL & CLK_I2SSEL_I2S0SEL_Msk);
-        u32ClkSrcSel = CLK_GetModuleClockSource(I2S0_MODULE);
+        u32ClkSrcSel = (CLK_GetModuleClockSource(I2S0_MODULE) << CLK_I2SSEL_I2S0SEL_Pos);
 
         switch (u32ClkSrcSel)
         {
-            case CLK_I2SSEL_I2S0SEL_HXT:
-                u32Freq = __HXT;
-                break;
-
             case CLK_I2SSEL_I2S0SEL_APLL1_DIV2:
                 u32Freq = (CLK_GetAPLL1ClockFreq() >> 1);
                 break;
@@ -63,22 +58,21 @@ uint32_t I2S_GetSourceClockFreq(I2S_T *i2s)
                 u32Freq = __HIRC48M;
                 break;
 
+            case CLK_I2SSEL_I2S0SEL_HXT:
             default:
                 u32Freq = __HXT;
                 break;
         }
+
+        u32Freq /= (CLK_GetModuleClockDivider(I2S0_MODULE) + 1UL);
     }
     else if (i2s == I2S1)
     {
         /* get I2S selection clock source */
-        u32ClkSrcSel = CLK->I2SSEL & CLK_I2SSEL_I2S1SEL_Msk;
+        u32ClkSrcSel = (CLK_GetModuleClockSource(I2S1_MODULE) << CLK_I2SSEL_I2S1SEL_Pos);
 
         switch (u32ClkSrcSel)
         {
-            case CLK_I2SSEL_I2S1SEL_HXT:
-                u32Freq = __HXT;
-                break;
-
             case CLK_I2SSEL_I2S1SEL_APLL1_DIV2:
                 u32Freq = (CLK_GetAPLL1ClockFreq() >> 1);
                 break;
@@ -99,10 +93,13 @@ uint32_t I2S_GetSourceClockFreq(I2S_T *i2s)
                 u32Freq = __HIRC48M;
                 break;
 
+            case CLK_I2SSEL_I2S1SEL_HXT:
             default:
                 u32Freq = __HXT;
                 break;
         }
+
+        u32Freq /= (CLK_GetModuleClockDivider(I2S1_MODULE) + 1UL);
     }
 
     return u32Freq;
@@ -138,9 +135,13 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
 {
     uint16_t u16Divider;
     uint32_t u32BitRate, u32SrcClk;
+    uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
-    /* Unlock protected registers for ISP function */
-    SYS_UnlockReg();
+    if (u32RegLockLevel)
+    {
+        /* Unlock protected registers for ISP function */
+        SYS_UnlockReg();
+    }
 
     if (i2s == I2S0)
     {
@@ -151,8 +152,11 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
         SYS_ResetModule(SYS_I2S1RST);
     }
 
-    /* Lock protected registers */
-    SYS_LockReg();
+    if (u32RegLockLevel)
+    {
+        /* Lock protected registers */
+        SYS_LockReg();
+    }
 
     i2s->CTL0 = (u32MasterSlave | u32WordWidth | u32MonoData | u32DataFormat);
     i2s->CTL1 = (I2S_FIFO_TX_LEVEL_WORD_8 | I2S_FIFO_RX_LEVEL_WORD_8);

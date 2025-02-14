@@ -21,7 +21,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/fully_connected.h"
 #include "tensorflow/lite/micro/kernels/softmax.h"
 #include "tensorflow/lite/micro/kernels/svdf.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/micro_profiler.h"
 #include "tensorflow/lite/micro/models/keyword_scrambled_8bit_model_data.h"
@@ -48,7 +48,7 @@ uint8_t op_resolver_buffer[sizeof(KeywordOpResolver)];
 
 // Initialize benchmark runner instance explicitly to avoid global init order
 // issues on Sparkfun. Use new since static variables within a method
-// are automatically surrounded by locking, which breaks bluepill and stm32f4.
+// are automatically surrounded by locking, which breaks bluepill.
 KeywordBenchmarkRunner* CreateBenchmarkRunner(MicroProfiler* profiler) {
   // We allocate the KeywordOpResolver from a global buffer because the object's
   // lifetime must exceed that of the KeywordBenchmarkRunner object.

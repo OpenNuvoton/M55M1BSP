@@ -1,0 +1,55 @@
+#! armclang -E --target=arm-arm-none-eabi -mcpu=cortex-m55 -xc
+; command above MUST be in first line (no comment above!)
+
+#define STACK_SIZE      0x00000800
+#define HEAP_SIZE       0x00000800
+
+#define FLASH_START     0x00100000
+#define FLASH_SIZE      0x00004000
+
+#define SRAM_START      0x20100000
+#define SRAM_SIZE	    0x00100000
+
+#define XOM_START	    0x00104000
+#define XOM_SIZE        0x00002000
+
+#define __STACK_TOP    (SRAM_START + SRAM_SIZE)
+#define __HEAP_BASE    (AlignExpr(+0, 8))                               /* starts after RW_RAM section, 8 byte aligned */
+
+FLASH FLASH_START
+{
+    FLASH +0
+    {
+        *.o (RESET, +First)
+        *(InRoot$$Sections)
+        ; Make sure reset_handler ends up in root segment
+        startup_M55M1.o
+        .ANY (+RO)
+    }
+
+    SRAM SRAM_START
+    {
+        .ANY (+RW +ZI)
+    }
+	
+#if HEAP_SIZE > 0
+    ARM_LIB_HEAP  __HEAP_BASE EMPTY  HEAP_SIZE {}       ; Reserve empty region for heap
+#endif
+	ARM_LIB_STACK __STACK_TOP EMPTY - STACK_SIZE {}     ; Reserve empty region for stack
+}
+
+XOM0 XOM_START
+{
+    XOM0_ROM +0
+    {
+		; Enable "Execute-only code" option of xom.c
+        * (+XO)
+    }
+
+    ; We should not use RW / ZI in XOM. 
+	; Add an empty section to detect them.
+    XOM0_SRAM 0x0 0x0
+    {
+        xom.o (+RW, +ZI)
+    }
+}

@@ -11,19 +11,30 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
+//------------------------------------------------------------------------------
 #define SPI_MASTER_TX_DMA_CH 0
 #define SPI_MASTER_RX_DMA_CH 1
 #define SPI_OPENED_CH   ((1 << SPI_MASTER_TX_DMA_CH) | (1 << SPI_MASTER_RX_DMA_CH))
 
 #define DATA_COUNT      32
-#define TEST_CYCLE      10000
+#define TEST_CYCLE      1000
 #define TEST_PATTERN    0x55000000
 #define SPI_CLK_FREQ    2000000
 
+//------------------------------------------------------------------------------
 /* Global variable declaration */
+/* Buffer for SPI0 data transfer with PDMA */
+#if (NVT_DCACHE_ON == 1)
+/* DCache-line aligned buffer for SPI0 data transfer with PDMA */
+uint32_t g_au32MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+uint32_t g_au32MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+#else
+/* Buffer for SPI0 data transfer with PDMA when DCache is disabled */
 uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT];
 uint32_t g_au32MasterRxBuffer[DATA_COUNT];
+#endif
 
+//------------------------------------------------------------------------------
 void SYS_Init(void)
 {
     /* Enable Internal RC 12MHz clock */
@@ -32,8 +43,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -72,14 +83,10 @@ void SYS_Init(void)
     /* Setup SPI0 multi-function pins */
     /* PA.3 is SPI0_SS,   PA.2 is SPI0_CLK,
        PA.1 is SPI0_MISO, PA.0 is SPI0_MOSI*/
-    SYS->GPA_MFP0 = (SYS->GPA_MFP0 & ~(SYS_GPA_MFP0_PA3MFP_Msk |
-                                       SYS_GPA_MFP0_PA2MFP_Msk |
-                                       SYS_GPA_MFP0_PA1MFP_Msk |
-                                       SYS_GPA_MFP0_PA0MFP_Msk)) |
-                    (SYS_GPA_MFP0_PA3MFP_SPI0_SS |
-                     SYS_GPA_MFP0_PA2MFP_SPI0_CLK |
-                     SYS_GPA_MFP0_PA1MFP_SPI0_MISO |
-                     SYS_GPA_MFP0_PA0MFP_SPI0_MOSI);
+    SET_SPI0_SS_PA3();
+    SET_SPI0_CLK_PA2();
+    SET_SPI0_MOSI_PA0();
+    SET_SPI0_MISO_PA1();
 }
 
 void SPI_Init(void)
@@ -103,6 +110,12 @@ void SpiLoopTest_WithPDMA(void)
     uint32_t u32TimeOutCount;
 
     printf("\nSPI0 Loopback test with PDMA \n");
+
+#if (NVT_DCACHE_ON == 1)
+    /* If DCACHE is enabled, clean the data cache for the master to slave test pattern before using it */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_CleanDCache_by_Addr((uint32_t *)&g_au32MasterToSlaveTestPattern, sizeof(g_au32MasterToSlaveTestPattern));
+#endif
 
     /* Source data initiation */
     for (u32DataCount = 0; u32DataCount < DATA_COUNT; u32DataCount++)
@@ -149,6 +162,11 @@ void SpiLoopTest_WithPDMA(void)
         Destination Address = Increasing
         Burst Type = Single Transfer
     =========================================================================*/
+#if (NVT_DCACHE_ON == 1)
+    /* If DCACHE is enabled, clean the data cache for the destination buffer before writing to it */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_InvalidateDCache_by_Addr((uint32_t *)&g_au32MasterRxBuffer, sizeof(g_au32MasterRxBuffer));
+#endif
     /* Set transfer width (32 bits) and transfer count */
     PDMA_SetTransferCnt(PDMA0, SPI_MASTER_RX_DMA_CH, PDMA_WIDTH_32, DATA_COUNT);
     /* Set source/destination address and attributes */
@@ -169,7 +187,7 @@ void SpiLoopTest_WithPDMA(void)
     for (u32TestCycle = 0; u32TestCycle < TEST_CYCLE; u32TestCycle++)
     {
         if ((u32TestCycle & 0x1FF) == 0)
-            putchar('.');
+            printf(".");
 
         /* setup timeout */
         u32TimeOutCount = SystemCoreClock;
@@ -190,6 +208,12 @@ void SpiLoopTest_WithPDMA(void)
                     /* Disable SPI master's PDMA transfer function */
                     SPI_DISABLE_TX_PDMA(SPI0);
                     SPI_DISABLE_RX_PDMA(SPI0);
+
+#if (NVT_DCACHE_ON == 1)
+                    /* If DCACHE is enabled, invalidate the data cache for the source buffer */
+                    /* This is to ensure that the data written to the cache is actually written to the memory */
+                    SCB_InvalidateDCache_by_Addr((uint32_t *)&g_au32MasterToSlaveTestPattern, sizeof(g_au32MasterToSlaveTestPattern));
+#endif
 
                     /* Check the transfer data */
                     for (u32DataCount = 0; u32DataCount < DATA_COUNT; u32DataCount++)
@@ -320,4 +344,3 @@ int main(void)
 }
 
 /*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/
-

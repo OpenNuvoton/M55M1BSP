@@ -1,14 +1,13 @@
 /**************************************************************************//**
  * @file     main.c
  * @version  V1.00
- * @brief    Show how to wake up system form NPD Power-down mode by different wakeup sources.
+ * @brief    Show how to wake up system from NPD0-NPD4 Power-down mode.
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #include <stdio.h>
 #include "NuMicro.h"
-
 
 void PowerDownFunction(void);
 void WakeUpBODFunction(uint32_t u32PDMode);
@@ -21,9 +20,9 @@ void SYS_Init(void);
 void PowerDownFunction(void)
 {
     uint32_t u32TimeOutCnt;
+    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
     /* Check if all the debug messages are finished */
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
     UART_WAIT_TX_EMPTY(DEBUG_PORT)
 
     if (--u32TimeOutCnt == 0) break;
@@ -37,17 +36,33 @@ void PowerDownFunction(void)
 /*---------------------------------------------------------------------------------------------------------*/
 void WakeUpBODFunction(uint32_t u32PDMode)
 {
-    /* Select Power-down mode */
+    /* Select the Power-down mode */
     PMC_SetPowerDownMode(u32PDMode, PMC_PLCTL_PLSEL_PL0);
 
-    /* Enable Brown-out detector function */
+    /* Enable the Brown-out Detector function */
     SYS_ENABLE_BOD();
 
-    /* Set Brown-out detector voltage level to 3.0V */
+    /* Enable the Brown-out Detector for power drop wake-up function. */
+    SYS_SET_BOD_WAKEUP(SYS_BODCTL_BODWKEN_DROP);
+
+    /* Set the Brown-out Detector voltage level to 3.0V */
     SYS_SET_BOD_LEVEL(SYS_BODCTL_BODVL_3_0V);
 
-    /* Enable Brown-out detector reset function */
+    /* Enable the Brown-out Detector interrupt function */
     SYS_DISABLE_BOD_RST();
+
+    /* Clear PMC interrupt flag */
+    PMC->INTSTS |= PMC_INTSTS_CLRWK_Msk;
+
+    /* Enable PMC wake-up interrupt */
+    PMC_ENABLE_WKINT();
+
+    /* Enable Brown-out detector and Power-down wake-up interrupt */
+    NVIC_EnableIRQ(BODOUT_IRQn);
+    NVIC_EnableIRQ(PMC_IRQn);
+
+    /* SCLK is invalid in power down mode, The de-glitch time must be change to LIRC before system enters power down mode */
+    SYS_SET_BODDGSEL(SYS_BODCTL_BODDGSEL_LIRC);
 
     /* Enter to Power-down mode and wait for wake-up reset happen */
     PowerDownFunction();
@@ -79,8 +94,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC 12MHz clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -101,15 +116,42 @@ void SYS_Init(void)
     SYS_LockReg();
 }
 
+/*---------------------------------------------------------------------------------------------------------*/
+/*  Brown Out Detector IRQ Handler                                                                         */
+/*---------------------------------------------------------------------------------------------------------*/
+NVT_ITCM void BODOUT_IRQHandler(void)
+{
+    uint32_t u32TimeOutCnt = SystemCoreClock >> 1;
+
+    /* Clear BOD Interrupt Flag */
+    SYS_CLEAR_BOD_INT_FLAG();
+
+    printf("Brown Out is Detected.\n");
+
+    /* Wait BOD interrupt flag clear */
+    while (SYS->BODSTS & SYS_BODSTS_BODIF_Msk)
+    {
+        if (--u32TimeOutCnt == 0) break;
+    }
+}
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*  PMC IRQ Handler                                                                                        */
+/*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void PMC_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = SystemCoreClock >> 1;
+
     printf("Wake-up!!!\n");
 
     /* Clear PMC interrupt flag */
     PMC->INTSTS |= PMC_INTSTS_CLRWK_Msk;
 
-    /* CPU read interrupt flag register to wait write(clear) instruction completement */
-    inp32(&PMC->INTSTS);
+    /* Wait PMC interrupt flag clear */
+    while (PMC->INTSTS)
+    {
+        if (--u32TimeOutCnt == 0) break;
+    }
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -136,23 +178,14 @@ int32_t main(void)
         printf("+-----------------------------------------------------------------+\n");
         printf("|[1] NPD0 Wake-up by BOD Interrupt.                               |\n");
         printf("|[2] NPD1 Wake-up by BOD Interrupt.                               |\n");
-#if 0   // TESTCHIP_ONLY not support        
         printf("|[3] NPD2 Wake-up by BOD Interrupt.                               |\n");
         printf("|[4] NPD3 Wake-up by BOD Interrupt.                               |\n");
         printf("|[5] NPD4 Wake-up by BOD Interrupt.                               |\n");
-#endif
         printf("+-----------------------------------------------------------------+\n");
         u8Item = (uint8_t)getchar();
 
         /* Unlock protected registers */
         SYS_UnlockReg();
-
-        /* Enable PMC Interrupt */
-        PMC_ENABLE_INT();
-        NVIC_EnableIRQ(PMC_IRQn);
-
-        /* Disable wake-up timer */
-        PMC_DisableSTMR();
 
         switch (u8Item)
         {
@@ -165,7 +198,6 @@ int32_t main(void)
                 printf("Enter to NPD1 Power-down mode......\n");
                 WakeUpBODFunction(PMC_NPD1);
                 break;
-#if 0   // TESTCHIP_ONLY not support
 
             case '3':
                 printf("Enter to NPD2 Power-down mode......\n");
@@ -181,7 +213,6 @@ int32_t main(void)
                 printf("Enter to NPD4 Power-down mode......\n");
                 WakeUpBODFunction(PMC_NPD4);
                 break;
-#endif
 
             default:
                 break;

@@ -53,16 +53,16 @@
                 <option>
                     <name>GRuntimeLibSelect</name>
                     <version>0</version>
-                    <state>0</state>
+                    <state>2</state>
                 </option>
                 <option>
                     <name>GRuntimeLibSelectSlave</name>
                     <version>0</version>
-                    <state>0</state>
+                    <state>2</state>
                 </option>
                 <option>
                     <name>RTDescription</name>
-                    <state>Do not link with a runtime library.</state>
+                    <state>To be used with a complete configuration of the C/C++14 runtime library. Full locale interface, C locale, file descriptor support, multibytes in printf and scanf, and hex floats in strtod.</state>
                 </option>
                 <option>
                     <name>OGProductVersion</name>
@@ -70,7 +70,7 @@
                 </option>
                 <option>
                     <name>OGLastSavedByProductVersion</name>
-                    <state>9.40.1.63870</state>
+                    <state>9.50.2.71646</state>
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
@@ -94,7 +94,7 @@
                 </option>
                 <option>
                     <name>RTConfigPath2</name>
-                    <state></state>
+                    <state>$TOOLKIT_DIR$\inc\c\DLib_Config_Full.h</state>
                 </option>
                 <option>
                     <name>GBECoreSlave</name>
@@ -180,7 +180,7 @@
                 </option>
                 <option>
                     <name>DSPExtension</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>TrustZone</name>
@@ -271,7 +271,7 @@
                 </option>
                 <option>
                     <name>CCDiagSuppress</name>
-                    <state></state>
+                    <state>Pe550, Pa093</state>
                 </option>
                 <option>
                     <name>CCDiagRemark</name>
@@ -308,11 +308,11 @@
                 </option>
                 <option>
                     <name>IExtraOptionsCheck</name>
-                    <state>1</state>
+                    <state>0</state>
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state>--diag_suppress Pe550
+                    <state>
 </state>
                 </option>
                 <option>
@@ -354,7 +354,7 @@
                 <option>
                     <name>CCIncludePath2</name>
                     <state>$PROJ_DIR$\..\..\..\..\Library\CMSIS\Core\Include</state>
-                    <state>$PROJ_DIR$\..\..\..\..\Library\CMSIS\NN\Include</state>
+                    <state>$PROJ_DIR$\..\..\..\..\Library\CMSIS\NN</state>
                     <state>$PROJ_DIR$\..\..\..\..\Library\CMSIS\DSP\Include</state>
                     <state>$PROJ_DIR$\..\..\..\..\Library</state>
                     <state>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc\npu</state>
@@ -1088,7 +1088,7 @@
                 </option>
                 <option>
                     <name>IarchiveOutput</name>
-                    <state>C:\NuMicro Projects\M55M1_PRJ\bsp\ThirdParty\tflite_micro\Lib\tflu.a</state>
+                    <state>C:\NuMicro\M55M1_PRJ\bsp\ThirdParty\tflite_micro\Lib\tflu.a</state>
                 </option>
             </data>
         </settings>
@@ -2183,9 +2183,9 @@
         </settings>
     </configuration>
     <group>
-        <name>c</name>
+        <name>core-c</name>
         <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\c\common.cc</name>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\core\c\common.cc</name>
         </file>
     </group>
     <group>
@@ -2195,9 +2195,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\core\api\flatbuffer_conversions.cc</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\core\api\op_resolver.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\core\api\tensor_utils.cc</name>
@@ -2212,7 +2209,22 @@
     <group>
         <name>kernels-internal</name>
         <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\kernels\internal\common.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\kernels\internal\portable_tensor_utils.cc</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\kernels\internal\quantization_util.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\kernels\internal\runtime_shape.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\kernels\internal\tensor_ctypes.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\kernels\internal\tensor_utils.cc</name>
         </file>
     </group>
     <group>
@@ -2224,9 +2236,6 @@
     <group>
         <name>micro</name>
         <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\all_ops_resolver.cc</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\fake_micro_context.cc</name>
         </file>
         <file>
@@ -2236,28 +2245,34 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\memory_helpers.cc</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_allocation_info.cc</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_allocator.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_context.cc</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_error_reporter.cc</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_graph.cc</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_interpreter.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_interpreter_context.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_interpreter_graph.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_log.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_op_resolver.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_profiler.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_resource_variable.cc</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_string.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\micro_utils.cc</name>
@@ -2269,12 +2284,6 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\recording_micro_allocator.cc</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\recording_simple_memory_allocator.cc</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\simple_memory_allocator.cc</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\system_setup.cc</name>
         </file>
         <file>
@@ -2282,6 +2291,21 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\test_helpers.cc</name>
+        </file>
+    </group>
+    <group>
+        <name>micro-arena_allocator</name>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\arena_allocator\non_persistent_arena_buffer_allocator.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\arena_allocator\persistent_arena_buffer_allocator.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\arena_allocator\recording_single_arena_buffer_allocator.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\arena_allocator\single_arena_buffer_allocator.cc</name>
         </file>
     </group>
     <group>
@@ -2314,7 +2338,16 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\assign_variable.cc</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\batch_matmul.cc</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\batch_to_space_nd.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\broadcast_args.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\broadcast_to.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\call_once.cc</name>
@@ -2368,10 +2401,16 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\detection_postprocess_flexbuffers_generated_data.cc</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\div.cc</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\elementwise.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\elu.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\embedding_lookup.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\exp.cc</name>
@@ -2443,7 +2482,16 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\logistic_common.cc</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\lstm_eval.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\lstm_eval_common.cc</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\maximum_minimum.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\micro_tensor_utils.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\mirror_pad.cc</name>
@@ -2482,7 +2530,13 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\reduce.cc</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\reduce_common.cc</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\reshape.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\reshape_common.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\resize_bilinear.cc</name>
@@ -2492,6 +2546,9 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\round.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\select.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\shape.cc</name>
@@ -2515,10 +2572,16 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\split_v.cc</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\squared_difference.cc</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\squeeze.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\strided_slice.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\strided_slice_common.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\sub.cc</name>
@@ -2536,13 +2599,13 @@
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\transpose.cc</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\transpose_conv.cc</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\unpack.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\var_handle.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\while.cc</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\zeros_like.cc</name>
@@ -2574,6 +2637,12 @@
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\cmsis_nn\svdf.cc</name>
         </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\cmsis_nn\transpose_conv.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\kernels\cmsis_nn\unidirectional_sequence_lstm.cc</name>
+        </file>
     </group>
     <group>
         <name>micro-kernels-ethos_u</name>
@@ -2591,6 +2660,15 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\memory_planner\non_persistent_buffer_planner_shim.cc</name>
+        </file>
+    </group>
+    <group>
+        <name>micro-tflite_bridge</name>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\tflite_bridge\flatbuffer_conversions_bridge.cc</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\tensorflow\lite\micro\tflite_bridge\micro_error_reporter.cc</name>
         </file>
     </group>
     <group>

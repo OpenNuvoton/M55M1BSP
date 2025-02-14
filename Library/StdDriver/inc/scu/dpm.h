@@ -38,9 +38,6 @@ typedef enum
 /*---------------------------------------------------------------------------------------------------------*/
 /* DPM Control Register Constant Definitions                                                               */
 /*---------------------------------------------------------------------------------------------------------*/
-#define SECURE_DPM          0   /*!< Secure DPM module */
-#define NONSECURE_DPM       1   /*!< Non-secure DPM module */
-
 #define DPM_CTL_WVCODE      (0x5AUL << DPM_CTL_RWVCODE_Pos)    /*!< Secure DPM control register write verify code */
 #define DPM_CTL_RVCODE      (0xA5UL << DPM_CTL_RWVCODE_Pos)    /*!< Secure DPM control register read verify code */
 #define DPM_NSCTL_WVCODE    (0x5AUL << DPM_CTL_RWVCODE_Pos)    /*!< Non-secure DPM control register write verify code */
@@ -56,7 +53,7 @@ typedef enum
 /*---------------------------------------------------------------------------------------------------------*/
 #define DPM_TIMEOUT_ERR     (-1L)               /*!< DPM time-out error value */
 
-/** @}*/ /* end of group WDT_EXPORTED_CONSTANTS */
+/** @}*/ /* end of group DPM_EXPORTED_CONSTANTS */
 
 extern int32_t g_DPM_i32ErrCode;
 
@@ -66,118 +63,121 @@ extern int32_t g_DPM_i32ErrCode;
 
 /**
   * @brief      Wait DPM_STS Busy Flag
-  * @param      None
+  * @param[in]  psDPM  The pointer of the specified DPM module
+  *                    - \ref DPM is for Secure DPM
+  *                    - \ref DPM_NS is for Non-secure DPM
   * @return     None
   * @details    This macro waits DPM_STS busy flag is cleared and skips when time-out.
   * @note       This macro sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
   */
-#define DPM_WAIT_STS_BUSY() \
-    do { \
-        uint32_t u32TimeOutCnt = DPM_TIMEOUT; \
-        g_DPM_i32ErrCode = 0; \
-        while (DPM->STS & DPM_STS_BUSY_Msk) \
-        { \
-            if (--u32TimeOutCnt == 0) \
-            { \
-                g_DPM_i32ErrCode = DPM_TIMEOUT_ERR; \
-                break; \
-            } \
-        } \
-    } while(0)
+__STATIC_INLINE void DPM_WAIT_STS_BUSY(DPM_T *psDPM)
+{
+    uint32_t u32TimeOutCnt = DPM_TIMEOUT;
 
-/**
-  * @brief      Wait DPM_NSSTS Busy Flag
-  * @param      None
-  * @return     None
-  * @details    This macro waits DPM_NSSTS busy flag is cleared and skips when time-out.
-  * @note       This macro sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
-  */
-#define DPM_WAIT_NSSTS_BUSY(pDPM) \
-    do { \
-        uint32_t u32TimeOutCnt = DPM_TIMEOUT; \
-        g_DPM_i32ErrCode = 0; \
-        while (pDPM->NSSTS & DPM_NSSTS_BUSY_Msk) \
-        { \
-            if (--u32TimeOutCnt == 0) \
-            { \
-                g_DPM_i32ErrCode = DPM_TIMEOUT_ERR; \
-                break; \
-            } \
-        } \
-    } while(0)
+    g_DPM_i32ErrCode = 0;
+
+    while (psDPM->STS & DPM_STS_BUSY_Msk)
+    {
+        if (--u32TimeOutCnt == 0)
+        {
+            g_DPM_i32ErrCode = DPM_TIMEOUT_ERR;
+            break;
+        }
+    }
+}
 
 /**
   * @brief      Enable DPM Interrupt
   * @param      None
   * @return     None
-  * @details    This macro enables DPM interrupt.
-  *             This macro is for Secure DPM and Secure region only.
-  * @note       This macro sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
+  * @details    This function enables DPM interrupt and only allowed to execute from Secure region.
+  * @note       This function sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
   */
-#define DPM_ENABLE_INT() \
-    do { \
-        DPM_WAIT_STS_BUSY(); \
-        if (g_DPM_i32ErrCode == 0) \
-            DPM->CTL = (DPM->CTL & (~DPM_CTL_RWVCODE_Msk)) | (DPM_CTL_WVCODE|DPM_CTL_INTEN_Msk); \
-    } while(0)
+__STATIC_INLINE void DPM_ENABLE_INT(void)
+{
+    DPM_WAIT_STS_BUSY(DPM);
+
+    if (g_DPM_i32ErrCode == 0)
+        DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_INTEN_Msk)) | (DPM_CTL_WVCODE | DPM_CTL_INTEN_Msk);
+}
 
 /**
-  * @brief      Disable DPM Interrupt
+  * @brief      Disable DPM Interrupt (Secure Only)
   * @param      None
   * @return     None
-  * @details    This macro disables DPM interrupt.
-  *             This macro is for Secure DPM and Secure region only.
-  * @note       This macro sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
+  * @details    This function disables DPM interrupt and only allowed to execute from Secure region.
+  * @note       This function sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
   */
-#define DPM_DISABLE_INT() \
-    do { \
-        DPM_WAIT_STS_BUSY(); \
-        if (g_DPM_i32ErrCode == 0) \
-            DPM->CTL = (DPM->CTL & (~(DPM_CTL_RWVCODE_Msk|DPM_CTL_INTEN_Msk))) | (DPM_CTL_WVCODE); \
-    } while(0)
+__STATIC_INLINE void DPM_DISABLE_INT(void)
+{
+    DPM_WAIT_STS_BUSY(DPM);
+
+    if (g_DPM_i32ErrCode == 0)
+        DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_INTEN_Msk)) | DPM_CTL_WVCODE;
+}
 
 /**
-  * @brief      Enable Debugger to Access DPM Registers
+  * @brief      Enable Debugger to Access DPM Registers (Secure Only)
   * @param      None
   * @return     None
-  * @details    This macro enables debugger to access Secure and Non-secure DPM registers.
-  *             This macro is for Secure DPM and Secure region only.
-  * @note       This macro sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
+  * @details    This function enables debugger to access Secure and Non-secure DPM registers
+  *             and only allowed to execute from Secure region.
+  * @note       This function sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
   */
-#define DPM_ENABLE_DBG_ACCESS() \
-    do{ \
-        DPM_WAIT_STS_BUSY(); \
-        if(g_DPM_i32ErrCode == 0) \
-            DPM->CTL = (DPM->CTL & (~(DPM_CTL_RWVCODE_Msk|DPM_CTL_DACCDIS_Msk))) | (DPM_CTL_WVCODE); \
-    }while(0)
+__STATIC_INLINE void DPM_ENABLE_DBG_ACCESS(void)
+{
+    DPM_WAIT_STS_BUSY(DPM);
+
+    if (g_DPM_i32ErrCode == 0)
+        DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_DACCDIS_Msk)) | DPM_CTL_WVCODE;
+}
 
 /**
-  * @brief      Disable Debugger to Access DPM Registers
+  * @brief      Disable Debugger to Access DPM Registers (Secure Only)
   * @param      None
   * @return     None
-  * @details    This macro disables debugger to access Secure and Non-secure DPM registers.
-  *             This macro is for Secure DPM and Secure region only.
-  * @note       This macro sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
+  * @details    This function disables debugger to access Secure and Non-secure DPM registers
+  *             and only allowed to execute from Secure region.
+  * @note       This function sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
   */
-#define DPM_DISABLE_DBG_ACCESS() \
-    do { \
-        DPM_WAIT_STS_BUSY(); \
-        if (g_DPM_i32ErrCode == 0) \
-            DPM->CTL = (DPM->CTL & (~DPM_CTL_RWVCODE_Msk)) | (DPM_CTL_WVCODE|DPM_CTL_DACCDIS_Msk); \
-    } while(0)
+__STATIC_INLINE void DPM_DISABLE_DBG_ACCESS(void)
+{
+    DPM_WAIT_STS_BUSY(DPM);
 
+    if (g_DPM_i32ErrCode == 0)
+        DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_DACCDIS_Msk)) | (DPM_CTL_WVCODE | DPM_CTL_DACCDIS_Msk);
+}
 
-void DPM_SetDebugDisable(uint32_t u32dpm);
-void DPM_SetDebugLock(uint32_t u32dpm);
-int32_t DPM_GetDebugDisable(uint32_t u32dpm);
-int32_t DPM_GetDebugLock(uint32_t u32dpm);
-int32_t DPM_SetPasswordUpdate(uint32_t u32dpm, uint32_t au32Pwd[]);
-int32_t DPM_SetPasswordCompare(uint32_t u32dpm, uint32_t au32Pwd[]);
-int32_t DPM_GetPasswordErrorFlag(uint32_t u32dpm);
+/**
+  * @brief      Get DPM Password Update Count
+  * @param[in]  psDPM  The pointer of the specified DPM module
+  *                    - \ref DPM is for Secure DPM
+  *                    - \ref DPM_NS is for Non-secure DPM
+  * @return     DPM Password Update Count
+  */
+__STATIC_INLINE int32_t DPM_GetPasswordUpdateCnt(DPM_T *psDPM)
+{
+    int32_t i32RetVal = DPM_TIMEOUT_ERR;
+
+    DPM_WAIT_STS_BUSY(psDPM);
+
+    if (g_DPM_i32ErrCode == 0)
+        i32RetVal = (psDPM->STS & DPM_STS_PWUCNT_Msk) >> DPM_STS_PWUCNT_Pos;
+
+    return i32RetVal;
+}
+
+void DPM_SetDebugDisable(DPM_T *psDPM);
+void DPM_SetDebugLock(DPM_T *psDPM);
+int32_t DPM_GetDebugDisable(DPM_T *psDPM);
+int32_t DPM_GetDebugLock(DPM_T *psDPM);
+int32_t DPM_SetPasswordUpdate(DPM_T *psDPM, uint32_t au32Pwd[]);
+int32_t DPM_SetPasswordCompare(DPM_T *psDPM, uint32_t au32Pwd[]);
+int32_t DPM_GetPasswordErrorFlag(DPM_T *psDPM);
 int32_t DPM_GetIntFlag(void);
-void DPM_ClearPasswordErrorFlag(uint32_t u32dpm);
-void DPM_EnableDebuggerWriteAccess(uint32_t u32dpm);
-void DPM_DisableDebuggerWriteAccess(uint32_t u32dpm);
+void DPM_ClearPasswordErrorFlag(DPM_T *psDPM);
+void DPM_EnableDebuggerWriteAccess(DPM_T *psDPM);
+void DPM_DisableDebuggerWriteAccess(DPM_T *psDPM);
 
 
 /** @} end of group DPM_EXPORTED_FUNCTIONS */

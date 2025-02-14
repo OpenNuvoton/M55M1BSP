@@ -57,31 +57,23 @@ uint8_t volatile u8PDMARxIdx = 0;
 uint32_t volatile u32BuffLen = 0, u32RxBuffLen = 0;
 
 /* Player Buffer and its pointer */
-#ifdef __ICCARM__
-#pragma data_alignment=4
-uint32_t PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] = {0};
-uint32_t PcmPlayBuffLen[PDMA_TXBUFFER_CNT] = {0};
-
-uint8_t PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] = {0};
-uint8_t u8PcmRxBufFull[PDMA_RXBUFFER_CNT] = {0};
-
-uint32_t g_au32UsbTmpBuf[AUDIO_RATE_96K * 2 * PLAY_CHANNELS / 1000 / 4 + 16] = {0};
-short g_a16AudioTmpBuf0[REC_RATE * 2 * REC_CHANNELS / 1000 + 16] = {0};
+#if (NVT_DCACHE_ON == 1)
+/* Data buffer is placed in a non-cacheable region */
+NVT_NONCACHEABLE uint32_t PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
+NVT_NONCACHEABLE uint8_t PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
 #else
-uint32_t PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {0};
-uint32_t PcmPlayBuffLen[PDMA_TXBUFFER_CNT] __attribute__((aligned(4))) = {0};
-
-uint8_t PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {0};
-uint8_t u8PcmRxBufFull[PDMA_RXBUFFER_CNT] __attribute__((aligned(4))) = {0};
-
-uint32_t g_au32UsbTmpBuf[AUDIO_RATE_96K * 2 * PLAY_CHANNELS / 1000 / 4 + 16] __attribute__((aligned(4))) = {0};
-short g_a16AudioTmpBuf0[REC_RATE * 2 * REC_CHANNELS / 1000 + 16] __attribute__((aligned(4))) = {0};
+uint32_t PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
+uint8_t PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
 #endif
+uint32_t PcmPlayBuffLen[PDMA_TXBUFFER_CNT] __ALIGNED(4) = {0};
+uint8_t u8PcmRxBufFull[PDMA_RXBUFFER_CNT] __ALIGNED(4) = {0};
+
+uint32_t g_au32UsbTmpBuf[AUDIO_RATE_96K * 2 * PLAY_CHANNELS / 1000 / 4 + 16] __ALIGNED(4) = {0};
+short g_a16AudioTmpBuf0[REC_RATE * 2 * REC_CHANNELS / 1000 + 16] __ALIGNED(4) = {0};
 
 volatile uint32_t u32BufPlayIdx = 0;
 volatile uint32_t u32PlayBufPos = 0;
 volatile uint32_t u32BufRecIdx = 0;
-
 
 /*--------------------------------------------------------------------------*/
 /**
@@ -1005,10 +997,6 @@ void AudioStartPlay(uint32_t u32SampleRate)
     /* Enable PDMA channel */
     PDMA0->CHCTL |= (1 << PDMA_I2S_TX_CH);
     printf("Start Play ... \n");
-
-    // workaround for PDMA suspend
-    //PDMA0->DSCT[PDMA_I2S_TX_CH].CTL = 0;
-    //PDMA0->DSCT[PDMA_I2S_TX_CH].CTL = 2;
 }
 
 
@@ -1076,9 +1064,6 @@ void AudioStartRecord(uint32_t u32SampleRate)
     /* Enable PDMA channel */
     PDMA0->CHCTL |= (1 << PDMA_I2S_RX_CH);
     printf("Start Record ... \n");
-
-    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 0;
-    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 2;
 }
 
 /* TIMER0 Interrupt handler */

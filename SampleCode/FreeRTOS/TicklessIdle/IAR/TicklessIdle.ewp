@@ -74,7 +74,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -231,8 +231,7 @@
                 </option>
                 <option>
                     <name>CCDefines</name>
-                    <state>NVT_DCACHE_ON</state>
-                    <state>SYSTEM_CORE_CLOCK=180000000</state>
+                    <state>SYSTEM_CORE_CLOCK=220000000</state>
                     <state>NVT_VECTOR_ON_FLASH</state>
                 </option>
                 <option>

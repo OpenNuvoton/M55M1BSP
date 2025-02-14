@@ -10,8 +10,9 @@
 #include "NuMicro.h"
 
 volatile uint32_t  g_u32IsTestOver = 0;
-volatile uint8_t g_u8CRCDoneFlag = 0; /* 0:No INT, 1:CRC done, 2:CRC abort, 3:CRC unknow fail */
-
+volatile uint8_t   g_u8CRCDoneFlag = 0;
+/* 0:No INT, 1:CRC done, 2:CRC abort, 3:CRC unknow fail,
+   4:CRC cinfig fails, 8: CRC DMA access fails.*/
 void CRC_IRQHandler(void)
 {
     volatile uint32_t reg;
@@ -66,8 +67,8 @@ void SYS_Init(void)
     /* Waiting for External RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -124,7 +125,7 @@ uint32_t GetDMAMasterChecksum(uint32_t u32Address, uint32_t u32Size)
 int main(void)
 {
 
-    uint32_t u32CRC32Checksum, u32PDMAChecksum;//remove volatile prefix
+    uint32_t u32CRC32Checksum, u32DMAChecksum;
     uint32_t addr, size;
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -163,13 +164,13 @@ int main(void)
     /*  Case b. */
     /* Configure CRC controller for CRC-CRC32 mode */
     CRC_Open(CRC_32, (CRC_WDATA_RVS | CRC_CHECKSUM_RVS | CRC_CHECKSUM_COM), 0xFFFFFFFF, CRC_CPU_WDATA_32);
-    u32PDMAChecksum = GetDMAMasterChecksum(FMC_APROM_BASE, size);
+    u32DMAChecksum = GetDMAMasterChecksum(FMC_APROM_BASE, size);
 
     printf("APROM first %d bytes checksum:\n", size);
     printf("   - by CPU write:   0x%x\n", u32CRC32Checksum);
-    printf("   - by DMA write:   0x%x\n", u32PDMAChecksum);
+    printf("   - by DMA write:   0x%x\n", u32DMAChecksum);
 
-    if ((u32CRC32Checksum) == (u32PDMAChecksum))
+    if ((u32CRC32Checksum) == (u32DMAChecksum))
     {
         if ((u32CRC32Checksum == 0) || (u32CRC32Checksum == 0xFFFFFFFF))
         {

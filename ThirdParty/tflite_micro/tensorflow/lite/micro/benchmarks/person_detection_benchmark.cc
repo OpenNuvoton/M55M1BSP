@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2024 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,9 +20,10 @@ limitations under the License.
 #include "tensorflow/lite/micro/examples/person_detection/testdata/person_image_data.h"
 #include "tensorflow/lite/micro/kernels/conv.h"
 #include "tensorflow/lite/micro/kernels/fully_connected.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/micro_profiler.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 #include "tensorflow/lite/micro/models/person_detect_model_data.h"
 #include "tensorflow/lite/micro/system_setup.h"
@@ -36,7 +37,11 @@ limitations under the License.
 
 namespace tflite {
 
+#ifdef ETHOS_U
+using PersonDetectionOpResolver = MicroMutableOpResolver<1>;
+#else
 using PersonDetectionOpResolver = MicroMutableOpResolver<6>;
+#endif
 using PersonDetectionBenchmarkRunner = MicroBenchmarkRunner<int8_t>;
 
 // Create an area of memory to use for input, output, and intermediate arrays.
@@ -49,19 +54,23 @@ uint8_t benchmark_runner_buffer[sizeof(PersonDetectionBenchmarkRunner)];
 
 // Initialize benchmark runner instance explicitly to avoid global init order
 // issues on Sparkfun. Use new since static variables within a method
-// are automatically surrounded by locking, which breaks bluepill and stm32f4.
+// are automatically surrounded by locking, which breaks bluepill.
 PersonDetectionBenchmarkRunner* CreateBenchmarkRunner(MicroProfiler* profiler) {
   // We allocate PersonDetectionOpResolver from a global buffer
   // because the object's lifetime must exceed that of the
   // PersonDetectionBenchmarkRunner object.
   PersonDetectionOpResolver* op_resolver =
       new (op_resolver_buffer) PersonDetectionOpResolver();
+#ifdef ETHOS_U
+  op_resolver->AddEthosU();
+#else
   op_resolver->AddFullyConnected(tflite::Register_FULLY_CONNECTED_INT8());
   op_resolver->AddConv2D(tflite::Register_CONV_2D_INT8REF());
   op_resolver->AddDepthwiseConv2D();
   op_resolver->AddSoftmax();
-  op_resolver->AddAveragePool2D();
+  op_resolver->AddAveragePool2D(tflite::Register_AVERAGE_POOL_2D_INT8());
   op_resolver->AddReshape();
+#endif
   return new (benchmark_runner_buffer)
       PersonDetectionBenchmarkRunner(g_person_detect_model_data, op_resolver,
                                      tensor_arena, kTensorArenaSize, profiler);

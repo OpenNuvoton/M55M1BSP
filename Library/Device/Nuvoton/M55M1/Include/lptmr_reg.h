@@ -395,6 +395,9 @@ typedef struct
      * |[9]     |PWMTRGLPPDMA|PWM Counter Event Trigger LPPDMA Conversion Enable Bit
      * |        |          |0 = PWM counter event trigger LPPDMA conversion Disabled.
      * |        |          |1 = PWM counter event trigger LPPDMA conversion Enabled.
+     * |[10]    |AEPDMA    |Accumulator Every IFACNT LPPDMA Mode Enable Bit
+     * |        |          |0 = Trigger LPPDMA Accumulator Mode Disabled.
+     * |        |          |1 = Trigger LPPDMA Accumulator Mode Enabled.
      * @var LPTMR_T::PWMSTATUS
      * Offset: 0x6C  LPTMR PWM Status Register
      * ---------------------------------------------------------------------------------------------------
@@ -674,6 +677,9 @@ typedef struct
 
 #define LPTMR_PWMTRGCTL_PWMTRGLPPDMA_Pos    (9)                                         /*!< LPTMR_T::PWMTRGCTL: PWMTRGLPPDMA Position  */
 #define LPTMR_PWMTRGCTL_PWMTRGLPPDMA_Msk    (0x1UL << LPTMR_PWMTRGCTL_PWMTRGLPPDMA_Pos) /*!< LPTMR_T::PWMTRGCTL: PWMTRGLPPDMA Mask      */
+
+#define LPTMR_PWMTRGCTL_AEPDMA_Pos      (10)                                        /*!< LPTMR_T::PWMTRGCTL: AEPDMA Position  */
+#define LPTMR_PWMTRGCTL_AEPDMA_Msk      (0x1UL << LPTMR_PWMTRGCTL_AEPDMA_Pos)       /*!< LPTMR_T::PWMTRGCTL: AEPDMA Mask      */
 
 #define LPTMR_PWMSTATUS_CNTMAXF_Pos     (0)                                         /*!< LPTMR_T::PWMSTATUS: CNTMAXF Position       */
 #define LPTMR_PWMSTATUS_CNTMAXF_Msk     (0x1UL << LPTMR_PWMSTATUS_CNTMAXF_Pos)      /*!< LPTMR_T::PWMSTATUS: CNTMAXF Mask           */

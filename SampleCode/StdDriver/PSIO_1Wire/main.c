@@ -18,8 +18,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -29,7 +29,7 @@ void SYS_Init(void)
 
     /* Set PCLKx divide 2 */
     CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(8);
+    CLK_SET_PCLK1DIV(2);
     CLK_SET_PCLK2DIV(2);
     CLK_SET_PCLK3DIV(2);
     CLK_SET_PCLK4DIV(2);
@@ -41,13 +41,14 @@ void SYS_Init(void)
     /* Enable PSIO module clock */
     CLK_EnableModuleClock(PSIO0_MODULE);
 
-    /* Select PSIO module clock source as PCLK1 and PSIO module clock divider as 15 */
-    CLK_SetModuleClock(PSIO0_MODULE, CLK_PSIOSEL_PSIO0SEL_PCLK1, CLK_PSIODIV_PSIO0DIV(250));
+    /* Select PSIO module clock source as HIRC and PSIO module clock divider as 64 */
+    CLK_SetModuleClock(PSIO0_MODULE, CLK_PSIOSEL_PSIO0SEL_HIRC, CLK_PSIODIV_PSIO0DIV(64));
 
     /*Enable GPIO Clock*/
     CLK_EnableModuleClock(GPIOA_MODULE);
     CLK_EnableModuleClock(GPIOB_MODULE);
     CLK_EnableModuleClock(GPIOC_MODULE);
+    CLK_EnableModuleClock(GPIOE_MODULE);
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -57,10 +58,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* PSIO multi-function pin CH0(PB.15) */
-    //SET_PSIO0_CH0_PC5();
+    /* PSIO multi-function pin CH0(PE.14) */
     SET_PSIO0_CH0_PE14();
-
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -83,12 +82,12 @@ int32_t main(void)
     printf("\n\nCPU @ %dHz\n", SystemCoreClock);
     printf("+------------------------------------------------------+ \n");
     printf("|      DS18B20 ONE WIRE Thermometer  Test Code         | \n");
-    printf("|      Please connected PSIO_CH0(PC.5) to device       | \n");
+    printf("|      Please connected PSIO_CH0(PE.14) to device      | \n");
     printf("+------------------------------------------------------+ \n");
 
     /* Use slot controller 0 and pin 0 */
-    sConfig.u8SlotCtrl   = PSIO_SC0;
-    sConfig.u8DataPin    = PSIO_PIN0;
+    sConfig.u8SlotCtrl = PSIO_SC0;
+    sConfig.u8DataPin = PSIO_PIN0;
 
     /* Reset PSIO */
     SYS_ResetModule(SYS_PSIO0RST);
@@ -99,7 +98,7 @@ int32_t main(void)
     /* Initialize PSIO setting for DS18B20 */
     PSIO_DS18B20_Open(&sConfig);
 
-    do
+    while (1)
     {
         /* Reset DS18B20 */
         PSIO_DS18B20_Reset(&sConfig);
@@ -125,6 +124,5 @@ int32_t main(void)
 
         /* Delay 50000 us */
         CLK_SysTickDelay(50000);
-
-    } while (1);
+    }
 }

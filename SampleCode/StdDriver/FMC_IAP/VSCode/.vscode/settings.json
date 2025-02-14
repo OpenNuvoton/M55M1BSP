@@ -1,0 +1,36 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "FMC_IAP_APROM.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "FMC_IAP_APROM.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "FMC_IAP_LDROM.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device LDROM",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "FMC_IAP_LDROM.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device LDROM",
+                "debug": "Embedded Debug"
+            }
+        }
+    ]
+}

@@ -136,7 +136,7 @@ void UART_TEST_HANDLE()
     }
 }
 
-#define     NULL    0
+//#define     NULL    0
 
 const static char szCommandShellHelp[] =
 {

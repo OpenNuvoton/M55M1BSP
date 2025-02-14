@@ -9,11 +9,11 @@
 #include "NuMicro.h"
 #include "utcpdlib.h"
 
-#define DBG_PRINTF(...)
+//#define DBG_PRINTF(...)
+#define DBG_PRINTF printf
 
 /*******************************************************************************
- * Base on TC8260_UTCPD_BOARD_V1                                                *
- * Design by MS50 THWang                                                       *
+ * Base on M55M1_UTCPD_BOARD_V1                                                *
  *                                                                             *
  *  VBUS_Source_Level --> Specified the VBUS level                             *
  *******************************************************************************/
@@ -261,7 +261,7 @@ void VBUS_Source_Level_Item(int port)
 }
 
 /*******************************************************************************
- * TC8260_UTCPD BOARD V1                                                        *
+ * M55M1_UTCPD BOARD V1                                                        *
  * If set VBUS_SOURCE = 20V, Even disable VB_SRC_EN                            *
  * The VBUS_S+ Still up to 15.88V                                              *
  * It seems not protect the VBUS will be = 0, if SNK device plug out           *

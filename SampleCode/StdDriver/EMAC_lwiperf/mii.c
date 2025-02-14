@@ -11,6 +11,9 @@
 #define printf(...)     do { }while(0)
 
 
+#define CONFIGURE_PHY_LED_STATUS    (1)
+
+
 static int32_t mii_mdio_read(synopGMACdevice *gmacdev, uint16_t reg, uint16_t *val)
 {
     return synopGMAC_read_phy_reg((u32)gmacdev->MacBase, gmacdev->PhyBase, reg, val);
@@ -217,6 +220,21 @@ void mii_link_monitor(synopGMACdevice *gmacdev)
     }
 }
 
+
+#if (CONFIGURE_PHY_LED_STATUS == 1)
+static void ConfigurePHYLEDStatus(synopGMACdevice *gmacdev)
+{
+    uint16_t val;
+
+    /* Configure RTL8201FL PHY LED status */
+    mii_mdio_write(gmacdev, 31, 0x7); // change to page-7
+    mii_mdio_read(gmacdev, 19, &val); // read reg-19 from page-7
+    mii_mdio_write(gmacdev, 19, (val & ~(BIT5 | BIT4))); // set LED_sel to 00 on reg-19
+    mii_mdio_read(gmacdev, 19, &val);
+    mii_mdio_write(gmacdev, 31, 0); // return to page-0
+}
+#endif
+
 int32_t mii_check_phy_init(synopGMACdevice *gmacdev)
 {
     int32_t ret = -1;
@@ -232,13 +250,17 @@ int32_t mii_check_phy_init(synopGMACdevice *gmacdev)
         gmacdev->Speed      = 0;
         gmacdev->LinkState  = 0;
         gmacdev->LoopBackMode = 0;
-
-        return ret;
     }
     else
     {
         mii_ethtool_gset(gmacdev, 1);
 
-        return (gmacdev->Speed | (gmacdev->DuplexMode << 4));
+        ret = (gmacdev->Speed | (gmacdev->DuplexMode << 4));
     }
+
+#if (CONFIGURE_PHY_LED_STATUS == 1)
+    ConfigurePHYLEDStatus(gmacdev);
+#endif
+
+    return ret;
 }

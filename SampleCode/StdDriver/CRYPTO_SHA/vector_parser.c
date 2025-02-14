@@ -21,7 +21,12 @@ static char  g_pi8LineBuff[20 * 1024];
     #pragma data_alignment=32
     uint8_t g_au8ShaDataPool[8192] ;
 #else
-    __attribute__((aligned(32))) static uint8_t g_au8ShaDataPool[8192] ;
+    #define SHADATA_POOL_LEN     8192
+    #if (NVT_DCACHE_ON == 1)
+        uint8_t g_au8ShaDataPool[DCACHE_ALIGN_LINE_SIZE(SHADATA_POOL_LEN)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    #else
+        __attribute__((aligned(32))) static uint8_t g_au8ShaDataPool[SHADATA_POOL_LEN] ;
+    #endif
 #endif
 
 
@@ -252,6 +257,20 @@ int GetNextPattern(void)
 
     return -1;
 }
+
+
+#if(NVT_DCACHE_ON == 1)
+void NVT_SCB_CleanDCache_ShaDataPool(void)
+{
+    SCB_CleanDCache_by_Addr(g_au8ShaDataPool, sizeof(g_au8ShaDataPool));
+}
+
+void NVT_SCB_InvalidateDCache_ShaDataPool(void)
+{
+    SCB_InvalidateDCache_by_Addr(g_au8ShaDataPool, sizeof(g_au8ShaDataPool));
+}
+#endif
+
 
 /*** (C) COPYRIGHT 2020 Nuvoton Technology Corp. ***/
 

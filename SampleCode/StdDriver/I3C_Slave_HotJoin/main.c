@@ -151,7 +151,7 @@ int32_t I3C_ProcessRespError(I3C_T *i3c, uint32_t u32RespStatus)
 }
 
 /**
-  * @brief  The I3C0 default IRQ, declared in startup_NUC1263.s.
+  * @brief  The I3C0 default IRQ, declared in startup_M55M1.c.
   */
 NVT_ITCM void I3C0_IRQHandler(void)
 {
@@ -258,24 +258,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -289,9 +274,15 @@ static void SYS_Init(void)
     SET_I3C0_SCL_PB1();
     SET_I3C0_SDA_PB0();
     SYS_ResetModule(SYS_I3C0RST);
+    /* Enable GPIO Module clock */
+    CLK_EnableModuleClock(GPIOB_MODULE);
+    /* Set SCL slew rate to GPIO_SLEWCTL_FAST0, SDA slew rate to GPIO_SLEWCTL_HIGH */
+    GPIO_SetSlewCtl(PB, BIT1, GPIO_SLEWCTL_FAST0);
+    GPIO_SetSlewCtl(PB, BIT0, GPIO_SLEWCTL_HIGH);
     /* Lock protected registers */
     SYS_LockReg();
 }
+
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Main Function                                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -350,8 +341,6 @@ int32_t main(void)
     printf("  then perform a read request to receive the N-bytes data from Slave.\n");
     printf("    - The write data should be equal to the received data\n");
     printf("\n");
-    /* Enable I3C0 controller */
-    I3C_Enable(I3C0);
     printf("[ Wait for the I3C Slave to issue a Hot-Join request ]\n\n");
 
     while (1)
@@ -393,8 +382,6 @@ int32_t main(void)
                             }
 
                             printf("\n\n");
-                            /* Clear CmdQ and Tx data for new transmit data */
-                            I3C_ResetAndResume(I3C0, (I3C_RESET_CMD_QUEUE | I3C_RESET_TX_BUF), FALSE);
                             /* Set CmdQ and response data for a Master read request */
                             memcpy((uint8_t *)(&g_TxBuf[0]), (uint8_t *)(&g_RxBuf[0]), u16Len);
                             u8TID = (pu8Data[0] % 8);

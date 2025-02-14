@@ -22,8 +22,9 @@ void PowerDownFunction(void)
 {
     uint32_t u32TimeOutCnt;
 
-    /* Check if all the debug messages are finished */
     u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
+    /* Check if all the debug messages are finished */
     UART_WAIT_TX_EMPTY(DEBUG_PORT)
 
     if (--u32TimeOutCnt == 0) break;
@@ -121,8 +122,8 @@ void SYS_Init(void)
     /* Switch SCLK clock source to HIRC */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -147,7 +148,9 @@ void SYS_Init(void)
 
     /* Due to PF.6 is used as the PIN wake up source. */
     CLK_EnableModuleClock(RTC0_MODULE);
-    RTC->LXTCTL = (RTC->LXTCTL & ~RTC_GPIOCTL0_OPMODE1_Msk) | (1 << RTC_GPIOCTL0_OPMODE1_Pos);
+
+    /* PF.4~11 I/O function is controlled by VBAT power domain */
+    RTC->LXTCTL |= RTC_LXTCTL_IOCTLSEL_Msk;
 
     /* Lock protected registers */
     SYS_LockReg();
@@ -192,12 +195,12 @@ int32_t main(void)
     {
         case '1':
             printf("[1]\n");
-            WakeUpPinFunction(PMC_DPD0, PMC_WKPIN4_RISING);
+            WakeUpPinFunction(PMC_DPD, PMC_WKPIN4_RISING);
             break;
 
         case '2':
             printf("[2]\n");
-            WakeUpTimerFunction(PMC_DPD0, PMC_STMRWKCTL_STMRIS_4096);
+            WakeUpTimerFunction(PMC_DPD, PMC_STMRWKCTL_STMRIS_4096);
             break;
 
         default:

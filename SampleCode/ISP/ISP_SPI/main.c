@@ -13,6 +13,7 @@
 #include <string.h>
 #include "NuMicro.h"
 #include "targetdev.h"
+#include "isp_user.h"
 #include "spi_transfer.h"
 
 int32_t SYS_Init(void)
@@ -20,8 +21,8 @@ int32_t SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);

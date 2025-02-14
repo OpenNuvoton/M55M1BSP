@@ -10,13 +10,13 @@
       <TargetName>Release</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6160000::V6.16::ARMCLANG</pCCUsed>
+      <pCCUsed>6190000::V6.19::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>ARMCM55</Device>
           <Vendor>ARM</Vendor>
-          <PackID>ARM.CMSIS.5.8.0</PackID>
+          <PackID>ARM.CMSIS.5.9.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x30000000,0x00020000) IRAM2(0x20000000,0x00020000) IROM(0x10000000,0x00200000) IROM2(0x00000000,0x00200000) CPUTYPE("Cortex-M55") FPU3(DFPU) DSP TZ MVE(FP) CLOCK(12000000) ESEL ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -186,6 +186,7 @@
             <RvdsVP>3</RvdsVP>
             <RvdsMve>2</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
+            <nBranchProt>0</nBranchProt>
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>1</hadIROM2>
             <StupSel>8</StupSel>
@@ -384,16 +385,6 @@
           <GroupName>ActivationFunctions</GroupName>
           <Files>
             <File>
-              <FileName>arm_nn_activations_q7.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ActivationFunctions\arm_nn_activations_q7.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_nn_activations_q15.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ActivationFunctions\arm_nn_activations_q15.c</FilePath>
-            </File>
-            <File>
               <FileName>arm_relu_q7.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\ActivationFunctions\arm_relu_q7.c</FilePath>
@@ -407,6 +398,11 @@
               <FileName>arm_relu6_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\ActivationFunctions\arm_relu6_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_activation_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ActivationFunctions\arm_nn_activation_s16.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -424,6 +420,11 @@
               <FilePath>..\..\..\NN\Source\BasicMathFunctions\arm_elementwise_add_s16.c</FilePath>
             </File>
             <File>
+              <FileName>arm_elementwise_mul_acc_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\BasicMathFunctions\arm_elementwise_mul_acc_s16.c</FilePath>
+            </File>
+            <File>
               <FileName>arm_elementwise_mul_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\BasicMathFunctions\arm_elementwise_mul_s8.c</FilePath>
@@ -432,6 +433,16 @@
               <FileName>arm_elementwise_mul_s16.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\BasicMathFunctions\arm_elementwise_mul_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_elementwise_mul_s16_batch_offset.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\BasicMathFunctions\arm_elementwise_mul_s16_batch_offset.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_elementwise_mul_s16_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\BasicMathFunctions\arm_elementwise_mul_s16_s8.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -464,14 +475,29 @@
           <GroupName>ConvolutionFunctions</GroupName>
           <Files>
             <File>
+              <FileName>arm_convolve_1_x_n_s4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_1_x_n_s4.c</FilePath>
+            </File>
+            <File>
               <FileName>arm_convolve_1_x_n_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_1_x_n_s8.c</FilePath>
             </File>
             <File>
-              <FileName>arm_convolve_1x1_HWC_q7_fast_nonsquare.c</FileName>
+              <FileName>arm_convolve_1x1_s4.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_1x1_HWC_q7_fast_nonsquare.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_1x1_s4.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_convolve_1x1_s4_fast.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_1x1_s4_fast.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_convolve_1x1_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_1x1_s8.c</FilePath>
             </File>
             <File>
               <FileName>arm_convolve_1x1_s8_fast.c</FileName>
@@ -479,49 +505,24 @@
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_1x1_s8_fast.c</FilePath>
             </File>
             <File>
-              <FileName>arm_convolve_fast_s16.c</FileName>
+              <FileName>arm_convolve_get_buffer_sizes_s4.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_fast_s16.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_get_buffer_sizes_s4.c</FilePath>
             </File>
             <File>
-              <FileName>arm_convolve_HWC_q7_basic.c</FileName>
+              <FileName>arm_convolve_get_buffer_sizes_s8.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q7_basic.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_get_buffer_sizes_s8.c</FilePath>
             </File>
             <File>
-              <FileName>arm_convolve_HWC_q7_basic_nonsquare.c</FileName>
+              <FileName>arm_convolve_get_buffer_sizes_s16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q7_basic_nonsquare.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_get_buffer_sizes_s16.c</FilePath>
             </File>
             <File>
-              <FileName>arm_convolve_HWC_q7_fast.c</FileName>
+              <FileName>arm_convolve_s4.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q7_fast.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_convolve_HWC_q7_fast_nonsquare.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q7_fast_nonsquare.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_convolve_HWC_q7_RGB.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q7_RGB.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_convolve_HWC_q15_basic.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q15_basic.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_convolve_HWC_q15_fast.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q15_fast.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_convolve_HWC_q15_fast_nonsquare.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_HWC_q15_fast_nonsquare.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_s4.c</FilePath>
             </File>
             <File>
               <FileName>arm_convolve_s8.c</FileName>
@@ -532,6 +533,11 @@
               <FileName>arm_convolve_s16.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_convolve_wrapper_s4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_convolve_wrapper_s4.c</FilePath>
             </File>
             <File>
               <FileName>arm_convolve_wrapper_s8.c</FileName>
@@ -549,6 +555,36 @@
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_3x3_s8.c</FilePath>
             </File>
             <File>
+              <FileName>arm_depthwise_conv_fast_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_fast_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_depthwise_conv_get_buffer_sizes_s4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_get_buffer_sizes_s4.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_depthwise_conv_get_buffer_sizes_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_get_buffer_sizes_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_depthwise_conv_get_buffer_sizes_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_get_buffer_sizes_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_depthwise_conv_s4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_s4.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_depthwise_conv_s4_opt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_s4_opt.c</FilePath>
+            </File>
+            <File>
               <FileName>arm_depthwise_conv_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_s8.c</FilePath>
@@ -564,9 +600,9 @@
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_s16.c</FilePath>
             </File>
             <File>
-              <FileName>arm_depthwise_conv_u8_basic_ver1.c</FileName>
+              <FileName>arm_depthwise_conv_wrapper_s4.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_u8_basic_ver1.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_wrapper_s4.c</FilePath>
             </File>
             <File>
               <FileName>arm_depthwise_conv_wrapper_s8.c</FileName>
@@ -574,14 +610,9 @@
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_wrapper_s8.c</FilePath>
             </File>
             <File>
-              <FileName>arm_depthwise_separable_conv_HWC_q7.c</FileName>
+              <FileName>arm_depthwise_conv_wrapper_s16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_separable_conv_HWC_q7.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_depthwise_separable_conv_HWC_q7_nonsquare.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_separable_conv_HWC_q7_nonsquare.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_depthwise_conv_wrapper_s16.c</FilePath>
             </File>
             <File>
               <FileName>arm_nn_depthwise_conv_s8_core.c</FileName>
@@ -589,14 +620,14 @@
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_depthwise_conv_s8_core.c</FilePath>
             </File>
             <File>
-              <FileName>arm_nn_mat_mult_kernel_q7_q15.c</FileName>
+              <FileName>arm_nn_mat_mult_kernel_row_offset_s8_s16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_mat_mult_kernel_q7_q15.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_mat_mult_kernel_row_offset_s8_s16.c</FilePath>
             </File>
             <File>
-              <FileName>arm_nn_mat_mult_kernel_q7_q15_reordered.c</FileName>
+              <FileName>arm_nn_mat_mult_kernel_s4_s16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_mat_mult_kernel_q7_q15_reordered.c</FilePath>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_mat_mult_kernel_s4_s16.c</FilePath>
             </File>
             <File>
               <FileName>arm_nn_mat_mult_kernel_s8_s16.c</FileName>
@@ -604,9 +635,24 @@
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_mat_mult_kernel_s8_s16.c</FilePath>
             </File>
             <File>
+              <FileName>arm_nn_mat_mult_kernel_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_mat_mult_kernel_s16.c</FilePath>
+            </File>
+            <File>
               <FileName>arm_nn_mat_mult_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_nn_mat_mult_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_transpose_conv_get_buffer_sizes_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_transpose_conv_get_buffer_sizes_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_transpose_conv_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\ConvolutionFunctions\arm_transpose_conv_s8.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -614,34 +660,19 @@
           <GroupName>FullyConnectedFunctions</GroupName>
           <Files>
             <File>
-              <FileName>arm_fully_connected_mat_q7_vec_q15.c</FileName>
+              <FileName>arm_fully_connected_get_buffer_sizes_s8.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_mat_q7_vec_q15.c</FilePath>
+              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_get_buffer_sizes_s8.c</FilePath>
             </File>
             <File>
-              <FileName>arm_fully_connected_mat_q7_vec_q15_opt.c</FileName>
+              <FileName>arm_fully_connected_get_buffer_sizes_s16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_mat_q7_vec_q15_opt.c</FilePath>
+              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_get_buffer_sizes_s16.c</FilePath>
             </File>
             <File>
-              <FileName>arm_fully_connected_q7.c</FileName>
+              <FileName>arm_fully_connected_s4.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_q7.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_fully_connected_q7_opt.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_q7_opt.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_fully_connected_q15.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_q15.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_fully_connected_q15_opt.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_q15_opt.c</FilePath>
+              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_s4.c</FilePath>
             </File>
             <File>
               <FileName>arm_fully_connected_s8.c</FileName>
@@ -653,30 +684,80 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_fully_connected_s16.c</FilePath>
             </File>
+            <File>
+              <FileName>arm_vector_sum_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_vector_sum_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_vector_sum_s8_s64.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\FullyConnectedFunctions\arm_vector_sum_s8_s64.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>LSTMFunctions</GroupName>
+          <Files>
+            <File>
+              <FileName>arm_lstm_unidirectional_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\LSTMFunctions\arm_lstm_unidirectional_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_lstm_unidirectional_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\LSTMFunctions\arm_lstm_unidirectional_s16.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
           <GroupName>NNSupportFunctions</GroupName>
           <Files>
             <File>
-              <FileName>arm_nn_accumulate_q7_to_q15.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_accumulate_q7_to_q15.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_nn_add_q7.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_add_q7.c</FilePath>
-            </File>
-            <File>
               <FileName>arm_nn_depthwise_conv_nt_t_padded_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_depthwise_conv_nt_t_padded_s8.c</FilePath>
             </File>
             <File>
+              <FileName>arm_nn_depthwise_conv_nt_t_s4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_depthwise_conv_nt_t_s4.c</FilePath>
+            </File>
+            <File>
               <FileName>arm_nn_depthwise_conv_nt_t_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_depthwise_conv_nt_t_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_depthwise_conv_nt_t_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_depthwise_conv_nt_t_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_lstm_calculate_gate_s8_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_lstm_calculate_gate_s8_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_lstm_calculate_gate_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_lstm_calculate_gate_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_lstm_step_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_lstm_step_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_lstm_step_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_lstm_step_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_mat_mul_core_1x_s4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mat_mul_core_1x_s4.c</FilePath>
             </File>
             <File>
               <FileName>arm_nn_mat_mul_core_1x_s8.c</FileName>
@@ -689,9 +770,9 @@
               <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mat_mul_core_4x_s8.c</FilePath>
             </File>
             <File>
-              <FileName>arm_nn_mat_mul_kernel_s16.c</FileName>
+              <FileName>arm_nn_mat_mult_nt_t_s4.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mat_mul_kernel_s16.c</FilePath>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mat_mult_nt_t_s4.c</FilePath>
             </File>
             <File>
               <FileName>arm_nn_mat_mult_nt_t_s8.c</FileName>
@@ -699,14 +780,29 @@
               <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mat_mult_nt_t_s8.c</FilePath>
             </File>
             <File>
-              <FileName>arm_nn_mult_q7.c</FileName>
+              <FileName>arm_nn_mat_mult_nt_t_s8_s32.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mult_q7.c</FilePath>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mat_mult_nt_t_s8_s32.c</FilePath>
             </File>
             <File>
-              <FileName>arm_nn_mult_q15.c</FileName>
+              <FileName>arm_nn_mat_mult_nt_t_s16.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mult_q15.c</FilePath>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_mat_mult_nt_t_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_vec_mat_mul_result_acc_s8_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_vec_mat_mul_result_acc_s8_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_vec_mat_mul_result_acc_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_vec_mat_mul_result_acc_s16.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_nn_vec_mat_mult_t_s4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nn_vec_mat_mult_t_s4.c</FilePath>
             </File>
             <File>
               <FileName>arm_nn_vec_mat_mult_t_s8.c</FileName>
@@ -729,30 +825,30 @@
               <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_nntables.c</FilePath>
             </File>
             <File>
-              <FileName>arm_q7_to_q15_no_shift.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_q7_to_q15_no_shift.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_q7_to_q15_reordered_no_shift.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_q7_to_q15_reordered_no_shift.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_q7_to_q15_reordered_with_offset.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_q7_to_q15_reordered_with_offset.c</FilePath>
-            </File>
-            <File>
               <FileName>arm_q7_to_q15_with_offset.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_q7_to_q15_with_offset.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_s8_to_s16_unordered_with_offset.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\NNSupportFunctions\arm_s8_to_s16_unordered_with_offset.c</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
           <GroupName>PoolingFunctions</GroupName>
           <Files>
+            <File>
+              <FileName>arm_avgpool_get_buffer_sizes_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\PoolingFunctions\arm_avgpool_get_buffer_sizes_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_avgpool_get_buffer_sizes_s16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\PoolingFunctions\arm_avgpool_get_buffer_sizes_s16.c</FilePath>
+            </File>
             <File>
               <FileName>arm_avgpool_s8.c</FileName>
               <FileType>1</FileType>
@@ -772,11 +868,6 @@
               <FileName>arm_max_pool_s16.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\PoolingFunctions\arm_max_pool_s16.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_pool_q7_HWC.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\PoolingFunctions\arm_pool_q7_HWC.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -799,16 +890,6 @@
               <FilePath>..\..\..\NN\Source\SoftmaxFunctions\arm_nn_softmax_common_s8.c</FilePath>
             </File>
             <File>
-              <FileName>arm_softmax_q7.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\SoftmaxFunctions\arm_softmax_q7.c</FilePath>
-            </File>
-            <File>
-              <FileName>arm_softmax_q15.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\SoftmaxFunctions\arm_softmax_q15.c</FilePath>
-            </File>
-            <File>
               <FileName>arm_softmax_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\SoftmaxFunctions\arm_softmax_s8.c</FilePath>
@@ -828,11 +909,6 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\SoftmaxFunctions\arm_softmax_u8.c</FilePath>
             </File>
-            <File>
-              <FileName>arm_softmax_with_batch_q7.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\NN\Source\SoftmaxFunctions\arm_softmax_with_batch_q7.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -842,6 +918,16 @@
               <FileName>arm_svdf_s8.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\NN\Source\SVDFunctions\arm_svdf_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_svdf_get_buffer_sizes_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\SVDFunctions\arm_svdf_get_buffer_sizes_s8.c</FilePath>
+            </File>
+            <File>
+              <FileName>arm_svdf_state_s16_s8.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\NN\Source\SVDFunctions\arm_svdf_state_s16_s8.c</FilePath>
             </File>
           </Files>
         </Group>

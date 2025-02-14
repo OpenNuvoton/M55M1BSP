@@ -39,12 +39,27 @@ void DMIC_Stop(void);
 /* Define global variables and constants                                                                   */
 /*---------------------------------------------------------------------------------------------------------*/
 volatile S_BUFCTRL sInBufCtrl;//, sOutBufCtrl; // Buffer control handler.
-int32_t    ai32InBuf[BUF_COUNT], s_SampleRate;     // Buffer array: store audio data receiced from DMIC(4Channel)
+int32_t s_SampleRate;     // Buffer array: store audio data receiced from DMIC(4Channel)
+char s_strFileName[100];
 
 #define DMIC_LPPDMA_CH       (2)
 
 S_BUFCTRL *psDMIC_BufCtrl = NULL;           // Provide microphone input buffer control.
-LPDSCT_T     sLPPDMA_DMIC[2];               // Provide LPPDMA description for ping-pong.
+// Provide LPPDMA description for ping-pong.
+#if (NVT_DCACHE_ON == 1)
+    /*
+    The setting value of Descript Table is fixed, so it is placed in the non-cacheable section
+    , eliminating the need for cache operations.
+    */
+    NVT_NONCACHEABLE __attribute__((aligned(4))) static LPDSCT_T sLPPDMA_DMIC[2];
+    // If DCACHE is enabled, use a cache-line aligned buffer for the DMIC PCM DMA
+    int32_t ai32InBuf[DCACHE_ALIGN_LINE_SIZE(BUF_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    // Placing the DMA descriptor table in normal SRAM.
+    static LPDSCT_T sLPPDMA_DMIC[2];
+    // If DCACHE is not enabled, use a standard buffer for the DMIC PCM DMA
+    int32_t ai32InBuf[BUF_COUNT];
+#endif
 
 NVT_ITCM void SDH0_IRQHandler(void)
 {
@@ -168,12 +183,25 @@ NVT_ITCM void LPPDMA_IRQHandler(void)
     }
 }
 
+/*-----------------------------------------------------------------
+  | APLL1                     | Sample-Rate Hz      | Down-Sample |
+  |---------------------------|---------------------|-------------|
+  | FREQ_192MHZ               | 8000/16000/48000 Hz | 50/100      |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_196608KHZ | 8000/16000/48000 Hz | 64/128/256  |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_194040KHZ | 11025/22050/44100 Hz| 50/100      |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_180634KHZ | 11025/22050/44100 Hz| 64/128/256  |
+  ---------------------------------------------------------------*/
 // Microphone(DMIC)= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 void DMIC_Init(S_BUFCTRL *psInBufCtrl)
 {
     /* Unlock protected registers */
     SYS_UnlockReg();
-    // Select DMIC CLK source from PLL.
+    // DMIC_APLL1_FREQ_196608KHZ for DMIC 8000/16000/48000 Hz sample-rate with 64/128/256 down-sample
+    printf("Get real APLL1 Frequency is %d\n", CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, DMIC_APLL1_FREQ_196608KHZ, CLK_APLL1_SELECT));
+    // Select DMIC CLK source from APLL1_DIV2.
     CLK_SetModuleClock(DMIC0_MODULE, CLK_DMICSEL_DMIC0SEL_APLL1_DIV2, MODULE_NoMsk);
     // Enable DMIC clock.
     CLK_EnableModuleClock(DMIC0_MODULE);
@@ -181,7 +209,9 @@ void DMIC_Init(S_BUFCTRL *psInBufCtrl)
     SYS_ResetModule(SYS_DMIC0RST);
     /* Lock protected registers */
     SYS_LockReg();
-    // Set down sample rate 100 for quilty.(Suggest 96M used DMIC_CTL_DOWNSAMPLE_100_50 )
+
+    DMIC_Open(DMIC0);
+    // DMIC_APLL1_FREQ_196608KHZ for DMIC 8000/16000/48000 Hz sample-rate with 64/128/256 down-sample
     DMIC_SET_DOWNSAMPLE(DMIC0, DMIC_DOWNSAMPLE_256);
     // Set DMIC sample rate.
     s_SampleRate = DMIC_SetSampleRate(DMIC0, SAMPLE_RATE);
@@ -189,8 +219,6 @@ void DMIC_Init(S_BUFCTRL *psInBufCtrl)
     // Set channel's latch data falling type.
     //DMIC_SET_LATCHEDGE_CH01(DMIC0, DMIC_LATCHDATA_CH01FR);
     //DMIC_SET_LATCHEDGE_CH23(DMIC0, DMIC_LATCHDATA_CH23FR);
-    // HPF control
-    DMIC_EnableHPF(DMIC0, DMIC_CTL_CH01HPFEN_Msk | DMIC_CTL_CH23HPFEN_Msk);
     //Gain step
     //DMIC_SetGainStep(DMIC0, DMIC_GAINSTEP_1_2);
     // MUTE control
@@ -207,7 +235,7 @@ void DMIC_Init(S_BUFCTRL *psInBufCtrl)
     DMIC_ResetDSP(DMIC0);  //SWRST
 
     //DMIC Gain Setting
-    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN0_Msk, 36);//+36dB
+    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk, 36);//+36dB
 
     // MIC(RX) buffer description
     sLPPDMA_DMIC[0].CTL = ((psInBufCtrl->u16BufCount - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_16 | PDMA_SAR_FIX | PDMA_DAR_INC | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
@@ -227,12 +255,6 @@ void DMIC_Init(S_BUFCTRL *psInBufCtrl)
     // GPIO multi-function.
     SET_DMIC0_DAT_PB5();
     SET_DMIC0_CLK_PB4();
-    SYS->GPB_MFOS = BIT5;
-    PB5 = 1;
-    //    SET_DMIC0_DAT_PE8();
-    //    SET_DMIC0_CLK_PE9();
-    //    SYS->GPE_MFOS = BIT8;
-    //    PE8 = 1;
     // Config DMIC buffer control
     psDMIC_BufCtrl = psInBufCtrl;
 }
@@ -241,7 +263,7 @@ void DMIC_Start(void)
 {
     if (psDMIC_BufCtrl != NULL)
     {
-        DMIC_ENABLE_CHANNEL(DMIC0, DMIC_CTL_CHEN0_Msk);
+        DMIC_EnableChMsk(DMIC0, DMIC_CTL_CHEN0_Msk);
         DMIC_ENABLE_LPPDMA(DMIC0);
     }
 }
@@ -249,7 +271,7 @@ void DMIC_Start(void)
 void DMIC_Stop(void)
 {
     DMIC_DISABLE_LPPDMA(DMIC0);
-    DMIC_DISABLE_CHANNEL(DMIC0, DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk);
+    DMIC_Close(DMIC0);
 }
 
 S_WavFileWriteInfo  sWavFileInfo;
@@ -260,11 +282,11 @@ static int32_t WAVWrite_Close(void)
     // Finalize WavFileUtil
     if (!WavFileUtil_Write_Finish(&sWavFileInfo))
     {
-        printf("WavFileUtil_Write_Finish failed");
+        printf("WavFileUtil_Write_Finish failed\n");
         return -3;
     } // if
 
-    printf("Close Done: DMIC.wav");
+    printf("Close Done:%s\n\n\n", s_strFileName);
     return 0;
 } // WAVWrite_Close()
 
@@ -277,7 +299,9 @@ static int32_t WAVWrite_Open(void)
     UINT16                  u16BitsPerSample;
     UINT32              u32ChannelNum = 1, u32SampleRate = s_SampleRate;
 
-    if (!WavFileUtil_Write_Initialize(psWavFileInfo, "0:\\DMIC.wav"))
+    printf("Open %s\n", s_strFileName);
+
+    if (!WavFileUtil_Write_Initialize(psWavFileInfo, (PCSTR) s_strFileName))
     {
         eError = -1;
         goto EndOfOpen;
@@ -300,14 +324,13 @@ EndOfOpen:
         // Finalize WavFileUtil and free media resource
         WAVWrite_Close();
     else
-        printf("Open Done: DMIC.wav");
+        printf("Open Done:%s\n", s_strFileName);
 
     return eError;
 } // WAVWrite_Open()
 
 // Write chunk
 // (Application should do sync on demand by itself)
-// [out]eNM_ERROR_EOM if end of media
 static int32_t WAVWrite_WriteChunk(const BYTE *pDataVAddr, uint32_t u32DataSize)
 {
     if (u32DataSize > 0)
@@ -317,7 +340,7 @@ static int32_t WAVWrite_WriteChunk(const BYTE *pDataVAddr, uint32_t u32DataSize)
 
         if (!WavFileUtil_Write_WriteData(&sWavFileInfo, pDataVAddr, u32DataSize))
         {
-            printf("WavFileUtil_Write_WriteData(%uB) failed", u32DataSize);
+            printf("WavFileUtil_Write_WriteData(%uB) failed\n", u32DataSize);
             return -5;
         } // if
     } // if
@@ -330,12 +353,13 @@ static void SYS_Init(void)
     /* Unlock protected registers */
     SYS_UnlockReg();
 
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL1_SELECT);
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL1 192MHZ clock from HIRC for DMIC clock source to PLL1_DIV2 */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_192MHZ, CLK_APLL1_SELECT);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -374,8 +398,9 @@ static void SYS_Init(void)
 int main(void)
 {
     TCHAR sd_path[] = { '0', ':', 0 };    /* SD drive started from 0 */
-    int32_t i32Data[4];
+    int32_t i32Data[4], i32FileNameidx = 0;
     uint32_t u32DataCnt = 0;
+
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();
     /* Init Debug UART to 115200-8N1 for print message */
@@ -392,42 +417,85 @@ int main(void)
     // Enable PDMA's NVIC
     NVIC_EnableIRQ(LPPDMA_IRQn);
 
+    /* Configure FATFS */
+    SDH_Open_Disk(SDH0, CardDetect_From_GPIO);
+    f_chdrive(sd_path);          /* set default path */
+
     // These defines are from  BUFCTRL.h for buffer control in this samle.
     // Buffer control handler configuration.
     BUFCTRL_CFG((&sInBufCtrl), ai32InBuf, sizeof(ai32InBuf) / sizeof(uint32_t));
 
     // Initiate microphone.
     DMIC_Init((S_BUFCTRL *)&sInBufCtrl);
-    /* Configure FATFS */
-    SDH_Open_Disk(SDH0, CardDetect_From_GPIO);
-    f_chdrive(sd_path);          /* set default path */
 
-    // Initiate WAV.
-    WAVWrite_Open();
-    printf("press any key to Recorder!!\n");
-    getchar();
-    // Start microphone.
-    DMIC_Start();
-
-    // while loop for processing.
-    while (u32DataCnt < 16 * s_SampleRate)
+    while (1)
     {
-        while (BUFCTRL_GET_COUNT((&sInBufCtrl)) >= 4)
+        printf("press any key to Recorder!! or Esc to exit\n");
+        char ch = getchar();
+
+        if (ch == 27) //Esc to exit
+            break;
+
+        sprintf(s_strFileName, "0:\\DMIC%d.wav", i32FileNameidx++);
+
+        // Initiate WAV.
+        if (WAVWrite_Open())
+            break;
+
+#if (NVT_DCACHE_ON == 1)
+        /*
+           Clean the CPU Data cache before starting the DMA transfer.
+           This guarantees that the source buffer will be up to date before starting the transfer.
+        */
+        SCB_CleanDCache_by_Addr(ai32InBuf, sizeof(ai32InBuf));
+#endif  // (NVT_DCACHE_ON == 1)
+        // These defines are from  BUFCTRL.h for buffer control in this samle.
+        // Buffer control handler configuration.
+        BUFCTRL_CFG((&sInBufCtrl), ai32InBuf, sizeof(ai32InBuf) / sizeof(uint32_t));
+
+        u32DataCnt = 0;
+        // Start microphone.
+        DMIC_Start();
+
+        // while loop for processing.
+        while (u32DataCnt < 16 * s_SampleRate)
         {
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[0]);
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[1]);
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[2]);
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[3]);
-            // WAV Write.
-            WAVWrite_WriteChunk((const BYTE *)i32Data, 16);
-            u32DataCnt += 8;
-        }
-    };
+            while (BUFCTRL_GET_COUNT((&sInBufCtrl)) >= 4)
+            {
+#if (NVT_DCACHE_ON == 1)
+                /*
+                   Invalidate the CPU Data cache after the DMA transfer.
+                   As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+                */
+                SCB_InvalidateDCache_by_Addr(ai32InBuf, sizeof(ai32InBuf));
+#endif  // (NVT_DCACHE_ON == 1)
 
+                BUFCTRL_READ((&sInBufCtrl), &i32Data[0]);
+                BUFCTRL_READ((&sInBufCtrl), &i32Data[1]);
+                BUFCTRL_READ((&sInBufCtrl), &i32Data[2]);
+                BUFCTRL_READ((&sInBufCtrl), &i32Data[3]);
+#if (NVT_DCACHE_ON == 1)
+                /*
+                   Clean the CPU Data cache before starting the DMA transfer.
+                   This guarantees that the source buffer will be up to date before starting the transfer.
+                */
+                SCB_CleanDCache_by_Addr(ai32InBuf, sizeof(ai32InBuf));
+#endif  // (NVT_DCACHE_ON == 1)
+                // WAV Write.
+                WAVWrite_WriteChunk((const BYTE *)i32Data, 16);
+                u32DataCnt += 8;
+            }
+        };
+
+        DMIC_Stop();
+
+        WAVWrite_Close();
+
+    }
+
+    printf("DMIC WAV record done.\n");
     DMIC_Stop();
-
     WAVWrite_Close();
-
     SDH_Close_Disk(SDH0);
 
     while (1);

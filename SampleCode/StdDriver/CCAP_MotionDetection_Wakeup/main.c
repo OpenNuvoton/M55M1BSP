@@ -5,16 +5,17 @@
  *           when motion is detected in specified regions under power down mode
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * @copyright (C) 2024 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #include <stdio.h>
 #include "NuMicro.h"
 #include "sensor.h"
 
-#define CCAP_OUTPUT_WIDTH    320
-#define CCAP_OUTPUT_HEIGHT   240
+#define CCAP_OUTPUT_WIDTH       320
+#define CCAP_OUTPUT_HEIGHT      240
+#define WK_REINIT_SENSOR        0
 
-uint8_t g_au8FrameBuffer[DCACHE_ALIGN_LINE_SIZE(CCAP_OUTPUT_WIDTH * CCAP_OUTPUT_HEIGHT * 2)] __ALIGNED(DCACHE_LINE_SIZE);
+NVT_NOINIT uint8_t g_au8FrameBuffer[DCACHE_ALIGN_LINE_SIZE(CCAP_OUTPUT_WIDTH * CCAP_OUTPUT_HEIGHT * 2)] __ALIGNED(DCACHE_LINE_SIZE);
 
 /*------------------------------------------------------------------------------------------*/
 /* To run CCAPInterruptHandler, when CCAP frame end interrupt                               */
@@ -26,17 +27,17 @@ volatile uint32_t g_u32FramePass = 0;
 /*------------------------------------------------------------------------------------------*/
 NVT_ITCM void CCAP_IRQHandler(void)
 {
+    int32_t  i32TimeoutCnt;
     uint32_t u32IntStatus;
 
-    CLK_WaitModuleClockReady(CCAP0_MODULE);         /* TESTCHIP_ONLY */
     u32IntStatus = CCAP_GET_INT_STS();
 
     if (CCAP_IsIntEnabled(CCAP_INT_VIEN_ENABLE) && (u32IntStatus & CCAP_INTSTS_VINTF_Msk) == CCAP_INTSTS_VINTF_Msk)
     {
-#ifdef NVT_DCACHE_ON
-        /* Invalidate data cache of received frame buffer.  */
+#if (NVT_DCACHE_ON == 1)
+        /* Invalidate the data cache for the received frame buffer to ensure data coherency if D-Cache is enabled. */
         SCB_InvalidateDCache_by_Addr(g_au8FrameBuffer, sizeof(g_au8FrameBuffer));
-#endif
+#endif  // (NVT_DCACHE_ON == 1)
         g_u32FramePass++;
         CCAP_CLR_INT_FLAG(CCAP_INTSTS_VINTF_Msk);   /* Clear Frame end interrupt */
     }
@@ -57,18 +58,37 @@ NVT_ITCM void CCAP_IRQHandler(void)
 
         if (CCAP_GET_WAKEUP_FUNC() && CCAP_GET_WAKEUP_FLAG())
         {
+            LPTMR_Stop(LPTMR0);
             CCAP_CLR_WAKEUP_FLAG();
-            printf("Wakeup by CCAP motion detection.\n");
+            printf("Wakeup by CCAP motion detection (u32IntStatus: 0x%X).\n", u32IntStatus);
         }
     }
 
     CCAP_EnableUpdate();
-    // CPU read interrupt flag register to wait write(clear) instruction completement.
-    u32IntStatus = CCAP_GET_INT_STS();
+    // Loop until either the flag is cleared or timeout occurs
+    i32TimeoutCnt = 1000 * CyclesPerUs;
+
+    while (1)
+    {
+        // Check flag is cleared
+        if (CCAP_GET_INT_STS() == 0)
+        {
+            break;
+        }
+
+        // Check timeout
+        if (i32TimeoutCnt-- == 0)
+        {
+            printf("Clear interrupt flag timeout !\n");
+            break;
+        }
+    }
 }
 
 NVT_ITCM void LPTMR0_IRQHandler(void)
 {
+    int32_t  i32TimeoutCnt;
+
     if (LPTMR_GetWakeupFlag(LPTMR0))
     {
         printf("LPTMR TWKF ");
@@ -84,36 +104,73 @@ NVT_ITCM void LPTMR0_IRQHandler(void)
 
     /* Clear interrupt flag */
     LPTMR_ClearIntFlag(LPTMR0);
-    // CPU read interrupt flag register to wait write(clear) instruction completement.
-    LPTMR_GetIntFlag(LPTMR0);
+
+    // Loop until either the flag is cleared or timeout occurs
+    i32TimeoutCnt = 1000 * CyclesPerUs;
+
+    while (1)
+    {
+        // Check flag is cleared
+        if ((LPTMR_GetWakeupFlag(LPTMR0) == 0) && (LPTMR_GetIntFlag(LPTMR0) == 0))
+        {
+            break;
+        }
+
+        // Check timeout
+        if (i32TimeoutCnt-- == 0)
+        {
+            printf("Clear interrupt flag timeout !\n");
+            break;
+        }
+    }
 }
 
-void CCAP_SetFreq(uint32_t u32ModFreqKHz, uint32_t u32SensorFreq)
+void CCAP_SetFreq(uint32_t u32CCAP_ClkSrc, uint32_t u32SensorFreq)
 {
-    int32_t i32Div;
+    int32_t  i32Div;
+    uint32_t u32CCAP_Clk;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
 
-    /* Enable CCAP Clock */
-    CLK_EnableModuleClock(CCAP0_MODULE);
+    if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_HIRC)
+        u32CCAP_Clk = __HIRC;
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_MIRC)
+        u32CCAP_Clk = CLK_GetMIRCFreq();
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_HCLK2)
+        u32CCAP_Clk = CLK_GetHCLK2Freq();
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_APLL0_DIV2)
+        u32CCAP_Clk = CLK_GetAPLL0ClockFreq() / 2;
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_HXT)
+        u32CCAP_Clk = CLK_GetHXTFreq();
+    else
+    {
+        printf("Invalid CCAP clock source !\n");
+        return ;
+    }
 
-    /* Reset IP */
-    SYS_ResetModule(SYS_CCAP0RST);
+    CLK_SetModuleClock(CCAP0_MODULE, u32CCAP_ClkSrc, 0);
 
-    /* Specified sensor clock */
-    CLK_SetModuleClock(CCAP0_MODULE, CLK_CCAPSEL_CCAP0SEL_HIRC, 0);
-#if !defined(TESTCHIP_ONLY)
-    i32Div = (CLK_GetHCLK2Freq() / u32SensorFreq) - 1;
+    if (u32SensorFreq <= u32CCAP_Clk)
+    {
+        i32Div = (u32CCAP_Clk / u32SensorFreq) - 1;
 
-    if (i32Div < 0)
+        if (i32Div < 0)
+            i32Div = 0;
+    }
+    else
+    {
         i32Div = 0;
+    }
 
     CLK->VSENSEDIV = (CLK->VSENSEDIV & ~CLK_VSENSEDIV_VSENSEDIV_Msk) | (i32Div << CLK_VSENSEDIV_VSENSEDIV_Pos);
-#endif
 
     /* Lock protected registers */
     SYS_LockReg();
+
+    printf("CCAP   engine clock: %d Hz (Div: %d)\n", u32CCAP_Clk, i32Div);
+    printf("Target sensor clock: %d Hz\n", u32SensorFreq);
+    printf("Actual sensor clock: %d Hz\n", u32CCAP_Clk / (i32Div + 1));
 }
 
 void SYS_Init(void)
@@ -129,8 +186,8 @@ void SYS_Init(void)
     /* Waiting for clock ready */
     CLK_WaitClockReady(CLK_STATUS_MIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -143,6 +200,12 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOD_MODULE);
     CLK_EnableModuleClock(GPIOG_MODULE);
     CLK_EnableModuleClock(GPIOH_MODULE);
+
+    /* Enable CCAP Clock */
+    CLK_EnableModuleClock(CCAP0_MODULE);
+    /* Reset IP */
+    SYS_ResetModule(SYS_CCAP0RST);
+
     CLK_EnableModuleClock(LPTMR0_MODULE);
     CLK_SetModuleClock(LPTMR0_MODULE, CLK_LPTMRSEL_LPTMR0SEL_HIRC, 0);
 
@@ -163,7 +226,7 @@ void SYS_Init(void)
     SET_CCAP_PIXCLK_PG9();
     SET_CCAP_SCLK_PG10();
     SET_CCAP_VSYNC_PG12();
-    SET_CCAP_HSYNC_PG13();
+    SET_CCAP_HSYNC_PD7();
 
     /* Lock protected registers */
     SYS_LockReg();
@@ -184,11 +247,10 @@ int32_t ConfigLPTMR(LPTMR_T *psLPTMR, uint32_t u32PreiodInMS)
 
 int32_t PacketMotionDetection(S_SENSOR_INFO *psSensorInfo)
 {
-    int32_t  i32RetCode = 0;
     int32_t  i;
 
     /* Initialize sensor and set sensor output YUV422 format */
-    if (psSensorInfo->pfnInitSensor(0) == FALSE)
+    if (psSensorInfo->pfnInitSensor((uint32_t)psSensorInfo) == FALSE)
     {
         printf("Init sensor failed !\n");
         return -1;
@@ -201,7 +263,7 @@ int32_t PacketMotionDetection(S_SENSOR_INFO *psSensorInfo)
     CCAP_SetPacketBuf((uint32_t)g_au8FrameBuffer);
 
     /* Set Vsync polarity, Hsync polarity, pixel clock polarity, Sensor Format and Order */
-    CCAP_Open(psSensorInfo->m_u32Polarity, psSensorInfo->m_u32InputFormat, CCAP_PAR_OUTFMT_YUV422);
+    CCAP_OpenPipes(psSensorInfo->m_u32Polarity, psSensorInfo->m_u32InputFormat, CCAP_PKT_OUTFMT_YUV422, CCAP_PLN_DISABLED);
 
     /* Set Packet Scaling Vertical/Horizontal Factor Register */
     CCAP_SetPacketScaling(CCAP_OUTPUT_HEIGHT, psSensorInfo->m_u16Height, CCAP_OUTPUT_WIDTH, psSensorInfo->m_u16Width);
@@ -215,40 +277,46 @@ int32_t PacketMotionDetection(S_SENSOR_INFO *psSensorInfo)
      *   If (sum of all windows diff of two frame) > (global motion detection threshold),
          CCAP will trigger MD1 interrupt (CCAP_INTSTS_MDINTF_MODE1_Msk).
      */
-    CCAP_MD_SET_TOTAL_THRESHOLD(0x6000 * CCAP_MD_WINDOW_CNT);
+    CCAP_MD_SET_TOTAL_THRESHOLD(0x2000 * CCAP_MD_WINDOW_CNT);
 
     /* Set window motion detection threshold, maximum value is 0x12AD4
      *   If (window diff of two frame) > (window motion detection threshold), overflow window count is increment by 1.
      */
     for (i = 0; i < CCAP_MD_WINDOW_CNT; i++)
-        CCAP_MD_SET_WIN_THRESHOLD(i, 0x5000);
+        CCAP_MD_SET_WIN_THRESHOLD(i, 0x2000);
 
     /* Set overflow window count threshold, maximum value is 15.
      *   If overflow window count > overflow window count threshold,
      *   CCAP will trigger MD2 interrupt (CCAP_INTSTS_MDINTF_MODE2_Msk).
      */
-    CCAP_MD_SET_OVERFLOW_WIN_THRESHOLD(10);
+    CCAP_MD_SET_OVERFLOW_WIN_THRESHOLD(4);
     /* Configure CCAPEN(CCAP_CTL[0]) to disable the capture interface. */
     CCAP_Close();
 
+    SYS_UnlockReg();
+    PMC_SetCCAP_SRAMPowerMode(PMC_SRAM_NORMAL);
     /* Enable CCAP Motion Detect Interrupt */
     CCAP_EnableInt(CCAP_INTEN_MDIEN_Msk);
     /* Enable External CAP Interrupt */
     NVIC_EnableIRQ(CCAP_IRQn);
 
-    return i32RetCode;
+    return 0;
 }
 
 int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
 {
     uint32_t u32Frame;
 
+#if (WK_REINIT_SENSOR == 1)
+
     /* Initialize sensor and set output format as YUV422 */
-    if (psSensorInfo->pfnInitSensor(0) == FALSE)
+    if (psSensorInfo->pfnInitSensor((uint32_t)psSensorInfo) == FALSE)
     {
         printf("Init sensor failed !\n");
         return -1;
     }
+
+#endif
 
     /* Enable External CCAP Interrupt */
     NVIC_EnableIRQ(CCAP_IRQn);
@@ -257,7 +325,7 @@ int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
     CCAP_EnableInt(CCAP_INT_VIEN_ENABLE);
 
     /* Set Vsync polarity, Hsync polarity, pixel clock polarity, Sensor Format and Order */
-    CCAP_Open(psSensorInfo->m_u32Polarity, psSensorInfo->m_u32InputFormat, CCAP_PAR_OUTFMT_YUV422);
+    CCAP_OpenPipes(psSensorInfo->m_u32Polarity, psSensorInfo->m_u32InputFormat, CCAP_PKT_OUTFMT_YUV422, CCAP_PLN_DISABLED);
 
     /* Set Cropping Window Vertical/Horizontal Starting Address and Cropping Window Size */
     CCAP_SetCroppingWindow(0, 0, psSensorInfo->m_u16Height, psSensorInfo->m_u16Width);
@@ -312,11 +380,10 @@ int32_t main(void)
 
         PMC_SetPowerDownMode(PMC_NPD0, PMC_PLCTL_PLSEL_PL0);
         /* Init CCAP clock and Sensor clock */
-        CLK_SetModuleClock(CCAP0_MODULE, CLK_CCAPSEL_CCAP0SEL_HIRC, 0);
-        CCAP_SetFreq(12000000, 12000000);
+        CCAP_SetFreq(CLK_CCAPSEL_CCAP0SEL_HIRC, 12000000);
 
         /* Config CCAP motion detection */
-        if (PacketMotionDetection(&g_sSensorHM1055) != 0)
+        if (PacketMotionDetection(&g_sSensorHM1055_VGA_YUV422) != 0)
         {
             printf("Test motion detection failed !\n");
             break;
@@ -327,6 +394,8 @@ int32_t main(void)
         CCAP_MD_SET_TRIG_SRC(CCAP_MD_TRIG_LPTMR0, TRUE);
         printf("Press any key to enter power down\n");
         getchar();
+        /* Keep MIRC and HIRC enabled in power down mode for TTMR/LPTMR auto operation. */
+        PMC_DISABLE_AOCKPD();
         printf("Power down ...\n");
         /* Check if all the debug messages are finished */
         UART_WAIT_TX_EMPTY(DEBUG_PORT);
@@ -336,41 +405,47 @@ int32_t main(void)
         /* Enter to Power-down mode */
         PMC_PowerDown();
 
-        /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-        CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
-        printf("\nWakeup\n");
-        u32Threshold = CCAP->MDTTH;
-        printf("Detect diff: 0x%08X (Threshold: 0x%08X)\n", CCAP->MDTSAD, u32Threshold);
-        u32Threshold = CCAP->MDWOCTH;
-        printf("Diff window count: %d (Threshold: %d)\n", CCAP_MD_GET_OVERFLOW_WIN_CNT(), u32Threshold);
+        /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+        CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+        /* Init CCAP clock and Sensor clock */
+        CCAP_SetFreq(CLK_CCAPSEL_CCAP0SEL_HCLK2, 24000000);
+
+        // Capture 1 frame after wakeup
+        if (PacketFormatDownScale(&g_sSensorHM1055_VGA_YUV422) != 0)
+            printf("Capture frame failed !\n");
+
+        printf("\nMotion Detection Status:\n");
+        u32Threshold = CCAP_MD_GET_TOTAL_THRESHOLD();
+        printf("  Total sum of diff: 0x%08X (Threshold: 0x%08X)\n", CCAP_MD_GET_TOTAL_SAD(), u32Threshold);
+        u32Threshold = CCAP_MD_GET_OVERFLOW_WIN_THRESHOLD();
+        printf("  Diff window count: %d (Threshold: %d)\n", CCAP_MD_GET_OVERFLOW_WIN_CNT(), u32Threshold);
 
         for (i = 0; i < CCAP_MD_WINDOW_CNT; i++)
         {
-            u32Threshold = CCAP->MDWTH[i];
+            uint32_t u32WinSAD;
 
             if (i % 4 == 0)
             {
-                printf("|-------------|-------------|-------------|-------------|\n");
+                printf("|--------------|--------------|--------------|--------------|\n");
                 printf("|");
             }
 
-            if (CCAP_MD_GET_WIN_SAD(i) > u32Threshold)
-                printf(" * (0x%05X) |", CCAP_MD_GET_WIN_SAD(i));
+            u32WinSAD = CCAP_MD_GET_WIN_SAD(i);
+
+            if (u32WinSAD > CCAP_MD_GET_WIN_THRESHOLD(i))
+                printf(" %s[*] 0x%05X |", (CCAP_MD_IS_WINDOW_ENABLED(1 << i)) ? "V" : "X", u32WinSAD);
             else
-                printf("             |");
+                printf(" %s[ ] 0x%05X |", (CCAP_MD_IS_WINDOW_ENABLED(1 << i)) ? "V" : "X", u32WinSAD);
 
             if ((i + 1) % 4 == 0)
                 printf("\n");
         }
 
-        printf("|-------------|-------------|-------------|-------------|\n");
-
-        // Capture 1 frame after wakeup
-        if (PacketFormatDownScale(&g_sSensorHM1055) != 0)
-            printf("Capture frame failed !\n");
+        printf("|--------------|--------------|--------------|--------------|\n");
+        printf("  V: Window Enabled, X: Window Disabled\n  *: Window Diff > Window Threshold\n\n");
     }
 
     while (1);
 }
 
-/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2024 Nuvoton Technology Corp. ***/

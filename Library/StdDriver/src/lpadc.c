@@ -42,14 +42,9 @@ int32_t g_LPADC_i32ErrCode = 0;   /*!< LPADC global error code */
   */
 void LPADC_Open(LPADC_T *lpadc, uint32_t u32InputMode, uint32_t u32OpMode, uint32_t u32ChMask)
 {
-    g_LPADC_i32ErrCode = 0;
-    /*Enable the LPADC Power on*/
-    LPADC_POWER_ON(lpadc);
 
-    /* Workaround solution for TESTCHIP */
-    outp32((uint32_t)lpadc + 0xFF4, inp32(LPADC0_BASE + 0xFF4) | (BIT5 | BIT4 | BIT1));
-    outp32((uint32_t)lpadc + 0xFF0, inp32(LPADC0_BASE + 0xFF0) | (BIT8));
-
+    /*Start the LPADC calibration function*/
+    LPADC_Calibration(lpadc);
 
     lpadc->ADCR = (lpadc->ADCR & (~(LPADC_ADCR_DIFFEN_Msk | LPADC_ADCR_ADMD_Msk))) | (u32InputMode) | (u32OpMode);
 
@@ -69,6 +64,7 @@ void LPADC_Open(LPADC_T *lpadc, uint32_t u32InputMode, uint32_t u32OpMode, uint3
   * @note       This API will reset and calibrate LPADC if LPADC never be calibrated after chip power on.
   * @note       If chip power off, calibration function should be executed again.
   * @note       This function sets g_LPADC_i32ErrCode to LPADC_TIMEOUT_ERR if CALIF(LPADC_ADCALSTSR[0]) is not set to 1
+  * @note       If you use the calibration function again, you must write 1 to clear CALIF (LPADC_ADCALSTSR[[0]).
   */
 void LPADC_Calibration(LPADC_T *lpadc)
 {
@@ -77,10 +73,6 @@ void LPADC_Calibration(LPADC_T *lpadc)
     g_LPADC_i32ErrCode = 0;
     /*Enable the LPADC Power on*/
     LPADC_POWER_ON(lpadc);
-
-    /* Workaround solution for TESTCHIP */
-    outp32((uint32_t)lpadc + 0xFF4, inp32(LPADC0_BASE + 0xFF4) | (BIT5 | BIT4 | BIT1));
-    outp32((uint32_t)lpadc + 0xFF0, inp32(LPADC0_BASE + 0xFF0) | (BIT8));
 
     /*Wait the LPADC Power On Ready  */
     while (!(lpadc->ADSR0 & LPADC_ADSR0_ADPRDY_Msk))
@@ -121,10 +113,6 @@ void LPADC_Calibration(LPADC_T *lpadc)
             }
         }
 
-        lpadc->ADCALSTS |= LPADC_ADCALSTS_CALIF_Msk;      /* Clear Calibration Finish Interrupt Flag */
-        /* Read channel 0 ADDR to clear Valid flag of channel 0 that set by calibration. */
-        /* Currently Sample Time basically needs 5 cycles */
-        uint32_t u32Temp  = LPADC0->ADDR[0];
     }
 
 }

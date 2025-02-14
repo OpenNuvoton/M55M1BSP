@@ -27,11 +27,8 @@ void PowerDownFunction(void)
 
     if (--u32TimeOutCnt == 0) break;
 
-    /* Enable Power-down mode wake-up interrupt */
-    PMC_ENABLE_INT();
-
     /* Select power-down mode and power level */
-    PMC_SetPowerDownMode(PMC_SPD0, PMC_PLCTL_PLSEL_PL1);
+    PMC_SetPowerDownMode(PMC_SPD0, PMC_PLCTL_PLSEL_PL0);
 
     /* Enter to Power-down mode */
     PMC_PowerDown();
@@ -42,17 +39,18 @@ void PowerDownFunction(void)
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void BODOUT_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = SystemCoreClock >> 1;
+
     /* Clear BOD Interrupt Flag */
     SYS_CLEAR_BOD_INT_FLAG();
 
     printf("Brown Out is Detected.\n");
 
-    /* CPU read interrupt flag register to wait write(clear) instruction completement */
-#if 1   /* TESTCHIP_ONLY */
-    inp32(&SYS->BODCTL);
-#else
-    inp32(&SYS->BODSTS);
-#endif
+    /* Wait BOD interrupt flag clear */
+    while (SYS->BODSTS & SYS_BODSTS_BODIF_Msk)
+    {
+        if (--u32TimeOutCnt == 0) break;
+    }
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -60,6 +58,8 @@ NVT_ITCM void BODOUT_IRQHandler(void)
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void PMC_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = SystemCoreClock >> 1;
+
     /* Check system power down mode wake-up interrupt status flag */
     if (PMC->INTSTS & PMC_INTSTS_PDWKIF_Msk)
     {
@@ -69,8 +69,11 @@ NVT_ITCM void PMC_IRQHandler(void)
         printf("System wake-up from Power-down mode.\n");
     }
 
-    /* CPU read interrupt flag register to wait write(clear) instruction completement */
-    inp32(PMC->INTSTS);
+    /* Wait PMC interrupt flag clear */
+    while (PMC->INTSTS)
+    {
+        if (--u32TimeOutCnt == 0) break;
+    }
 }
 
 void SYS_Init(void)
@@ -91,8 +94,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC 12MHz clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -141,9 +144,18 @@ int32_t main(void)
     /* Enable Brown-out detector interrupt function */
     SYS_DISABLE_BOD_RST();
 
+    /* Clear PMC interrupt flag */
+    PMC->INTSTS |= PMC_INTSTS_CLRWK_Msk;
+
+    /* Enable PMC wake-up interrupt */
+    PMC_ENABLE_WKINT();
+
     /* Enable Brown-out detector and Power-down wake-up interrupt */
     NVIC_EnableIRQ(BODOUT_IRQn);
     NVIC_EnableIRQ(PMC_IRQn);
+
+    /* SCLK is invalid in power down mode, The de-glitch time must be change to LIRC before system enters power down mode */
+    SYS_SET_BODDGSEL(SYS_BODCTL_BODDGSEL_LIRC);
 
     printf("System enter to Power-down mode.\n");
     printf("System wake-up if VDD voltage is lower than 3.0V.\n\n");

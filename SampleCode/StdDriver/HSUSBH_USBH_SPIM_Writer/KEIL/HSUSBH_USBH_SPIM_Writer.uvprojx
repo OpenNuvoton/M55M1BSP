@@ -10,13 +10,13 @@
       <TargetName>HSUSBH_USBH_SPIM_Writer</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6180000::V6.18::ARMCLANG</pCCUsed>
+      <pCCUsed>6190000::V6.19::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>M55M1H2LJAE</Device>
           <Vendor>Nuvoton</Vendor>
-          <PackID>Nuvoton.NuMicro_DFP.1.3.23</PackID>
+          <PackID>Nuvoton.NuMicro_DFP.1.3.24</PackID>
           <PackURL>https://github.com/OpenNuvoton/cmsis-packs/raw/master/Nuvoton_DFP/</PackURL>
           <Cpu>IRAM(0x20100000,0x150000) IRAM2(0x30100000,0x150000) IROM(0x00100000,0x200000) IROM2(0x10100000,0x200000) CPUTYPE("Cortex-M55") FPU3(DFPU) DSP TZ MVE(FP) CLOCK(12000000) ESEL ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -440,14 +440,14 @@
           <GroupName>User</GroupName>
           <Files>
             <File>
-              <FileName>diskio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\diskio.c</FilePath>
-            </File>
-            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>diskio_USBHost.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\Library\Storage\diskio_USBHost.c</FilePath>
             </File>
           </Files>
         </Group>

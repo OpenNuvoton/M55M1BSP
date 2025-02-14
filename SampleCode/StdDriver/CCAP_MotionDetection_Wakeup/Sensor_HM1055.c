@@ -12,9 +12,9 @@
 
 int32_t InitHM1055_VGA_YUV422(uint32_t u32Param);
 
-S_SENSOR_INFO g_sSensorHM1055 =
+S_SENSOR_INFO g_sSensorHM1055_VGA_YUV422 =
 {
-    .m_strName        = "HM1055",
+    .m_strName        = "HM1055_VGA_YUV422",
     .m_u32Polarity    = (CCAP_PAR_VSP_LOW | CCAP_PAR_HSP_LOW | CCAP_PAR_PCLKP_HIGH),
     .m_u32InputFormat = (CCAP_PAR_INFMT_YUV422 | CCAP_PAR_INDATORD_YUYV),
     .m_u16Width       = 640,
@@ -28,14 +28,31 @@ struct NT_RegValue
     uint8_t     u8Value;            /* Sensor Register Data */
 };
 
+/*
+ * Set PLL2(0x002C)[7], CKCFG2(0x0026)[7:5] to select MCLK input clock frequency (From CCAP_SCLK)
+ *   0000:  6MHz, 0001: 12MHz, 0010: 18MHz, 0011: 24MHz
+ *   0100: 30MHz, 0101: 36MHz, 0110: 42MHz, 0111: 48MHz
+ *   1000: 54MHz, 1001: 60MHz
+ * Set CKCFG2(0x0026)[4:0] to select PLL frequency
+ *   10000: 204MHz, 10001: 216MHz, 10010: 228MHz
+ *   10011: 240MHz, 10111: 288MHz, 11000: 300MHz
+ *   11001: 312MHz, 11010: 324MHz, 11011: 336MHz
+ *   11100: 348MHz, 11101: 360MHz, 00000: PLL Bypass
+ * Set CKCFG3(0x002B)[1:0] to select divider for system clock
+ *   00: 1/4, 01: 1/6, 10: 1/8, 11: 1/12
+ */
 static struct NT_RegValue s_sHM1055_VGA_YUV422[] =
 {
+    {0x002C, 0x00}, {0x0026, 0x37},     // MCLK: 12MHz, PLL: 288MHz
+    {0x002B, 0x01},                     // Divider: 1/6 => PCLK: 288/6 = 48MHz
     {0x0022, 0x00}, {0x0023, 0xCF}, {0x0020, 0x08}, {0x0027, 0x30},
     {0x0004, 0x10}, {0x0006, 0x03}, {0x0012, 0x0F},
-    /* {0x0026, 0x77}, */ /*48Mhz */
-    {0x0026, 0x37}, /*68Mhz */
-    {0x0029, 0x00}, // 0x80 for CCIR656
-    {0x002A, 0x44}, {0x002B, 0x01}, {0x002C, 0x00}, /* {0x0025, 0x00}, */
+    {0x0029, 0x00},                     // 0x80 for CCIR656
+    {0x002A, 0x44},
+    /* CKCFG1(0x0025)[7]: System clock source selection
+     *   0: PLL, 1: MCLK input
+     */
+    {0x0025, 0x80},
     {0x004A, 0x0A}, {0x004B, 0x72}, {0x0070, 0x2A}, {0x0071, 0x46},
     {0x0072, 0x55}, {0x0080, 0xC2}, {0x0082, 0xA2}, {0x0083, 0xF0},
     {0x0085, 0x10}, {0x0086, 0x22}, {0x0087, 0x08}, {0x0088, 0x6D},
@@ -168,6 +185,10 @@ static struct NT_RegValue s_sHM1055_VGA_YUV422[] =
     {0x05E6, 0x82}, {0x05E7, 0x02}, {0x05E8, 0x04}, {0x05E9, 0x00},
     {0x05EA, 0xE3}, {0x05EB, 0x01}, {0x0000, 0x01}, {0x0100, 0x01},
     {0x0101, 0x01}, {0x0005, 0x01},
+    /* IMGCFG(0x000F)[3]: Fixed frame rate enable
+     *   0: Disable, 1: Fixed frame rate
+     */
+    {0x000F, 0x18},
 #ifdef CONFIG_FLICKER_50HZ_DEV1
     {0x0542, 0x00},
     {0x0543, 0xE1},
@@ -188,9 +209,12 @@ static void Delay(uint32_t nCount)
 
 int32_t InitHM1055_VGA_YUV422(uint32_t u32Param)
 {
+    S_SENSOR_INFO *psSensorInfo = (S_SENSOR_INFO *)u32Param;
     uint32_t i;
     uint8_t u8DeviceID = 0x48;
-    uint8_t u8ID[2] = {0};
+    uint8_t u8ID[2]    = {0};
+
+    printf("Init %s ...\n", psSensorInfo->m_strName);
     SET_GPIO_PH2();        /* PH2 for GPIO to act as SCL */
     SET_GPIO_PH3();        /* PH3 for GPIO to act as SDA */
 
@@ -201,6 +225,7 @@ int32_t InitHM1055_VGA_YUV422(uint32_t u32Param)
     GPIO_SetMode(PD, BIT12, GPIO_MODE_OUTPUT);        /* Set #PD pin to low */
     PD12 = 0;
 
+    /* Config SW I2C pin function */
     SWI2C_Open(eDRVGPIO_GPIOH, eDRVGPIO_PIN2, eDRVGPIO_GPIOH, eDRVGPIO_PIN3, Delay);
 
     for (i = 0; i < sizeof(s_sHM1055_VGA_YUV422) / sizeof(struct NT_RegValue); i++)
@@ -220,7 +245,4 @@ int32_t InitHM1055_VGA_YUV422(uint32_t u32Param)
 
     return 1;
 }
-
-
-
 

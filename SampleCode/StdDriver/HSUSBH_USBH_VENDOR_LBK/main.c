@@ -128,8 +128,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
 #if (USE_USB_APLL1_CLOCK)
     /* Enable APLL1 96MHz clock */
@@ -147,6 +147,11 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOH_MODULE);
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
+
+    /* Enable HSOTG module clock */
+    CLK_EnableModuleClock(HSOTG0_MODULE);
+    /* Select HSOTG PHY Reference clock frequency which is from HXT*/
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
 #if (USE_USB_APLL1_CLOCK)
     /* USB Host desired input clock is 48 MHz. Set as APLL1 divided by 2 (96/2 = 48) */
@@ -180,11 +185,11 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.8     */
-    SET_USB_VBUS_EN_PB8();
+    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.15     */
+    SET_USB_VBUS_EN_PB15();
 
-    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.9   */
-    SET_USB_VBUS_ST_PB9();
+    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.14   */
+    SET_USB_VBUS_ST_PB14();
 
     /* HSUSB_VBUS_EN (USB 2.0 VBUS power enable pin) multi-function pin - PJ.13   */
     SET_HSUSB_VBUS_EN_PJ13();

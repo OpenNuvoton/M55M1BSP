@@ -11,7 +11,7 @@
 #define ABS_Q7_ERROR ((q7_t)10)
 
 
-void SupportTestsF32::test_weighted_sum_f32()
+void SupportTestsF32::test_weighted_average_f32()
 {
  const float32_t *inp = input.ptr();
  const float32_t *coefsp = coefs.ptr();
@@ -20,7 +20,7 @@ void SupportTestsF32::test_weighted_sum_f32()
  float32_t *outp = output.ptr();
  
  
- *outp=arm_weighted_sum_f32(inp, coefsp,this->nbSamples);
+ *outp=arm_weighted_average_f32(inp, coefsp,this->nbSamples);
  
  
  ASSERT_REL_ERROR(*outp,refp[this->offset],REL_ERROR);
@@ -71,6 +71,19 @@ void SupportTestsF32::test_float_to_q15()
  
  ASSERT_NEAR_EQ(refQ15,outputQ15,ABS_Q15_ERROR);
  ASSERT_EMPTY_TAIL(outputQ15);
+
+} 
+
+void SupportTestsF32::test_float_to_f64()
+{
+ const float32_t *inp = input.ptr();
+ float64_t *outp = outputF64.ptr();
+ 
+ 
+ arm_float_to_f64(inp, outp,this->nbSamples);
+ 
+ ASSERT_REL_ERROR(refF64,outputF64,REL_ERROR);
+ ASSERT_EMPTY_TAIL(outputF64);
 
 } 
 
@@ -423,7 +436,7 @@ void SupportTestsF32::setUp(Testing::testID_t id,std::vector<Testing::param_t>& 
   (void)paramsArgs;
   switch(id)
   {    
-    case TEST_WEIGHTED_SUM_F32_1:
+    case TEST_WEIGHTED_AVERAGE_F32_1:
     this->nbSamples = 3;
     input.reload(SupportTestsF32::INPUTS_F32_ID,mgr,this->nbSamples);
     coefs.reload(SupportTestsF32::WEIGHTS_F32_ID,mgr,this->nbSamples);
@@ -434,7 +447,7 @@ void SupportTestsF32::setUp(Testing::testID_t id,std::vector<Testing::param_t>& 
     this->offset=0;
     break;
 
-    case TEST_WEIGHTED_SUM_F32_2:
+    case TEST_WEIGHTED_AVERAGE_F32_2:
     this->nbSamples = 8;
     input.reload(SupportTestsF32::INPUTS_F32_ID,mgr,this->nbSamples);
     coefs.reload(SupportTestsF32::WEIGHTS_F32_ID,mgr,this->nbSamples);
@@ -445,7 +458,7 @@ void SupportTestsF32::setUp(Testing::testID_t id,std::vector<Testing::param_t>& 
     this->offset=1;
     break;
 
-    case TEST_WEIGHTED_SUM_F32_3:
+    case TEST_WEIGHTED_AVERAGE_F32_3:
     this->nbSamples = 11;
     input.reload(SupportTestsF32::INPUTS_F32_ID,mgr,this->nbSamples);
     coefs.reload(SupportTestsF32::WEIGHTS_F32_ID,mgr,this->nbSamples);
@@ -718,6 +731,30 @@ void SupportTestsF32::setUp(Testing::testID_t id,std::vector<Testing::param_t>& 
     input.reload(SupportTestsF32::INPUT_SORT_CONST_F32_ID,mgr,this->nbSamples);
     ref.reload(SupportTestsF32::REF_SORT_CONST_F32_ID,mgr);
     output.create(this->nbSamples,SupportTestsF32::OUT_F32_ID,mgr); 
+    break;
+
+    case TEST_FLOAT_TO_F64_40:
+    this->nbSamples = 7;
+    input.reload(SupportTestsF32::SAMPLES_F32_ID,mgr,this->nbSamples);
+    refF64.reload(SupportTestsF32::SAMPLES_F64_ID,mgr,this->nbSamples);
+    outputF64.create(this->nbSamples,SupportTestsF32::OUT_F32_ID,mgr);
+
+    break;
+
+    case TEST_FLOAT_TO_F64_41:
+    this->nbSamples = 16;
+    input.reload(SupportTestsF32::SAMPLES_F32_ID,mgr,this->nbSamples);
+    refF64.reload(SupportTestsF32::SAMPLES_F64_ID,mgr,this->nbSamples);
+    outputF64.create(this->nbSamples,SupportTestsF32::OUT_F32_ID,mgr);
+
+    break;
+
+    case TEST_FLOAT_TO_F64_42:
+    this->nbSamples = 17;
+    input.reload(SupportTestsF32::SAMPLES_F32_ID,mgr,this->nbSamples);
+    refF64.reload(SupportTestsF32::SAMPLES_F64_ID,mgr,this->nbSamples);
+    outputF64.create(this->nbSamples,SupportTestsF32::OUT_F32_ID,mgr);
+
     break;
 
 

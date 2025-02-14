@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
-
 void PowerDownFunction(void);
 void WakeUpPinFunction(uint32_t u32PDMode);
 void WakeUpTimerFunction(uint32_t u32PDMode, uint32_t u32Interval);
@@ -25,8 +24,9 @@ void PowerDownFunction(void)
 {
     uint32_t u32TimeOutCnt;
 
+    u32TimeOutCnt = SystemCoreClock;
+
     /* Check if all the debug messages are finished */
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
     UART_WAIT_TX_EMPTY(DEBUG_PORT)
 
     if (--u32TimeOutCnt == 0) break;
@@ -45,10 +45,16 @@ void WakeUpPinFunction(uint32_t u32PDMode)
     /* Select Power-down mode */
     PMC_SetPowerDownMode(u32PDMode, PMC_PLCTL_PLSEL_PL0);
 
+    /* Enable GPIO clock */
+    CLK_EnableModuleClock(GPIOC_MODULE);
+
+    /* Configure GPIO as pull-up mode */
+    GPIO_SetPullCtl(PC, BIT0, GPIO_PUSEL_PULL_UP);
+
     /* Configure GPIO as input mode */
     GPIO_SetMode(PC, BIT0, GPIO_MODE_INPUT);
 
-    /* Set Wake-up pin trigger type at Deep Power down mode */
+    /* Set Wake-up pin trigger type at deep power down mode */
     PMC_EnableTGPin(PMC_TGPIN_PC, 0, PMC_TGPIN_FALLING, PMC_TGPIN_DEBOUNCEDIS, PMC_TGPIN_WAKEUP_ENABLE);
 
     /* Enter to Power-down mode and wait for wake-up reset happen */
@@ -60,7 +66,6 @@ void WakeUpPinFunction(uint32_t u32PDMode)
 /*-----------------------------------------------------------------------------------------------------------*/
 void WakeUpTimerFunction(uint32_t u32PDMode, uint32_t u32Interval)
 {
-
     printf("Enter to SPD Power-down mode......\n");
 
     /* Select Power-down mode */
@@ -79,6 +84,9 @@ void WakeUpTimerFunction(uint32_t u32PDMode, uint32_t u32Interval)
 void WakeUpLVRFunction(uint32_t u32PDMode)
 {
     printf("Enter to SPD Power-down mode......\n");
+
+    /* Enable LVR function */
+    SYS_ENABLE_LVR();
 
     /* Select Power-down mode */
     PMC_SetPowerDownMode(u32PDMode, PMC_PLCTL_PLSEL_PL0);
@@ -118,7 +126,7 @@ void CheckPowerSource(void)
     uint32_t u32RegRstsrc1, u32RegRstsrc2;
 
     u32RegRstsrc1 = PMC_GetPMCWKSrc();
-    u32RegRstsrc2 = SYS->RSTSTS;
+    u32RegRstsrc2 = SYS_GetResetSrc();
 
     if ((u32RegRstsrc1 & PMC_INTSTS_GPCTGWKIF_Msk) != 0)
         printf("Wake-up source is TG Pin.\n");
@@ -171,8 +179,8 @@ void SYS_Init(void)
     /* Waiting for Internal low speed RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -216,7 +224,7 @@ int32_t main(void)
     printf("|    SPD Power-down Mode and Wake-up Sample Code                  |\n");
     printf("|    Please Select Power Down Mode and Wake up source.            |\n");
     printf("+-----------------------------------------------------------------+\n");
-    printf("|[1] SPD TG pin(PC.0) and using rising edge wake up.              |\n");
+    printf("|[1] SPD TG pin(PC.0) and using falling edge wake up.             |\n");
     printf("|[2] SPD Wake-up TIMER time-out interval is 4096 LIRC clocks.     |\n");
     printf("|[3] SPD Wake-up by BOD.                                          |\n");
     printf("|[4] SPD Wake-up by LVR.                                          |\n");

@@ -4,7 +4,7 @@
 
 using global::System;
 using global::System.Collections.Generic;
-using global::FlatBuffers;
+using global::Google.FlatBuffers;
 
 public struct BookReader : IFlatbufferObject
 {
@@ -35,7 +35,7 @@ public struct BookReader : IFlatbufferObject
       builder,
       _o.BooksRead);
   }
-};
+}
 
 public class BookReaderT
 {

@@ -40,14 +40,8 @@ NVT_ITCM void ACMP01_IRQHandler(void)
 void SYS_Init(void)
 {
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Set PCLK1 divide 4 */
     CLK_SET_PCLK1DIV(4);

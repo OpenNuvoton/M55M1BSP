@@ -12,25 +12,6 @@
  * Please refer to the NuMicro M55M1 Technical Reference Manual for
  * further information.
  *
- * +---------------+   +---------------+  +---------------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM (64 KB)  |
- * |               |   |               |  +---------------+
- * |               |   |               |
- * |               |   |               |  +---------------+
- * |  M1      M0   |   |               +--+ DTCM (128 KB) |
- * +---+-------+---+   +-------+-------+  +---------------+
- *     |       |               |
- *     |   +---+---------------+-------+
- *     |   |   AMBA AXI NIC-400-Lite   |
- *     |   +---+--------+---------+----+
- *     |       |        |         |
- * +---+-------+--+ +---+---+ +---+---+
- * | AMBA AHB     | | SRAM0 | | SRAM2 |
- * +---+----------+ | SRAM1 | +-------+
- *     |            +-------+
- * +---+---+
- * | FLASH |
- * +-------+
  *
  * +-----------------------+-------------+-------------+----+------------------------------------------------+
  * |  Memory region name   | Base addr   |    Size     |IDAU| Description                                    |
@@ -49,10 +30,8 @@
  * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-secure alias for Flash                     |
  * | EBI                   | 0x6000_0000 | 0x0030_0000 | S  | 3 MiB                                          |
  * | EBI                   | 0x7000_0000 | 0x0030_0000 | NS | Non-secure alias for EBI                       |
- * | SPIM0                 | 0x8000_0000 | 0x0200_0000 | S  | 32 MiB                                         |
- * | SPIM0                 | 0x9000_0000 | 0x0200_0000 | NS | Non-secure alias for SPIM0                     |
- * | SPIM1                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                                         |
- * | SPIM1                 | 0x9200_0000 | 0x0200_0000 | NS | Non-secure alias for SPIM1                     |
+ * | SPIM0                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                                         |
+ * | SPIM0                 | 0x9200_0000 | 0x0200_0000 | NS | Non-secure alias for SPIM0                     |
  * +-----------------------+-------------+-------------+----+------------------------------------------------+
  *
  *  Note: Ethos-U55 can access Flash, internal SRAM 0,1 => activation buffers and
@@ -158,17 +137,17 @@ LR_ROM __RO_BASE __RO_SIZE  {                       ; load region size_region
         .ANY (+RO)
     }
 
-    ITCM ITCM_START ITCM_SIZE
-    {
-        .ANY (ITCM)
-    }
-
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
     NSC_ROM +0
     {
         .ANY (Veneer$$CMSE)
     }
 #endif
+
+    ITCM ITCM_START ITCM_SIZE
+    {
+        .ANY (ITCM)
+    }
 
     __RW __RW_BASE __RW_SIZE              ; RW data
     {

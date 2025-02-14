@@ -15,41 +15,40 @@ limitations under the License.
 
 #include "tensorflow/lite/micro/fake_micro_context.h"
 
+#include "tensorflow/lite/c/c_api_types.h"
 #include "tensorflow/lite/kernels/internal/compatibility.h"
-#include "tensorflow/lite/micro/micro_allocator.h"
+#include "tensorflow/lite/micro/arena_allocator/single_arena_buffer_allocator.h"
 #include "tensorflow/lite/micro/micro_arena_constants.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
-#include "tensorflow/lite/micro/simple_memory_allocator.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
-namespace {
-// Dummy static variables to allow creation of dummy MicroAllocator.
-// All tests are guarateed to run serially.
-static constexpr int KDummyTensorArenaSize = 256;
-static uint8_t dummy_tensor_arena[KDummyTensorArenaSize];
-}  // namespace
 
 FakeMicroContext::FakeMicroContext(TfLiteTensor* tensors,
-                                   SimpleMemoryAllocator* allocator,
+                                   SingleArenaBufferAllocator* allocator,
                                    MicroGraph* micro_graph)
-    : MicroContext(
-          MicroAllocator::Create(dummy_tensor_arena, KDummyTensorArenaSize,
-                                 GetMicroErrorReporter()),
-          nullptr, micro_graph),
-      tensors_(tensors),
-      allocator_(allocator) {}
+    : graph_(*micro_graph), tensors_(tensors), allocator_(allocator) {}
 
 TfLiteTensor* FakeMicroContext::AllocateTempTfLiteTensor(int tensor_index) {
-  allocated_tensor_count_++;
+  allocated_temp_count_++;
   return &tensors_[tensor_index];
 }
 
 void FakeMicroContext::DeallocateTempTfLiteTensor(TfLiteTensor* tensor) {
-  allocated_tensor_count_--;
+  allocated_temp_count_--;
 }
 
 bool FakeMicroContext::IsAllTempTfLiteTensorDeallocated() {
-  return !allocated_tensor_count_;
+  return !allocated_temp_count_;
+}
+
+uint8_t* FakeMicroContext::AllocateTempBuffer(size_t size, size_t alignment) {
+  allocated_temp_count_++;
+  return allocator_->AllocateTemp(size, alignment);
+}
+
+void FakeMicroContext::DeallocateTempBuffer(uint8_t* buffer) {
+  allocated_temp_count_--;
+  allocator_->DeallocateTemp(buffer);
 }
 
 TfLiteEvalTensor* FakeMicroContext::GetEvalTensor(int tensor_index) {
@@ -67,11 +66,12 @@ TfLiteEvalTensor* FakeMicroContext::GetEvalTensor(int tensor_index) {
 }
 
 void* FakeMicroContext::AllocatePersistentBuffer(size_t bytes) {
-  // FakeMicroContext use SimpleMemoryAllocator, which does not automatically
-  // apply the buffer alignment like MicroAllocator.
-  // The buffer alignment is potentially wasteful but allows the
-  // fake_micro_context to work correctly with optimized kernels.
-  return allocator_->AllocateFromTail(bytes, MicroArenaBufferAlignment());
+  // FakeMicroContext use SingleArenaBufferAllocator, which does not
+  // automatically apply the buffer alignment like MicroAllocator. The buffer
+  // alignment is potentially wasteful but allows the fake_micro_context to work
+  // correctly with optimized kernels.
+  return allocator_->AllocatePersistentBuffer(bytes,
+                                              MicroArenaBufferAlignment());
 }
 
 TfLiteStatus FakeMicroContext::RequestScratchBufferInArena(size_t bytes,
@@ -88,7 +88,7 @@ TfLiteStatus FakeMicroContext::RequestScratchBufferInArena(size_t bytes,
   // for the lifetime of model. This means that the arena size in the tests will
   // be more than what we would have if the scratch buffers could share memory.
   scratch_buffers_[scratch_buffer_count_] =
-      allocator_->AllocateFromTail(bytes, MicroArenaBufferAlignment());
+      allocator_->AllocatePersistentBuffer(bytes, MicroArenaBufferAlignment());
   TFLITE_DCHECK(scratch_buffers_[scratch_buffer_count_] != nullptr);
 
   *buffer_index = scratch_buffer_count_++;
@@ -102,5 +102,14 @@ void* FakeMicroContext::GetScratchBuffer(int buffer_index) {
   }
   return scratch_buffers_[buffer_index];
 }
+
+TfLiteStatus FakeMicroContext::set_external_context(
+    void* external_context_payload) {
+  return kTfLiteError;
+}
+
+void* FakeMicroContext::external_context() { return nullptr; }
+
+MicroGraph& FakeMicroContext::graph() { return graph_; }
 
 }  // namespace tflite

@@ -202,7 +202,7 @@ enum pd_task_timer
     PE_SRC_PPS_TIMEROUT,                  //31    --> PD_T_SRC_PPS_TIMEROUT
 
 
-#if (CONFIG_TC8260_FRS == 1)
+#if (CONFIG_M55M1_FRS == 1)
     TC_TIMER_FRS_START_DELAY,
 
     PD_TIMER_COUNT

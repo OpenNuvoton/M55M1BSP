@@ -37,7 +37,7 @@ typedef enum
 
 #define PLM_WVCODE   (0x475AUL << PLM_CTL_WVCODE_Pos)  /*!< The key code for PLM_CTL write. */
 
-/** @} end of group FVC_EXPORTED_CONSTANTS */
+/** @} end of group PLM_EXPORTED_CONSTANTS */
 
 
 /** @addtogroup FVC_EXPORTED_FUNCTIONS FVC Exported Functions

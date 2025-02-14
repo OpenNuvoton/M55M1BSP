@@ -12,7 +12,7 @@
 
 #define BUFF_SIZE   1024
 
-static volatile int g_AES_done = FALSE, g_AESERR_done = FALSE;
+static volatile int32_t s_i32AES_Done = FALSE, s_i32AES_Err = FALSE;
 
 static uint8_t g_au8In[] __ALIGNED(4) =
 {
@@ -31,12 +31,12 @@ NVT_ITCM void CRYPTO_IRQHandler(void)
 {
     if (AES_GET_INT_FLAG(CRYPTO) & CRYPTO_INTSTS_AESIF_Msk)
     {
-        g_AES_done = TRUE;
+        s_i32AES_Done = TRUE;
     }
 
     if (AES_GET_INT_FLAG(CRYPTO) & CRYPTO_INTSTS_AESEIF_Msk)
     {
-        g_AESERR_done = TRUE;
+        s_i32AES_Err = TRUE;
     }
 
     AES_CLR_INT_FLAG(CRYPTO);
@@ -94,27 +94,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -162,9 +143,10 @@ int main(void)
 
     if (i32KeyIdx < 0)
     {
-        printf("Fail to write key to Key Store !\n");
-        printf("KS SRAM remain size = %d\n", KS_GetRemainSize(KS_SRAM));
-
+        printf("Fail to write key to KS SRAM !\n KS SRAM is full then KS_EraseAll(KS_SRAM) to erase.\n");
+        printf("KS SRAM remain size = %d, remain key count: %d\n",
+               KS_GetRemainSize(KS_SRAM), KS_GetRemainKeyCount(KS_SRAM));
+        KS_EraseAll(KS_SRAM);
         goto lexit;
     }
 
@@ -224,14 +206,14 @@ int AES_Test(CRYPTO_T *pCrypto, KS_MEM_Type mem, int32_t keyIdx)
     AES_SetDMATransfer(pCrypto, 0, (uint32_t)g_au8In, (uint32_t)g_au8Out, (uint32_t)u32DataByteSize);
 
     AES_ENABLE_INT(pCrypto);
-    g_AES_done = FALSE;
-    g_AESERR_done = FALSE;
+    s_i32AES_Done = FALSE;
+    s_i32AES_Err = FALSE;
 
     /* Start AES encode */
     AES_Start(pCrypto, 0, CRYPTO_DMA_ONE_SHOT);
     u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
-    while (!g_AES_done)
+    while (!s_i32AES_Done)
     {
         if (--u32TimeOutCnt == 0)
         {
@@ -240,7 +222,7 @@ int AES_Test(CRYPTO_T *pCrypto, KS_MEM_Type mem, int32_t keyIdx)
         }
     }
 
-    if (g_AESERR_done)
+    if (s_i32AES_Err)
     {
         printf("AES Encode Fail!\n");
         return -1;
@@ -263,14 +245,14 @@ int AES_Test(CRYPTO_T *pCrypto, KS_MEM_Type mem, int32_t keyIdx)
     AES_SetDMATransfer(pCrypto, 0, (uint32_t)g_au8Out, (uint32_t)g_au8Out2, (uint32_t)u32DataByteSize);
 
     AES_ENABLE_INT(pCrypto);
-    g_AES_done = FALSE;
-    g_AESERR_done = FALSE;
+    s_i32AES_Done = FALSE;
+    s_i32AES_Err = FALSE;
 
     /* Start AES decode */
     AES_Start(pCrypto, 0, CRYPTO_DMA_ONE_SHOT);
     u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
-    while (!g_AES_done)
+    while (!s_i32AES_Done)
     {
         if (--u32TimeOutCnt == 0)
         {
@@ -279,7 +261,7 @@ int AES_Test(CRYPTO_T *pCrypto, KS_MEM_Type mem, int32_t keyIdx)
         }
     }
 
-    if (g_AESERR_done)
+    if (s_i32AES_Err)
     {
         printf("AES Decode Fail!\n");
         return -1;

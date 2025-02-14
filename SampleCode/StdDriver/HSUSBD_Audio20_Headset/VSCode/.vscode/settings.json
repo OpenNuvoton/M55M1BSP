@@ -1,0 +1,20 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "HSUSBD_Audio20_Headset.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "HSUSBD_Audio20_Headset.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        }
+    ]
+}

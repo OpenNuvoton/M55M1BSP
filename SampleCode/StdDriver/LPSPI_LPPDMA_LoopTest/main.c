@@ -27,8 +27,15 @@ void LPSPI_Init(void);
 void LPSPILoopTest_WithLPPDMA(void);
 
 /* Global variable declaration */
-uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
-uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
+#if (NVT_DCACHE_ON == 1)
+    /* DCache-line aligned buffer for LPSPI0 data transfer with LPPDMA */
+    uint32_t g_au32MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((section(".lpSram"), aligned(DCACHE_LINE_SIZE)));
+    uint32_t g_au32MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((section(".lpSram"), aligned(DCACHE_LINE_SIZE)));
+#else
+    /* Buffer for LPSPI0 data transfer with LPPDMA */
+    uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
+    uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
+#endif
 
 int main(void)
 {
@@ -78,8 +85,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -99,7 +106,7 @@ void SYS_Init(void)
     SystemCoreClockUpdate();
 
     /* Select PCLK1 as the clock source of LPSPI0 */
-    CLK_SetModuleClock(LPSPI0_MODULE, CLK_LPSPISEL_LPSPI0SEL_HIRC, MODULE_NoMsk);
+    CLK_SetModuleClock(LPSPI0_MODULE, CLK_LPSPISEL_LPSPI0SEL_PCLK4, MODULE_NoMsk);
 
     /* Enable LPSPI0 peripheral clock */
     CLK_EnableModuleClock(LPSPI0_MODULE);
@@ -118,14 +125,10 @@ void SYS_Init(void)
     /* Setup LPSPI0 multi-function pins */
     /* PA.3 is LPSPI0_SS,   PA.2 is LPSPI0_CLK,
        PA.1 is LPSPI0_MISO, PA.0 is LPSPI0_MOSI*/
-    SYS->GPA_MFP0 = (SYS->GPA_MFP0 & ~(SYS_GPA_MFP0_PA3MFP_Msk |
-                                       SYS_GPA_MFP0_PA2MFP_Msk |
-                                       SYS_GPA_MFP0_PA1MFP_Msk |
-                                       SYS_GPA_MFP0_PA0MFP_Msk)) |
-                    (SYS_GPA_MFP0_PA3MFP_LPSPI0_SS |
-                     SYS_GPA_MFP0_PA2MFP_LPSPI0_CLK |
-                     SYS_GPA_MFP0_PA1MFP_LPSPI0_MISO |
-                     SYS_GPA_MFP0_PA0MFP_LPSPI0_MOSI);
+    SET_LPSPI0_SS_PA3();
+    SET_LPSPI0_CLK_PA2();
+    SET_LPSPI0_MISO_PA1();
+    SET_LPSPI0_MOSI_PA0();
 }
 
 void LPSPI_Init(void)
@@ -149,6 +152,12 @@ void LPSPILoopTest_WithLPPDMA(void)
     uint32_t u32TimeOutCount;
 
     printf("\nLPSPI0 Loopback test with LPPDMA \n");
+
+#if (NVT_DCACHE_ON == 1)
+    /* Clean the data cache for the master to slave test pattern before writing to it and enabling LPPDMA */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_CleanDCache_by_Addr((uint32_t *)&g_au32MasterToSlaveTestPattern, sizeof(g_au32MasterToSlaveTestPattern));
+#endif
 
     /* Source data initiation */
     for (u32DataCount = 0; u32DataCount < DATA_COUNT; u32DataCount++)
@@ -195,6 +204,11 @@ void LPSPILoopTest_WithLPPDMA(void)
         Destination Address = Increasing
         Burst Type = Single Transfer
     =========================================================================*/
+#if (NVT_DCACHE_ON == 1)
+    /* Clean the data cache for the master RX buffer before starting the LPPDMA transfer */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_InvalidateDCache_by_Addr((uint32_t *)&g_au32MasterRxBuffer, sizeof(g_au32MasterRxBuffer));
+#endif
     /* Set transfer width (32 bits) and transfer count */
     LPPDMA_SetTransferCnt(LPPDMA, LPSPI_MASTER_RX_DMA_CH, LPPDMA_WIDTH_32, DATA_COUNT);
     /* Set source/destination address and attributes */
@@ -235,6 +249,11 @@ void LPSPILoopTest_WithLPPDMA(void)
                     /* Disable LPSPI master's LPPDMA transfer function */
                     LPSPI_DISABLE_TX_PDMA(LPSPI0);
                     LPSPI_DISABLE_RX_PDMA(LPSPI0);
+
+#if (NVT_DCACHE_ON == 1)
+                    /* Clean the data cache for the source buffer of SPI master PDMA TX channel */
+                    SCB_InvalidateDCache_by_Addr((uint32_t *)&g_au32MasterToSlaveTestPattern, sizeof(g_au32MasterToSlaveTestPattern));
+#endif
 
                     /* Check the transfer data */
                     for (u32DataCount = 0; u32DataCount < DATA_COUNT; u32DataCount++)
@@ -316,4 +335,3 @@ void LPSPILoopTest_WithLPPDMA(void)
 }
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
-

@@ -108,6 +108,21 @@ extern int32_t g_SDH_i32ErrCode;
 /** @addtogroup SDH_EXPORTED_FUNCTIONS SDH Exported Functions
   @{
 */
+/**
+ *  @brief    Enable SDH DMA.
+ *
+ *  @param[in]    sdh    Select SDH0 or SDH1.
+ * \hideinitializer
+ */
+#define SDH_ENABLE_DMA(sdh) ((sdh)->DMACTL |= (SDH_DMACTL_DMAEN_Msk))
+
+/**
+ *  @brief    Disable SDH DMA.
+ *
+ *  @param[in]    sdh    Select SDH0 or SDH1.
+ * \hideinitializer
+ */
+#define SDH_DISABLE_DMA(sdh) ((sdh)->DMACTL &= ~(SDH_DMACTL_DMAEN_Msk))
 
 /**
  *  @brief    Enable specified interrupt.

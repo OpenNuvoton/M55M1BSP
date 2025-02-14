@@ -11,13 +11,21 @@
 #include "NuMicro.h"
 
 #define _SWAP
-
-
 #define MAX_GCM_BUF     4096
-__ALIGNED(4) uint8_t g_au8Buf[MAX_GCM_BUF];
-__ALIGNED(4) uint8_t g_au8Out[MAX_GCM_BUF];
-__ALIGNED(4) uint8_t g_au8Out2[MAX_GCM_BUF];
 
+// DCache-line related//
+//------------------------------------------------------------------------------
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    uint8_t g_au8Buf[DCACHE_ALIGN_LINE_SIZE(MAX_GCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_au8Out[DCACHE_ALIGN_LINE_SIZE(MAX_GCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_au8Out2[DCACHE_ALIGN_LINE_SIZE(MAX_GCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    // Standard buffer alignment when DCache is disabled
+    __ALIGNED(4) uint8_t g_au8Buf[MAX_GCM_BUF];
+    __ALIGNED(4) uint8_t g_au8Out[MAX_GCM_BUF];
+    __ALIGNED(4) uint8_t g_au8Out2[MAX_GCM_BUF];
+#endif
 __ALIGNED(4) uint8_t g_key[32] = { 0 };
 __ALIGNED(4) uint8_t g_iv[32] = { 0 };
 __ALIGNED(4) uint8_t g_A[265] = { 0 };
@@ -112,8 +120,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -510,9 +518,14 @@ int32_t AES_CCM(int32_t enc, uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t 
     CRYPTO->AES_GCM_PCNT[0] = *plen_aligned;
     CRYPTO->AES_GCM_PCNT[1] = 0;
 
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(g_au8Buf, sizeof(g_au8Buf));
+#endif
 
     AES_SetDMATransfer(CRYPTO, 0, (uint32_t)g_au8Buf, (uint32_t)buf, *size);
-
+    /*
+        buf could be g_au8Out or g_au8Out2
+    */
     g_Crypto_Int_done = 0;
     /* Start AES Encrypt */
     AES_Start(CRYPTO, 0, CRYPTO_DMA_ONE_SHOT);
@@ -529,6 +542,9 @@ int32_t AES_CCM(int32_t enc, uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t 
     }
 
     printf("Output blocks (%d):\n", *size);
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(buf, sizeof(buf));
+#endif
     DumpBuffHex2(buf, *size);
 
     return 0;

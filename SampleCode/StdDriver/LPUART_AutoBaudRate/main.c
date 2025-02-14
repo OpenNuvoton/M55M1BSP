@@ -40,14 +40,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -71,7 +65,6 @@ void SYS_Init(void)
     /* Set PA multi-function pins for LPUART0 TXD and RXD */
     SET_LPUART0_RXD_PA0();
     SET_LPUART0_TXD_PA1();
-
 
 }
 

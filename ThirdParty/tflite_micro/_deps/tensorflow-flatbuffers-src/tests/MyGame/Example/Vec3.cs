@@ -7,7 +7,7 @@ namespace MyGame.Example
 
 using global::System;
 using global::System.Collections.Generic;
-using global::FlatBuffers;
+using global::Google.FlatBuffers;
 
 public struct Vec3 : IFlatbufferObject
 {
@@ -71,7 +71,7 @@ public struct Vec3 : IFlatbufferObject
       _test3_a,
       _test3_b);
   }
-};
+}
 
 public class Vec3T
 {

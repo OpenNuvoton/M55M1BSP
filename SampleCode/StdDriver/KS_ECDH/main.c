@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     main.c
  * @version  V1.00
- * @brief    Demo to use ECC ECDH with Key Store.
+ * @brief    Demo how to generate ECC ECDH key with Key Store.
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -10,9 +10,16 @@
 #include <string.h>
 #include "NuMicro.h"
 
+static volatile uint32_t s_u32SysTicks = 0;
+
 void DumpBuf(uint8_t *pu8Buf, uint32_t u32BufByteSize);
 void SYS_Init(void);
 void UART_Init(void);
+
+NVT_ITCM void SysTick_Handler(void)
+{
+    s_u32SysTicks++;
+}
 
 NVT_ITCM void CRYPTO_IRQHandler(void)
 {
@@ -70,8 +77,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -80,6 +87,7 @@ void SYS_Init(void)
     /* Enable module clock */
     CLK_EnableModuleClock(KS0_MODULE);
     CLK_EnableModuleClock(CRYPTO0_MODULE);
+    CLK_EnableModuleClock(TRNG0_MODULE);
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -101,7 +109,7 @@ int main(void)
     int32_t i;
     int32_t err;
     int32_t i32KeyIdx_d, i32ShareKeyIdx;
-    uint32_t time;
+    uint32_t u32StartTicks, u32TickCnt;
     uint32_t au32ECC_N[18] = {0};
 
     /* Public Key of B sdie. Gen by private key = 74C57C8F23BE25F0EF591CEF81E89D1DE08CFDD7E3CADC8670A757D07A961DF0 */
@@ -147,37 +155,40 @@ int main(void)
         goto lexit;
     }
 
-
-    /* Reset SysTick to measure time */
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+    /* Enable SysTick timer to measure execution time */
+    CLK_EnableSysTick(CLK_STSEL_ACLK, CyclesPerUs);
 
     /*------------------------------------------------------------------------------*/
-    /* Generate private key to Key Store */
+    /* Generate private key to Key Store                                            */
+    /*------------------------------------------------------------------------------*/
     /* NOTE: The private key must be generated form RNG hardware when using ECDH with key store */
     i32KeyIdx_d = RNG_ECDH(PRNG_KEY_SIZE_256);
 
     if (i32KeyIdx_d < 0)
     {
         printf("[FAILED]\n");
-        printf("Fail to write k to KS SRAM\n");
+        printf("  Fail to generate RNG key to KS SRAM !\n");
         goto lexit;
     }
 
-    /*-----------------------------------------------------------------------------------------------*/
-    /* Calcualte Share Key by private key A and publick key B */
-    SysTick->VAL = 0;
+    /*------------------------------------------------------------------------------*/
+    /* Calcualte Share Key by private key A and publick key B                       */
+    /*------------------------------------------------------------------------------*/
+    /* Save start SysTick value to start measure execution time */
+    u32StartTicks = s_u32SysTicks;
 
-    if ((i32ShareKeyIdx = ECC_GenerateSecretZ_KS(CRYPTO, CURVE_P_256, i32KeyIdx_d, NULL, Qx, Qy, 2, 4, NULL)) < 0)
+    if ((i32ShareKeyIdx = ECC_GenerateSecretZ_KS(CRYPTO, CURVE_P_256, i32KeyIdx_d, NULL, Qx, Qy, 2, KS_OWNER_ECC, NULL)) < 0)
     {
-        printf("ECC ECDH share key calculation fail\n");
+        printf("ECC ECDH share key calculation fail !\n");
         goto lexit;
     }
 
-    printf("Share Key Idx for A Side = %d, remain size = %d\n", i32ShareKeyIdx, KS_GetRemainSize(KS_SRAM));
+    printf("Share Key Index for A side stored in Key Store: %d\n", i32ShareKeyIdx);
+    printf("Remaining Key Store SRAM size: %d bytes\n", KS_GetRemainSize(KS_SRAM));
 
-    time = 0xffffff - SysTick->VAL;
+    u32TickCnt = s_u32SysTicks - u32StartTicks;
 
-    printf("Elapsed time: %d.%d ms\n", time / CyclesPerUs / 1000, time / CyclesPerUs % 1000);
+    printf("Elapsed time: %d.%d ms\n", u32TickCnt / 1000, u32TickCnt % 1000);
 
     printf("Done\n");
 

@@ -23,8 +23,13 @@
 /* Set PCLK as the clock source of QSPI */
 static void QSPI_SetPCLKSrc(QSPI_T *qspi)
 {
-    /* Unlock protected registers */
-    SYS_UnlockReg();
+    uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    if (u32RegLockLevel)
+    {
+        /* Unlock protected registers */
+        SYS_UnlockReg();
+    }
 
     if (qspi == QSPI0)
     {
@@ -35,8 +40,11 @@ static void QSPI_SetPCLKSrc(QSPI_T *qspi)
         CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI1SEL_Msk)) | (CLK_QSPISEL_QSPI1SEL_PCLK2);
     }
 
-    /* Lock protected registers */
-    SYS_LockReg();
+    if (u32RegLockLevel)
+    {
+        /* Lock protected registers */
+        SYS_LockReg();
+    }
 }
 
 /* Get the PCLK clock frequency of QSPI */
@@ -235,8 +243,13 @@ uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, 
   */
 void QSPI_Close(QSPI_T *qspi)
 {
-    /* Unlock protected registers */
-    SYS_UnlockReg();
+    uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    if (u32RegLockLevel)
+    {
+        /* Unlock protected registers */
+        SYS_UnlockReg();
+    }
 
     /* Reset QSPI */
     if (qspi == QSPI0)
@@ -248,8 +261,11 @@ void QSPI_Close(QSPI_T *qspi)
         SYS_ResetModule(SYS_QSPI1RST);
     }
 
-    /* Lock protected registers */
-    SYS_LockReg();
+    if (u32RegLockLevel)
+    {
+        /* Lock protected registers */
+        SYS_LockReg();
+    }
 }
 
 /**

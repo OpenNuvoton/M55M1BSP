@@ -1,4 +1,4 @@
-/* Copyright 2017 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/kernels/kernel_runner.h"
 #include "tensorflow/lite/micro/test_helpers.h"
 #include "tensorflow/lite/micro/testing/micro_test.h"
@@ -75,8 +74,7 @@ void TestL2Normalization(int* input_dims_data, const T* input_data,
       .activation = kTfLiteActNone,
   };
 
-  const TfLiteRegistration registration =
-      ops::micro::Register_L2_NORMALIZATION();
+  const TFLMRegistration registration = tflite::Register_L2_NORMALIZATION();
   micro::KernelRunner runner(registration, tensors, tensors_size, inputs_array,
                              outputs_array,
                              reinterpret_cast<void*>(&builtin_data));

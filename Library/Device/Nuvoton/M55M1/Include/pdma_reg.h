@@ -664,7 +664,7 @@ typedef struct
      * |        |          |64 = Channel connects to EDAC0_RX.
      * |        |          |65 = Channel connects to EDAC1_RX.
      * |        |          |66 = Channel connects to DAC0_TX.
-     * |        |          |67 = Channel connects to DAC1_TX.   (DAC1 is not support in TESTCHIP_ONLY)
+     * |        |          |67 = Channel connects to DAC1_TX.
      * |        |          |68 = Channel connects to EPWM0_CH0_TX.
      * |        |          |69 = Channel connects to EPWM0_CH1_TX.
      * |        |          |70 = Channel connects to EPWM0_CH2_TX.

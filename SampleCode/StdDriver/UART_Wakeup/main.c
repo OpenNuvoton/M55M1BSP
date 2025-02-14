@@ -55,14 +55,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -88,7 +82,6 @@ void SYS_Init(void)
     SET_UART1_nCTS_PA1();
     SET_UART1_RXD_PA2();
     SET_UART1_TXD_PA3();
-
 
 }
 
@@ -117,6 +110,8 @@ int32_t main(void)
     /* Init System, peripheral clock and multi-function I/O */
     SYS_Init();
 
+    /* MIRC and HIRC enable in power down mode */
+    PMC_DISABLE_AOCKPD();
     /* Init Debug UART for printf */
     InitDebugUart();
     /* Init UART1 for test */
@@ -151,10 +146,6 @@ int32_t main(void)
 NVT_ITCM void UART1_IRQHandler(void)
 {
     uint32_t u32Data;
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(UART1_MODULE);
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);
 
     if (UART_GET_INT_FLAG(UART1, UART_INTSTS_WKINT_Msk))    /* UART wake-up interrupt flag */
     {
@@ -215,7 +206,7 @@ void UART_DataWakeUp(void)
 /*---------------------------------------------------------------------------------------------------------*/
 void UART_RxThresholdWakeUp(void)
 {
-    /* Wait data transmission is finished and select UART clock source as LXT */
+    /* Wait data transmission is finished and select UART clock source as HIRC */
     while ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXEMPTYF_Msk) == 0);
 
     while ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_RXIDLE_Msk) == 0);
@@ -244,7 +235,7 @@ void UART_RxThresholdWakeUp(void)
 /*---------------------------------------------------------------------------------------------------------*/
 void UART_RS485WakeUp(void)
 {
-    /* Wait data transmission is finished and select UART clock source as LXT */
+    /* Wait data transmission is finished and select UART clock source as HIRC */
     while ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXEMPTYF_Msk) == 0);
 
     while ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_RXIDLE_Msk) == 0);

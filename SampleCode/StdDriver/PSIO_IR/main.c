@@ -18,14 +18,14 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable Internal LXT clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_LXTEN_Msk);
+    /* Enable Internal LIRC clock */
+    CLK_EnableXtalRC(CLK_SRCCTL_LIRCEN_Msk);
 
-    /* Waiting for Internal LXT clock ready */
-    CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
+    /* Waiting for Internal LIRC clock ready */
+    CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -47,8 +47,8 @@ void SYS_Init(void)
     /* Enable PSIO module clock */
     CLK_EnableModuleClock(PSIO0_MODULE);
 
-    /* Select PSIO module clock source as LXT and PSIO module clock divider as 2 */
-    CLK_SetModuleClock(PSIO0_MODULE, CLK_PSIOSEL_PSIO0SEL_LXT, CLK_PSIODIV_PSIO0DIV(2));
+    /* Select PSIO module clock source as LIRC and PSIO module clock divider as 2 */
+    CLK_SetModuleClock(PSIO0_MODULE, CLK_PSIOSEL_PSIO0SEL_LIRC, CLK_PSIODIV_PSIO0DIV(2));
 
     /* Enable GPIO Module clock */
     CLK_EnableModuleClock(GPIOE_MODULE);
@@ -71,7 +71,7 @@ void SYS_Init(void)
 int32_t main(void)
 {
     S_PSIO_NEC_CFG sConfig;
-    uint32_t u32TimeOutCnt;
+    volatile int32_t i32TimeOutCnt = SystemCoreClock;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -102,11 +102,11 @@ int32_t main(void)
     PSIO_NEC_Send(&sConfig, 0x1, ~0x1, 0x2, ~0x2);
 
     /* Wait transfer done */
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
     while (PSIO_NEC_TransferDone(&sConfig))
     {
-        if (--u32TimeOutCnt == 0)
+        if (--i32TimeOutCnt <= 0)
         {
             printf("Wait for PSIO transfer done time-out!\n");
             goto lexit;
@@ -117,11 +117,11 @@ int32_t main(void)
     PSIO_NEC_Repeat(&sConfig);
 
     /* Wait transfer done */
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
     while (PSIO_NEC_TransferDone(&sConfig))
     {
-        if (--u32TimeOutCnt == 0)
+        if (--i32TimeOutCnt <= 0)
         {
             printf("Wait for PSIO transfer done time-out!\n");
             goto lexit;

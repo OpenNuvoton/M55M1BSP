@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,23 +27,10 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/xtensa/xtensa.h"
 #include "tensorflow/lite/micro/kernels/xtensa/xtensa_conv.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
-
-void* Init(TfLiteContext* context, const char* buffer, size_t length) {
-  TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
-  return context->AllocatePersistentBuffer(context, sizeof(XtensaConvOpData));
-}
-
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
-  TF_LITE_ENSURE_OK(context, ConvPrepare(context, node));
-
-#if defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
-  TF_LITE_ENSURE_OK(context, ConvPrepareHifi(context, node));
-#endif
-  return kTfLiteOk;
-}
 
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   TFLITE_DCHECK(node->user_data != nullptr);
@@ -52,7 +39,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteEvalTensor* input =
       tflite::micro::GetEvalInput(context, node, kConvInputTensor);
 
-#if defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
   const auto& params =
       *(reinterpret_cast<TfLiteConvParams*>(node->builtin_data));
   const auto& op_data = *(reinterpret_cast<XtensaConvOpData*>(node->user_data));
@@ -62,47 +48,76 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteEvalTensor* filter =
       tflite::micro::GetEvalInput(context, node, kConvWeightsTensor);
   const TfLiteEvalTensor* bias =
-      (NumInputs(node) == 3)
-          ? tflite::micro::GetEvalInput(context, node, kConvBiasTensor)
-          : nullptr;
-#endif
+      tflite::micro::GetEvalInput(context, node, kConvBiasTensor);
 
   switch (input->type) {
+    case kTfLiteFloat32: {
+      tflite::reference_ops::Conv(
+          ConvParamsFloat(params, op_data.reference_op_data),
+          tflite::micro::GetTensorShape(input),
+          tflite::micro::GetTensorData<float>(input),
+          tflite::micro::GetTensorShape(filter),
+          tflite::micro::GetTensorData<float>(filter),
+          tflite::micro::GetTensorShape(bias),
+          tflite::micro::GetOptionalTensorData<float>(bias),
+          tflite::micro::GetTensorShape(output),
+          tflite::micro::GetTensorData<float>(output),
+          tflite::micro::GetTensorShape(nullptr), nullptr);
+      break;
+    }
     case kTfLiteInt8: {
-#if defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
-      ConvEvalHifi(context, node, params, op_data, input, filter, bias, output);
+#if defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
+      if (params.dilation_width_factor == 1 &&
+          params.dilation_height_factor == 1) {
+        return ConvEvalHifiInt8(context, node, params, op_data, input, filter,
+                                bias, output);
+      } else {
+        return ConvReferenceEvalInt8(context, node);
+      }
+#elif defined(VISION_P6)
+      // At this time the optimized implementation is failing the unit tests in
+      // ways that are not entirely clear why. For now, we have identified some
+      // of the problem cases and are manually inserting a reference fallback.
+      // See http://b/270720625 for more details.
+      if (op_data.is_per_channel_quantized ||
+          input->dims->data[1] != input->dims->data[2]) {
+        return ConvReferenceEvalInt8(context, node);
+      } else {
+        return ConvEvalVision(context, node, params, op_data, input, filter,
+                              bias, output);
+      }
 #else
       return ConvReferenceEvalInt8(context, node);
-#endif  // defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
-      break;
+#endif
     }
     case kTfLiteInt16: {
-#if defined(HIFI4_INTERNAL)
-      ConvEvalHifi16(context, node, params, op_data, input, filter, bias,
-                     output);
+#if defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
+      // Note that int32 bias is not widely supported and might be risky (e.g.
+      // http://b/262003750). As such, while we have a fallback to the reference
+      // implementation, production use-cases should only have int64 bias.
+      if (bias->type == kTfLiteInt32) {
+        return ConvReferenceEvalInt16(context, node);
+      } else {
+        return ConvEvalHifiInt16(context, node, params, op_data, input, filter,
+                                 bias, output);
+      }
 #else
       return ConvReferenceEvalInt16(context, node);
-#endif  // defined(HIFI4_INTERNAL)
-      break;
+#endif
     }
     default:
-      TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
-                         TfLiteTypeGetName(input->type), input->type);
+      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                  input->type);
       return kTfLiteError;
   }
+
   return kTfLiteOk;
 }
+
 }  // namespace
 
-TfLiteRegistration Register_CONV_2D() {
-  return {/*init=*/Init,
-          /*free=*/nullptr,
-          /*prepare=*/Prepare,
-          /*invoke=*/Eval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+TFLMRegistration Register_CONV_2D() {
+  return tflite::micro::RegisterOp(ConvInitXtensa, ConvPrepareXtensa, Eval);
 }
 
 }  // namespace tflite

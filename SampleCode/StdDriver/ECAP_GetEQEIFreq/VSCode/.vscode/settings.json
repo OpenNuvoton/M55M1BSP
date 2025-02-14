@@ -1,0 +1,20 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "ECAP_GetEQEIFreq.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "ECAP_GetEQEIFreq.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        }
+    ]
+}

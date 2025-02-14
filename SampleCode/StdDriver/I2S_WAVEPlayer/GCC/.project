@@ -34,7 +34,7 @@
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
-        <link>
+		<link>
 			<name>FATFS</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
@@ -54,7 +54,7 @@
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/Device/Nuvoton/M55M1/Source/system_M55M1.c</locationURI>
 		</link>
-        <link>
+		<link>
 			<name>FATFS/FATFS</name>
 			<type>2</type>
 			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/FatFs/source</locationURI>
@@ -79,7 +79,7 @@
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/uart.c</locationURI>
 		</link>
-        <link>
+		<link>
 			<name>Library/i2c.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/i2c.c</locationURI>
@@ -110,9 +110,9 @@
 			<locationURI>PARENT-1-PROJECT_LOC/sdglue.c</locationURI>
 		</link>
 		<link>
-			<name>User/diskio.c</name>
+			<name>User/diskio_SDH.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/diskio.c</locationURI>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/Storage/diskio_SDH.c</locationURI>
 		</link>
 		<link>
 			<name>User/isr.c</name>
@@ -130,7 +130,7 @@
 			<locationURI>PARENT-1-PROJECT_LOC/wavplayer.c</locationURI>
 		</link>
 	</linkedResources>
-    <filteredResources>
+	<filteredResources>
 		<filter>
 			<id>0</id>
 			<name>CMSIS/CMSIS</name>

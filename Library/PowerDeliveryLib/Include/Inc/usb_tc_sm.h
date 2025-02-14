@@ -378,7 +378,7 @@ void tc_usb_firmware_fw_update_run(int port);
  */
 void tc_usb_firmware_fw_update_limited_run(int port);
 
-#ifdef CONFIG_USB_CTVPD
+#if (CONFIG_USB_CTVPD == 1UL)
 
     /**
     * Resets the charge-through support timer. This can be
@@ -390,11 +390,8 @@ void tc_usb_firmware_fw_update_limited_run(int port);
     void tc_reset_support_timer(int port);
 
 #else
-
-    /**
-    *
-    */
     void tc_ctvpd_detected(int port);
 #endif /* CONFIG_USB_CTVPD */
+
 #endif /* __CROS_EC_USB_TC_H */
 

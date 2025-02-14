@@ -56,6 +56,7 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 #define I3C_CCC_ENTDAA                      I3C_CCC_ID(0x7, TRUE)        /*!< Enter Dynamic Address Assignment */
 #define I3C_CCC_DEFSLVS                     I3C_CCC_ID(0x8, TRUE)        /*!< Define List of Targets */
+#define I3C_CCC_DEFTGTS                     I3C_CCC_DEFSLVS              /*!< DEFSLVS has been renamed to DEFTGTS */
 #define I3C_CCC_ENTTM                       I3C_CCC_ID(0xb, TRUE)        /*!< Enter Test Mode */
 #define I3C_CCC_ENTHDR(x)                   I3C_CCC_ID(0x20 + (x), TRUE) /*!< Enter HDR Mode */
 
@@ -71,6 +72,7 @@ extern "C"
 #define I3C_CCC_GETDCR                      I3C_CCC_ID(0xf, FALSE)  /*!< Get Device Characteristics Register */
 #define I3C_CCC_GETSTATUS                   I3C_CCC_ID(0x10, FALSE) /*!< Get Device Status */
 #define I3C_CCC_GETACCMST                   I3C_CCC_ID(0x11, FALSE) /*!< Get Accept Controller Role */
+#define I3C_CCC_GETACCCR                    I3C_CCC_GETACCMST       /*!< GETACCMST has been renamed to GETACCCR */
 #define I3C_CCC_SETBRGTGT                   I3C_CCC_ID(0x13, FALSE) /*!< Set Bridge Targets */
 #define I3C_CCC_GETMXDS                     I3C_CCC_ID(0x14, FALSE) /*!< Get Max Data Speed */
 #define I3C_CCC_GETCAPS                     I3C_CCC_ID(0x15, FALSE) /*!< Get Optional Feature Capabilities */
@@ -201,6 +203,18 @@ extern "C"
 /** @addtogroup I3C_EXPORTED_FUNCTIONS I3C Exported Functions
   @{
 */
+
+/**
+  * @brief      Check I3C is operated as Master Mode
+  *
+  * @param[in]  i3c     The pointer of the specified I3C module
+  *
+  * @retval     0       Device Operation Mode is Slave
+  * @retval     1       Device Operation Mode is Master
+  *
+  * @details    This macro checks if the I3C Operation Mode is Master.
+  */
+#define I3C_IS_MASTER(i3c)                  ((((i3c)->DEVCTLE&I3C_DEVCTLE_OPERMODE_Msk)==I3C_MASTER)? 1:0)
 
 /**
   * @brief      Check DMA is enabled
@@ -838,11 +852,13 @@ __STATIC_INLINE void I3C_DisableDMA(I3C_T *i3c)
 }
 
 
+
 void    I3C_Open(I3C_T *i3c, uint32_t u32MasterSlave, uint8_t u8StaticAddr, uint32_t u32ModeSel);
 int32_t I3C_ResetAndResume(I3C_T *i3c, uint32_t u32ResetMask, uint32_t u32EnableResume);
 int32_t I3C_ParseRespQueue(I3C_T *i3c, uint32_t *pu32RespQ);
 int32_t I3C_SetCmdQueueAndData(I3C_T *i3c, uint8_t u8TID, uint32_t *pu32TxBuf, uint16_t u16WriteBytes);
 int32_t I3C_SendIBIRequest(I3C_T *i3c, uint8_t u8MandatoryData, uint32_t u32PayloadData, uint8_t u8PayloadLen);
+int32_t I3C_SendMRRequest(I3C_T *i3c);
 int32_t I3C_EnableHJRequest(I3C_T *i3c, uint32_t u32ModeSel);
 int32_t I3C_DisableHJRequest(I3C_T *i3c);
 int32_t I3C_RespErrorRecovery(I3C_T *i3c, uint32_t u32RespStatus);
@@ -852,6 +868,7 @@ int32_t I3C_Read(I3C_T *i3c, uint8_t u8DevIndex, uint32_t u32Speed, uint32_t *pu
 int32_t I3C_BroadcastRSTDAA(I3C_T *i3c);
 int32_t I3C_BroadcastENTDAA(I3C_T *i3c, uint8_t u8DevCount);
 int32_t I3C_UnicastSETDASA(I3C_T *i3c, uint8_t u8DevIndex);
+int32_t I3C_UnicastGETACCMST(I3C_T *i3c, uint8_t u8DevIndex, uint32_t *pu32RxBuf);
 
 
 /** @} end of group I3C_EXPORTED_FUNCTIONS */

@@ -32,6 +32,7 @@ NVT_ITCM void LPADC0_IRQHandler(void)
     M32(&LPADC0->ADSR0);
 
 }
+
 /*---------------------------------------------------------------------------------------------------------*/
 /* ACMP interrupt handler                                                                                 */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -47,20 +48,9 @@ NVT_ITCM void ACMP01_IRQHandler(void)
 
 void SYS_Init(void)
 {
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
 
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -129,9 +119,6 @@ void LPADC_FunctionTest(void)
     printf("+----------------------------------------------------------------------+\n");
 
     printf("\nIn this test, software will get 6 conversion result from the specified channel within 1 second.\n");
-
-    /* LPADC Calibration */
-    LPADC_Calibration(LPADC0);
 
     while (1)
     {
@@ -228,7 +215,6 @@ void LPADC_FunctionTest(void)
 
             printf("Conversion result of channel pair 0:\n");
 
-
             while (1)
             {
 
@@ -251,7 +237,6 @@ void LPADC_FunctionTest(void)
                     break;
 
             }
-
 
             /* Disable the  ACMP1 interrupt */
             ACMP_DISABLE_INT(ACMP01, 1);
@@ -279,7 +264,6 @@ int32_t main(void)
 
     /* Init Debug UART for printf */
     InitDebugUart();
-
 
     /* Init ACMP1 for LPADC */
     ACMP1_Init();

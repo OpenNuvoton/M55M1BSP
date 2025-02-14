@@ -40,6 +40,16 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>CMSIS/LDROM_startup_M55M1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/LDROM_startup_M55M1.c</locationURI>
+		</link>
+		<link>
+			<name>CMSIS/LDROM_system_M55M1.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/LDROM_system_M55M1.c</locationURI>
+		</link>
+		<link>
 			<name>CMSIS/startup_M55M1.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c</locationURI>
@@ -73,6 +83,11 @@
 			<name>Library/uart.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/uart.c</locationURI>
+		</link>
+		<link>
+			<name>User/LDROM_main.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/LDROM_main.c</locationURI>
 		</link>
 		<link>
 			<name>User/main.c</name>

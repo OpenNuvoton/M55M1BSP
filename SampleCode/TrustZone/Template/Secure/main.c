@@ -32,7 +32,7 @@ int32_t Secure_LED_On(uint32_t u32Ticks)
 {
     printf("[%d] Secure LED On call by Non-secure.\n", u32Ticks);
     PA10 = 0;
-    PB0  = 0;
+    PG14 = 0;
 
     return 0;
 }
@@ -42,7 +42,7 @@ int32_t Secure_LED_Off(uint32_t u32Ticks)
 {
     printf("[%d] Secure LED Off call by Non-secure.\n", u32Ticks);
     PA10 = 1;
-    PB0  = 1;
+    PG14 = 1;
 
     return 0;
 }
@@ -74,7 +74,7 @@ int32_t LED_On(void)
 {
     printf("Secure LED On\n");
     PA11 = 0;
-    PB1  = 0;
+    PG15 = 0;
 
     return 0;
 }
@@ -83,7 +83,7 @@ int32_t LED_Off(void)
 {
     printf("Secure LED Off\n");
     PA11 = 1;
-    PB1  = 1;
+    PG15 = 1;
 
     return 0;
 }
@@ -185,15 +185,15 @@ static void SYS_Init(void)
     /*-----------------------------------------------------------------------
      * Init System Clock
      *-----------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
     SystemCoreClockUpdate();
 
     CLK_EnableModuleClock(GPIOA_MODULE);
-    CLK_EnableModuleClock(GPIOB_MODULE);
+    CLK_EnableModuleClock(GPIOG_MODULE);
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -204,12 +204,12 @@ static void SYS_Init(void)
     SetDebugUartMFP();
 
     /*-----------------------------------------------------------------------
-     * Init GPIOC/UART1 for Non-secure console
-     * (Config GPIOC/UART1 to Non-secure in partition_M55M1.h)
+     * Init GPIOI/UART1 for Non-secure console
+     * (Config GPIOI/UART1 to Non-secure in partition_M55M1.h)
      *-----------------------------------------------------------------------*/
-    CLK_EnableModuleClock(GPIOC_MODULE);
+    CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(UART1_MODULE);
-    CLK_SetModuleClock(UART1_MODULE, CLK_UARTSEL0_UART1SEL_HXT, CLK_UARTDIV0_UART1DIV(1));
+    CLK_SetModuleClock(UART1_MODULE, CLK_UARTSEL0_UART1SEL_HIRC, CLK_UARTDIV0_UART1DIV(1));
     SET_UART1_RXD_PA2();
     SET_UART1_TXD_PA3();
 
@@ -238,7 +238,7 @@ int main(void)
     SYS_UnlockReg();
     FMC_Open();
     /* Check Secure/Non-secure base address configuration */
-    printf("SCU->FNSADDR: 0x%08X, NSCBA:        0x%08X\n", SCU->FNSADDR, FMC_Read(FMC_NSCBA_BASE));
+    printf("SCU->FNSADDR: 0x%08X, NSCBA: 0x%08X\n", SCU->FNSADDR, FMC_Read(FMC_NSCBA_BASE));
     printf("SRAM0MPCLUT0: 0x%08X\n", SCU->SRAM0MPCLUT0);
     printf("SRAM1MPCLUT0: 0x%08X\n", SCU->SRAM1MPCLUT0);
     printf("SRAM2MPCLUT0: 0x%08X\n", SCU->SRAM2MPCLUT0);
@@ -246,8 +246,8 @@ int main(void)
     /* Init GPIO Port A Pin 10 & 11 for Secure LED control */
     GPIO_SetMode(PA, (BIT11 | BIT10), GPIO_MODE_OUTPUT);
 
-    /* Init GPIO Port B Pin 0 & 1 for Secure LED control */
-    GPIO_SetMode(PB, (BIT1 | BIT0), GPIO_MODE_OUTPUT);
+    /* Init GPIO Port G Pin 14 & 15 for Secure LED control */
+    GPIO_SetMode(PG, (BIT14 | BIT15), GPIO_MODE_OUTPUT);
 
     /* Generate Systick interrupt each 10 ms */
     SysTick_Config(SystemCoreClock / 100);

@@ -1,19 +1,19 @@
 /**************************************************************************//**
  * @file    main.c
  * @version V1.00
- * @brief   A simple WiFi demo for NuMaker board.
+ * @brief   A simple Wi-Fi demo for NuMaker board.
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2024 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #include "NuMicro.h"
 
-#define WIFI_PORT       UART8        // Used to connect to WIFI module
-#define BYPASS_PORT     DEBUG_PORT   // Used to bypass WIFI module
-#define RST_PIN         PI13
+#define WIFI_PORT       UART8        // Used to connect to Wi-Fi module
+#define BYPASS_PORT     DEBUG_PORT   // Used to bypass Wi-Fi module
+#define RST_PIN         PD2
 #define IOCTL_INIT      \
     do{ \
-        GPIO_SetMode(PI, BIT13, GPIO_MODE_OUTPUT); \
+        GPIO_SetMode(PD, BIT2, GPIO_MODE_OUTPUT); \
     }while(0)
 
 static void SYS_Init(void)
@@ -24,14 +24,14 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
     SystemCoreClockUpdate();
 
-    CLK_EnableModuleClock(GPIOI_MODULE);
+    CLK_EnableModuleClock(GPIOD_MODULE);
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -77,19 +77,18 @@ int main()
 #endif
 
     /*
-        The ESP8266 WiFi module is connected to UART8 of M55M1.
-        In this demo code, COM and UART8(WiFi module) are connected to
-        pass through all AT commands from debug port to UART.
+        The ESP8266 Wi-Fi module is connected to WIFI_PORT (UART8 of M55M1).
+        In this demo code, BYPASS_PORT (UART0) and WIFI_PORT (UART8) are connected to
+        pass through all AT commands from BYPASS_PORT to WIFI_PORT.
 
-        Therefore, user may control ESP8266 WiFi module on the Terminal or by PC tool e.g.
-        "ESPlorer" (https://esp8266.ru/esplorer/)
-
+        User can control ESP8266 Wi-Fi module on the Terminal or by PC tool,
+        e.g. "ESPlorer" (https://esp8266.ru/esplorer/)
     */
 
     printf("\n");
-    printf("+------------------------------------------------------------------+\n");
-    printf("|              ESP8266-12F WiFi Module Demo                        |\n");
-    printf("+------------------------------------------------------------------+\n");
+    printf("+----------------------------------------------------------------------+\n");
+    printf("|              ESP8266-12F Wi-Fi AT Command Bypass Sample              |\n");
+    printf("+----------------------------------------------------------------------+\n");
 
     IOCTL_INIT;
     RST_PIN = 0;
@@ -109,12 +108,14 @@ int main()
     }
 
     printf(" Done\n");
-    WIFI_PORT->FIFO |= UART_FIFO_RXRST_Msk | UART_FIFO_TXRST_Msk;
+    UART_RESET_RXFIFO(WIFI_PORT);
+    UART_RESET_TXFIFO(WIFI_PORT);
 
     /* Get AT version */
     UART_Write(WIFI_PORT, au8AT_VER, sizeof(au8AT_VER));
 
-    /* Bypass AT commands from debug port to WiFi port */
+    /* Bypass AT commands from BYPASS_PORT to WIFI_PORT */
+    /* Note: A valid AT command must be end with \r\n */
     while (1)
     {
         if ((WIFI_PORT->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk) == 0)

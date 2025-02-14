@@ -137,6 +137,7 @@ typedef int (UAC_CB_FUNC)(struct uac_dev_t *dev, uint8_t *data, int len);    /*!
 /*                                                                  */
 /*------------------------------------------------------------------*/
 extern void usbh_core_init(void);
+extern void usbh_core_deinit(void);
 extern int  usbh_pooling_hubs(void);
 extern void usbh_install_conn_callback(CONN_FUNC *conn_func, CONN_FUNC *disconn_func);
 extern void usbh_suspend(void);
@@ -169,7 +170,12 @@ extern int32_t  usbh_cdc_set_line_coding(struct cdc_dev_t *cdev, struct line_cod
 extern int32_t  usbh_cdc_set_control_line_state(struct cdc_dev_t *cdev, int active_carrier, int DTE_present);
 extern int32_t  usbh_cdc_start_polling_status(struct cdc_dev_t *cdev, CDC_CB_FUNC *func);
 extern int32_t  usbh_cdc_start_to_receive_data(struct cdc_dev_t *cdev, CDC_CB_FUNC *func);
+#if (NVT_DCACHE_ON == 1)
+/* for DCACHE On using*/
+extern int32_t  usbh_dcache_cdc_send_data(struct cdc_dev_t *cdev, uint8_t *buff, int buff_len);
+#else
 extern int32_t  usbh_cdc_send_data(struct cdc_dev_t *cdev, uint8_t *buff, int buff_len);
+#endif
 
 /*------------------------------------------------------------------*/
 /*                                                                  */

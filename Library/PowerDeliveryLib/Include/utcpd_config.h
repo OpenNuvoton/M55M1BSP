@@ -122,7 +122,9 @@ extern "C"
 #define PD_PREFER_HIGH_VOLTAGE                   0        /* Can't found on config.h */
 #define CONFIG_USB_PD_CHECK_MAX_REQUEST_ALLOWED  0
 
+#ifndef CONFIG_USB_PD_TCPC_RUNTIME_CONFIG
 #define CONFIG_USB_PD_TCPC_RUNTIME_CONFIG
+#endif
 
 #if (OPT_SNK_ONLY == 1)
 #undef CONFIG_USB_PD_TRY_SRC

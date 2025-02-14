@@ -17,6 +17,7 @@
 #include "ohci.h"
 
 /// @cond HIDDEN_SYMBOLS
+#ifdef ENABLE_OHCI0
 #define _ohci_port      (0UL)
 #define _ohci           _ohci0
 #define ohci_driver     ohci0_driver
@@ -44,4 +45,5 @@ HC_DRV_T  ohci0_driver =
     ohci_rh_port_reset,      /* rthub_port_reset   */
     ohci_rh_polling,         /* rthub_polling      */
 };
+#endif
 /// @endcond HIDDEN_SYMBOLS

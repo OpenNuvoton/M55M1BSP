@@ -196,6 +196,9 @@ void __attribute__((weak)) ethosu_semaphore_destroy(void *sem)
 //#define __CPU_POLLING
 
 // Baremetal simulation of waiting/sleeping for and then taking a semaphore using intrisics
+#if defined (__ICCARM__)
+    #pragma optimize=none
+#endif
 int __attribute__((weak)) ethosu_semaphore_take(void *sem)
 {
     struct ethosu_semaphore_t *s = sem;
@@ -215,6 +218,9 @@ int __attribute__((weak)) ethosu_semaphore_take(void *sem)
 }
 
 // Baremetal simulation of giving a semaphore and waking up processes using intrinsics
+#if defined (__ICCARM__)
+    #pragma optimize=none
+#endif
 int __attribute__((weak)) ethosu_semaphore_give(void *sem)
 {
     struct ethosu_semaphore_t *s = sem;
@@ -223,6 +229,12 @@ int __attribute__((weak)) ethosu_semaphore_give(void *sem)
     __SEV();
 #endif
     return 0;
+}
+
+// Baremetal simulation of giving a semaphore and waking up processes using intrinsics
+int __attribute__((weak)) ethosu_semaphore_give_from_ISR(void *sem)
+{
+    return ethosu_semaphore_give(sem);
 }
 
 /******************************************************************************
@@ -389,7 +401,7 @@ void __attribute__((weak)) ethosu_irq_handler(struct ethosu_driver *drv)
     }
 
     /* TODO: feedback needed aout how to handle error (-1) return value */
-    ethosu_semaphore_give(drv->semaphore);
+    ethosu_semaphore_give_from_ISR(drv->semaphore);
 }
 
 /******************************************************************************

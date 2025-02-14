@@ -17,54 +17,18 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-__attribute__((aligned)) static uint8_t au8SrcArray[256];
-__attribute__((aligned)) static uint8_t au8DestArray0[256];
-__attribute__((aligned)) static uint8_t au8DestArray1[256];
-__attribute__((aligned)) static uint32_t au32Commands[256];
-
-/* DMA350 driver structures */
-static const struct dma350_dev_cfg_t GDMA_DEV_CFG_S =
-{
-    .dma_sec_cfg = (DMASECCFG_TypeDef *)(GDMA_S + 0x0UL),
-    .dma_sec_ctrl = (DMASECCTRL_TypeDef *)(GDMA_S + 0x100UL),
-    .dma_nsec_ctrl = (DMANSECCTRL_TypeDef *)(GDMA_S + 0x200UL),
-    .dma_info = (DMAINFO_TypeDef *)(GDMA_S + 0xF00UL)
-};
-
-static struct dma350_dev_data_t GDMA_DEV_DATA_S =
-{
-    .state = 0
-};
-
-struct dma350_dev_t GDMA_DEV_S =
-{
-    &(GDMA_DEV_CFG_S),
-    &(GDMA_DEV_DATA_S)
-};
-
-struct dma350_ch_dev_t GDMA_CH0_DEV_S =
-{
-    .cfg = {
-        .ch_base = (DMACH_TypeDef *)(GDMA_S + 0x1000UL),
-        .channel = 0
-    },
-    .data = {0}
-};
-
-struct dma350_ch_dev_t GDMA_CH1_DEV_S =
-{
-    .cfg = {
-        .ch_base = (DMACH_TypeDef *)(GDMA_S + 0x1100UL),
-        .channel = 1
-    },
-    .data = {0}
-};
-
-struct dma350_ch_dev_t *const GDMA_CH_DEV_S[] =
-{
-    &GDMA_CH0_DEV_S,
-    &GDMA_CH1_DEV_S,
-};
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    uint8_t au8SrcArray[DCACHE_ALIGN_LINE_SIZE(256)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t au8DestArray0[DCACHE_ALIGN_LINE_SIZE(256)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t au8DestArray1[DCACHE_ALIGN_LINE_SIZE(256)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint32_t au32Commands[DCACHE_ALIGN_LINE_SIZE(256 * 4) / 4] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    __attribute__((aligned)) static uint8_t au8SrcArray[256];
+    __attribute__((aligned)) static uint8_t au8DestArray0[256];
+    __attribute__((aligned)) static uint8_t au8DestArray1[256];
+    __attribute__((aligned)) static uint32_t au32Commands[256];
+#endif
 
 static void SYS_Init(void)
 {
@@ -73,33 +37,18 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
-    /* Enable GDMA0 clock source */
-    CLK_EnableModuleClock(GDMA0_MODULE);
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
+    /* Enable GDMA0 clock source */
+    CLK_EnableModuleClock(GDMA0_MODULE);
     /* Lock protected registers */
     SYS_LockReg();
 }
@@ -147,6 +96,16 @@ int main(void)
     /* Link to external command */
     dma350_ch_enable_linkaddr(GDMA_CH_DEV_S[0]);
     dma350_ch_set_linkaddr32(GDMA_CH_DEV_S[0], (uint32_t) au32Commands);
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the source buffer will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr(au8SrcArray, sizeof(au8SrcArray));
+    SCB_CleanDCache_by_Addr(au8DestArray0, sizeof(au8DestArray0));
+    SCB_CleanDCache_by_Addr(au8DestArray1, sizeof(au8DestArray1));
+    SCB_CleanDCache_by_Addr(au32Commands, sizeof(au32Commands));
+#endif  // (NVT_DCACHE_ON == 1)
     /*
         The first command must be set directly in
         the channel registers to start the linked command chain.
@@ -159,6 +118,14 @@ int main(void)
 
     if (DMA350_LIB_ERR_NONE == lib_err)
     {
+#if (NVT_DCACHE_ON == 1)
+        /*
+           Invalidate the CPU Data cache after the DMA transfer.
+           As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+        */
+        SCB_InvalidateDCache_by_Addr(au8DestArray0, sizeof(au8DestArray0));
+        SCB_InvalidateDCache_by_Addr(au8DestArray1, sizeof(au8DestArray1));
+#endif  // (NVT_DCACHE_ON == 1)
         printf("GDMA transfer Done!\n");
 
         /* Compare data */

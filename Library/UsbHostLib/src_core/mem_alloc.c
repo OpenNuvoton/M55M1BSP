@@ -27,21 +27,49 @@
 
 
 #ifdef __ICCARM__
-    #pragma data_alignment = 32
-    static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE];                                 /* Periodic frame list        */
+    #if (NVT_DCACHE_ON == 1)
+        /* QH/QTD/iTD/siTD are placed in a non-cacheable region */
+        #pragma data_alignment = 32
+        NVT_NONCACHEABLE static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE];                                 /* Periodic frame list        */
+    #else
+        #pragma data_alignment = 32
+        static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE];
+    #endif
 #else
-    static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #if (NVT_DCACHE_ON == 1)
+        /* QH/QTD/iTD/siTD are placed in a non-cacheable region */
+        NVT_NONCACHEABLE static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #else
+        static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #endif
 #endif
 
 #ifdef __ICCARM__
-    #pragma data_alignment = 32
-    static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE];                                 /* Periodic frame list        */
+    #if (NVT_DCACHE_ON == 1)
+        /* Device descriptor / UTR and data buffer are placed in a non-cacheable region */
+        #pragma data_alignment = 32
+        NVT_NONCACHEABLE static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE];                                 /* Periodic frame list        */
+    #else
+        #pragma data_alignment = 32
+        static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE];
+    #endif
 #else
-    static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #if (NVT_DCACHE_ON == 1)
+        /* Device descriptor / UTR and data buffer are placed in a non-cacheable region */
+        NVT_NONCACHEABLE static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #else
+        static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #endif
 #endif
 
-static uint8_t  _hw_unit_used[HW_MEM_UNIT_NUM];
-static uint8_t  _dma_unit_used[DMA_MEM_UNIT_NUM];
+#if (NVT_DCACHE_ON == 1)
+    /* hw/dma using memory are placed in a non-cacheable region */
+    NVT_NONCACHEABLE static uint8_t  _hw_unit_used[HW_MEM_UNIT_NUM];
+    NVT_NONCACHEABLE static uint8_t  _dma_unit_used[DMA_MEM_UNIT_NUM];
+#else
+    static uint8_t  _hw_unit_used[HW_MEM_UNIT_NUM];
+    static uint8_t  _dma_unit_used[DMA_MEM_UNIT_NUM];
+#endif
 
 static volatile int  _usbh_hw_mem_used;
 static volatile int  _usbh_hw_max_mem_used;
@@ -53,9 +81,14 @@ static volatile int  _dma_men_pool_used;
 
 UDEV_T *g_udev_list;
 
-uint8_t  _dev_addr_pool[128];
-static volatile int  _device_addr;
-
+#if (NVT_DCACHE_ON == 1)
+    /* device address pool are placed in a non-cacheable region */
+    NVT_NONCACHEABLE uint8_t  _dev_addr_pool[128];
+    NVT_NONCACHEABLE static volatile int  _device_addr;
+#else
+    uint8_t  _dev_addr_pool[128];
+    static volatile int  _device_addr;
+#endif
 static  int  _sidx = 0;
 
 /*--------------------------------------------------------------------------*/

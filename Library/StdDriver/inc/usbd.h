@@ -689,6 +689,8 @@ __STATIC_INLINE void USBD_MemCopy(uint8_t dest[], uint8_t src[], uint32_t size)
 
     while (i < size)
     {
+        //Prevent this code from being optimized.
+        __asm volatile("" : : : "memory");
         dest[i] = src[i];
         i++;
     }

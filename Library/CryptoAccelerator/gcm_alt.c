@@ -529,25 +529,6 @@ static int32_t _GCMTag(mbedtls_gcm_context *ctx, const uint8_t *iv, uint32_t ivl
     return ret;
 }
 
-#if 0
-static void dump(char *buf, int size, char *str)
-{
-    int i;
-    printf("\r\n%s:", str);
-
-    for (i = 0; i < size; i++)
-    {
-        if ((i % 16) == 0)
-            printf("\r\n");
-
-        printf("%02x ", buf[i]);
-    }
-
-    printf("\r\n");
-
-}
-#endif
-
 static int32_t _GCM(mbedtls_gcm_context *ctx, const uint8_t *iv, uint32_t ivlen, const uint8_t *A, uint32_t alen, const uint8_t *P, uint32_t plen, uint8_t *buf, uint8_t *tag, uint32_t tag_len)
 {
     int32_t ret;

@@ -28,6 +28,7 @@
 
 #define __USE_CCAP__
 #define __USE_DISPLAY__
+//#define __USE_UVC__
 
 #include "Profiler.hpp"
 
@@ -38,8 +39,19 @@
     #include "Display.h"
 #endif
 
-#define MAINLOOP_TASK_PRIO  3
-#define INFERENCE_TASK_PRIO 4
+#if defined (__USE_UVC__)
+    #include "UVC.h"
+#endif
+
+#define MAINLOOP_TASK_PRIO  4
+#define INFERENCE_TASK_PRIO 3
+#define IMAGE_DISP_UPSCALE_FACTOR 1
+
+#if defined(LT7381_LCD_PANEL)
+    #define FONT_DISP_UPSCALE_FACTOR 2
+#else
+    #define FONT_DISP_UPSCALE_FACTOR 1
+#endif
 
 #define NUM_FRAMEBUF 2  //1 or 2
 
@@ -129,17 +141,29 @@ static S_FRAMEBUF *get_inf_framebuf()
 
 /* Image processing initiate function */
 //Used by omv library
-#define GLCD_WIDTH 320
-#define GLCD_HEIGHT 240
+#if defined(__USE_UVC__)
+    //UVC only support QVGA, QQVGA
+    #define GLCD_WIDTH  320
+    #define GLCD_HEIGHT 240
+#else
+    #define GLCD_WIDTH  320
+    #define GLCD_HEIGHT 240
+#endif
+
+//RGB565
+#define IMAGE_FB_SIZE   (GLCD_WIDTH * GLCD_HEIGHT * 2)
 
 #undef OMV_FB_SIZE
-#define OMV_FB_SIZE ((GLCD_WIDTH * GLCD_HEIGHT * 2) + 1024)
+#define OMV_FB_SIZE (IMAGE_FB_SIZE + 1024)
 
-__attribute__((section(".bss.sram.data"), aligned(32))) static char fb_array[OMV_FB_SIZE + OMV_FB_ALLOC_SIZE];
+#undef OMV_FB_ALLOC_SIZE
+#define OMV_FB_ALLOC_SIZE (1024)
+
+__attribute__((section(".bss.vram.data"), aligned(32))) static char fb_array[OMV_FB_SIZE + OMV_FB_ALLOC_SIZE];
 __attribute__((section(".bss.sram.data"), aligned(32))) static char jpeg_array[OMV_JPEG_BUF_SIZE];
 
 #if (NUM_FRAMEBUF == 2)
-    __attribute__((section(".bss.sram.data"), aligned(32))) static char frame_buf1[OMV_FB_SIZE];
+    __attribute__((section(".bss.vram.data"), aligned(32))) static char frame_buf1[OMV_FB_SIZE];
 #endif
 
 char *_fb_base = NULL;
@@ -244,7 +268,7 @@ static void main_task(void *pvParameters)
                          1,                 // Non-Privileged
                          1),                // eXecute Never enabled
             ARM_MPU_RLAR((((unsigned int)arm::app::tensorArena) + ACTIVATION_BUF_SZ - 1),        // Limit
-                         eMPU_ATTR_DEV_nGnRnE) // Attribute index - Device
+                         eMPU_ATTR_CACHEABLE_WTRA) // Attribute index - cacheable WTRA
         },
 #if defined (__USE_CCAP__)
         {
@@ -283,7 +307,7 @@ static void main_task(void *pvParameters)
     taskParam.model = &model;
     taskParam.queueHandle = inferenceProcessQueue;
 
-    ret = xTaskCreate(inferenceProcessTask, "inference task", 1 * 1024, &taskParam, INFERENCE_TASK_PRIO, nullptr);
+    ret = xTaskCreate(inferenceProcessTask, "inference task", 2 * 1024, &taskParam, INFERENCE_TASK_PRIO, nullptr);
 
     if (ret != pdPASS)
     {
@@ -359,7 +383,7 @@ static void main_task(void *pvParameters)
 #if defined (__USE_CCAP__)
     //Setup image senosr
     ImageSensor_Init();
-    ImageSensor_Config(eIMAGE_FMT_RGB565, frameBuffer.w, frameBuffer.h);
+    ImageSensor_Config(eIMAGE_FMT_RGB565, frameBuffer.w, frameBuffer.h, true);
 #endif
 
 #if defined (__USE_DISPLAY__)
@@ -368,6 +392,11 @@ static void main_task(void *pvParameters)
 
     Display_Init();
     Display_ClearLCD(C_WHITE);
+#endif
+
+#if defined (__USE_UVC__)
+    UVC_Init();
+    HSUSBD_Start();
 #endif
 
     while (1)
@@ -455,19 +484,67 @@ static void main_task(void *pvParameters)
             //Display image on LCD
             sDispRect.u32TopLeftX = 0;
             sDispRect.u32TopLeftY = 0;
-            sDispRect.u32BottonRightX = (infFramebuf->frameImage.w - 1);
-            sDispRect.u32BottonRightY = (infFramebuf->frameImage.h - 1);
+            sDispRect.u32BottonRightX = ((infFramebuf->frameImage.w * IMAGE_DISP_UPSCALE_FACTOR) - 1);
+            sDispRect.u32BottonRightY = ((infFramebuf->frameImage.h * IMAGE_DISP_UPSCALE_FACTOR) - 1);
 
 #if defined(__PROFILE__)
             u64StartCycle = pmu_get_systick_Count();
 #endif
 
-            Display_FillRect((uint16_t *)infFramebuf->frameImage.data, &sDispRect);
+            Display_FillRect((uint16_t *)infFramebuf->frameImage.data, &sDispRect, IMAGE_DISP_UPSCALE_FACTOR);
 
 #if defined(__PROFILE__)
             u64EndCycle = pmu_get_systick_Count();
             info("display image cycles %llu \n", (u64EndCycle - u64StartCycle));
 #endif
+
+#endif
+
+#if defined (__USE_UVC__)
+
+            if (UVC_IsConnect())
+            {
+#if (UVC_Color_Format == UVC_Format_YUY2)
+                rectangle_t roi;
+
+                image_t RGB565Img;
+                image_t YUV422Img;
+
+                RGB565Img.w = infFramebuf->frameImage.w;
+                RGB565Img.h = infFramebuf->frameImage.h;
+                RGB565Img.data = (uint8_t *)infFramebuf->frameImage.data;
+                RGB565Img.pixfmt = PIXFORMAT_RGB565;
+
+                YUV422Img.w = RGB565Img.w;
+                YUV422Img.h = RGB565Img.h;
+                YUV422Img.data = (uint8_t *)infFramebuf->frameImage.data;
+                YUV422Img.pixfmt = PIXFORMAT_YUV422;
+
+                roi.x = 0;
+                roi.y = 0;
+                roi.w = RGB565Img.w;
+                roi.h = RGB565Img.h;
+                imlib_nvt_scale(&RGB565Img, &YUV422Img, &roi);
+
+#else
+                image_t origImg;
+                image_t vflipImg;
+
+                origImg.w = infFramebuf->frameImage.w;
+                origImg.h = infFramebuf->frameImage.h;
+                origImg.data = (uint8_t *)infFramebuf->frameImage.data;
+                origImg.pixfmt = PIXFORMAT_RGB565;
+
+                vflipImg.w = origImg.w;
+                vflipImg.h = origImg.h;
+                vflipImg.data = (uint8_t *)infFramebuf->frameImage.data;
+                vflipImg.pixfmt = PIXFORMAT_RGB565;
+
+                imlib_nvt_vflip(&origImg, &vflipImg);
+#endif
+                UVC_SendImage((uint32_t)infFramebuf->frameImage.data, IMAGE_FB_SIZE, uvcStatus.StillImage);
+
+            }
 
 #endif
 
@@ -481,19 +558,19 @@ static void main_task(void *pvParameters)
                 //              sprintf(szDisplayText,"Time %llu",(uint64_t) pmu_get_systick_Count() / (uint64_t)SystemCoreClock);
 
                 sDispRect.u32TopLeftX = 0;
-                sDispRect.u32TopLeftY = frameBuffer.h + FONT_HTIGHT;
-                sDispRect.u32BottonRightX = (frameBuffer.w);
-                sDispRect.u32BottonRightY = (frameBuffer.h + (2 * FONT_HTIGHT) - 1);
-
+                sDispRect.u32TopLeftY = (frameBuffer.h * IMAGE_DISP_UPSCALE_FACTOR);
+                sDispRect.u32BottonRightX = (frameBuffer.w * IMAGE_DISP_UPSCALE_FACTOR);
+                sDispRect.u32BottonRightY = ((frameBuffer.h * IMAGE_DISP_UPSCALE_FACTOR) + (FONT_DISP_UPSCALE_FACTOR * FONT_HTIGHT) - 1);
                 Display_ClearRect(C_WHITE, &sDispRect);
                 Display_PutText(
                     szDisplayText,
                     strlen(szDisplayText),
                     0,
-                    frameBuffer.h + FONT_HTIGHT,
+                    frameBuffer.h * IMAGE_DISP_UPSCALE_FACTOR,
                     C_BLUE,
                     C_WHITE,
-                    false
+                    false,
+                    FONT_DISP_UPSCALE_FACTOR
                 );
 #endif
                 u64PerfCycle = (uint64_t)pmu_get_systick_Count() + (uint64_t)(SystemCoreClock * EACH_PERF_SEC);

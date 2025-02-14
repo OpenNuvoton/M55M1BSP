@@ -1,0 +1,20 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "CCAP_Packet_DownScale.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "CCAP_Packet_DownScale.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        }
+    ]
+}

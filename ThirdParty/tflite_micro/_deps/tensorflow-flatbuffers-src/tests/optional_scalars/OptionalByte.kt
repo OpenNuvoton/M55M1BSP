@@ -3,12 +3,10 @@
 package optional_scalars
 
 @Suppress("unused")
-@ExperimentalUnsignedTypes
 class OptionalByte private constructor() {
     companion object {
         const val None: Byte = 0
         const val One: Byte = 1
-        val names : Array<String> = arrayOf("None", "One")
-        fun name(e: Int) : String = names[e]
+        const val Two: Byte = 2
     }
 }

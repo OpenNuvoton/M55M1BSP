@@ -35,7 +35,7 @@ cc_library(
         ":micro_memory_planner",
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/micro:micro_compatibility",
-        "//tensorflow/lite/micro:micro_error_reporter",
+        "//tensorflow/lite/micro:micro_log",
     ],
 )
 
@@ -51,8 +51,7 @@ cc_library(
     deps = [
         ":micro_memory_planner",
         "//tensorflow/lite/micro:micro_compatibility",
-        "//tensorflow/lite/micro:micro_error_reporter",
-        "//tensorflow/lite/micro:micro_string",
+        "//tensorflow/lite/micro:micro_log",
     ],
 )
 
@@ -105,7 +104,6 @@ cc_library(
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/core/api",
         "//tensorflow/lite/micro:micro_compatibility",
-        "//tensorflow/lite/micro:micro_error_reporter",
     ],
 )
 

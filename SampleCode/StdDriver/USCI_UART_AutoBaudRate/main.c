@@ -30,20 +30,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -132,7 +120,7 @@ void USCI_AutoBaudRate_Test(void)
     printf("|  ______                                             _____  |\n");
     printf("| |      |                                           |     | |\n");
     printf("| |Master|                                           |Slave| |\n");
-    printf("| |    TX|--USCI0_DAT1(PA.10) <==> USCI0_DAT0(PA.9)--|RX   | |\n");
+    printf("| |    TX|--USCI0_DAT1(PA.9) <==> USCI0_DAT0(PA.10)--|RX   | |\n");
     printf("| |______|                                           |_____| |\n");
     printf("|                                                            |\n");
     printf("+------------------------------------------------------------+\n");
@@ -242,7 +230,7 @@ void USCI_AutoBaudRate_RxTest(void)
     /* Enable auto baud rate detect function */
     UUART0->PROTCTL |= UUART_PROTCTL_ABREN_Msk;
 
-    printf("\nreceiving input pattern... ");
+    printf("\nreceiving input pattern...\n");
 
     /* Wait until auto baud rate detect finished or time-out */
     while (UUART0->PROTCTL & UUART_PROTCTL_ABREN_Msk);

@@ -34,7 +34,15 @@ extern "C"
 #define HSOTG_VBUS_EN_ACTIVE_LOW       (1UL) /*!< USB VBUS power switch enable signal is active low. \hideinitializer */
 #define HSOTG_VBUS_ST_VALID_HIGH       (0UL) /*!< USB VBUS power switch valid status is high. \hideinitializer */
 #define HSOTG_VBUS_ST_VALID_LOW        (1UL) /*!< USB VBUS power switch valid status is low. \hideinitializer */
+#define HSOTG_VBUS_OC_VALID_HIGH       (1UL) /*!< USB VBUS power switch valid status is high. \hideinitializer */
+#define HSOTG_VBUS_OC_VALID_LOW        (0UL) /*!< USB VBUS power switch valid status is low. \hideinitializer */
 
+#define HSOTG_PHYCTL_FSEL_19_2M        (0UL << HSOTG_PHYCTL_FSEL_Pos)    /*!< Setting High Speed OTG PHY reference clock frequency as 19.2 MHz. \hideinitializer */
+#define HSOTG_PHYCTL_FSEL_20_0M        (1UL << HSOTG_PHYCTL_FSEL_Pos)    /*!< Setting High Speed OTG PHY reference clock frequency as 20 MHz. \hideinitializer */
+#define HSOTG_PHYCTL_FSEL_24_0M        (2UL << HSOTG_PHYCTL_FSEL_Pos)    /*!< Setting High Speed OTG PHY reference clock frequency as 24 MHz. \hideinitializer */
+#define HSOTG_PHYCTL_FSEL_16_0M        (3UL << HSOTG_PHYCTL_FSEL_Pos)    /*!< Setting High Speed OTG PHY reference clock frequency as 16 MHz. \hideinitializer */
+#define HSOTG_PHYCTL_FSEL_26_0M        (6UL << HSOTG_PHYCTL_FSEL_Pos)    /*!< Setting High Speed OTG PHY reference clock frequency as 26 MHz. \hideinitializer */
+#define HSOTG_PHYCTL_FSEL_32_0M        (7UL << HSOTG_PHYCTL_FSEL_Pos)    /*!< Setting High Speed OTG PHY reference clock frequency as 32 MHz. \hideinitializer */
 /** @} end of group HSOTG_EXPORTED_CONSTANTS */
 
 
@@ -141,6 +149,32 @@ extern "C"
   * \hideinitializer
   */
 #define HSOTG_SET_VBUS_STS_POL(u32Pol) (HSOTG->PHYCTL = (HSOTG->PHYCTL & (~HSOTG_PHYCTL_VBSTSPOL_Msk)) | ((u32Pol) << HSOTG_PHYCTL_VBSTSPOL_Pos))
+
+/**
+  * @brief This macro is used to set the polarity of USB_VBUS_OC pin
+  * @param[in] u32Pol The polarity selection. Valid values are listed below.
+  *                    - \ref HSOTG_VBUS_OC_VALID_HIGH
+  *                    - \ref HSOTG_VBUS_OC_VALID_LOW
+  *
+  * @details This macro is used to set the polarity of external USB VBUS power switch over current signal.
+  * \hideinitializer
+  */
+#define HSOTG_SET_VBUS_OC_POL(u32Pol) (HSOTG->PHYCTL = (HSOTG->PHYCTL & (~HSOTG_PHYCTL_OCPOL_Msk)) | ((u32Pol) << HSOTG_PHYCTL_OCPOL_Pos))
+
+/**
+  * @brief      Set OTG PHY reference clock frequency
+  * @param[in]  u32RefClock The reference clock selection. Valid values are listed below.
+  *             - \ref HSOTG_PHYCTL_FSEL_19_2M
+  *             - \ref HSOTG_PHYCTL_FSEL_20_0M
+  *             - \ref HSOTG_PHYCTL_FSEL_24_0M
+  *             - \ref HSOTG_PHYCTL_FSEL_16_0M
+  *             - \ref HSOTG_PHYCTL_FSEL_26_0M
+  *             - \ref HSOTG_PHYCTL_FSEL_32_0M
+  * @return     None
+  * @details    This macro set OTG PHY reference clock frequency.
+  * \hideinitializer
+  */
+#define HSOTG_SET_PHY_REF_CLK(u32RefClock) (HSOTG->PHYCTL = (HSOTG->PHYCTL & ~HSOTG_PHYCTL_FSEL_Msk) | (u32RefClock))
 
 /**
   * @brief This macro is used to enable HSOTG related interrupts

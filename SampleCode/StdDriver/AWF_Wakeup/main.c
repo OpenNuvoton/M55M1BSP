@@ -54,6 +54,12 @@ void LPPDMA_Init(void)
 
 void AWF_Wakeup_Test(void)
 {
+    /* HIRC enable in power down mode */
+    PMC_DISABLE_AOCKPD();
+
+    /* Enable LPPDMA to access AWF */
+    AWF_EnableLPPDMA(AWF_CTL_LPPDMA_EN_Msk);
+
     /* Set AWF function */
     AWF_Open(AWF_BOTHINT_ENABLE, AWF_BOTHWK_ENABLE, g_u32HTHValue, g_u32LTHValue, g_u32WBINITValue, g_u32ACCCount);
 
@@ -89,9 +95,7 @@ NVT_ITCM void AWF_IRQHandler(void)
 {
     uint32_t u32AccumulationValue;
     uint32_t u32HTH_Flag, u32LTH_Flag;
-
-    /* Enable AWF0 module clock */
-    CLK_EnableModuleClock(AWF0_MODULE); //TESTCHIP_ONLY
+    uint32_t u32TimeOutCnt = SystemCoreClock >> 1;
 
     u32AccumulationValue = AWF_GET_ACUVAL();
     u32HTH_Flag = AWF_GET_HTH_INTFLAG();
@@ -111,8 +115,11 @@ NVT_ITCM void AWF_IRQHandler(void)
 
     AWF_Close();
 
-    /* CPU read interrupt flag register to wait write(clear) instruction completement */
-    inp32(&AWF->STATUS);
+    /* Wait interrupt flag clear */
+    while (AWF->STATUS)
+    {
+        if (--u32TimeOutCnt == 0) break;
+    }
 }
 
 static void SYS_Init(void)
@@ -186,6 +193,7 @@ int main(void)
     printf("+-------------------------------------------------------------+\n");
     printf("|[0] Test High Threshold.                                     |\n");
     printf("|[1] Test Low Threshold.                                      |\n");
+    printf("+-------------------------------------------------------------+\n");
 
     TestCase = getchar();
 
@@ -230,6 +238,9 @@ int main(void)
 
         while (1) ;
     }
+
+    /* Clear the data cache and write back data to the main memory */
+    SCB_CleanDCache();
 
     AWF_Wakeup_Test();
 

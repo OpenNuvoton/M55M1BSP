@@ -18,6 +18,7 @@ int32_t FlashAccess_OnSRAM(void)
     uint32_t u32Addr;
     uint32_t u32Cnt;
 
+    printf("[%s] Execution address is 0x%08X\n", __func__, __PC());
     SYS_UnlockReg();
     FMC_Open();
     FMC_ENABLE_AP_UPDATE();

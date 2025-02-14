@@ -9,12 +9,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
+#include "targetdev.h"
 #include "isp_user.h"
 
 __ALIGNED(4) uint8_t g_au8ResponseBuff[128];
 __ALIGNED(4) static uint8_t g_au8ApromBuf[FMC_FLASH_PAGE_SIZE];
 uint32_t g_u32UpdateApromCmd;
-uint32_t g_u32ApromSize = 0, g_u32DataFlashAddr = 0, g_u32DataFlashSize = 0;
+uint32_t g_u32DataFlashAddr = 0,
+         g_u32DataFlashSize = 0;
 
 static uint16_t Checksum(unsigned char *buf, int len)
 {

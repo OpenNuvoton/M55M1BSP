@@ -22,15 +22,17 @@
 #define TTMR_LPPDMA_CH      1
 #define DATA_COUNT          10
 
-static uint32_t s_au32CAPValue[DATA_COUNT] __attribute__((section(".lpSram")));
+#if (NVT_DCACHE_ON == 1)
+    static uint32_t s_au32CAPValue[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+#else
+    static uint32_t s_au32CAPValue[DATA_COUNT] __attribute__((section(".lpSram")));
+#endif
 
 static volatile uint32_t s_u32IsTestOver = 0;
 
 NVT_ITCM void LPPDMA_IRQHandler(void)
 {
     uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
-    CLK_WaitModuleClockReady(LPPDMA0_MODULE);//TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);//TESTCHIP_ONLY
     uint32_t status = LPPDMA_GET_INT_STATUS(LPPDMA);
 
     if (status & LPPDMA_INTSTS_ABTIF_Msk)   /* abort */
@@ -92,6 +94,14 @@ void LPPDMA_Init(void)
     /* Reset LPPDMA module */
     SYS_ResetModule(SYS_LPPDMA0RST);
 
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the source buffer will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr(s_au32CAPValue, sizeof(s_au32CAPValue));
+#endif  // (NVT_DCACHE_ON == 1)
+
     /* Enable LPPDMA channels */
     LPPDMA_Open(LPPDMA, 1 << TTMR_LPPDMA_CH);
 
@@ -125,16 +135,18 @@ void LPPDMA_Init(void)
 void PowerDownFunction(void)
 {
     SYS_UnlockReg();
-    /* Switch SCLK clock source to HIRC */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
+    /* Switch SCLK to HIRC when power down */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_HIRC, CLK_APLLCTL_APLLSRC_HIRC, 0);
     /* Check if all the debug messages are finished */
     UART_WAIT_TX_EMPTY(DEBUG_PORT);
+    //MIRC and HIRC enable in power down mode
+    PMC_DISABLE_AOCKPD();
     /* Set Power-down mode */
     PMC_SetPowerDownMode(PMC_NPD0, PMC_PLCTL_PLSEL_PL1);
     /* Enter to Power-down mode */
     PMC_PowerDown();
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
     SYS_LockReg();
 }
 
@@ -143,11 +155,22 @@ static void SYS_Init(void)
     /* Unlock protected registers */
     SYS_UnlockReg();
 
+    /* Release GPIO hold status */
+    PMC_RELEASE_GPIO();
+
+    /* Set PF multi-function pins for XT1_OUT(PF.2) and XT1_IN(PF.3) */
+    SET_XT1_OUT_PF2();
+    SET_XT1_IN_PF3();
+
+    /* Set PF multi-function pins for X32_OUT(PF.4) and X32_IN(PF.5) */
+    SET_X32_OUT_PF4();
+    SET_X32_IN_PF5();
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -208,7 +231,16 @@ int main(void)
     TTMR_Stop(TTMR0);
 
     /* Waiting for LPPDMA transfer done.  g_u32IsTestOver is set by LPPDMA interrupt handler */
-    while (s_u32IsTestOver == 0);
+    while (s_u32IsTestOver == 0) {};
+
+#if (NVT_DCACHE_ON == 1)
+    /*
+       Invalidate the CPU Data cache after the DMA transfer.
+       As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+    */
+    SCB_InvalidateDCache_by_Addr(s_au32CAPValue, sizeof(s_au32CAPValue));
+
+#endif  // (NVT_DCACHE_ON == 1)
 
     /* Check transfer result */
     if (s_u32IsTestOver == 1)
@@ -216,7 +248,7 @@ int main(void)
     else if (s_u32IsTestOver == 2)
         printf("LPPDMA trasnfer TTMR abort...\n");
 
-    if (s_au32CAPValue[9] == TTMR0->CMP)
+    if (s_au32CAPValue[DATA_COUNT - 1] == TTMR0->CMP)
         printf("TTMR Auto Operation PASS.\n");
     else
         printf("TTMR Auto Operation FAIL.\n");

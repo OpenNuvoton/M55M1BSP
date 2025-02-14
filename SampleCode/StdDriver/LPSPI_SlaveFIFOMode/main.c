@@ -12,19 +12,24 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
+//------------------------------------------------------------------------------
 #define DATA_COUNT          16
 #define TEST_PATTERN        0x00AA0000
 #define LPSPI_CLK_FREQ      2000000
 
+//------------------------------------------------------------------------------
+// Buffer for LPSPI0 data transfer with FIFO mode when DCache is disabled
 uint32_t g_au32SourceData[DATA_COUNT];
 uint32_t g_au32DestinationData[DATA_COUNT];
 volatile uint32_t g_u32TxDataCount;
 volatile uint32_t g_u32RxDataCount;
 
+//------------------------------------------------------------------------------
 /* Function prototype declaration */
 void SYS_Init(void);
 void LPSPI_Init(void);
 
+//------------------------------------------------------------------------------
 /* ------------- */
 /* Main function */
 /* ------------- */
@@ -129,8 +134,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -166,14 +171,10 @@ void SYS_Init(void)
     /* Setup LPSPI0 multi-function pins */
     /* PA.3 is LPSPI0_SS,   PA.2 is LPSPI0_CLK,
        PA.1 is LPSPI0_MISO, PA.0 is LPSPI0_MOSI*/
-    SYS->GPA_MFP0 = (SYS->GPA_MFP0 & ~(SYS_GPA_MFP0_PA3MFP_Msk |
-                                       SYS_GPA_MFP0_PA2MFP_Msk |
-                                       SYS_GPA_MFP0_PA1MFP_Msk |
-                                       SYS_GPA_MFP0_PA0MFP_Msk)) |
-                    (SYS_GPA_MFP0_PA3MFP_LPSPI0_SS |
-                     SYS_GPA_MFP0_PA2MFP_LPSPI0_CLK |
-                     SYS_GPA_MFP0_PA1MFP_LPSPI0_MISO |
-                     SYS_GPA_MFP0_PA0MFP_LPSPI0_MOSI);
+    SET_LPSPI0_SS_PA3();
+    SET_LPSPI0_CLK_PA2();
+    SET_LPSPI0_MISO_PA1();
+    SET_LPSPI0_MOSI_PA0();
 }
 
 void LPSPI_Init(void)

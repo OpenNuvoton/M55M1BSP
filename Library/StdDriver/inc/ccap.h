@@ -30,93 +30,107 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /* CTL constant definitions                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
-#define CCAP_CTL_CCAPEN             (1ul << CCAP_CTL_CCAPEN_Pos)        /*!< CCAP CTL setting for enabling Camera Capture Interface         \hideinitializer */
-#define CCAP_CTL_PKTEN              (1ul << CCAP_CTL_PKTEN_Pos)         /*!< CCAP CTL setting for enabling packet output mode               \hideinitializer */
-#define CCAP_CTL_SHUTTER            (1ul << CCAP_CTL_SHUTTER_Pos)       /*!< CCAP CTL setting for enabling shutter mode                     \hideinitializer */
-#define CCAP_CTL_UPDATE             (1ul << CCAP_CTL_UPDATE_Pos)        /*!< CCAP CTL setting for enabling update register at new frame     \hideinitializer */
-#define CCAP_CTL_RESET              (1ul << CCAP_CTL_VPRST_Pos)         /*!< CCAP CTL setting for capture reset                             \hideinitializer */
-#define CCAP_CTL_MY8_MY4            (0ul << CCAP_CTL_MY8_MY4_Pos)       /*!< CCAP CTL setting for 4-bit data I/O interface with Mono        \hideinitializer */
-#define CCAP_CTL_MY8_MY4_SWAP       (1ul << CCAP_CTL_MY4_SWAP_Pos)      /*!< CCAP CTL setting for 4-bit data swap I/O interface with Mono   \hideinitializer */
-#define CCAP_CTL_MY8_MY8            (1ul << CCAP_CTL_MY8_MY4_Pos)       /*!< CCAP CTL setting for 8-bit data I/O interface with Mono        \hideinitializer */
+#define CCAP_CTL_CCAPEN                 (1ul << CCAP_CTL_CCAPEN_Pos)        /*!< CCAP CTL setting for enabling Camera Capture Interface         \hideinitializer */
+#define CCAP_CTL_PKTEN                  (1ul << CCAP_CTL_PKTEN_Pos)         /*!< CCAP CTL setting for enabling packet output mode               \hideinitializer */
+#define CCAP_CTL_PLNEN                  (1ul << CCAP_CTL_PLNEN_Pos)         /*!< CCAP CTL setting for enabling planar output mode               \hideinitializer */
+#define CCAP_CTL_SHUTTER                (1ul << CCAP_CTL_SHUTTER_Pos)       /*!< CCAP CTL setting for enabling shutter mode                     \hideinitializer */
+#define CCAP_CTL_UPDATE                 (1ul << CCAP_CTL_UPDATE_Pos)        /*!< CCAP CTL setting for enabling update register at new frame     \hideinitializer */
+#define CCAP_CTL_RESET                  (1ul << CCAP_CTL_VPRST_Pos)         /*!< CCAP CTL setting for capture reset                             \hideinitializer */
+#define CCAP_CTL_MY8_MY4                (0ul << CCAP_CTL_MY8_MY4_Pos)       /*!< CCAP CTL setting for 4-bit data I/O interface with Mono        \hideinitializer */
+#define CCAP_CTL_MY8_MY4_SWAP           (1ul << CCAP_CTL_MY4_SWAP_Pos)      /*!< CCAP CTL setting for 4-bit data swap I/O interface with Mono   \hideinitializer */
+#define CCAP_CTL_MY8_MY8                (1ul << CCAP_CTL_MY8_MY4_Pos)       /*!< CCAP CTL setting for 8-bit data I/O interface with Mono        \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
-/* PAR constant definitions                                                                                */
+/* CCAP constant definitions                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
-#define CCAP_PAR_INFMT_YUV422           (0ul << CCAP_PAR_INFMT_Pos)         /*!< CCAP PAR setting for Sensor Input Data YUV422 Format       \hideinitializer */
-#define CCAP_PAR_INFMT_YUV422_          (2ul << CCAP_PAR_INFMT_Pos)         /*!< CCAP PAR setting for Sensor Input Data YUV422 Format       \hideinitializer */
-#define CCAP_PAR_INFMT_RGB565           (1ul << CCAP_PAR_INFMT_Pos)         /*!< CCAP PAR setting for Sensor Input Data RGB565 Format       \hideinitializer */
-#define CCAP_PAR_INFMT_RGB888           (3ul << CCAP_PAR_INFMT_Pos)         /*!< CCAP PAR setting for Sensor Input Data RGB888 Format       \hideinitializer */
+#define CCAP_PAR_INFMT_YUV422           (0ul << CCAP_PAR_INFMT_Pos)         /*!< Setting for Sensor Input Data YUV422 Format           \hideinitializer */
+#define CCAP_PAR_INFMT_YUV422_          (2ul << CCAP_PAR_INFMT_Pos)         /*!< Setting for Sensor Input Data YUV422 Format           \hideinitializer */
+#define CCAP_PAR_INFMT_RGB565           (1ul << CCAP_PAR_INFMT_Pos)         /*!< Setting for Sensor Input Data RGB565 Format           \hideinitializer */
+#define CCAP_PAR_INFMT_RGB888           (3ul << CCAP_PAR_INFMT_Pos)         /*!< Setting for Sensor Input Data RGB888 Format           \hideinitializer */
 
-#define CCAP_PAR_SENTYPE_CCIR601        (0ul << CCAP_PAR_SENTYPE_Pos)       /*!< CCAP PAR setting for Sensor Input CCIR601 Type             \hideinitializer */
-#define CCAP_PAR_SENTYPE_CCIR656        (1ul << CCAP_PAR_SENTYPE_Pos)       /*!< CCAP PAR setting for Sensor Input CCIR656 Type             \hideinitializer */
+#define CCAP_PAR_SENTYPE_CCIR601        (0ul << CCAP_PAR_SENTYPE_Pos)       /*!< Setting for Sensor Input CCIR601 Type                 \hideinitializer */
+#define CCAP_PAR_SENTYPE_CCIR656        (1ul << CCAP_PAR_SENTYPE_Pos)       /*!< Setting for Sensor Input CCIR656 Type                 \hideinitializer */
 
-#define CCAP_PAR_INDATORD_YUYV          (0x0ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, YUYV         \hideinitializer */
-#define CCAP_PAR_INDATORD_YVYU          (0x1ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, YVYU         \hideinitializer */
-#define CCAP_PAR_INDATORD_UYVY          (0x2ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, UYVY         \hideinitializer */
-#define CCAP_PAR_INDATORD_VYUY          (0x3ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, VYUY         \hideinitializer */
+#define CCAP_PAR_INDATORD_YUYV          (0x0ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data YUYV Order (Byte 0 1 2 3: Y0 U0 Y1 V0)      \hideinitializer */
+#define CCAP_PAR_INDATORD_YVYU          (0x1ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data YVYU Order (Byte 0 1 2 3: Y0 V0 Y1 U0)      \hideinitializer */
+#define CCAP_PAR_INDATORD_UYVY          (0x2ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data UYVY Order (Byte 0 1 2 3: U0 Y0 V0 Y1)      \hideinitializer */
+#define CCAP_PAR_INDATORD_VYUY          (0x3ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data VYUY Order (Byte 0 1 2 3: V0 Y0 U0 Y1)      \hideinitializer */
 
-#define CCAP_PAR_INDATORD_RGGB          (0x0ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, Byte0: R[4:0] G[5:3], Byte1 G[2:0] B[4:0]    \hideinitializer */
-#define CCAP_PAR_INDATORD_BGGR          (0x1ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, Byte0: B[4:0] G[5:3], Byte1 G[2:0] R[4:0]    \hideinitializer */
-#define CCAP_PAR_INDATORD_GBRG          (0x2ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, Byte0: G[2:0] B[4:0], Byte1 R[4:0] G[5:3]    \hideinitializer */
-#define CCAP_PAR_INDATORD_GRBG          (0x3ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, Byte0: G[2:0] R[4:0], Byte1 B[4:0] G[5:3]    \hideinitializer */
+#define CCAP_PAR_INDATORD_RGGB          (0x0ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB565 Order (Byte0: R[4:0] G[5:3], Byte1 G[2:0] B[4:0])    \hideinitializer */
+#define CCAP_PAR_INDATORD_BGGR          (0x1ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB565 Order (Byte0: B[4:0] G[5:3], Byte1 G[2:0] R[4:0])    \hideinitializer */
+#define CCAP_PAR_INDATORD_GBRG          (0x2ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB565 Order (Byte0: G[2:0] B[4:0], Byte1 R[4:0] G[5:3])    \hideinitializer */
+#define CCAP_PAR_INDATORD_GRBG          (0x3ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB565 Order (Byte0: G[2:0] R[4:0], Byte1 B[4:0] G[5:3])    \hideinitializer */
 
-#define CCAP_PAR_INDATORD_RGB888_RGB    (0x0ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, RGB888 RGB   \hideinitializer */
-#define CCAP_PAR_INDATORD_RGB888_RBG    (0x1ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, RGB888 RBG   \hideinitializer */
-#define CCAP_PAR_INDATORD_RGB888_GRB    (0x2ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, RGB888 GRB   \hideinitializer */
-#define CCAP_PAR_INDATORD_RGB888_GBR    (0x3ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, RGB888 GBR   \hideinitializer */
-#define CCAP_PAR_INDATORD_RGB888_BRG    (0x4ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, RGB888 BRG   \hideinitializer */
-#define CCAP_PAR_INDATORD_RGB888_BGR    (0x5ul << CCAP_PAR_INDATORD_Pos)    /*!< CCAP PAR setting for Sensor Input Data Order, RGB888 BGR   \hideinitializer */
+#define CCAP_PAR_INDATORD_RGB888_RGB    (0x0ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB888 Order (Byte 0 1 2: R G B)       \hideinitializer */
+#define CCAP_PAR_INDATORD_RGB888_RBG    (0x1ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB888 Order (Byte 0 1 2: R B G)       \hideinitializer */
+#define CCAP_PAR_INDATORD_RGB888_GRB    (0x2ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB888 Order (Byte 0 1 2: G R B)       \hideinitializer */
+#define CCAP_PAR_INDATORD_RGB888_GBR    (0x3ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB888 Order (Byte 0 1 2: G B R)       \hideinitializer */
+#define CCAP_PAR_INDATORD_RGB888_BRG    (0x4ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB888 Order (Byte 0 1 2: B R G)       \hideinitializer */
+#define CCAP_PAR_INDATORD_RGB888_BGR    (0x5ul << CCAP_PAR_INDATORD_Pos)    /*!< Setting for Sensor Input Data RGB888 Order (Byte 0 1 2: B G R)       \hideinitializer */
 
-#define CCAP_PAR_OUTFMT_YUV422          (0x0ul << CCAP_PAR_OUTFMT_Pos)      /*!< CCAP PAR setting for Image Data YUV422 Format Output to System Memory                      \hideinitializer */
-#define CCAP_PAR_OUTFMT_ONLY_Y          (0x1ul << CCAP_PAR_OUTFMT_Pos)      /*!< CCAP PAR setting for Image Data ONLY_Y Format Output to System Memory                      \hideinitializer */
-#define CCAP_PAR_OUTFMT_RGB555          (0x2ul << CCAP_PAR_OUTFMT_Pos)      /*!< CCAP PAR setting for Image Data RGB555 Format Output to System Memory                      \hideinitializer */
-#define CCAP_PAR_OUTFMT_RGB565          (0x3ul << CCAP_PAR_OUTFMT_Pos)      /*!< CCAP PAR setting for Image Data RGB565 Format Output to System Memory                      \hideinitializer */
-/*!< CCAP PAR/PARM setting for Image Data RGB888 UINT8 Format Output to System Memory                \hideinitializer */
-#define CCAP_PAR_OUTFMT_RGB888_U8       ((1 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))
-#define CCAP_PAR_OUTFMT_BGR888_U8       ((0 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))
-#define CCAP_PAR_OUTFMT_ARGB888_U8      ((3 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))
-#define CCAP_PAR_OUTFMT_BGRA888_U8      ((2 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))
-/*!< CCAP PAR/PARM setting for Image Data RGB888 INT8  Format Output to System Memory                \hideinitializer */
-#define CCAP_PAR_OUTFMT_RGB888_I8       ((1 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))
-#define CCAP_PAR_OUTFMT_BGR888_I8       ((0 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))
-#define CCAP_PAR_OUTFMT_ARGB888_I8      ((3 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))
-#define CCAP_PAR_OUTFMT_BGRA888_I8      ((2 << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))
+#define CCAP_PAR_OUTFMT_YUV422          (0x0ul << CCAP_PAR_OUTFMT_Pos)      /*!< Output Packet Image Data YUV422 Format to System Memory  \hideinitializer */
+#define CCAP_PAR_OUTFMT_ONLY_Y          (0x1ul << CCAP_PAR_OUTFMT_Pos)      /*!< Output Packet Image Data ONLY_Y Format to System Memory  \hideinitializer */
+#define CCAP_PAR_OUTFMT_RGB555          (0x2ul << CCAP_PAR_OUTFMT_Pos)      /*!< Output Packet Image Data RGB555 Format to System Memory  \hideinitializer */
+#define CCAP_PAR_OUTFMT_RGB565          (0x3ul << CCAP_PAR_OUTFMT_Pos)      /*!< Output Packet Image Data RGB565 Format to System Memory  \hideinitializer */
 
-#define CCAP_PAR_VSP_LOW                (0x0ul << CCAP_PAR_VSP_Pos)         /*!< CCAP PAR setting for Sensor Vsync Polarity                 \hideinitializer */
-#define CCAP_PAR_VSP_HIGH               (0x1ul << CCAP_PAR_VSP_Pos)         /*!< CCAP PAR setting for Sensor Vsync Polarity                 \hideinitializer */
-#define CCAP_PAR_HSP_LOW                (0x0ul << CCAP_PAR_HSP_Pos)         /*!< CCAP PAR setting for Sensor Hsync Polarity                 \hideinitializer */
-#define CCAP_PAR_HSP_HIGH               (0x1ul << CCAP_PAR_HSP_Pos)         /*!< CCAP PAR setting for Sensor Hsync Polarity                 \hideinitializer */
-#define CCAP_PAR_PCLKP_LOW              (0x0ul << CCAP_PAR_PCLKP_Pos)       /*!< CCAP PAR setting for Sensor Pixel Clock Polarity           \hideinitializer */
-#define CCAP_PAR_PCLKP_HIGH             (0x1ul << CCAP_PAR_PCLKP_Pos)       /*!< CCAP PAR setting for Sensor Pixel Clock Polarity           \hideinitializer */
-#define CCAP_PAR_CCIR656_NO_BLANK       (0x1ul << CCAP_PAR_FBB_Pos)         /*!< CCAP PAR setting for Sensor Pixel Clock Polarity           \hideinitializer */
+#define CCAP_PKT_OUTFMT_YUV422          (CCAP_PAR_OUTFMT_YUV422)            /*!< Output Packet Image Data YUV422 Format to System Memory  \hideinitializer */
+#define CCAP_PKT_OUTFMT_ONLY_Y          (CCAP_PAR_OUTFMT_ONLY_Y)            /*!< Output Packet Image Data ONLY_Y Format to System Memory  \hideinitializer */
+#define CCAP_PKT_OUTFMT_RGB555          (CCAP_PAR_OUTFMT_RGB555)            /*!< Output Packet Image Data RGB555 Format to System Memory  \hideinitializer */
+#define CCAP_PKT_OUTFMT_RGB565          (CCAP_PAR_OUTFMT_RGB565)            /*!< Output Packet Image Data RGB565 Format to System Memory  \hideinitializer */
 
+#define CCAP_PKT_OUTFMT_RGB888_U8       ((1ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data RGB888_U8  Format (Byte 0 1 2: R G B) to System Memory        \hideinitializer */
+#define CCAP_PKT_OUTFMT_BGR888_U8       ((0ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data BGR888_U8  Format (Byte 0 1 2: B G R) to System Memory        \hideinitializer */
+#define CCAP_PKT_OUTFMT_ARGB888_U8      ((3ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data ARGB888_U8 Format (Byte 0 1 2 3: 0xFF R G B) to System Memory \hideinitializer */
+#define CCAP_PKT_OUTFMT_BGRA888_U8      ((2ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x0ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data BGRA888_U8 Format (Byte 0 1 2 3: B G R 0xFF) to System Memory \hideinitializer */
+
+#define CCAP_PKT_OUTFMT_RGB888_I8       ((1ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data RGB888_I8  Format (Byte 0 1 2: R G B) to System Memory        \hideinitializer */
+#define CCAP_PKT_OUTFMT_BGR888_I8       ((0ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data BGR888_I8  Format (Byte 0 1 2: B G R) to System Memory        \hideinitializer */
+#define CCAP_PKT_OUTFMT_ARGB888_I8      ((3ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data ARGB888_I8 Format (Byte 0 1 2 3: 0xFF R G B) to System Memory \hideinitializer */
+#define CCAP_PKT_OUTFMT_BGRA888_I8      ((2ul << CCAP_PARM_RGB888OUTORD_Pos) | CCAP_PARM_OUTFMTH_Msk | (0x1ul << CCAP_PAR_OUTFMT_Pos))  /*!< Output Packet Image Data BGRA888_I8 Format (Byte 0 1 2 3: B G R 0xFF) to System Memory \hideinitializer */
+#define CCAP_PKT_DISABLED               (0xFFFFFFFF)                        /*!< Disable Packet Pipe Output                                 \hideinitializer */
+
+#define CCAP_PLN_OUTFMT_YUV422P         (0ul << CCAP_PAR_PLNFMT_Pos)        /*!< Output Planar Image Data YUV422 Format to System Memory    \hideinitializer */
+#define CCAP_PLN_OUTFMT_YUV420P         (1ul << CCAP_PAR_PLNFMT_Pos)        /*!< Output Planar Image Data YUV420 Format to System Memory    \hideinitializer */
+#define CCAP_PLN_DISABLED               (0xFFFFFFFF)                        /*!< Disable Planar Pipe Output                                 \hideinitializer */
+
+#define CCAP_PAR_VSP_LOW                (0x0ul << CCAP_PAR_VSP_Pos)         /*!< Setting for Sensor Vsync Active Low  Polarity         \hideinitializer */
+#define CCAP_PAR_VSP_HIGH               (0x1ul << CCAP_PAR_VSP_Pos)         /*!< Setting for Sensor Vsync Active High Polarity         \hideinitializer */
+#define CCAP_PAR_HSP_LOW                (0x0ul << CCAP_PAR_HSP_Pos)         /*!< Setting for Sensor Hsync Active Low  Polarity         \hideinitializer */
+#define CCAP_PAR_HSP_HIGH               (0x1ul << CCAP_PAR_HSP_Pos)         /*!< Setting for Sensor Hsync Active High Polarity         \hideinitializer */
+#define CCAP_PAR_PCLKP_LOW              (0x0ul << CCAP_PAR_PCLKP_Pos)       /*!< Setting for Sensor Pixel Clock Active Low  Polarity   \hideinitializer */
+#define CCAP_PAR_PCLKP_HIGH             (0x1ul << CCAP_PAR_PCLKP_Pos)       /*!< Setting for Sensor Pixel Clock Active High Polarity   \hideinitializer */
+#define CCAP_PAR_CCIR656_NO_BLANK       (0x1ul << CCAP_PAR_FBB_Pos)         /*!< Setting for Output only active data to system memory  \hideinitializer */
+
+#define CCAP_ONE_SHOT                   TRUE
+#define CCAP_DISABLE                    FALSE
+
+/*---------------------------------------------------------------------------------------------------------*/
+/* CCAP INT constant definitions                                                                           */
+/*---------------------------------------------------------------------------------------------------------*/
+#define CCAP_INT_VIEN_ENABLE            CCAP_INTEN_VIEN_Msk                 /*!< CCAP INT setting for Video Frame End Interrupt enable            \hideinitializer */
+#define CCAP_INT_MEIEN_ENABLE           CCAP_INTEN_MEIEN_Msk                /*!< CCAP INT setting for Bus Master Transfer Error Interrupt enable  \hideinitializer */
+#define CCAP_INT_ADDRMIEN_ENABLE        CCAP_INTEN_ADDRMIEN_Msk             /*!< CCAP INT setting for Memory Address Match Interrupt enable       \hideinitializer */
+#define CCAP_INT_MDIEN_MODE1_ENABLE     (1ul << CCAP_INTEN_MDIEN_Pos)       /*!< CCAP INT setting for Motion Detection Modes Interrupt enable     \hideinitializer */
+#define CCAP_INT_MDIEN_MODE2_ENABLE     (2ul << CCAP_INTEN_MDIEN_Pos)       /*!< CCAP INT setting for Motion Detection Modes Interrupt enable     \hideinitializer */
+
+#define CCAP_INTSTS_MDINTF_MODE1_Msk    (1ul << CCAP_INTSTS_MDINTF_Pos)     /*!< CCAP INT status for Motion Detection Modes 1                     \hideinitializer */
+#define CCAP_INTSTS_MDINTF_MODE2_Msk    (2ul << CCAP_INTSTS_MDINTF_Pos)     /*!< CCAP INT status for Motion Detection Modes 2                     \hideinitializer */
+
+/*---------------------------------------------------------------------------------------------------------*/
+/* CCAP Motion Detection definitions                                                                       */
+/*---------------------------------------------------------------------------------------------------------*/
 #define CCAP_MD_TRIG_LPTMR0             (0x0ul << CCAP_MDTRG_WK_TRGSEL_Pos) /*!< CCAP Motion Detection trigger source for LPTMR0            \hideinitializer */
 #define CCAP_MD_TRIG_LPTMR1             (0x1ul << CCAP_MDTRG_WK_TRGSEL_Pos) /*!< CCAP Motion Detection trigger source for LPTMR1            \hideinitializer */
 #define CCAP_MD_TRIG_TTMR0              (0x2ul << CCAP_MDTRG_WK_TRGSEL_Pos) /*!< CCAP Motion Detection trigger source for TTMR0             \hideinitializer */
 #define CCAP_MD_TRIG_TTMR1              (0x3ul << CCAP_MDTRG_WK_TRGSEL_Pos) /*!< CCAP Motion Detection trigger source for TTMR1             \hideinitializer */
 
-/*---------------------------------------------------------------------------------------------------------*/
-/* CCAP INT constant definitions                                                                           */
-/*---------------------------------------------------------------------------------------------------------*/
-#define CCAP_INT_VIEN_ENABLE            CCAP_INTEN_VIEN_Msk                   /*!< CCAP INT setting for Video Frame End Interrupt enable            \hideinitializer */
-#define CCAP_INT_MEIEN_ENABLE           CCAP_INTEN_MEIEN_Msk                  /*!< CCAP INT setting for Bus Master Transfer Error Interrupt enable  \hideinitializer */
-#define CCAP_INT_ADDRMIEN_ENABLE        CCAP_INTEN_ADDRMIEN_Msk               /*!< CCAP INT setting for Memory Address Match Interrupt enable       \hideinitializer */
-#define CCAP_INT_MDIEN_MODE1_ENABLE     (1ul << CCAP_INTEN_MDIEN_Pos)         /*!< CCAP INT setting for Motion Detection Modes Interrupt enable     \hideinitializer */
-#define CCAP_INT_MDIEN_MODE2_ENABLE     (2ul << CCAP_INTEN_MDIEN_Pos)         /*!< CCAP INT setting for Motion Detection Modes Interrupt enable     \hideinitializer */
-
-#define CCAP_INTSTS_MDINTF_MODE1_Msk    (1ul << CCAP_INTSTS_MDINTF_Pos)       /*!< CCAP INT status for Motion Detection Modes 1                     \hideinitializer */
-#define CCAP_INTSTS_MDINTF_MODE2_Msk    (2ul << CCAP_INTSTS_MDINTF_Pos)       /*!< CCAP INT status for Motion Detection Modes 2                     \hideinitializer */
-
-/*---------------------------------------------------------------------------------------------------------*/
-/* CCAP Motion Detection definitions                                                                       */
-/*---------------------------------------------------------------------------------------------------------*/
 #define CCAP_MD_CELL_WIDTH              (80ul)
 #define CCAP_MD_CELL_HEIGHT             (60ul)
 #define CCAP_MD_WIDTH                   (320ul)
 #define CCAP_MD_HEIGHT                  (240ul)
 #define CCAP_MD_WINDOW_CNT              (16ul)
-#define CCAP_MD_MAX_WINDOW_SAD          (0x12AD4ul)
-#define CCAP_MD_MAX_TOTAL_SAD           (CCAP_MD_MAX_WINDOW_SAD * CCAP_MD_WINDOW_CNT)
+#define CCAP_MD_MAX_WINDOW_SAD          (0x12AD4ul)                                     /*!< CCAP Motion Detection Maximum Sum of Diff Per Window       \hideinitializer */
+#define CCAP_MD_MAX_TOTAL_SAD           (CCAP_MD_MAX_WINDOW_SAD * CCAP_MD_WINDOW_CNT)   /*!< CCAP Motion Detection Maximum Sum of Diff of All Windows   \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* CCAP Error Code definitions                                                                             */
@@ -154,8 +168,6 @@ extern "C"
  *                          - \ref CCAP_INTSTS_ADDRMINTF_Msk
  *                          - \ref CCAP_INTSTS_MDINTF_MODE1_Msk
  *                          - \ref CCAP_INTSTS_MDINTF_MODE2_Msk
- *
- * @details   Clear Camera Capture Interface interrupt flag
  */
 #define CCAP_CLR_INT_FLAG(u32IntMask) (CCAP->INTSTS = (u32IntMask))
 
@@ -200,27 +212,27 @@ extern "C"
 /**
  * @brief     Enable CCAP Motion Detection Window
  *
- * @param     u32WindowMsk          Motion Detection Window Bitmask
- *                                  It could be 0x0 ~ 0xFFFF.
- *                                  Bit n is 0 = Motion Detection Window n is disabled.
- *                                  Bit n is 1 = Motion Detection Window n is enabled.
- *                                  (0,  0)----(80,  0)----(160,  0)----(240,  0)---------
- *                                    |           |            |            |            |
- *                                    |     W0     |      W1     |      W2     |      W3     |
- *                                    |           |            |            |            |
- *                                  (0, 60)----(80, 60)----(160, 60)----(240, 60)---------
- *                                    |           |            |            |            |
- *                                    |     4     |      5     |      6     |      7     |
- *                                    |           |            |            |            |
- *                                  (0,120)----(80,120)----(160,120)----(240,120)---------
- *                                    |           |            |            |            |
- *                                    |     8     |      9     |     10     |     11     |
- *                                    |           |            |            |            |
- *                                  (0,180)----(80,180)----(160,180)----(240,180)---------
- *                                    |           |            |            |            |
- *                                    |    12     |     13     |     14     |     15     |
- *                                    |           |            |            |            |
- *                                    -----------------------------------------------(319,239)
+ * @param     u32WindowMsk  Motion Detection Window Bitmask
+ *            It could be 0x0 ~ 0xFFFF.
+ *            Bit n is 0 = Motion Detection Window n is disabled.
+ *            Bit n is 1 = Motion Detection Window n is enabled.
+ *            (0,  0)-----(80,  0)-----(160,  0)-----(240,  0)----------
+ *              |            |             |             |             |
+ *              |     W0     |      W1     |      W2     |      W3     |
+ *              |            |             |             |             |
+ *            (0, 60)-----(80, 60)-----(160, 60)-----(240, 60)----------
+ *              |            |             |             |             |
+ *              |     W4     |      W5     |      W6     |      W7     |
+ *              |            |             |             |             |
+ *            (0,120)-----(80,120)-----(160,120)-----(240,120)----------
+ *              |            |             |             |             |
+ *              |     W8     |      W9     |     W10     |     W11     |
+ *              |            |             |             |             |
+ *            (0,180)-----(80,180)-----(160,180)-----(240,180)----------
+ *              |            |             |             |             |
+ *              |    W12     |     W13     |     W14     |     W15     |
+ *              |            |             |             |             |
+ *              ---------------------------------------------------(319, 239)
  *
  * @details   Enable Camera Capture Interface motion detection window
  */
@@ -235,6 +247,17 @@ extern "C"
  * @details   Disable Camera Capture Interface motion detection window
  */
 #define CCAP_MD_DISABLE_WINDOW(u32WindowMsk) (CCAP->MDCTL = (CCAP->MDCTL & ~(u32WindowMsk)))
+
+/**
+ * @brief     Is CCAP Motion Detection Window Enabled
+ *
+ * @param     u32WindowMsk          Motion Detection Window Bitmask
+ *                                  It could be 0x0 ~ 0xFFFF.
+ *
+ * @retval    1: CCAP Motion Detection Window is enabled.
+ *            0: CCAP Motion Detection Window is disabled.
+ */
+#define CCAP_MD_IS_WINDOW_ENABLED(u32WindowMsk)  (CCAP->MDCTL & u32WindowMsk)
 
 /**
  * @brief     Set CCAP Motion Detection Trigger Source
@@ -267,6 +290,11 @@ extern "C"
 #define CCAP_MD_SET_TOTAL_THRESHOLD(u32TotalThreshold) (CCAP->MDTTH = (u32TotalThreshold))
 
 /**
+ * @brief     Get CCAP Motion Detection Total Threshold (Summary of all windows)
+ */
+#define CCAP_MD_GET_TOTAL_THRESHOLD()   (CCAP->MDTTH)
+
+/**
  * @brief     Get CCAP Motion Detection Total Sum of Absolute Differences (Summary of all windows)
  */
 #define CCAP_MD_GET_TOTAL_SAD()         (CCAP->MDTSAD)
@@ -286,6 +314,11 @@ extern "C"
 #define CCAP_MD_SET_OVERFLOW_WIN_THRESHOLD(u32WinOverflowCnt) (CCAP->MDWOCTH = (u32WinOverflowCnt))
 
 /**
+ * @brief     Get CCAP Motion Detection Window Overflow Count Threshold
+ */
+#define CCAP_MD_GET_OVERFLOW_WIN_THRESHOLD()  (CCAP->MDWOCTH)
+
+/**
  * @brief     Get CCAP Motion Detection Window Overflow Count
  */
 #define CCAP_MD_GET_OVERFLOW_WIN_CNT()  (CCAP->MDWOC)
@@ -300,6 +333,13 @@ extern "C"
  * @details   Set Camera Capture Interface motion detection total threshold
  */
 #define CCAP_MD_SET_WIN_THRESHOLD(u32WinIdx, u32Threshold) (CCAP->MDWTH[u32WinIdx] = (u32Threshold))
+
+/**
+ * @brief     Get CCAP Motion Detection Window Threshold
+ *
+ * @param[in] u32WinIdx:        Motion Detection Window Index. It could be 0x0 ~ 0xF.
+ */
+#define CCAP_MD_GET_WIN_THRESHOLD(u32WinIdx)  (CCAP->MDWTH[u32WinIdx])
 
 /**
  * @brief     Get CCAP Motion Detection Sum of Absolute Differences of sigle window
@@ -325,13 +365,34 @@ extern "C"
 /**
  * @brief      Set System Memory Packet Base Address
  *
- * @param[in]  u32Address: Set CCAP_PKTBA0 register. It should be 0x0 ~ 0xFFFFFFFF.
+ * @param[in]  u32Address: Set packet frame buffer base address.
+ *                         It should be a valid memory address with enough space for received image.
  *
  * @details    This function is used to set System Memory Packet Base Address 0 Register.
  */
 __STATIC_INLINE void CCAP_SetPacketBuf(uint32_t u32Address)
 {
     CCAP->PKTBA0 = u32Address;
+    CCAP->CTL |= CCAP_CTL_UPDATE_Msk;
+}
+
+/**
+ * @brief      Set System Memory Planar Base Address
+ *
+ * @param[in]  u32YAddr: Set planar Y frame buffer base address.
+ *                       It should be a valid memory address with enough space for received image.
+ * @param[in]  u32UAddr: Set planar U frame buffer base address.
+ *                       It should be a valid memory address with enough space for received image.
+ * @param[in]  u32VAddr: Set planar V frame buffer base address.
+ *                       It should be a valid memory address with enough space for received image.
+ *
+ * @details    This function is used to set System Memory Planar Base Address Register.
+ */
+__STATIC_INLINE void CCAP_SetPlanarBuf(uint32_t u32YAddr, uint32_t u32UAddr, uint32_t u32VAddr)
+{
+    CCAP->YBA = u32YAddr;
+    CCAP->UBA = u32UAddr;
+    CCAP->VBA = u32VAddr;
     CCAP->CTL |= CCAP_CTL_UPDATE_Msk;
 }
 
@@ -459,12 +520,16 @@ __STATIC_INLINE void CCAP_Start(void)
     CCAP->CTL |= CCAP_CTL_CCAPEN;
 }
 
-void CCAP_Open(uint32_t u32SensorProp, uint32_t u32InFormat, uint32_t u32OutFormat);
+void CCAP_Open(uint32_t u32Param, uint32_t u32OutFormat);
+void CCAP_OpenPipes(uint32_t u32SensorSetting, uint32_t u32SensorColorFmt, uint32_t u32OutPacketFmt, uint32_t u32OutPlanarFmt);
 void CCAP_Close(void);
 void CCAP_SetCroppingWindow(uint32_t u32VStart, uint32_t u32HStart, uint32_t u32Height, uint32_t u32Width);
 void CCAP_SetPacketBuf(uint32_t u32Address);
+void CCAP_SetPlanarBuf(uint32_t u32YAddr, uint32_t u32UAddr, uint32_t u32VAddr);
 void CCAP_SetPacketScaling(uint32_t u32VNumerator, uint32_t u32VDenominator, uint32_t u32HNumerator, uint32_t u32HDenominator);
+void CCAP_SetPlanarScaling(uint32_t u32VNumerator, uint32_t u32VDenominator, uint32_t u32HNumerator, uint32_t u32HDenominator);
 void CCAP_SetPacketStride(uint32_t u32Stride);
+void CCAP_SetPlanarStride(uint32_t u32Stride);
 void CCAP_EnableInt(uint32_t u32IntMask);
 void CCAP_DisableInt(uint32_t u32IntMask);
 void CCAP_Start(void);

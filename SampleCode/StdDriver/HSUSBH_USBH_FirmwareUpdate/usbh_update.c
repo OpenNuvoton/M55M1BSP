@@ -57,7 +57,7 @@ int  do_dir()
         }
 
         /* print file entry information               */
-        printf("%c%c%c%c%c %u/%02u/%02u %02u:%02u %9lu  %s",
+        printf("%c%c%c%c%c %u/%9u/%9u %9u:%9u %9u  %s",
                (Finfo.fattrib & AM_DIR) ? 'D' : '-',    /* is a directory?                */
                (Finfo.fattrib & AM_RDO) ? 'R' : '-',    /* is read-only?                  */
                (Finfo.fattrib & AM_HID) ? 'H' : '-',    /* is hidden?                     */

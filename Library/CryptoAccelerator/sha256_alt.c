@@ -105,9 +105,10 @@ int mbedtls_sha256_starts(mbedtls_sha256_context *ctx, int is224)
         u32OpMode = SHA_MODE_SHA256;
 
     /* Reset Crypto */
+    SYS_UnlockReg();
     SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
     SYS->CRYPTORST = 0;
-
+    SYS_LockReg();
 
     /* Common register settings */
     ctx->ctl = CRYPTO_HMAC_CTL_DMAEN_Msk | (u32OpMode << CRYPTO_HMAC_CTL_OPMODE_Pos) |
@@ -117,7 +118,9 @@ int mbedtls_sha256_starts(mbedtls_sha256_context *ctx, int is224)
     CRYPTO->HMAC_SADDR = (uint32_t)&ctx->buffer[0];
     CRYPTO->HMAC_DMACNT = NU_SHA256_BLOCK_SIZE;
 
-
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(&ctx->buffer, NU_SHA256_BLOCK_SIZE);
+#endif
     return 0;
 }
 
@@ -188,6 +191,10 @@ int mbedtls_sha256_update(mbedtls_sha256_context *ctx, const unsigned char *inpu
                 ctx->buffer_len += ilen;
                 ilen = 0;
             }
+
+#if (NVT_DCACHE_ON == 1)
+            SCB_CleanDCache_by_Addr(&ctx->buffer, NU_SHA256_BLOCK_SIZE);
+#endif
         }
     }
 

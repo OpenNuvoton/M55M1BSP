@@ -25,10 +25,22 @@
 #define GCM_PBLOCK_SIZE  128     /* NOTE: This value must be 16 bytes alignment. This value must > size of A */
 
 #define MAX_GCM_BUF     4096
-__ALIGNED(4) uint8_t g_au8Buf[MAX_GCM_BUF];
-__ALIGNED(4) uint8_t g_au8Out[MAX_GCM_BUF];
-__ALIGNED(4) uint8_t g_au8Out2[MAX_GCM_BUF];
-__ALIGNED(4) uint8_t g_au8FeedBackBuf[72] = {0};
+// DCache-line related//
+#define FEEDBACK_BUF_SIZE (72)
+//------------------------------------------------------------------------------
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    uint8_t g_au8Buf[DCACHE_ALIGN_LINE_SIZE(MAX_GCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_au8Out[DCACHE_ALIGN_LINE_SIZE(MAX_GCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_au8Out2[DCACHE_ALIGN_LINE_SIZE(MAX_GCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_au8FeedBackBuf[DCACHE_ALIGN_LINE_SIZE(MAX_GCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    // Standard buffer alignment when DCache is disabled
+    __ALIGNED(4) uint8_t g_au8Buf[MAX_GCM_BUF];
+    __ALIGNED(4) uint8_t g_au8Out[MAX_GCM_BUF];
+    __ALIGNED(4) uint8_t g_au8Out2[MAX_GCM_BUF];
+    __ALIGNED(4) uint8_t g_au8FeedBackBuf[FEEDBACK_BUF_SIZE];
+#endif
 
 /* for the key and data in binary format */
 __ALIGNED(4) uint8_t g_key[32] = { 0 };
@@ -669,8 +681,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -1052,13 +1064,23 @@ int32_t AES_GCMEnc(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
 
 
         printf("input blocks (%d):\n", *size);
+
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanDCache_by_Addr(g_au8Buf, sizeof(g_au8Buf));
+#endif
         DumpBuffHex(g_au8Buf, *size);
 
         AES_SetDMATransfer(CRYPTO, 0, (uint32_t)g_au8Buf, (uint32_t)buf, *size);
-
+        /*
+            buf may be g_au8Out or g_au8Out2
+        */
         AES_Run(u32OptBasic | GCM_MODE | DMAEN);
 
         printf("output blocks (%d):\n", *size);
+
+#if (NVT_DCACHE_ON == 1)
+        SCB_InvalidateDCache_by_Addr(buf, sizeof(buf));
+#endif
         DumpBuffHex(buf, *size);
     }
     else
@@ -1072,6 +1094,9 @@ int32_t AES_GCMEnc(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
         AES_GCMPacker(iv, ivlen, A, alen, 0, 0, g_au8Buf, size);
 
         printf("input blocks for casecade 0 (%d):\n", *size);
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanDCache_by_Addr(g_au8Buf, sizeof(g_au8Buf));
+#endif
         DumpBuffHex(g_au8Buf, *size);
 
         AES_SetDMATransfer(CRYPTO, 0, (uint32_t)g_au8Buf, (uint32_t)buf, *size);
@@ -1084,7 +1109,8 @@ int32_t AES_GCMEnc(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
         printf("P Block size for casecade mode %d\n", GCM_PBLOCK_SIZE);
         plen_cur = plen;
         pin = P;
-        pout = buf;
+        pout = buf;//pout may points to g_au8Out or g_au8Out2
+
 
         while (plen_cur)
         {
@@ -1108,6 +1134,9 @@ int32_t AES_GCMEnc(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
             }
 
             printf("input blocks for casecade (%d):\n", len);
+#if (NVT_DCACHE_ON == 1)
+            SCB_CleanDCache_by_Addr(g_au8Buf, sizeof(g_au8Buf));
+#endif
             DumpBuffHex(g_au8Buf, len);
 
             AES_SetDMATransfer(CRYPTO, 0, (uint32_t)g_au8Buf, (uint32_t)pout, len);
@@ -1126,10 +1155,16 @@ int32_t AES_GCMEnc(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
             }
 
             printf("output blocks (%d):\n", len);
+#if (NVT_DCACHE_ON == 1)
+            SCB_InvalidateDCache_by_Addr(pout, sizeof(pout));
+#endif
             DumpBuffHex(pout, len);
 
             pin += len;
             pout += len;
+#if (NVT_DCACHE_ON == 1)
+            SCB_CleanDCache_by_Addr(pout, sizeof(pout));
+#endif
         }
 
         /* Total size is plen aligment size + tag size */
@@ -1196,12 +1231,18 @@ int32_t AES_GCMDec(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
         AES_GCMPacker(iv, ivlen, A, alen, P, plen, g_au8Buf, size);
 
         printf("input blocks (%d):\n", *size);
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanDCache_by_Addr(g_au8Buf, sizeof(g_au8Buf));
+#endif
         DumpBuffHex(g_au8Buf, *size);
 
         AES_SetDMATransfer(CRYPTO, 0, (uint32_t)g_au8Buf, (uint32_t)buf, *size);
         AES_Run(u32OptBasic | GCM_MODE | DMAEN);
 
         printf("output blocks (%d):\n", *size);
+#if (NVT_DCACHE_ON == 1)
+        SCB_InvalidateDCache_by_Addr(buf, sizeof(buf));
+#endif
         DumpBuffHex(buf, *size);
     }
     else
@@ -1215,6 +1256,9 @@ int32_t AES_GCMDec(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
         AES_GCMPacker(iv, ivlen, A, alen, 0, 0, g_au8Buf, size);
 
         printf("input blocks for casecade 0 (%d):\n", *size);
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanDCache_by_Addr(g_au8Buf, sizeof(g_au8Buf));
+#endif
         DumpBuffHex(g_au8Buf, *size);
 
         AES_SetDMATransfer(CRYPTO, 0, (uint32_t)g_au8Buf, (uint32_t)buf, *size);
@@ -1251,6 +1295,9 @@ int32_t AES_GCMDec(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
             }
 
             printf("input blocks for casecade (%d):\n", len);
+#if (NVT_DCACHE_ON == 1)
+            SCB_InvalidateDCache_by_Addr(g_au8Buf, sizeof(g_au8Buf));
+#endif
             DumpBuffHex(g_au8Buf, len);
 
             AES_SetDMATransfer(CRYPTO, 0, (uint32_t)g_au8Buf, (uint32_t)pout, len);
@@ -1267,10 +1314,16 @@ int32_t AES_GCMDec(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
             }
 
             printf("output blocks (%d):\n", len);
+#if (NVT_DCACHE_ON == 1)
+            SCB_InvalidateDCache_by_Addr(pout, sizeof(pout));
+#endif
             DumpBuffHex(pout, len);
 
             pin += len;
             pout += len;
+#if (NVT_DCACHE_ON == 1)
+            SCB_InvalidateDCache_by_Addr(pout, sizeof(pout));
+#endif
         }
     }
 
@@ -1283,7 +1336,12 @@ int32_t AES_GCMDec(uint8_t *key, uint32_t klen, uint8_t *iv, uint32_t ivlen, uin
 int main(void)
 {
     int i, n;
-    uint32_t size, klen, plen, tlen, plen_aligned, alen, ivlen;
+#if (NVT_DCACHE_ON == 1)
+    static uint32_t size;
+#else
+    uint32_t size;
+#endif
+    uint32_t klen, plen, tlen, plen_aligned, alen, ivlen;
 
     // Enable ETM
     SET_TRACE_CLK_PE12();
@@ -1311,6 +1369,13 @@ int main(void)
     NVIC_EnableIRQ(CRYPTO_IRQn);
 
     n = sizeof(sElements) / sizeof(GCM_TEST_T);
+
+    /* Init Feedback buffer content*/
+    memset(g_au8FeedBackBuf, 0, sizeof(g_au8FeedBackBuf));
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(g_au8FeedBackBuf, sizeof(g_au8FeedBackBuf));
+#endif
 
     for (i = 0; i < n; i++)
     {

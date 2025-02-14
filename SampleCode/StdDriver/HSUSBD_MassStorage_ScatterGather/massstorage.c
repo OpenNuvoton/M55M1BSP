@@ -110,6 +110,7 @@ static uint8_t g_au8ModePage[24] =
 NVT_ITCM void HSUSBD_IRQHandler(void)
 {
     __IO uint32_t IrqStL, IrqSt;
+    uint32_t u32TimeOutCnt;
 
     IrqStL = HSUSBD->GINTSTS & HSUSBD->GINTEN;    /* get interrupt status */
 
@@ -187,11 +188,18 @@ NVT_ITCM void HSUSBD_IRQHandler(void)
             {
                 /* USB Plug In */
                 HSUSBD_ENABLE_USB();
+                u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
+                while (!(HSUSBD->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
+                    if (--u32TimeOutCnt == 0) break;
+
+                HSUSBD->OPER |= (HSUSBD_OPER_HISHSEN_Msk | HSUSBD_OPER_HISPDEN_Msk);
             }
             else
             {
                 /* USB Un-plug */
                 HSUSBD_DISABLE_USB();
+                HSUSBD->OPER &= ~HSUSBD_OPER_HISHSEN_Msk;
             }
 
             HSUSBD_CLR_BUS_INT_FLAG(HSUSBD_BUSINTSTS_VBUSDETIF_Msk);
@@ -458,6 +466,7 @@ void MSC_Init(void)
     g_TotalSectors = 128;
     g_u32MassBase = 0x20106000;
     g_u32StorageBase = 0x20107000;
+    memset((uint8_t *)g_u32StorageBase, 0, g_TotalSectors * USBD_SECTOR_SIZE);
 
     for (i = 0; i < 8; i++)
         scater_gather_array[7 - i].ADDRESS = (uint32_t)SCATTER_DATA_BUFFER + i * 2048;
@@ -714,6 +723,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     for (i = 0; i < u32Loop; i++)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
+#if (NVT_DCACHE_ON == 1)
+        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
     }
 
     u32Loop = u32Len % USBD_MAX_DMA_LEN;
@@ -721,6 +734,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     if (u32Loop)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, u32Loop);
+#if (NVT_DCACHE_ON == 1)
+        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), DCACHE_ALIGN_LINE_SIZE(u32Loop));
+#endif
     }
 }
 
@@ -743,6 +760,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
         {
             if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
             {
+#if (NVT_DCACHE_ON == 1)
+                /* Device to host, so need clean data to sram. */
+                SCB_CleanDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
                 MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
                 break;
             }
@@ -765,6 +786,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    /* Device to host, so need clean data to sram. */
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), (count * g_u32EpMaxPacketSize));
+#endif
                     MSC_ActiveDMA(addr, count * g_u32EpMaxPacketSize);
                     break;
                 }
@@ -784,6 +809,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    /* Device to host, so need clean data to sram. */
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), DCACHE_ALIGN_LINE_SIZE(count));
+#endif
                     MSC_ActiveDMA(addr, count);
                     break;
                 }
@@ -794,6 +823,13 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
 
 void MSC_BulkOutSG(uint32_t u32Addr)
 {
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the scatter-gather table will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr((uint8_t *)(u32Addr), sizeof(SCATTER_GATHER) * 8);
+#endif
     /* bulk out, dma write, epnum = 2 */
     HSUSBD_SET_DMA_WRITE(BULK_OUT_EP_NUM);
     /* Enable BUS interrupt */
@@ -812,10 +848,22 @@ void MSC_BulkOutSG(uint32_t u32Addr)
         if (!HSUSBD_IS_ATTACHED())
             break;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    /* Invalidate the cache to allow the CPU to access the latest data. */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr), sizeof(SCATTER_GATHER) * 8);
+#endif
 }
 
 void MSC_BulkInSG(uint32_t u32Addr)
 {
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the scatter-gather table will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr((uint8_t *)(u32Addr), sizeof(SCATTER_GATHER) * 8);
+#endif
     /* bulk in, dma read, epnum = 1 */
     HSUSBD_SET_DMA_READ(BULK_IN_EP_NUM);
     /* Enable BUS interrupt */
@@ -834,6 +882,11 @@ void MSC_BulkInSG(uint32_t u32Addr)
         if (!HSUSBD_IS_ATTACHED())
             break;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    /* Invalidate the cache to allow the CPU to access the latest data. */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr), sizeof(SCATTER_GATHER) * 8);
+#endif
 }
 
 
@@ -859,6 +912,11 @@ void MSC_ReceiveCBW(uint32_t u32Buf, uint32_t u32Len)
         if (!HSUSBD_IS_ATTACHED())
             break;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Buf), DCACHE_ALIGN_LINE_SIZE(u32Len));
+#endif
 }
 
 void MSC_ProcessCmd(void)
@@ -963,12 +1021,20 @@ void MSC_ProcessCmd(void)
                             {
                                 scater_gather_array[i].COUNT = 0x40000800;
                                 memcpy((uint8_t *)scater_gather_array[i].ADDRESS, (uint8_t *)g_u32LbaAddress + i * 0x800, 0x800);
+#if (NVT_DCACHE_ON == 1)
+                                /* Device to host, so need clean data to sram. */
+                                SCB_CleanDCache_by_Addr((uint8_t *)(scater_gather_array[i].ADDRESS), 0x800);
+#endif
                                 scater_length = scater_length - 0x800;
                             }
                             else
                             {
                                 scater_gather_array[i].COUNT = 0xC0000000 | scater_length;
                                 memcpy((uint8_t *)scater_gather_array[i].ADDRESS, (uint8_t *)g_u32LbaAddress + i * 0x800, scater_length);
+#if (NVT_DCACHE_ON == 1)
+                                /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+                                SCB_CleanDCache_by_Addr((uint8_t *)(scater_gather_array[i].ADDRESS), DCACHE_ALIGN_LINE_SIZE(scater_length));
+#endif
                                 scater_length = 0;
                             }
 
@@ -1050,11 +1116,19 @@ void MSC_ProcessCmd(void)
                             {
                                 if (scater_length > 2048)
                                 {
+#if (NVT_DCACHE_ON == 1)
+                                    /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+                                    SCB_InvalidateDCache_by_Addr((uint8_t *)(scater_gather_array[i].ADDRESS), (0x800));
+#endif
                                     memcpy((uint8_t *)g_u32LbaAddress + i * 0x800, (uint8_t *)scater_gather_array[i].ADDRESS, 0x800);
                                     scater_length = scater_length - 0x800;
                                 }
                                 else
                                 {
+#if (NVT_DCACHE_ON == 1)
+                                    /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+                                    SCB_InvalidateDCache_by_Addr((uint8_t *)(scater_gather_array[i].ADDRESS), DCACHE_ALIGN_LINE_SIZE(scater_length));
+#endif
                                     memcpy((uint8_t *)g_u32LbaAddress + i * 0x800, (uint8_t *)scater_gather_array[i].ADDRESS, scater_length);
                                     scater_length = 0;
                                 }

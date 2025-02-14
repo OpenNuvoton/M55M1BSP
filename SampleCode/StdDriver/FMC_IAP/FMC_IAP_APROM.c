@@ -21,8 +21,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -49,7 +49,7 @@ static int  LoadImage(uint32_t u32ImageBase, uint32_t u32ImageLimit, uint32_t u3
 
     u32ImageSize = u32MaxSize;
 
-    printf("Program image to flash address 0x%x...", u32FlashAddr);
+    printf("Program image to flash address 0x%x ... ", u32FlashAddr);
     pu32Loader = (uint32_t *)u32ImageBase;
 
     for (u32i = 0; u32i < u32ImageSize; u32i += FMC_FLASH_PAGE_SIZE)
@@ -64,7 +64,7 @@ static int  LoadImage(uint32_t u32ImageBase, uint32_t u32ImageLimit, uint32_t u3
 
     printf("OK.\n");
 
-    printf("Verify ...");
+    printf("Verify ... ");
 
     /* Verify loader */
     for (u32i = 0; u32i < u32ImageSize; u32i += FMC_FLASH_PAGE_SIZE)
@@ -75,7 +75,7 @@ static int  LoadImage(uint32_t u32ImageBase, uint32_t u32ImageLimit, uint32_t u3
 
             if (u32Data != pu32Loader[(u32i + u32j) / 4])
             {
-                printf("data mismatch on 0x%x, [0x%x], [0x%x]\n", u32FlashAddr + u32i + u32j, u32Data, pu32Loader[(u32i + u32j) / 4]);
+                printf("Data mismatch on 0x%x ! [0x%x] != [0x%x]\n", u32FlashAddr + u32i + u32j, u32Data, pu32Loader[(u32i + u32j) / 4]);
                 return -1;
             }
 
@@ -137,9 +137,8 @@ int main(void)
         printf("| [0] Load IAP code to LDROM          |\n");
         printf("| [1] Run IAP code in LDROM           |\n");
         printf("+-------------------------------------+\n");
-        printf("Please select ... ");
         u8Item = getchar();
-        printf("%c\n", u8Item);
+        printf("Select [%c]\n", u8Item);
 
         switch (u8Item)
         {
@@ -157,7 +156,7 @@ int main(void)
                 break;
 
             case '1':
-                printf("\n\nChange VECMAP and branch to LDROM...\n");
+                printf("\n\nChange VECMAP and branch to LDROM ...\n");
                 UART_WAIT_TX_EMPTY(DEBUG_PORT); /* To make sure all message has been print out */
 
                 /* Mask all interrupt before changing VECMAP to avoid wrong interrupt handler fetched */

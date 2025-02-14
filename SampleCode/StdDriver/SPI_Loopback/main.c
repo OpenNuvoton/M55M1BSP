@@ -31,8 +31,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -69,10 +69,10 @@ void SYS_Init(void)
     SetDebugUartMFP();
 
     /* Setup SPI0 multi-function pins */
-    SYS->GPA_MFP0 |= (SYS_GPA_MFP0_PA0MFP_SPI0_MOSI |
-                      SYS_GPA_MFP0_PA1MFP_SPI0_MISO |
-                      SYS_GPA_MFP0_PA2MFP_SPI0_CLK  |
-                      SYS_GPA_MFP0_PA3MFP_SPI0_SS);
+    SET_SPI0_SS_PA3();
+    SET_SPI0_CLK_PA2();
+    SET_SPI0_MOSI_PA0();
+    SET_SPI0_MISO_PA1();
 
     /* Enable SPI0 clock pin (PA2) schmitt trigger */
     PA->SMTEN |= GPIO_SMTEN_SMTEN2_Msk;

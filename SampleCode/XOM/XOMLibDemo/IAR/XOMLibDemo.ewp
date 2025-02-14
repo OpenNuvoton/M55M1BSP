@@ -74,7 +74,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -768,7 +768,7 @@
                 </option>
                 <option>
                     <name>IlinkIcfFile</name>
-                    <state>$PROJ_DIR$\M55M1.icf</state>
+                    <state>$PROJ_DIR$\XOMLibDemo.icf</state>
                 </option>
                 <option>
                     <name>IlinkIcfFileSlave</name>

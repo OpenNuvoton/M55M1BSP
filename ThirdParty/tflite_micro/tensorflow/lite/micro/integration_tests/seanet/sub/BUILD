@@ -302,7 +302,7 @@ cc_library(
     copts = micro_copts(),
 )
 
-cc_binary(
+cc_test(
     name = "integration_test",
     srcs = [
         "integration_tests.cc",
@@ -310,8 +310,9 @@ cc_binary(
     copts = micro_copts(),
     deps = [
         ":models_and_testdata",
-        "//tensorflow/lite/micro:micro_error_reporter",
+        "//python/tflite_micro:python_ops_resolver",
         "//tensorflow/lite/micro:micro_framework",
+        "//tensorflow/lite/micro:micro_log",
         "//tensorflow/lite/micro:micro_resource_variable",
         "//tensorflow/lite/micro:op_resolvers",
         "//tensorflow/lite/micro:recording_allocators",

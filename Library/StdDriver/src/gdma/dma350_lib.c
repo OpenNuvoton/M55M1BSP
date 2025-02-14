@@ -24,23 +24,6 @@
 /************** Static Functions **************/
 /**********************************************/
 
-static uint32_t dma350_remap(uint32_t addr)
-{
-    const struct dma350_remap_range_t *map;
-
-    for (uint32_t i = 0; i < dma350_address_remap.size; ++i)
-    {
-        map = &dma350_address_remap.map[i];
-
-        if (addr <= map->end && addr >= map->begin)
-        {
-            return addr + map->offset;
-        }
-    }
-
-    return addr;
-}
-
 static enum dma350_lib_error_t dma350_runcmd(struct dma350_ch_dev_t *dev,
                                              enum dma350_lib_exec_type_t exec_type)
 {
@@ -219,7 +202,8 @@ static enum dma350_lib_error_t dma350_get_memattr(void *address,
     if (writable ? address_info.flags.readwrite_ok
             : address_info.flags.read_ok)
     {
-        memattr->nonsecure = true;
+        /* If addrsss bit[28] is set, use non-secure access */
+        memattr->nonsecure = (((uint32_t)address & NS_OFFSET) == NS_OFFSET);
         Selected_MPU = MPU; /* Only non-aliased MPU available (== MPU_NS) */
         /* Check if address is readable by unprivileged (NS) */
         /* Updating address_info is OK, as MPU region and its validity is set
@@ -270,8 +254,6 @@ static enum dma350_lib_error_t dma350_get_memattr(void *address,
     }
     else
     {
-        /* For M55M1: If addrsss bit[28] is set, use non-secure access */
-        memattr->nonsecure = (((uint32_t)address & NS_OFFSET) == NS_OFFSET);
         /* If MPU is not enabled, use privileged access */
         memattr->unprivileged = false;
         /* Default memory map lookup for attributes */
@@ -326,7 +308,7 @@ enum dma350_lib_error_t dma350_lib_set_src(struct dma350_ch_dev_t *dev,
 
     dma350_ch_set_srcmemattr(dev, memattr.mpu_attribute,
                              memattr.mpu_shareability);
-    dma350_ch_set_src(dev, dma350_remap((uint32_t)src));
+    dma350_ch_set_src(dev, (uint32_t)src);
 
     return DMA350_LIB_ERR_NONE;
 }
@@ -371,7 +353,7 @@ enum dma350_lib_error_t dma350_lib_set_des(struct dma350_ch_dev_t *dev,
 
     dma350_ch_set_desmemattr(dev, memattr.mpu_attribute,
                              memattr.mpu_shareability);
-    dma350_ch_set_des(dev, dma350_remap((uint32_t)des));
+    dma350_ch_set_des(dev, (uint32_t)des);
 
     return DMA350_LIB_ERR_NONE;
 }
@@ -724,6 +706,62 @@ enum dma350_lib_error_t dma350_draw_from_canvas(struct dma350_ch_dev_t *dev,
     dma350_ch_set_transize(dev, pixelsize);
     dma350_ch_set_xtype(dev, DMA350_CH_XTYPE_WRAP);
     dma350_ch_set_ytype(dev, DMA350_CH_YTYPE_WRAP);
+
+    return dma350_runcmd(dev, exec_type);
+}
+
+enum dma350_lib_error_t dma350_fill_to_bitmap(struct dma350_ch_dev_t *dev,
+                                              void *des,
+                                              uint32_t des_width, uint16_t des_height,
+                                              uint16_t des_line_width,
+                                              uint32_t fill_value,
+                                              enum dma350_ch_transize_t pixelsize,
+                                              enum dma350_lib_exec_type_t exec_type)
+{
+    uint8_t *des_uint8_t;
+    uint32_t des_offset, des_xsize;
+    uint16_t des_ysize, des_yaddrstride;
+    int16_t des_xaddrinc;
+    enum dma350_lib_error_t lib_err;
+
+    lib_err = verify_dma350_ch_dev_ready(dev);
+
+    if (lib_err != DMA350_LIB_ERR_NONE)
+    {
+        return lib_err;
+    }
+
+    des_offset = 0;
+    des_xsize = des_width;
+    des_ysize = des_height;
+    des_xaddrinc = 1;
+    des_yaddrstride = des_line_width;
+
+
+    /* Up until this point, offset was set as number of pixels. It needs to be
+       multiplied by the size of the pixel to get the byte address offset.
+       Pixel size is based on dma350_ch_transize_t which is calculated by
+       2^transize, so the multiplication can be reduced to a bitshift. */
+    des_offset <<= pixelsize;
+    des_uint8_t = (uint8_t *) des;
+
+    lib_err = dma350_lib_set_des(dev, &des_uint8_t[des_offset]);
+
+    if (lib_err != DMA350_LIB_ERR_NONE)
+    {
+        return lib_err;
+    }
+
+    dma350_ch_set_xaddr_inc(dev, 1, des_xaddrinc);
+    dma350_ch_set_xsize32(dev, 0, des_xsize);
+    dma350_ch_set_ysize16(dev, 0, des_ysize);
+    dma350_ch_set_yaddrstride(dev, 0, des_yaddrstride);
+
+    dma350_ch_set_transize(dev, pixelsize);
+    dma350_ch_set_xtype(dev, DMA350_CH_XTYPE_FILL);
+    dma350_ch_set_ytype(dev, DMA350_CH_YTYPE_FILL);
+
+    dma350_ch_set_fill_value(dev, fill_value);
 
     return dma350_runcmd(dev, exec_type);
 }

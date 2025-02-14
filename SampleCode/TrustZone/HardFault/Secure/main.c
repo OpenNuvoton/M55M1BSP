@@ -79,18 +79,17 @@ int main(void)
     SYS_UnlockReg();
     FMC_Open();
     /* Check Secure/Non-secure base address configuration */
-    printf("SCU->FNSADDR: 0x%08X, NSCBA:        0x%08X\n", SCU->FNSADDR, FMC_Read(FMC_NSCBA_BASE));
+    printf("SCU->FNSADDR: 0x%08X, NSCBA: 0x%08X\n", SCU->FNSADDR, FMC_Read(FMC_NSCBA_BASE));
     printf("SRAM0MPCLUT0: 0x%08X\n", SCU->SRAM0MPCLUT0);
     printf("SRAM1MPCLUT0: 0x%08X\n", SCU->SRAM1MPCLUT0);
     printf("SRAM2MPCLUT0: 0x%08X\n", SCU->SRAM2MPCLUT0);
 
-    /* Init GPIO Port A Pin 10 & 11 for Non-secure LED control */
-    GPIO_SetMode(PA_NS, (BIT10 | BIT11), GPIO_MODE_OUTPUT);
-    PA10_NS = 0;
-    PA11_NS = 1;
+    /* Init GPIO Port D Pin 5 & 6 for Non-secure LED control */
+    GPIO_SetMode(PD_NS, (BIT5 | BIT6), GPIO_MODE_OUTPUT);
+    PD5_NS = 0;
+    PD6_NS = 1;
 
-#if 0
-    // Set Hard Fault to Non-secure
+#if 0   // Set Hard Fault to Non-secure
     SCB->AIRCR = (0x05FA << SCB_AIRCR_VECTKEY_Pos) | ((SCB->AIRCR & 0xFFFF) | SCB_AIRCR_BFHFNMINS_Msk);
 #else   // Set Hard Fault to Secure
     SCB->AIRCR = (0x05FA << SCB_AIRCR_VECTKEY_Pos) | ((SCB->AIRCR & 0xFFFF) & ~SCB_AIRCR_BFHFNMINS_Msk);
@@ -111,7 +110,7 @@ int main(void)
 
     do
     {
-        printf("+------------------------------------------------------+\n");
+        printf("\n+------------------------------------------------------+\n");
         printf("| [0] Go Non-secure code                               |\n");
         printf("| [1] Write 0x%08X to generate Hard Fault          |\n", (uint32_t)FMC_APROM_BASE);
         printf("| [2] Write 0x%08X to generate Hard Fault          |\n", (uint32_t)FMC_NON_SECURE_BASE);
@@ -122,7 +121,7 @@ int main(void)
         switch (ch)
         {
             case '0':
-                PA10_NS = 1;
+                PD5_NS = 1;
                 Boot_NonSecure(FMC_NON_SECURE_BASE);
                 break;
 
@@ -199,8 +198,8 @@ void SYS_Init(void)
     /*-----------------------------------------------------------------------
      * Init System Clock
      *-----------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -210,8 +209,8 @@ void SYS_Init(void)
     SetDebugUartCLK();
 
     /* Enable module clock */
-    CLK_EnableModuleClock(GPIOA_MODULE);
     CLK_EnableModuleClock(GPIOB_MODULE);
+    CLK_EnableModuleClock(GPIOD_MODULE);
 
     /*-----------------------------------------------------------------------
      * Init I/O Multi-function

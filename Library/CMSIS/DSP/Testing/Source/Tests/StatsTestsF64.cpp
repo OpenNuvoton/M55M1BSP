@@ -4,14 +4,14 @@
 #include "Test.h"
 
 
-#define SNR_THRESHOLD 305
+#define SNR_THRESHOLD 300
 /* 
 
 Reference patterns are generated with
 a double precision computation.
 
 */
-#define REL_ERROR (2.0e-15)
+#define REL_ERROR (4.0e-15)
 
     void StatsTestsF64::test_max_f64()
     {
@@ -461,6 +461,25 @@ a double precision computation.
         ASSERT_REL_ERROR(result,refp[this->refOffset],(float64_t)REL_ERROR);
 
     }
+
+    void StatsTestsF64::test_accumulate_f64()
+    {
+      const float64_t *inp  = inputA.ptr();
+      const int16_t *dimsp  = dims.ptr();
+
+      float64_t *outp         = output.ptr();
+
+      for(int i=0;i < this->nbPatterns; i++)
+      {
+         arm_accumulate_f64(inp,dimsp[i+1],outp);
+         outp++;
+      }
+
+      ASSERT_SNR(ref,output,(float64_t)SNR_THRESHOLD);
+
+      ASSERT_REL_ERROR(ref,output,REL_ERROR);
+
+    } 
 
     void StatsTestsF64::setUp(Testing::testID_t id,std::vector<Testing::param_t>& paramsArgs,Client::PatternMgr *mgr)
     {
@@ -1102,6 +1121,20 @@ a double precision computation.
                output.create(1,StatsTestsF64::OUT_F64_ID,mgr);
 
                refOffset = 3;
+            }
+            break;
+
+            case StatsTestsF64::TEST_ACCUMULATE_F64_53:
+            {
+               inputA.reload(StatsTestsF64::INPUT_ACCUMULATE_F64_ID,mgr);
+               ref.reload(StatsTestsF64::REF_ACCUMULATE_F64_ID,mgr);
+               dims.reload(StatsTestsF64::INPUT_ACCUMULATE_CONFIG_S16_ID,mgr);
+               output.create(ref.nbSamples(),StatsTestsF64::OUT_F64_ID,mgr);
+
+               const int16_t *dimsp  = dims.ptr();
+               this->nbPatterns=dimsp[0];
+               
+
             }
             break;
 

@@ -9,6 +9,9 @@
 #ifndef __USBD_HID_H__
 #define __USBD_HID_H__
 
+//*** <<< Use Configuration Wizard in Context Menu >>> ***
+// <o> Endpoint maximum packet size
+#define EP_MAX_PKT_SIZE         512      /* Endpoint maximum packet size. It could be 1024 or 512 */
 /* Define the vendor id and product id */
 #define USBD_VID                0x0416
 #define USBD_PID                0x5020
@@ -35,9 +38,17 @@
 /* Define EP maximum packet size */
 #define CEP_MAX_PKT_SIZE        64
 #define CEP_OTHER_MAX_PKT_SIZE  64
-#define EPA_MAX_PKT_SIZE        512
+#if (EP_MAX_PKT_SIZE == 1024)
+    #define EPA_MAX_PKT_SIZE        1024
+#else
+    #define EPA_MAX_PKT_SIZE        512
+#endif
 #define EPA_OTHER_MAX_PKT_SIZE  64
-#define EPB_MAX_PKT_SIZE        512
+#if (EP_MAX_PKT_SIZE == 1024)
+    #define EPB_MAX_PKT_SIZE        1024
+#else
+    #define EPB_MAX_PKT_SIZE        512
+#endif
 #define EPB_OTHER_MAX_PKT_SIZE  64
 
 #define CEP_BUF_BASE    0

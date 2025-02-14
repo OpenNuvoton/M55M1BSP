@@ -87,8 +87,10 @@ typedef struct
     __IO uint32_t SCLFM;                /*!< [0x00bc] SCL I2C Fast Mode Timing Register */
     __IO uint32_t SCLFMP;               /*!< [0x00c0] SCL I2C Fast Mode Plus Timing Register */
     /// @cond HIDDEN_SYMBOLS
-    __I  uint32_t RESERVE7[3];
+    __I  uint32_t RESERVE7;
     /// @endcond //HIDDEN_SYMBOLS
+    __IO uint32_t SCLEXTL;              /*!< [0x00c8] I3C SCL Extended Low Count Timing Register */
+    __IO uint32_t SCLTERM;              /*!< [0x00cc] I3C SCL Termination Bit Low count Timing Register */
     __IO uint32_t SDAHOLD;              /*!< [0x00d0] SDA Hold and Mode Switch Delay Timing Register */
     __IO uint32_t BUSFAT;               /*!< [0x00d4] I3C Bus Free And Available Timing Register */
     __IO uint32_t BUSIDLET;             /*!< [0x00d8] I3C Bus Idle Timing Register */
@@ -292,6 +294,9 @@ typedef struct
 #define I3C_SLVEVNTS_SIREN_Pos          (0U)
 #define I3C_SLVEVNTS_SIREN_Msk          (1UL << I3C_SLVEVNTS_SIREN_Pos)
 
+#define I3C_SLVEVNTS_MREN_Pos           (1U)
+#define I3C_SLVEVNTS_MREN_Msk           (1UL << I3C_SLVEVNTS_MREN_Pos)
+
 #define I3C_SLVEVNTS_HJEN_Pos           (3U)
 #define I3C_SLVEVNTS_HJEN_Msk           (1UL << I3C_SLVEVNTS_HJEN_Pos)
 
@@ -331,11 +336,17 @@ typedef struct
 #define I3C_INTSTS_TFRERR_Pos           (9U)
 #define I3C_INTSTS_TFRERR_Msk           (1UL << I3C_INTSTS_TFRERR_Pos)
 
+#define I3C_INTSTS_DEFSLV_Pos           (10U)
+#define I3C_INTSTS_DEFSLV_Msk           (1UL << I3C_INTSTS_DEFSLV_Pos)
+
 #define I3C_INTSTS_READREQ_Pos          (11U)
 #define I3C_INTSTS_READREQ_Msk          (1UL << I3C_INTSTS_READREQ_Pos)
 
 #define I3C_INTSTS_IBIUPD_Pos           (12U)
 #define I3C_INTSTS_IBIUPD_Msk           (1UL << I3C_INTSTS_IBIUPD_Pos)
+
+#define I3C_INTSTS_BUSOWNER_Pos         (13U)
+#define I3C_INTSTS_BUSOWNER_Msk         (1UL << I3C_INTSTS_BUSOWNER_Pos)
 
 #define I3C_INTSTS_BUSRSTDN_Pos         (15U)
 #define I3C_INTSTS_BUSRSTDN_Msk         (1UL << I3C_INTSTS_BUSRSTDN_Pos)
@@ -367,11 +378,17 @@ typedef struct
 #define I3C_INTSTSEN_TFRERR_Pos         (9U)
 #define I3C_INTSTSEN_TFRERR_Msk         (1UL << I3C_INTSTSEN_TFRERR_Pos)
 
+#define I3C_INTSTSEN_DEFSLV_Pos         (10U)
+#define I3C_INTSTSEN_DEFSLV_Msk         (1UL << I3C_INTSTSEN_DEFSLV_Pos)
+
 #define I3C_INTSTSEN_READREQ_Pos        (11U)
 #define I3C_INTSTSEN_READREQ_Msk        (1UL << I3C_INTSTSEN_READREQ_Pos)
 
 #define I3C_INTSTSEN_IBIUPD_Pos         (12U)
 #define I3C_INTSTSEN_IBIUPD_Msk         (1UL << I3C_INTSTSEN_IBIUPD_Pos)
+
+#define I3C_INTSTSEN_BUSOWNER_Pos       (13U)
+#define I3C_INTSTSEN_BUSOWNER_Msk       (1UL << I3C_INTSTSEN_BUSOWNER_Pos)
 
 #define I3C_INTSTSEN_BUSRSTDN_Pos       (15U)
 #define I3C_INTSTSEN_BUSRSTDN_Msk       (1UL << I3C_INTSTSEN_BUSRSTDN_Pos)
@@ -403,11 +420,17 @@ typedef struct
 #define I3C_INTEN_TFRERR_Pos            (9U)
 #define I3C_INTEN_TFRERR_Msk            (1UL << I3C_INTEN_TFRERR_Pos)
 
+#define I3C_INTEN_DEFSLV_Pos            (10U)
+#define I3C_INTEN_DEFSLV_Msk            (1UL << I3C_INTEN_DEFSLV_Pos)
+
 #define I3C_INTEN_READREQ_Pos           (11U)
 #define I3C_INTEN_READREQ_Msk           (1UL << I3C_INTEN_READREQ_Pos)
 
 #define I3C_INTEN_IBIUPD_Pos            (12U)
 #define I3C_INTEN_IBIUPD_Msk            (1UL << I3C_INTEN_IBIUPD_Pos)
+
+#define I3C_INTEN_BUSOWNER_Pos          (13U)
+#define I3C_INTEN_BUSOWNER_Msk          (1UL << I3C_INTEN_BUSOWNER_Pos)
 
 #define I3C_INTEN_BUSRSTDN_Pos          (15U)
 #define I3C_INTEN_BUSRSTDN_Msk          (1UL << I3C_INTEN_BUSRSTDN_Pos)
@@ -559,6 +582,9 @@ typedef struct
 #define I3C_SIR_CTL_Pos                 (1U)
 #define I3C_SIR_CTL_Msk                 (0x3UL << I3C_SIR_CTL_Pos)
 
+#define I3C_SIR_MR_Pos                  (3U)
+#define I3C_SIR_MR_Msk                  (0x1UL << I3C_SIR_MR_Pos)
+
 #define I3C_SIR_MDB_Pos                 (8U)
 #define I3C_SIR_MDB_Msk                 (0xFFUL << I3C_SIR_MDB_Pos)
 
@@ -609,6 +635,24 @@ typedef struct
 
 #define I3C_SCLFMP_FMPHCNT_Pos          (16U)
 #define I3C_SCLFMP_FMPHCNT_Msk          (0xFFUL << I3C_SCLFMP_FMPHCNT_Pos)
+
+#define I3C_SCLEXTL_EXLCNT1_Pos         (0U)
+#define I3C_SCLEXTL_EXLCNT1_Msk         (0xFFUL << I3C_SCLEXTL_EXLCNT1_Pos)
+
+#define I3C_SCLEXTL_EXLCNT2_Pos         (8U)
+#define I3C_SCLEXTL_EXLCNT2_Msk         (0xFFUL << I3C_SCLEXTL_EXLCNT2_Pos)
+
+#define I3C_SCLEXTL_EXLCNT3_Pos         (16U)
+#define I3C_SCLEXTL_EXLCNT3_Msk         (0xFFUL << I3C_SCLEXTL_EXLCNT3_Pos)
+
+#define I3C_SCLEXTL_EXLCNT4_Pos         (24U)
+#define I3C_SCLEXTL_EXLCNT4_Msk         (0xFFUL << I3C_SCLEXTL_EXLCNT4_Pos)
+
+#define I3C_SCLTERM_EXTERM_Pos          (0U)
+#define I3C_SCLTERM_EXTERM_Msk          (0xFUL << I3C_SCLTERM_EXTERM_Pos)
+
+#define I3C_SCLTERM_STOPHLD_Pos         (28U)
+#define I3C_SCLTERM_STOPHLD_Msk         (0xFUL << I3C_SCLTERM_STOPHLD_Pos)
 
 #define I3C_SDAHOLD_TXHOLD_Pos          (16U)
 #define I3C_SDAHOLD_TXHOLD_Msk          (0x7UL << I3C_SDAHOLD_TXHOLD_Pos)

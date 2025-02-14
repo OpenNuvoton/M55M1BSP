@@ -1,6 +1,6 @@
 <!-- Define reference-style links used throughout the document -->
 [small PRs]: https://google.github.io/eng-practices/review/developer/small-cls.html
-[Micro Contributing Guidelines]: https://github.com/tensorflow/tflite-micro/blob/main/tensorflow/lite/micro/CONTRIBUTING.md
+[Micro Contributing Guidelines]: https://github.com/tensorflow/tflite-micro/blob/main/CONTRIBUTING.md
 [Providing Context]: https://testing.googleblog.com/2017/09/code-health-providing-context-with.html
 [`ParseOpDataTfLite()`]: https://github.com/tensorflow/tensorflow/blob/d8394a6d774f5e3c02d97f1fc18ff445199db598/tensorflow/lite/core/api/flatbuffer_conversions.cc#L135
 [PR #45307]: https://github.com/tensorflow/tensorflow/pull/45307
@@ -195,7 +195,7 @@ A good example is [PR #45311][].
 
     -   Flatten the namespace down to `tflite`.
     -   Stop resizing output tensors.
-    -   Remove input and output types other than `int8` and `float32`.
+    -   Remove input and output types other than `int8`, `int16`, and `float32`.
     -   Stop using gmock and gtest.
     -   etc.
 
@@ -377,3 +377,9 @@ No.  The `tflite::MicroInterpreter` is the owner and manipulator of these data
 structures.  Your code should not modify these data structures.  The only
 directly allowed modification of tensors is to change their data values, or
 their shape values.
+
+## How do I fix optimized kernel unit test failures?
+Kernel unit tests for all optimizated kernels should pass. By default kernel unit 
+tests for the newly added op may fail for optimized kernels as they may not have the
+correct references. In this case, we should let the optimized kernels fall back
+to the newly added reference kernels. For example, refer to this [this commit](https://github.com/tensorflow/tflite-micro/pull/1274/commits/d36c9dd598dcbf352f2c60463fd0d4153703a1cd).

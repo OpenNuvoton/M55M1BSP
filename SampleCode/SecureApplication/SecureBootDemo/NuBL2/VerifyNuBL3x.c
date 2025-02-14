@@ -48,9 +48,6 @@ int32_t Cal_SHA256_Flash(uint32_t u32Addr, uint32_t u32Bytes, uint32_t *pu32Dige
     i32StartAddr = (int32_t)u32Addr;
     i32ByteCnt   = (int32_t)u32Bytes;
 
-    /* Reset CRYPTO module */
-    SYS_ResetModule(SYS_CRYPTO0RST);
-
     CRYPTO->HMAC_CTL    = (SHA_MODE_SHA256 << CRYPTO_HMAC_CTL_OPMODE_Pos) | CRYPTO_HMAC_CTL_INSWAP_Msk | CRYPTO_HMAC_CTL_OUTSWAP_Msk;
     CRYPTO->HMAC_DMACNT = 64;
     CRYPTO->HMAC_CTL   |= CRYPTO_HMAC_CTL_START_Msk;
@@ -309,10 +306,6 @@ int32_t VerifyNuBL3x(uint32_t u32ImgBaseAddr, uint32_t u32ImgByteSize, uint32_t 
                 printf("ECC signature verification failed !\n");
                 return eBOOT_ERRCODE_BADSIGN;
             }
-        }
-        else if (psTlv->it_type == IMAGE_TLV_SEC_CNT)
-        {
-            printf("IMAGE_TLV_SEC_CNT\n");
         }
 
         psTlv = (struct image_tlv *)((uint32_t)psTlv + sizeof(struct image_tlv) + psTlv->it_len);

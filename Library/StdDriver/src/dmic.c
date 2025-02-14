@@ -22,13 +22,62 @@
 */
 
 /**
+  * @brief      Enable DMIC's channel
+  * @param[in]  dmic The base address of DMIC module
+  * @param[in]  u32ChMsk Enable channel Msk.
+  *             - \ref DMIC_CTL_CHEN0_Msk
+  *             - \ref DMIC_CTL_CHEN1_Msk
+  *             - \ref DMIC_CTL_CHEN2_Msk
+  *             - \ref DMIC_CTL_CHEN3_Msk
+  * @return     None
+  * @details    Enable channel to start input data.
+  */
+void DMIC_EnableChMsk(DMIC_T *dmic, uint32_t u32ChMsk)
+{
+    dmic->DIV |= DMIC_DIV_HPF_CUT_F;
+    dmic->CTL |= (DMIC_CTL_CH01HPFEN_Msk | DMIC_CTL_CH23HPFEN_Msk);
+    dmic->CTL |= u32ChMsk;
+}
+
+/**
+  * @brief      Disable DMIC's channel
+  * @param[in]  dmic The base address of DMIC module
+  * @param[in]  u32ChMsk Disable channel Msk.
+  *             - \ref DMIC_CTL_CHEN0_Msk
+  *             - \ref DMIC_CTL_CHEN1_Msk
+  *             - \ref DMIC_CTL_CHEN2_Msk
+  *             - \ref DMIC_CTL_CHEN3_Msk
+  * @return     None
+  * @details    Disable channel to input data.
+  */
+void DMIC_DisableChMsk(DMIC_T *dmic, uint32_t u32ChMsk)
+{
+    dmic->CTL &= ~(u32ChMsk);
+}
+
+/**
   * @brief      Start DMIC module
   * @param[in]  dmic The base address of DMIC module.
   * @return     None.
   */
 void DMIC_Open(DMIC_T *dmic)
 {
-    uint32_t u32Delay;
+    uint32_t u32Delay, u32RamIdx;
+    uint32_t u32IsRegLocked;
+    u32IsRegLocked = SYS_IsRegLocked();
+
+    if (u32IsRegLocked)
+    {
+        SYS_UnlockReg();
+    }
+
+    PMC_SetDMIC_SRAMPowerMode(PMC_SRAM_NORMAL);
+
+    if (u32IsRegLocked)
+    {
+        SYS_LockReg();
+    }
+
     dmic->DIV |= DMIC_DIV_FCLR_Msk;
     u32Delay = SystemCoreClock >> 3;
 
@@ -38,6 +87,32 @@ void DMIC_Open(DMIC_T *dmic)
     }
 
     dmic->CTL |= DMIC_CTL_SWRST_Msk;
+    dmic->CTL |= (DMIC_CTL_DSPMEMT_Msk);
+
+    for (u32RamIdx = 0 ; u32RamIdx < 128 ; u32RamIdx++)
+    {
+        if (u32RamIdx == DMIC_RAM_LGAIN_ADDR || u32RamIdx == DMIC_RAM_RGAIN_ADDR)
+        {
+            //Set gain volume 0db((-128-gain)*4096=F80000)
+            outp32(DMIC_DSP0_RAMDATA, 0xF80000);
+            outp32(DMIC_DSP1_RAMDATA, 0xF80000);
+        }
+        else if (u32RamIdx == DMIC_RAM_LINITSAMPLE_ADDR || u32RamIdx == DMIC_RAM_RINITSAMPLE_ADDR)
+        {
+            //Set initial sample = 1024(0x400)
+            outp32(DMIC_DSP0_RAMDATA, 0x400);
+            outp32(DMIC_DSP1_RAMDATA, 0x400);
+        }
+        else
+        {
+            outp32(DMIC_DSP0_RAMDATA, 0x0);
+            outp32(DMIC_DSP1_RAMDATA, 0x0);
+        }
+    }
+
+    dmic->CTL &= (~DMIC_CTL_DSPMEMT_Msk);
+    dmic->DIV |= DMIC_DIV_HPF_CUT_F;
+    dmic->CTL |= (DMIC_CTL_CH01HPFEN_Msk | DMIC_CTL_CH23HPFEN_Msk);
 }
 
 /**
@@ -47,7 +122,7 @@ void DMIC_Open(DMIC_T *dmic)
   */
 void DMIC_Close(DMIC_T *dmic)
 {
-    DMIC_DISABLE_CHANNEL(dmic, DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk);
+    DMIC_DisableChMsk(dmic, DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk);
 }
 
 /**

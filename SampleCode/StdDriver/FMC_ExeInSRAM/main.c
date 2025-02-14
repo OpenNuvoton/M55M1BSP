@@ -32,8 +32,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -51,6 +51,9 @@ void SYS_Init(void)
     SYS_LockReg();
 }
 
+/*
+ * This sample code demonstrates how to make a sub-routine code executed in SRAM.
+ */
 int32_t main(void)
 {
     /* Init System, IP clock and multi-function I/O */
@@ -61,9 +64,6 @@ int32_t main(void)
     printf("+--------------------------------------------+\n");
     printf("| M55M1 FMC Code Execute in SRAM Sample Code |\n");
     printf("+--------------------------------------------+\n");
-    /*
-       This sample code demonstrates how to make a sub-routine code executed in SRAM.
-    */
     printf("Will branch to SRAM address: 0x%08X\n", (uint32_t)FlashAccess_OnSRAM);
     /* SysTick used for test interrupts in SRAM */
     SysTick_Config(SystemCoreClock / 1000);

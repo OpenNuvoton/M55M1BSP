@@ -14,8 +14,8 @@
  * Users may need to do extra system configuration according to their system design.
  *
  * I/D-Cache
- *   I-Cache are enabled by default for better performance,
- *   users can define NVT_DCACHE_ON in project setting to enable D-Cache.
+ *   I/D-Cache are enabled by default for better performance.
+ *   Users can define NVT_DCACHE_ON=0 in project setting to disable D-Cache.
  * Debug UART
  *   system_M55M1.c has three weak functions as below to configure DEBUG_PORT debug port.
  *     SetDebugUartMFP, SetDebugUartCLK and InitDebugUart
@@ -33,11 +33,10 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
 
     /* Enable UART module clock */
@@ -65,9 +64,6 @@ int main(void)
 
     printf("System core clock = %d\n", SystemCoreClock);
     printf("Hello World\n");
-    printf("CLK_APLLCTL_180MHz: 0x%08X\n", (uint32_t)CLK_APLLCTL_180MHz);
-    printf("CLK_APLLCTL_160MHz: 0x%08X\n", (uint32_t)CLK_APLLCTL_160MHz);
-    printf("CLK_APLLCTL_144MHz: 0x%08X\n", (uint32_t)CLK_APLLCTL_144MHz);
 
     /* Got no where to go, just loop forever */
     while (1) ;

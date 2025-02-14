@@ -18,8 +18,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -78,19 +78,19 @@ int32_t main(void)
     }
     else
     {
-        printf("Xomdem transfer done.\n");
+        printf("\nXomdem transfer done.\n");
         printf("Total transfer size is %d\n", i32TranBytes);
 
         printf("Press any key to read back the transfer file.\n");
         getchar();
-        printf("Waiting for receiver ...\n");
+        printf("\nWaiting for receiver ...\n");
 
 
         i32TranBytes = XmodemSend((uint8_t *)FMC_APROM_BANK1_BASE, i32TranBytes);
 
         if (i32TranBytes < 0)
         {
-            printf("Xmodem transfer fail !\n");
+            printf("Xmodem transfer fail ! Error code: %d\n", i32TranBytes);
         }
         else
         {

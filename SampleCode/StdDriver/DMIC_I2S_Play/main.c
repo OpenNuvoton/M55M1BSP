@@ -19,49 +19,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "NuMicro.h"
-#include "BUFCTRL.h"
-
-#define NAU8822     1
-
-//------------------------------------------------------------------------------
-#if defined(ALIGN_AF_PINS)
-    #define I2C_PORT                        I2C3
-#else
-    #define I2C_PORT                        I2C2
-#endif
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Define global constants                                                                                 */
 /*---------------------------------------------------------------------------------------------------------*/
-#define SAMPLE_RATE              (16000)
-#define BUF_COUNT                (16)
+#define NAU8822            1
+#define I2C_PORT           I2C3
+#define SAMPLE_RATE        (16000)
+#define BUF_COUNT          (256)
+#define DMIC_LPPDMA_CH     (3)
+#define I2S0TX_PDMA_CH     (2)
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Define functions prototype                                                                              */
 /*---------------------------------------------------------------------------------------------------------*/
-void I2STX_Init(S_BUFCTRL *psOutBufCtrl);
+void I2STX_Init(void);
 void I2STX_Start(void);
 void I2STX_Stop(void);
-void DMIC_Init(S_BUFCTRL *psInBufCtrl);
+void DMIC_Init(void);
 void DMIC_Start(void);
 void DMIC_Stop(void);
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Define global variables and constants                                                                   */
 /*---------------------------------------------------------------------------------------------------------*/
-volatile S_BUFCTRL sInBufCtrl, sOutBufCtrl; // Buffer control handler.
-int32_t    ai32InBuf[BUF_COUNT], s_SampleRate;      // Buffer array: store audio data receiced from DMIC(4Channel)
-int32_t    ai32OutBuf[BUF_COUNT];         // Buffer array: store audio data ready to send to DPWM(2Channel)
+volatile uint8_t s_u8WriteBufIdx, s_u8LppdmaBusy; // Buffer control handler.
+static int32_t s_SampleRate;
+volatile uint8_t g_u8PCMBufferFull[2] = {0, 0};
+volatile uint8_t g_u8PCMBufferPlaying = 0;
+volatile uint8_t u8AudioPlaying = 0;
 
-#define DMIC_LPPDMA_CH       (2)
-
-S_BUFCTRL *psDMIC_BufCtrl = NULL;           // Provide microphone input buffer control.
-LPDSCT_T     sLPPDMA_DMIC[2];               // Provide LPPDMA description for ping-pong.
-
-#define I2S0TX_PDMA_CH     (3)
-
-S_BUFCTRL *psI2STX_BufCtrl = NULL;            // Provide Speaker to output data.
-DSCT_T     sPDMA_I2STX[2];                    // Provide PDMA description for ping-pong.
+// Provide PDMA description for ping-pong.
+#if (NVT_DCACHE_ON == 1)
+    // If DCACHE is enabled, use a cache-line aligned buffer for the I2S PCM DMA
+    signed int aiPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(BUF_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    /* DMA descriptor table, must be aligned to 32 bytes and placed in DTCM */
+    NVT_DTCM __ALIGNED(32) static DSCT_T sPDMA_I2STX[2];
+#else
+    // If DCACHE is not enabled, use a standard buffer for the I2S PCM DMA
+    signed int aiPCMBuffer[2][BUF_COUNT];
+    /* DMA descriptor table, must be aligned to 32 bytes */
+    static DSCT_T sPDMA_I2STX[2] __attribute__((aligned(32)));
+#endif
 
 // LPPMDA =========================================================================================================
 NVT_ITCM void LPPDMA_IRQHandler(void)
@@ -71,20 +70,16 @@ NVT_ITCM void LPPDMA_IRQHandler(void)
 
     if (u32TDStatus & (1 << DMIC_LPPDMA_CH))
     {
-        //    printf("LPPDMA_IRQHandler.DMIC0->STATUS %x\n",DMIC0->STATUS);
         LPPDMA_CLR_TD_FLAG(LPPDMA, (1 << DMIC_LPPDMA_CH));
 
-        if (psDMIC_BufCtrl->u16DataCount <= (psDMIC_BufCtrl->u16BufCount / 2))
-            psDMIC_BufCtrl->u16DataCount += (psDMIC_BufCtrl->u16BufCount / 2);
-
-        if ((psDMIC_BufCtrl->u16WriteIdx += (psDMIC_BufCtrl->u16BufCount / 2)) >= psDMIC_BufCtrl->u16BufCount)
-            psDMIC_BufCtrl->u16WriteIdx = 0;
+        g_u8PCMBufferFull[s_u8WriteBufIdx] = 1;
     }
 
+    s_u8LppdmaBusy = 0;
     __DSB();
     __ISB();
 
-    while (LPPDMA_GET_TD_STS(LPPDMA))
+    while (LPPDMA_GET_TD_STS(LPPDMA) || s_u8LppdmaBusy)
     {
         if (--u32TimeOutCnt == 0)
         {
@@ -101,14 +96,10 @@ NVT_ITCM void PDMA0_IRQHandler(void)
 
     if (u32TDStatus & (1 << I2S0TX_PDMA_CH))
     {
-        //    printf("PDMA0_IRQHandler.I2S0->STATUS1 %x\n",I2S0->STATUS1);
         PDMA_CLR_TD_FLAG(PDMA0, (1 << I2S0TX_PDMA_CH));
 
-        if (psI2STX_BufCtrl->u16DataCount >= (psI2STX_BufCtrl->u16BufCount / 2))
-            psI2STX_BufCtrl->u16DataCount -= (psI2STX_BufCtrl->u16BufCount / 2);
-
-        if ((psI2STX_BufCtrl->u16ReadIdx += (psI2STX_BufCtrl->u16BufCount / 2)) >= psI2STX_BufCtrl->u16BufCount)
-            psI2STX_BufCtrl->u16ReadIdx = 0;
+        g_u8PCMBufferFull[g_u8PCMBufferPlaying] = 0;       /* Set empty flag */
+        g_u8PCMBufferPlaying ^= 1;
     }
 
     __DSB();
@@ -123,12 +114,25 @@ NVT_ITCM void PDMA0_IRQHandler(void)
     }
 }
 
+/*-----------------------------------------------------------------
+  | APLL1                     | Sample-Rate Hz      | Down-Sample |
+  |---------------------------|---------------------|-------------|
+  | FREQ_192MHZ               | 8000/16000/48000 Hz | 50/100      |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_196608KHZ | 8000/16000/48000 Hz | 64/128/256  |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_194040KHZ | 11025/22050/44100 Hz| 50/100      |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_180634KHZ | 11025/22050/44100 Hz| 64/128/256  |
+  ---------------------------------------------------------------*/
 // Microphone(DMIC)= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-void DMIC_Init(S_BUFCTRL *psInBufCtrl)
+void DMIC_Init(void)
 {
     /* Unlock protected registers */
     SYS_UnlockReg();
-    // Select DMIC CLK source from PLL.
+    /* Enable PLL1 192MHZ clock from HIRC for DMIC clock source to PLL1_DIV2 */
+    printf("Get real APLL1 Frequency is %d\n", CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_192MHZ, CLK_APLL1_SELECT));
+    // Select DMIC CLK source from PLL1_DIV2.
     CLK_SetModuleClock(DMIC0_MODULE, CLK_DMICSEL_DMIC0SEL_APLL1_DIV2, MODULE_NoMsk);
     // Enable DMIC clock.
     CLK_EnableModuleClock(DMIC0_MODULE);
@@ -136,22 +140,22 @@ void DMIC_Init(S_BUFCTRL *psInBufCtrl)
     SYS_ResetModule(SYS_DMIC0RST);
     /* Lock protected registers */
     SYS_LockReg();
-    // Set down sample rate 100 for quilty.(Suggest 96M used DMIC_CTL_DOWNSAMPLE_100_50 )
-    DMIC_SET_DOWNSAMPLE(DMIC0, DMIC_DOWNSAMPLE_128);
+
+    DMIC_Open(DMIC0);
+    // FREQ_192MHZ for DMIC 8000/16000/48000 Hz sample-rate with 50/100 down-sample
+    DMIC_SET_DOWNSAMPLE(DMIC0, DMIC_DOWNSAMPLE_100);
     // Set DMIC sample rate.
     s_SampleRate = DMIC_SetSampleRate(DMIC0, SAMPLE_RATE);
     printf("DMIC SampleRate is %d\n", s_SampleRate);
     // Set channel's latch data falling type.
     //DMIC_SET_LATCHEDGE_CH01(DMIC0, DMIC_LATCHDATA_CH01FR);
     //DMIC_SET_LATCHEDGE_CH23(DMIC0, DMIC_LATCHDATA_CH23FR);
-    // HPF control
-    //DMIC_EnableHPF(DMIC0, DMIC_CTL_CH01HPFEN_Msk | DMIC_CTL_CH23HPFEN_Msk);
     //Gain step
     //DMIC_SetGainStep(DMIC0, DMIC_GAINSTEP_1_2);
     // MUTE control
     //DMIC_EnableMute(DMIC0, DMIC_CTL_CH0MUTE_Msk|DMIC_CTL_CH1MUTE_Msk|DMIC_CTL_CH2MUTE_Msk|DMIC_CTL_CH3MUTE_Msk);
     // Enable DMIC FIFO threshold interrupt.
-    DMIC_ENABLE_FIFOTH_INT(DMIC0, 16);
+    //DMIC_ENABLE_FIFOTH_INT(DMIC0, 16);
     // Set FIFO Width 16bits
     DMIC_SetFIFOWidth(DMIC0, DMIC_FIFOWIDTH_16);
 
@@ -161,59 +165,47 @@ void DMIC_Init(S_BUFCTRL *psInBufCtrl)
 
     DMIC_ResetDSP(DMIC0);  //SWRST
 
-    //DMIC Gain Setting
-    //DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN0_Msk, 36);//+36dB
+    //    //DMIC Gain Setting
+    //    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk, 36);//+36dB
 
-    // MIC(RX) buffer description
-    sLPPDMA_DMIC[0].CTL = ((psInBufCtrl->u16BufCount - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_16 | PDMA_SAR_FIX | PDMA_DAR_INC | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
-    sLPPDMA_DMIC[0].SA = (uint32_t)(&DMIC0->FIFO);
-    sLPPDMA_DMIC[0].DA = (uint32_t) & (psInBufCtrl->pai32Buf[0]);
-    sLPPDMA_DMIC[0].NEXT = (uint32_t)&sLPPDMA_DMIC[1];
-    sLPPDMA_DMIC[1].CTL = ((psInBufCtrl->u16BufCount - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_16 | PDMA_SAR_FIX | PDMA_DAR_INC | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
-    sLPPDMA_DMIC[1].SA = (uint32_t)(&DMIC0->FIFO);
-    sLPPDMA_DMIC[1].DA = (uint32_t) & (psInBufCtrl->pai32Buf[psInBufCtrl->u16BufCount / 2]);
-    sLPPDMA_DMIC[1].NEXT = (uint32_t)&sLPPDMA_DMIC[0];
     // Open LPPDMA channel
     LPPDMA_Open(LPPDMA, (1 << DMIC_LPPDMA_CH));
-    // Set TransMode
-    LPPDMA_SetTransferMode(LPPDMA, DMIC_LPPDMA_CH, LPPDMA_DMIC0_RX, TRUE, (uint32_t)&sLPPDMA_DMIC[0]);
+    /* Transfer count is BUF_COUNT*2, transfer width is 16 bits(one PCM) */
+    LPPDMA_SetTransferCnt(LPPDMA, DMIC_LPPDMA_CH, LPPDMA_WIDTH_16, BUF_COUNT * 2);
+    /* Set source address is DMIC0->FIFO, destination address is aiPCMBuffer, Source/Destination increment size is 32 bits(one word) */
+    LPPDMA_SetTransferAddr(LPPDMA, DMIC_LPPDMA_CH, (uint32_t)(&DMIC0->FIFO), LPPDMA_SAR_FIX, (uint32_t) & (aiPCMBuffer[0][0]), LPPDMA_DAR_INC);
+    /* Request source is DMIC0_RX to memory */
+    LPPDMA_SetTransferMode(LPPDMA, DMIC_LPPDMA_CH, LPPDMA_DMIC0_RX, FALSE, 0);
+    /* Transfer type is burst transfer and burst size is 1 */
+    LPPDMA_SetBurstType(LPPDMA, DMIC_LPPDMA_CH, LPPDMA_REQ_SINGLE, LPPDMA_BURST_1);
+
     // Enable interrupt
     LPPDMA_EnableInt(LPPDMA, DMIC_LPPDMA_CH, LPPDMA_INT_TRANS_DONE);
     // GPIO multi-function.
-    //    SET_DMIC0_DAT_PE8();
-    //    SET_DMIC0_CLK_PE9();
-    //    SYS->GPE_MFOS = BIT8;
-    //    PE8 = 1;
     SET_DMIC0_DAT_PB5();
     SET_DMIC0_CLK_PB4();
-    SYS->GPB_MFOS = BIT5;
-    PB5 = 1;
-    // Config DMIC buffer control
-    psDMIC_BufCtrl = psInBufCtrl;
 }
 
 void DMIC_Start(void)
 {
-    if (psDMIC_BufCtrl != NULL)
-    {
-        DMIC_ENABLE_CHANNEL(DMIC0, DMIC_CTL_CHEN0_Msk);
-        DMIC_ENABLE_LPPDMA(DMIC0);
-    }
+    DMIC_EnableChMsk(DMIC0, DMIC_CTL_CHEN0_Msk);
+    DMIC_ENABLE_LPPDMA(DMIC0);
 }
 
 void DMIC_Stop(void)
 {
     DMIC_DISABLE_LPPDMA(DMIC0);
-    DMIC_DISABLE_CHANNEL(DMIC0, DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk);
+    DMIC_Close(DMIC0);
 }
 
 // Speaker(DPWM) = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-void I2STX_Init(S_BUFCTRL *psOutBufCtrl)
+void I2STX_Init(void)
 {
     /* Unlock protected registers */
     SYS_UnlockReg();
-    // Select I2S CLK source from PCLK.
-    CLK_SetModuleClock(I2S0_MODULE, CLK_I2SSEL_I2S0SEL_PCLK1, MODULE_NoMsk);
+    // Select I2S CLK source from APLL1_DIV2.
+    CLK_SetModuleClock(I2S0_MODULE, CLK_I2SSEL_I2S0SEL_APLL1_DIV2, CLK_I2SDIV_I2S0DIV(8));
+
     // Enable I2S clock.
     CLK_EnableModuleClock(I2S0_MODULE);
     // I2S IPReset.
@@ -224,10 +216,10 @@ void I2STX_Init(S_BUFCTRL *psOutBufCtrl)
     /* Configure as I2S slave */
     s_SampleRate = I2S_Open(I2S0, I2S_MODE_SLAVE, SAMPLE_RATE, I2S_DATABIT_16, I2S_MONO, I2S_FORMAT_I2S);
     printf("I2S SampleRate is %d\n", s_SampleRate);
-    // I2S0 Configuration
-    I2S0->CTL0 |= I2S_CTL0_ORDER_Msk;
     //Enable MCLK
     printf("I2S MCLK is %d\n", I2S_EnableMCLK(I2S0, 12000000));
+    // I2S0 Configuration
+    I2S0->CTL0 |= I2S_CTL0_ORDER_Msk;
 
     printf("  DMIC to I2S0 through FIFO test\n");
 
@@ -235,12 +227,12 @@ void I2STX_Init(S_BUFCTRL *psOutBufCtrl)
     I2S_CLR_TX_FIFO(I2S0);
 
     // SPK(TX) buffer description
-    sPDMA_I2STX[0].CTL = ((psOutBufCtrl->u16BufCount - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_16 | PDMA_SAR_INC | PDMA_DAR_FIX | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
-    sPDMA_I2STX[0].SA = (uint32_t) & (psOutBufCtrl->pai32Buf[0]);
+    sPDMA_I2STX[0].CTL = ((BUF_COUNT - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_32 | PDMA_SAR_INC | PDMA_DAR_FIX | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
+    sPDMA_I2STX[0].SA = (uint32_t)&aiPCMBuffer[0][0];
     sPDMA_I2STX[0].DA = (uint32_t)(&I2S0->TXFIFO);
     sPDMA_I2STX[0].NEXT = (uint32_t)&sPDMA_I2STX[1];
-    sPDMA_I2STX[1].CTL = ((psOutBufCtrl->u16BufCount - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_16 | PDMA_SAR_INC | PDMA_DAR_FIX | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
-    sPDMA_I2STX[1].SA = (uint32_t) & (psOutBufCtrl->pai32Buf[psOutBufCtrl->u16BufCount / 2]);
+    sPDMA_I2STX[1].CTL = ((BUF_COUNT - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_32 | PDMA_SAR_INC | PDMA_DAR_FIX | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
+    sPDMA_I2STX[1].SA = (uint32_t)&aiPCMBuffer[1][0];
     sPDMA_I2STX[1].DA = (uint32_t)(&I2S0->TXFIFO);
     sPDMA_I2STX[1].NEXT = (uint32_t)&sPDMA_I2STX[0];
     // Open PDMA channel
@@ -259,18 +251,12 @@ void I2STX_Init(S_BUFCTRL *psOutBufCtrl)
 
     /* Enable I2S0 clock pin (PI6) schmitt trigger */
     PI->SMTEN |= GPIO_SMTEN_SMTEN6_Msk;
-
-    // Config DPWM(Speaker) buffer control
-    psI2STX_BufCtrl = psOutBufCtrl;
 }
 
 void I2STX_Start(void)
 {
-    if (psI2STX_BufCtrl != NULL)
-    {
-        I2S_ENABLE_TX(I2S0);
-        I2S_ENABLE_TXDMA(I2S0);
-    }
+    I2S_ENABLE_TXDMA(I2S0);
+    I2S_ENABLE_TX(I2S0);
 }
 
 void I2STX_Stop(void)
@@ -578,12 +564,11 @@ static void SYS_Init(void)
     /* Unlock protected registers */
     SYS_UnlockReg();
 
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL1_SELECT);
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -591,17 +576,15 @@ static void SYS_Init(void)
 
     /* Enable UART module clock */
     SetDebugUartCLK();
-#if defined(ALIGN_AF_PINS)
+
     /* Enable I2C3 module clock */
     CLK_EnableModuleClock(I2C3_MODULE);
     SYS_ResetModule(SYS_I2C3RST);
-#else
-    /* Enable I2C2 module clock */
-    CLK_EnableModuleClock(I2C2_MODULE);
-    SYS_ResetModule(SYS_I2C2RST);
-#endif
+
     CLK_EnableModuleClock(GPIOB_MODULE);
+    CLK_EnableModuleClock(GPIOD_MODULE);
     CLK_EnableModuleClock(GPIOI_MODULE);
+    CLK_EnableModuleClock(GPIOG_MODULE);
 
     // PDMA/LPPDMA Initial.
     // Enable PDMA clock.
@@ -616,23 +599,13 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-#if defined(ALIGN_AF_PINS)
-    CLK_EnableModuleClock(GPIOG_MODULE);
     /* Set I2C3 multi-function pins */
     SET_I2C3_SDA_PG1();
     SET_I2C3_SCL_PG0();
 
     /* Enable I2C3 clock pin (PG0) schmitt trigger */
     PG->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
-#else
-    CLK_EnableModuleClock(GPIOD_MODULE);
-    /* Set I2C2 multi-function pins */
-    SET_I2C2_SDA_PD0();
-    SET_I2C2_SCL_PD1();
 
-    /* Enable I2C2 clock pin (PD1) schmitt trigger */
-    PD->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
-#endif
     /* Lock protected registers */
     SYS_LockReg();
 }
@@ -648,7 +621,6 @@ void I2C_Init(void)
 
 int main(void)
 {
-    int32_t i32Data[4];
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();
     /* Init Debug UART to 115200-8N1 for print message */
@@ -670,15 +642,9 @@ int main(void)
 #endif
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-#if defined(ALIGN_AF_PINS)
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
-#else
-    SET_GPIO_PD4();
-    GPIO_SetMode(PD, BIT4, GPIO_MODE_OUTPUT);
-    PD4 = 0;
-#endif
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
 
 #if NAU8822
     /* Initialize NAU8822 codec */
@@ -694,38 +660,52 @@ int main(void)
     NVIC_EnableIRQ(PDMA0_IRQn);
     NVIC_EnableIRQ(LPPDMA_IRQn);
 
-    // These defines are from  BUFCTRL.h for buffer control in this samle.
-    // Buffer control handler configuration.
-    BUFCTRL_CFG((&sInBufCtrl), ai32InBuf, sizeof(ai32InBuf) / sizeof(uint32_t));
-    BUFCTRL_CFG((&sOutBufCtrl), ai32OutBuf, sizeof(ai32OutBuf) / sizeof(uint32_t));
-
+    s_u8WriteBufIdx = 0;
+    s_u8LppdmaBusy = 0;
     // Initiate microphone.
-    DMIC_Init((S_BUFCTRL *)&sInBufCtrl);
-    // Initiate speaker.
-    I2STX_Init((S_BUFCTRL *)&sOutBufCtrl);
+    DMIC_Init();
     // Start microphone.
+    s_u8LppdmaBusy = 1;
     DMIC_Start();
-    // Start speaker.
-    I2STX_Start();
+    // Initiate speaker.
+    I2STX_Init();
 
     // while loop for processing.
     while (1)
     {
-        while (BUFCTRL_GET_COUNT((&sInBufCtrl)) >= 4 && !BUFCTRL_IS_FULL((&sOutBufCtrl)))
+#if (NVT_DCACHE_ON == 1)
+        // If DCACHE is enabled, make sure the I2S PCM DMA buffer is cleaned and invalidated
+        // This is to ensure that the data written to the cache is actually written to the memory
+        SCB_CleanInvalidateDCache_by_Addr((int *)&aiPCMBuffer, sizeof(aiPCMBuffer));
+#endif
+
+        if ((g_u8PCMBufferFull[0] == 1) && (g_u8PCMBufferFull[1] == 1))         //all buffers are full, wait
         {
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[0]);
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[1]);
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[2]);
-            BUFCTRL_READ((&sInBufCtrl), &i32Data[3]);
-            // 4 channel mixer to 2 channe
-            //          i32Data[0] = i32Data[0]+i32Data[2];
-            //          i32Data[1] = i32Data[1]+i32Data[3];
-            BUFCTRL_WRITE((&sOutBufCtrl), i32Data[0]);
-            BUFCTRL_WRITE((&sOutBufCtrl), i32Data[1]);
-            BUFCTRL_WRITE((&sOutBufCtrl), i32Data[2]);
-            BUFCTRL_WRITE((&sOutBufCtrl), i32Data[3]);
+            if (!u8AudioPlaying)
+            {
+                u8AudioPlaying = 1;
+                // Start speaker.
+                I2STX_Start();
+                printf("Start Playing ...\n");
+            }
+
+            while ((g_u8PCMBufferFull[0] == 1) && (g_u8PCMBufferFull[1] == 1));
+        }
+
+        if (s_u8LppdmaBusy == 0)
+        {
+            s_u8LppdmaBusy = 1;
+            s_u8WriteBufIdx ^= 1;
+
+            /* Set source address is au8SrcArray, destination address is au8DestArray, Source/Destination increment size is 32 bits(one word) */
+            if (s_u8WriteBufIdx)
+                LPPDMA_SetTransferAddr(LPPDMA, DMIC_LPPDMA_CH, (uint32_t)(&DMIC0->FIFO), LPPDMA_SAR_FIX, (uint32_t)(&aiPCMBuffer[1][0]), LPPDMA_DAR_INC);
+            else
+                LPPDMA_SetTransferAddr(LPPDMA, DMIC_LPPDMA_CH, (uint32_t)(&DMIC0->FIFO), LPPDMA_SAR_FIX, (uint32_t)(&aiPCMBuffer[0][0]), LPPDMA_DAR_INC);
+
+            /* Transfer count is BUF_COUNT*2, transfer width is 16 bits(one PCM) */
+            LPPDMA_SetTransferCnt(LPPDMA, DMIC_LPPDMA_CH, LPPDMA_WIDTH_16, BUF_COUNT * 2);
+            LPPDMA_SetTransferMode(LPPDMA, DMIC_LPPDMA_CH, LPPDMA_DMIC0_RX, FALSE, 0);
         }
     };
 }
-
-/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

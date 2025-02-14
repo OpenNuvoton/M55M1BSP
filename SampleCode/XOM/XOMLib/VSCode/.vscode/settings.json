@@ -1,0 +1,34 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "XOMLib.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "XOMLib.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "XOMLib_Code.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device"
+            }
+        },
+        {
+            "path": "XOMLib_Code.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device"
+            }
+        }
+    ]
+}

@@ -46,16 +46,6 @@ void MemManage_Handler(void)
     else
         pu32SP = (uint32_t *)__get_MSP();
 
-    /*
-     * 1. Disable MPU to allow simple return from MemManage_Handler().
-     *    MemManage fault typically indicates code failure, and would
-     *    be resolved by reset or terminating faulty thread in OS.
-     * 2: Call ARM_MPU_Disable() will allow the code touch
-     *    illegal address to be executed after return from
-     *    HardFault_Handler(). If this line is comment out, this code
-     *    will keep enter MemManage_Handler().
-     */
-    ARM_MPU_Disable();
     printf("\n  Memory Fault !\n");
 
     if (SCB->CFSR & SCB_CFSR_IACCVIOL_Msk)
@@ -75,6 +65,17 @@ void MemManage_Handler(void)
 
     /* Clear MemManage fault status register */
     SCB->CFSR = SCB_CFSR_MEMFAULTSR_Msk;
+    /*
+     * 1. Disable MPU to allow simple return from MemManage_Handler().
+     *    MemManage fault typically indicates code failure, and would
+     *    be resolved by reset or terminating faulty thread in OS.
+     * 2: Call ARM_MPU_Disable() will allow the code touch
+     *    illegal address to be executed after return from
+     *    HardFault_Handler(). If this line is comment out, this code
+     *    will keep enter MemManage_Handler().
+     */
+    ARM_MPU_Disable();
+    printf("Continue execution after MPU is disabled.\n");
 }
 
 void SYS_Init(void)
@@ -85,8 +86,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -134,7 +135,7 @@ void MPU_TestExecutable(void)
     printf("(It should trigger a memory fault exception.)\n");
     getchar();
     ExeInRegion1();
-    /* Becuase MPU is disabled in MemManage_Handler, enable MPU again here */
+    /* Because MPU is disabled in MemManage_Handler, enable MPU again here */
     ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk);
 
     printf("\n==============================================\n");
@@ -165,7 +166,7 @@ void MPU_TestExecutable(void)
     printf("(It should trigger a memory fault exception.)\n");
     getchar();
     ExeInRegion3();
-    /* Becuase MPU is disabled in MemManage_Handler, enable MPU again here */
+    /* Because MPU is disabled in MemManage_Handler, enable MPU again here */
     ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk);
 }
 

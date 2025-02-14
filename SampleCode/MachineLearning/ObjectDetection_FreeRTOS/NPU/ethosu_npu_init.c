@@ -44,6 +44,10 @@ static size_t get_cache_arena_size()
 #endif /* defined (ETHOS_U_CACHE_BUF_SZ) && (ETHOS_U_CACHE_BUF_SZ > 0) */
 }
 
+/*
+    The NPU interrupt frequency is not high, so the NPU IRQ handler is not placed in ITCM region.
+    ITCM region space is reserved for other use
+*/
 void NPU_IRQHandler(void)
 {
     ethosu_irq_handler(&ethosu_drv);

@@ -109,44 +109,25 @@ void rsa_dma_buf_init(mbedtls_rsa_context *ctx, mbedtls_mpi *ed)
     mbedtls_mpi_grow(ed, ctx->MBEDTLS_PRIVATE(len));
     mbedtls_mpi_grow(&ctx->M, ctx->MBEDTLS_PRIVATE(len));
     mbedtls_mpi_grow(&ctx->MBEDTLS_PRIVATE(N), ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->MBEDTLS_PRIVATE(P), ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->MBEDTLS_PRIVATE(Q), ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->CP, ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->CQ, ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->MBEDTLS_PRIVATE(DP), ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->MBEDTLS_PRIVATE(DQ), ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->MBEDTLS_PRIVATE(RP), ctx->MBEDTLS_PRIVATE(len));
-    //mbedtls_mpi_grow(&ctx->MBEDTLS_PRIVATE(RQ), ctx->MBEDTLS_PRIVATE(len));
 
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr((void *)(ctx->M.MBEDTLS_PRIVATE(p)), (ctx->M.MBEDTLS_PRIVATE(n)));
+    SCB_CleanDCache_by_Addr((void *)(ctx->MBEDTLS_PRIVATE(N).MBEDTLS_PRIVATE(p)), (ctx->MBEDTLS_PRIVATE(N).MBEDTLS_PRIVATE(n)));
+    SCB_CleanDCache_by_Addr((void *)(ed->MBEDTLS_PRIVATE(p)), (ed->MBEDTLS_PRIVATE(n)));
+#endif
     CRYPTO->RSA_SADDR[0] = (uint32_t)ctx->M.MBEDTLS_PRIVATE(p);// Message
     CRYPTO->RSA_SADDR[1] = (uint32_t)ctx->MBEDTLS_PRIVATE(N).MBEDTLS_PRIVATE(p);
     CRYPTO->RSA_SADDR[2] = (uint32_t)ed->MBEDTLS_PRIVATE(p);   // Public key or private key
-    //CRYPTO->RSA_SADDR[3] = (uint32_t)ctx->MBEDTLS_PRIVATE(P).MBEDTLS_PRIVATE(p);
-    //CRYPTO->RSA_SADDR[4] = (uint32_t)ctx->MBEDTLS_PRIVATE(Q).MBEDTLS_PRIVATE(p);
-
-    //CRYPTO->RSA_MADDR[0] = (uint32_t)ctx->CP.MBEDTLS_PRIVATE(p);
-    //CRYPTO->RSA_MADDR[1] = (uint32_t)ctx->CQ.MBEDTLS_PRIVATE(p);
-    //CRYPTO->RSA_MADDR[2] = (uint32_t)ctx->MBEDTLS_PRIVATE(DP).MBEDTLS_PRIVATE(p);
-    //CRYPTO->RSA_MADDR[3] = (uint32_t)ctx->MBEDTLS_PRIVATE(DQ).MBEDTLS_PRIVATE(p);
-    //CRYPTO->RSA_MADDR[4] = (uint32_t)ctx->MBEDTLS_PRIVATE(RP).MBEDTLS_PRIVATE(p);
-    //CRYPTO->RSA_MADDR[5] = (uint32_t)ctx->MBEDTLS_PRIVATE(RQ).MBEDTLS_PRIVATE(p);
 
     /* Initial memory space for RSA */
-    //CRYPTO->RSA_MADDR[6] = (uint32_t)ctx->rsa__e;
     CRYPTO->RSA_DADDR = (uint32_t)ctx->rsa_buf;
-
-    //mbedtls_mpi_lset(&ctx->M, 0);
-    //mbedtls_mpi_lset(&ctx->CP, 0);
-    //mbedtls_mpi_lset(&ctx->CQ, 0);
-    //memset(ctx->rsa__e, 0, 512 + 16);
-    //memset(ctx->rsa_buf, 0, 512);
 
 }
 
 void memcpy_be(void *dest, void *src, uint32_t size)
 {
     uint32_t i;
-    uint8_t *pu8Dest, * pu8Src;
+    uint8_t *pu8Dest, *pu8Src;
 
     pu8Dest = dest;
     pu8Src = src;
@@ -873,15 +854,20 @@ int mbedtls_rsa_public(mbedtls_rsa_context *ctx,
 
     int err;
 
+
+
     printf("mbedtls_rsa_public \n");
 
     if ((ctx->MBEDTLS_PRIVATE(len) != 128) && (ctx->MBEDTLS_PRIVATE(len) != 256) && (ctx->MBEDTLS_PRIVATE(len) != 384) && (ctx->MBEDTLS_PRIVATE(len) != 512))
         return MBEDTLS_ERR_RSA_BAD_INPUT_DATA;
 
     printf("Reset Crypto \n");
+
     /* Reset Crypto */
+    SYS_UnlockReg();
     SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
     SYS->CRYPTORST = 0;
+    SYS_LockReg();
 
     CRYPTO->RSA_CTL = RSA_MODE_NORMAL | ((ctx->MBEDTLS_PRIVATE(len) / 128 - 1) << CRYPTO_RSA_CTL_KEYLENG_Pos);
     printf("mbedtls_mpi_init \n");
@@ -892,14 +878,18 @@ int mbedtls_rsa_public(mbedtls_rsa_context *ctx,
     mbedtls_mpi_read_binary(&ctx->M, input, ctx->MBEDTLS_PRIVATE(len));
     printf("rsa_dma_buf_init \n");
     rsa_dma_buf_init(ctx, &ctx->MBEDTLS_PRIVATE(E));
-    printf("RSA_Run \n");
+    printf("RSA_Run, public \n");
     err = RSA_Run();
 
     if (err < 0)
     {
+        printf("RSA_Run, public err\n");
         return MBEDTLS_ERR_RSA_PUBLIC_FAILED;
     }
 
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(&ctx->rsa_buf, ctx->MBEDTLS_PRIVATE(len));
+#endif
     mbedtls_mpi_free(&ctx->M);
     //mbedtls_mpi_free(&ctx->CP);
     //mbedtls_mpi_free(&ctx->CQ);
@@ -938,8 +928,10 @@ int mbedtls_rsa_private(mbedtls_rsa_context *ctx,
 
 
     /* Reset Crypto */
+    SYS_UnlockReg();
     SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
     SYS->CRYPTORST = 0;
+    SYS_LockReg();
 
     CRYPTO->RSA_CTL = RSA_MODE_NORMAL | ((ctx->MBEDTLS_PRIVATE(len) / 128 - 1) << CRYPTO_RSA_CTL_KEYLENG_Pos);
 
@@ -948,16 +940,19 @@ int mbedtls_rsa_private(mbedtls_rsa_context *ctx,
     //mbedtls_mpi_init(&ctx->CQ);
 
     mbedtls_mpi_read_binary(&ctx->M, input, ctx->MBEDTLS_PRIVATE(len));
-
     rsa_dma_buf_init(ctx, &ctx->MBEDTLS_PRIVATE(D));
-    printf("RSA_Run \n");
+    printf("RSA_Run, private \n");
     err = RSA_Run();
 
     if (err)
     {
+        printf("RSA_Run, private err\n");
         return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
     }
 
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(&ctx->rsa_buf, ctx->MBEDTLS_PRIVATE(len));
+#endif
     mbedtls_mpi_free(&ctx->M);
     //mbedtls_mpi_free(&ctx->CP);
     //mbedtls_mpi_free(&ctx->CQ);

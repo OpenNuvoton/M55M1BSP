@@ -105,6 +105,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/VerifyNuBL3x.c</locationURI>
 		</link>
 		<link>
+			<name>User/active_sc.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/active_sc.c</locationURI>
+		</link>
+		<link>
 			<name>User/main.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/main.c</locationURI>
@@ -113,6 +118,11 @@
 			<name>User/partition_M55M1.h</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/partition_M55M1.h</locationURI>
+		</link>
+		<link>
+			<name>User/pmc100_mem_config.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/pmc100/pmc100_mem_config.c</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

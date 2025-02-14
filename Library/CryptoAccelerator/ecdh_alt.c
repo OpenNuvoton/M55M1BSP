@@ -175,8 +175,10 @@ static int32_t ECC_GenPubKey(mbedtls_ecp_group *grp, mbedtls_mpi *d, mbedtls_ecp
     int32_t len;
 
     /* Reset Crypto */
+    SYS_UnlockReg();
     SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
     SYS->CRYPTORST = 0;
+    SYS_LockReg();
 
     crpt = CRYPTO;
 
@@ -292,9 +294,12 @@ int32_t  ECC_ComputeShared(mbedtls_ecp_group *grp, mbedtls_mpi *z, const mbedtls
     int32_t len;
     int32_t ret;
 
+
     /* Reset Crypto */
+    SYS_UnlockReg();
     SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
     SYS->CRYPTORST = 0;
+    SYS_LockReg();
 
     crpt = CRYPTO;
 

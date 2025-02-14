@@ -27,8 +27,8 @@ void SYS_Init(void)
 #ifdef __LDROM__
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
 #else
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 #endif
 
     /* Update System Core Clock */
@@ -88,9 +88,7 @@ int main(void)
     printf("[1] Boot from 0x1C0000\n");
     printf("[2] Boot from 0x220000\n");
     printf("[3] Boot from 0x280000\n");
-#if defined (__ARMCC_VERSION) || defined (__ICCARM__)
     printf("[4] Boot from 0xF100000\n");
-#endif
     printf("[Others] Boot from 0x100000\n");
     u8Char = getchar();
     printf("Select %c\n", u8Char);
@@ -112,12 +110,10 @@ int main(void)
         case '3':
             FMC_SetVectorPageAddr(0x280000);
             break;
-#if defined (__ARMCC_VERSION) || defined (__ICCARM__)
 
         case '4':
             FMC_SetVectorPageAddr(0xF100000);
             break;
-#endif
 
         default:
             FMC_SetVectorPageAddr(0x100000);

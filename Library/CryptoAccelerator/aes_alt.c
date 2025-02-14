@@ -51,9 +51,17 @@
 #define AES_BLOCK_SIZE  (16)
 
 
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    uint8_t s_u8in[DCACHE_ALIGN_LINE_SIZE(AES_BLOCK_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t s_u8out[DCACHE_ALIGN_LINE_SIZE(AES_BLOCK_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    // Standard buffer alignment when DCache is disabled
+    __attribute__((aligned(4))) static uint8_t s_u8in[AES_BLOCK_SIZE];
+    __attribute__((aligned(4))) static uint8_t s_u8out[AES_BLOCK_SIZE];
+#endif
 
-__ALIGNED(4) static uint8_t s_u8in[AES_BLOCK_SIZE];
-__ALIGNED(4) static uint8_t s_u8out[AES_BLOCK_SIZE];
+
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
 __STATIC_INLINE uint32_t nu_get32_le(const uint8_t *pos)
@@ -164,8 +172,6 @@ int mbedtls_aes_setkey_dec(mbedtls_aes_context *ctx, const unsigned char *key,
 {
     int ret;
 
-    printf("  aes_alt AES setkey\n");
-
     AES_VALIDATE_RET(ctx != NULL);
     AES_VALIDATE_RET(key != NULL);
 
@@ -199,6 +205,9 @@ static int __nvt_aes_crypt(mbedtls_aes_context *ctx,
     CRYPTO->AES_CTL = CRYPTO_AES_CTL_STOP_Msk;
 
     memcpy(s_u8in, input, dataSize);
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(s_u8in, sizeof(s_u8in));
+#endif
 
     /* Enable AES interrupt */
     AES_ENABLE_INT(CRYPTO);
@@ -246,6 +255,9 @@ static int __nvt_aes_crypt(mbedtls_aes_context *ctx,
             return -1;
     }
 
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(s_u8out, sizeof(s_u8out));
+#endif
     memcpy(output, s_u8out, dataSize);
 
     return 0;
@@ -324,7 +336,6 @@ int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
 
     if (length & (AES_BLOCK_SIZE - 1))
         return (MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH);
-
 
     ctx->opMode = AES_MODE_CBC << CRYPTO_AES_CTL_OPMODE_Pos;
     /* Fetch IV byte data in big-endian */
@@ -444,6 +455,10 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
     if (length <= AES_BLOCK_SIZE)
     {
         memcpy(s_u8in, input, length);
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanDCache_by_Addr(s_u8in, sizeof(s_u8in));
+#endif
+
         CRYPTO->AES_CNT = length;
 
         /* Clear flag */
@@ -457,6 +472,9 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
                 return -1;
         }
 
+#if (NVT_DCACHE_ON == 1)
+        SCB_InvalidateDCache_by_Addr(s_u8out, sizeof(s_u8out));
+#endif
         memcpy(output, s_u8out, length);
 
     }
@@ -470,6 +488,9 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
             if (length > AES_BLOCK_SIZE)
             {
                 memcpy(s_u8in, input, len);
+#if (NVT_DCACHE_ON == 1)
+                SCB_CleanDCache_by_Addr(s_u8in, sizeof(s_u8in));
+#endif
 
                 if (first)
                 {
@@ -488,6 +509,9 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
                 /* Last block */
                 len = length;
                 memcpy(s_u8in, input, len);
+#if (NVT_DCACHE_ON == 1)
+                SCB_CleanDCache_by_Addr(s_u8in, sizeof(s_u8in));
+#endif
                 CRYPTO->AES_CNT = len;
                 CRYPTO->AES_CTL = u32Ctl | CRYPTO_AES_CTL_DMACSCAD_Msk | CRYPTO_AES_CTL_DMALAST_Msk |
                                   CRYPTO_AES_CTL_START_Msk;
@@ -500,6 +524,9 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
                     return -1;
             }
 
+#if (NVT_DCACHE_ON == 1)
+            SCB_InvalidateDCache_by_Addr(s_u8out, sizeof(s_u8out));
+#endif
             memcpy(output, s_u8out, len);
             output += len;
             input += len;
@@ -670,6 +697,11 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
     if (length <= AES_BLOCK_SIZE)
     {
         memcpy(s_u8in, input, length);
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanDCache_by_Addr(s_u8in, sizeof(s_u8in));
+        CRYPTO->AES_SADDR = (uint32_t)s_u8in;
+        CRYPTO->AES_DADDR = (uint32_t)s_u8out;
+#endif
         CRYPTO->AES_CNT = length;
 
         /* Clear flag */
@@ -683,6 +715,9 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
                 return -1;
         }
 
+#if (NVT_DCACHE_ON == 1)
+        SCB_InvalidateDCache_by_Addr(s_u8out, sizeof(s_u8out));
+#endif
         memcpy(output, s_u8out, length);
 
     }
@@ -696,6 +731,11 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
             if (length > AES_BLOCK_SIZE)
             {
                 memcpy(s_u8in, input, len);
+#if (NVT_DCACHE_ON == 1)
+                SCB_CleanDCache_by_Addr(s_u8in, sizeof(s_u8in));
+                CRYPTO->AES_SADDR = (uint32_t)s_u8in;
+                CRYPTO->AES_DADDR = (uint32_t)s_u8out;
+#endif
 
                 if (first)
                 {
@@ -714,6 +754,11 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
                 /* Last block */
                 len = length;
                 memcpy(s_u8in, input, len);
+#if (NVT_DCACHE_ON == 1)
+                SCB_CleanDCache_by_Addr(s_u8in, sizeof(s_u8in));
+                CRYPTO->AES_SADDR = (uint32_t)s_u8in;
+                CRYPTO->AES_DADDR = (uint32_t)s_u8out;
+#endif
                 CRYPTO->AES_CNT = len;
                 CRYPTO->AES_CTL = u32Ctl | CRYPTO_AES_CTL_DMACSCAD_Msk | CRYPTO_AES_CTL_DMALAST_Msk |
                                   CRYPTO_AES_CTL_START_Msk;
@@ -726,6 +771,9 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
                     return -1;
             }
 
+#if (NVT_DCACHE_ON == 1)
+            SCB_InvalidateDCache_by_Addr(s_u8out, sizeof(s_u8out));
+#endif
             memcpy(output, s_u8out, len);
             output += len;
             input += len;

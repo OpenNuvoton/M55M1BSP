@@ -308,8 +308,8 @@ enum pd_rx_errors
 #define PD_T_SNK_PPS_REQUEST       (5000*MSEC)              /* Max 10s */
 #define PD_T_SRC_PPS_TIMEROUT      (12500*MSEC)             /* 12s ~ 15s */
 
-#if (CONFIG_TC8260_FRS == 1)
-    #define PD_T_FRS_START_DELAY            (500*MSEC)  /* TC8260 workaround solution for FRS detection */
+#if (CONFIG_M55M1_FRS == 1)
+    #define PD_T_FRS_START_DELAY            (500*MSEC)  /* M55 workaround solution for FRS detection */
 #endif
 
 

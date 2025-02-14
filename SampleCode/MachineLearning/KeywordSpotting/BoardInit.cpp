@@ -33,8 +33,8 @@ static void SYS_Init(void)
     /* Waiting for HXT clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -61,8 +61,10 @@ static void SYS_Init(void)
     /* Select UART6 module clock source as HIRC and UART6 module clock divider as 1 */
     SetDebugUartCLK();
 
-    // Select DMIC CLK source from PLL.
-    CLK_SetModuleClock(DMIC0_MODULE, CLK_DMICSEL_DMIC0SEL_HXT, MODULE_NoMsk);
+    // DMIC_APLL1_FREQ_196608KHZ for DMIC 8000/16000/48000 Hz sample-rate with 64/128/256 down-sample
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, DMIC_APLL1_FREQ_196608KHZ, CLK_APLL1_SELECT);
+    // Select DMIC CLK source from APLL1_DIV2.
+    CLK_SetModuleClock(DMIC0_MODULE, CLK_DMICSEL_DMIC0SEL_APLL1_DIV2, MODULE_NoMsk);
     // Enable DMIC clock.
     CLK_EnableModuleClock(DMIC0_MODULE);
     // DPWM IPReset.
@@ -83,8 +85,6 @@ static void SYS_Init(void)
     /* Set multi-function pins for DMIC */
     SET_DMIC0_CLK_PB4();
     SET_DMIC0_DAT_PB5();
-    SYS->GPB_MFOS = BIT5;
-
 }
 
 /**

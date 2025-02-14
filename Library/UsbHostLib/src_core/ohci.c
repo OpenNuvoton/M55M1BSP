@@ -28,10 +28,21 @@
 #define PORT_CNT    (_ohci->HcRhDescriptorA & 0xf)
 
 #ifdef __ICCARM__
-    #pragma data_alignment = 256
-    static HCCA_T _hcca;
+    #if (NVT_DCACHE_ON == 1)
+        /* USB Host hcca area are placed in a non-cacheable region */
+        #pragma data_alignment = 256
+        NVT_NONCACHEABLE static HCCA_T _hcca;
+    #else
+        #pragma data_alignment = 256
+        static HCCA_T _hcca;
+    #endif
 #else
-    static HCCA_T _hcca __attribute__((aligned(256)));
+    #if (NVT_DCACHE_ON == 1)
+        /* USB Host hcca area are placed in a non-cacheable region */
+        NVT_NONCACHEABLE static HCCA_T _hcca __attribute__((aligned(256)));
+    #else
+        static HCCA_T _hcca __attribute__((aligned(256)));
+    #endif
 #endif
 
 static ED_T   *_Ied[6];
@@ -604,6 +615,9 @@ static int ohci_bulk_xfer(UTR_T *utr)
         _ohci->HcBulkHeadED = (uint32_t)ed;
     }
 
+    __ISB();
+    __DSB();
+
     ENABLE_OHCI_IRQ();
     _ohci->HcControl |= USBH_HcControl_BLE_Msk;              /* enable bulk list          */
     _ohci->HcCommandStatus = USBH_HcCommandStatus_BLF_Msk;   /* start bulk list           */
@@ -929,6 +943,13 @@ static int ohci_rh_polling(void)
         if (!(port_mask & (0x1 << i)))
             continue;
 
+#if (_ohci_port == 1UL) && defined (ENABLE_EHCI)
+
+        //2024/3/22
+        if ((_ehci->UPSCR[0] & HSUSBH_UPSCR_SUSPEND_Msk) == (HSUSBH_UPSCR_SUSPEND_Msk))
+            continue;
+
+#endif
         /* clear unwanted port change status */
         _ohci->HcRhPortStatus[0] = USBH_HcRhPortStatus_OCIC_Msk | USBH_HcRhPortStatus_PRSC_Msk |
                                    USBH_HcRhPortStatus_PSSC_Msk | USBH_HcRhPortStatus_PESC_Msk;

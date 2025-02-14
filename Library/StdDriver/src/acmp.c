@@ -33,7 +33,7 @@ int32_t g_ACMP_i32ErrCode = 0;  /*!< ACMP global error code */
   *                  - \ref ACMP_CTL_NEGSEL_CRV
   *                  - \ref ACMP_CTL_NEGSEL_VBG
   *                  - \ref ACMP_CTL_NEGSEL_DAC0
-  *                  - \ref ACMP_CTL_NEGSEL_DAC1    (DAC1 is not support in TESTCHIP_ONLY)
+  *                  - \ref ACMP_CTL_NEGSEL_DAC1
   * @param[in]  u32HysSel The hysteresis function option. Including:
   *                  - \ref ACMP_CTL_HYSTERESIS_40MV
   *                  - \ref ACMP_CTL_HYSTERESIS_20MV

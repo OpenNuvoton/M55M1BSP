@@ -28,6 +28,7 @@ volatile uint32_t g_u32IntSequenceIndex;
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void EADC00_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = 1000;
     g_u32EadcInt0Flag = 1;
     /* Clear the A/D ADINT0 interrupt flag */
     EADC_CLR_INT_FLAG(EADC0, EADC_STATUS2_ADIF0_Msk);
@@ -36,11 +37,17 @@ NVT_ITCM void EADC00_IRQHandler(void)
     g_u32IntSequence[0] = g_u32IntSequenceIndex++;
 
     /*Confirm that the Flag has been cleared. */
-    M32(&EADC0->STATUS2);
+    while (EADC_GET_INT_FLAG(EADC0, EADC_STATUS2_ADIF0_Msk) != 0)
+    {
+        if ((--u32TimeOutCnt) == 0)
+            break;
+    }
+
 }
 
 NVT_ITCM void EADC01_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = 1000;
     g_u32EadcInt1Flag = 1;
     /* Clear the A/D ADINT1 interrupt flag */
     EADC_CLR_INT_FLAG(EADC0, EADC_STATUS2_ADIF1_Msk);
@@ -49,11 +56,16 @@ NVT_ITCM void EADC01_IRQHandler(void)
     g_u32IntSequence[1] = g_u32IntSequenceIndex++;
 
     /*Confirm that the Flag has been cleared. */
-    M32(&EADC0->STATUS2);
+    while (EADC_GET_INT_FLAG(EADC0, EADC_STATUS2_ADIF1_Msk) != 0)
+    {
+        if ((--u32TimeOutCnt) == 0)
+            break;
+    }
 }
 
 NVT_ITCM void EADC02_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = 1000;
     g_u32EadcInt2Flag = 1;
     /* Clear the A/D ADINT2 interrupt flag */
     EADC_CLR_INT_FLAG(EADC0, EADC_STATUS2_ADIF2_Msk);
@@ -62,11 +74,16 @@ NVT_ITCM void EADC02_IRQHandler(void)
     g_u32IntSequence[2] = g_u32IntSequenceIndex++;
 
     /*Confirm that the Flag has been cleared. */
-    M32(&EADC0->STATUS2);
+    while (EADC_GET_INT_FLAG(EADC0, EADC_STATUS2_ADIF2_Msk) != 0)
+    {
+        if ((--u32TimeOutCnt) == 0)
+            break;
+    }
 }
 
 NVT_ITCM void EADC03_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = 1000;
     g_u32EadcInt3Flag = 1;
     /* Clear the A/D ADINT3 interrupt flag */
     EADC_CLR_INT_FLAG(EADC0, EADC_STATUS2_ADIF3_Msk);
@@ -75,7 +92,11 @@ NVT_ITCM void EADC03_IRQHandler(void)
     g_u32IntSequence[3] = g_u32IntSequenceIndex++;
 
     /*Confirm that the Flag has been cleared. */
-    M32(&EADC0->STATUS2);
+    while (EADC_GET_INT_FLAG(EADC0, EADC_STATUS2_ADIF3_Msk) != 0)
+    {
+        if ((--u32TimeOutCnt) == 0)
+            break;
+    }
 }
 
 void SYS_Init(void)
@@ -84,37 +105,24 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
+    /* Enable APLL1 200MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_200MHZ, CLK_APLL1_SELECT);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
+    /* Update System Core Clock */
+    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    SystemCoreClockUpdate();
 
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
-
-    /* Workaround(Test Chip Only)  */
-    /* If the ADC clock is divided, the conversion result value will deviate, so only the PCLK0 clock can be divided. */
-    /* PCLK0 clock divider 15 */
-    CLK_SET_PCLK0DIV(15);
     /* Enable EADC peripheral clock */
-    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_PCLK0, CLK_EADCDIV_EADC0DIV(1));
+    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_APLL1_DIV2, CLK_EADCDIV_EADC0DIV(10));
 
     /* Enable EADC module clock */
     CLK_EnableModuleClock(EADC0_MODULE);
 
     /* Enable GPIOB module clock */
     CLK_EnableModuleClock(GPIOB_MODULE);
-
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
-    SystemCoreClockUpdate();
 
     /* Debug UART clock setting*/
     SetDebugUartCLK();

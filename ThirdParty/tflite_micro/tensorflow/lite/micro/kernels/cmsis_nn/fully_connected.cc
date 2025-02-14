@@ -1,4 +1,4 @@
-/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2024 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,16 +15,19 @@ limitations under the License.
 
 #include "tensorflow/lite/micro/kernels/fully_connected.h"
 
-#include "CMSIS/NN/Include/arm_nnfunctions.h"
+#include "Include/arm_nnfunctions.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/common.h"
+#include "tensorflow/lite/kernels/internal/portable_tensor_utils.h"
 #include "tensorflow/lite/kernels/internal/quantization_util.h"
 #include "tensorflow/lite/kernels/internal/reference/fully_connected.h"
 #include "tensorflow/lite/kernels/internal/reference/integer_ops/fully_connected.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
+#include "tensorflow/lite/micro/micro_arena_constants.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
@@ -39,12 +42,13 @@ struct OpData {
 
   // Index to buffer for optimizations if applicable.
   int buffer_idx;
-};
 
-// TODO(b/169801227): This global struct is needed for the linker to drop unused
-// code (for example, by using Register_FULLY_CONNECTED_INT8 instead of
-// Register_FULLY_CONNECTED).
-TfLiteRegistration fully_connected_registration;
+  int32_t* kernel_sums;
+
+  int32_t batches;
+  int32_t accum_depth;
+  int32_t output_depth;
+};
 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
@@ -73,8 +77,20 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE(context, output != nullptr);
 
   TF_LITE_ENSURE_TYPES_EQ(context, input->type, output->type);
-  TF_LITE_ENSURE_MSG(context, input->type == filter->type,
-                     "Hybrid models are not supported on TFLite Micro.");
+
+  const RuntimeShape filter_shape = GetTensorShape(filter);
+  const RuntimeShape output_shape = GetTensorShape(output);
+  const int filter_dim_count = filter_shape.DimensionsCount();
+  const int output_dim_count = output_shape.DimensionsCount();
+  cmsis_nn_dims filter_dims;
+  filter_dims.n = filter_shape.Dims(filter_dim_count - 1);
+  filter_dims.h = 1;
+  filter_dims.w = 1;
+  filter_dims.c = output_shape.Dims(output_dim_count - 1);
+
+  data->accum_depth = filter_shape.Dims(filter_dim_count - 1);
+  data->batches = FlatSizeSkipDim(output_shape, output_dim_count - 1);
+  data->output_depth = output_shape.Dims(output_dim_count - 1);
 
   // Set buffer index to a reset value
   data->buffer_idx = -1;
@@ -82,51 +98,55 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
       context, params->activation, input->type, input, filter, bias, output,
       &(data->reference_op_data)));
 
-  if (input->type == kTfLiteInt8) {
+  int32_t buf_size = 0;
+
+  if (input->type == kTfLiteInt16) {
+    TF_LITE_ENSURE_EQ(context, input->params.zero_point, 0);
+    TF_LITE_ENSURE_EQ(context, output->params.zero_point, 0);
+    buf_size = arm_fully_connected_s16_get_buffer_size(&filter_dims);
+  } else if (input->type == kTfLiteInt8 && filter->type != kTfLiteInt4) {
     const RuntimeShape input_shape = GetTensorShape(input);
-    const RuntimeShape filter_shape = GetTensorShape(filter);
-    const RuntimeShape output_shape = GetTensorShape(output);
-    const int filter_dim_count = filter_shape.DimensionsCount();
-    const int output_dim_count = output_shape.DimensionsCount();
-    const int accum_depth = filter_shape.Dims(filter_dim_count - 1);
+
     TFLITE_DCHECK_GE(output_dim_count, 2);
     TFLITE_DCHECK_LE(output_dim_count, 4);
 
-    int32_t buf_size = 0;
-    if (output_dim_count > 2 && accum_depth % 4 == 0) {
-      const int batches = FlatSizeSkipDim(output_shape, output_dim_count - 1);
-      const int output_depth = output_shape.Dims(output_dim_count - 1);
-
+    if (output_dim_count > 2 && data->accum_depth % 4 == 0) {
       data->per_channel_output_multiplier =
           static_cast<int32_t*>(context->AllocatePersistentBuffer(
-              context, output_depth * sizeof(int32_t)));
+              context, data->output_depth * sizeof(int32_t)));
       data->per_channel_output_shift =
           static_cast<int32_t*>(context->AllocatePersistentBuffer(
-              context, output_depth * sizeof(int32_t)));
+              context, data->output_depth * sizeof(int32_t)));
 
       cmsis_nn_dims input_dims;
-      input_dims.n = batches;
+      input_dims.n = data->batches;
       input_dims.h = 1;
       input_dims.w = 1;
-      input_dims.c = accum_depth;
+      input_dims.c = data->accum_depth;
 
       buf_size = arm_convolve_1x1_s8_fast_get_buffer_size(&input_dims);
     } else {
-      cmsis_nn_dims filter_dims;
-      filter_dims.n = filter_shape.Dims(filter_dim_count - 1);
-      filter_dims.h = 1;
-      filter_dims.w = 1;
-      filter_dims.c = output_shape.Dims(output_dim_count - 1);
-
       buf_size = arm_fully_connected_s8_get_buffer_size(&filter_dims);
-    }
 
-    if (buf_size > 0) {
-      TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
-          context, buf_size, &data->buffer_idx));
-    } else {
-      data->buffer_idx = -1;
+      int8_t* filter_data = GetTensorData<int8_t>(filter);
+      data->kernel_sums = nullptr;
+
+      if (buf_size > 0 && filter_data != nullptr) {
+        data->kernel_sums = static_cast<int32_t*>(
+            context->AllocatePersistentBuffer(context, buf_size));
+
+        arm_vector_sum_s8(data->kernel_sums, filter_dims.n, data->output_depth,
+                          filter_data, 1, nullptr);
+
+        // Do not request a scratch buffer since using persistent memory
+        buf_size = 0;
+      }
     }
+  }
+
+  if (buf_size > 0) {
+    TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
+        context, buf_size, &data->buffer_idx));
   }
 
   micro_context->DeallocateTempTfLiteTensor(output);
@@ -139,6 +159,86 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
+void PopulateCommonParams(TfLiteContext* context,
+                          cmsis_nn_per_tensor_quant_params* const quant_params,
+                          cmsis_nn_dims* const input_dims,
+                          cmsis_nn_dims* const filter_dims,
+                          cmsis_nn_dims* const bias_dims,
+                          cmsis_nn_dims* const output_dims,
+                          cmsis_nn_context* const ctx, const OpData& data) {
+  quant_params->multiplier = data.reference_op_data.output_multiplier;
+  quant_params->shift = data.reference_op_data.output_shift;
+
+  input_dims->n = data.batches;
+  input_dims->h = 1;
+  input_dims->w = 1;
+  input_dims->c = data.accum_depth;
+
+  filter_dims->n = data.accum_depth;
+  filter_dims->h = 1;
+  filter_dims->w = 1;
+  filter_dims->c = data.output_depth;
+
+  bias_dims->n = 1;
+  bias_dims->h = 1;
+  bias_dims->w = 1;
+  bias_dims->c = data.output_depth;
+
+  output_dims->n = data.batches;
+  output_dims->h = 1;
+  output_dims->w = 1;
+  output_dims->c = data.output_depth;
+
+  ctx->buf = nullptr;
+  ctx->size = 0;
+  if (data.buffer_idx > -1) {
+    ctx->buf = context->GetScratchBuffer(context, data.buffer_idx);
+  }
+}
+
+TfLiteStatus EvalQuantizedInt4(TfLiteContext* context, TfLiteNode* node,
+                               const OpData& data,
+                               const TfLiteEvalTensor* input,
+                               const TfLiteEvalTensor* filter,
+                               const TfLiteEvalTensor* bias,
+                               TfLiteEvalTensor* output) {
+  const RuntimeShape output_shape = tflite::micro::GetTensorShape(output);
+  const int output_dim_count = output_shape.DimensionsCount();
+  TFLITE_DCHECK_GE(output_dim_count, 2);
+  TFLITE_DCHECK_LE(output_dim_count, 4);
+
+  cmsis_nn_per_tensor_quant_params quant_params;
+  cmsis_nn_dims input_dims;
+  cmsis_nn_dims filter_dims;
+  cmsis_nn_dims bias_dims;
+  cmsis_nn_dims output_dims;
+  cmsis_nn_context ctx;
+
+  PopulateCommonParams(context, &quant_params, &input_dims, &filter_dims,
+                       &bias_dims, &output_dims, &ctx, data);
+
+  const int32_t* bias_data =
+      tflite::micro::GetOptionalTensorData<int32_t>(bias);
+
+  cmsis_nn_fc_params fc_params;
+  fc_params.input_offset = -data.reference_op_data.input_zero_point;
+  fc_params.output_offset = data.reference_op_data.output_zero_point;
+  fc_params.filter_offset = 0;
+  fc_params.activation.min = data.reference_op_data.output_activation_min;
+  fc_params.activation.max = data.reference_op_data.output_activation_max;
+
+  TF_LITE_ENSURE_EQ(
+      context,
+      arm_fully_connected_s4(
+          &ctx, &fc_params, &quant_params, &input_dims,
+          tflite::micro::GetTensorData<int8_t>(input), &filter_dims,
+          tflite::micro::GetTensorData<int8_t>(filter), &bias_dims, bias_data,
+          &output_dims, tflite::micro::GetTensorData<int8_t>(output)),
+      ARM_CMSIS_NN_SUCCESS);
+
+  return kTfLiteOk;
+}
+
 TfLiteStatus EvalQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
                                const OpData& data,
                                const TfLiteEvalTensor* input,
@@ -146,56 +246,24 @@ TfLiteStatus EvalQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
                                const TfLiteEvalTensor* bias,
                                TfLiteEvalTensor* output) {
   const RuntimeShape output_shape = tflite::micro::GetTensorShape(output);
-  const RuntimeShape input_shape = tflite::micro::GetTensorShape(input);
   const int output_dim_count = output_shape.DimensionsCount();
   TFLITE_DCHECK_GE(output_dim_count, 2);
   TFLITE_DCHECK_LE(output_dim_count, 4);
-  const int output_depth = output_shape.Dims(output_dim_count - 1);
-  const RuntimeShape filter_shape = tflite::micro::GetTensorShape(filter);
-  const int filter_dim_count = filter_shape.DimensionsCount();
-  const int accum_depth = filter_shape.Dims(filter_dim_count - 1);
-  const int batches = FlatSizeSkipDim(output_shape, output_dim_count - 1);
 
   cmsis_nn_per_tensor_quant_params quant_params;
-  quant_params.multiplier = data.reference_op_data.output_multiplier;
-  quant_params.shift = data.reference_op_data.output_shift;
-
   cmsis_nn_dims input_dims;
-  input_dims.n = batches;
-  input_dims.h = 1;
-  input_dims.w = 1;
-  input_dims.c = accum_depth;
-
   cmsis_nn_dims filter_dims;
-  filter_dims.n = accum_depth;
-  filter_dims.h = 1;
-  filter_dims.w = 1;
-  filter_dims.c = output_depth;
-
   cmsis_nn_dims bias_dims;
-  bias_dims.n = 1;
-  bias_dims.h = 1;
-  bias_dims.w = 1;
-  bias_dims.c = output_depth;
-
   cmsis_nn_dims output_dims;
-  output_dims.n = batches;
-  output_dims.h = 1;
-  output_dims.w = 1;
-  output_dims.c = output_depth;
-
   cmsis_nn_context ctx;
-  ctx.buf = nullptr;
-  ctx.size = 0;
 
-  if (data.buffer_idx > -1) {
-    ctx.buf = context->GetScratchBuffer(context, data.buffer_idx);
-  }
+  PopulateCommonParams(context, &quant_params, &input_dims, &filter_dims,
+                       &bias_dims, &output_dims, &ctx, data);
 
   const int32_t* bias_data =
-      nullptr != bias ? tflite::micro::GetTensorData<int32_t>(bias) : nullptr;
+      tflite::micro::GetOptionalTensorData<int32_t>(bias);
 
-  if (output_dim_count > 2 && accum_depth % 4 == 0) {
+  if (output_dim_count > 2 && data.accum_depth % 4 == 0) {
     cmsis_nn_conv_params conv_params;
     conv_params.dilation.h = 1;
     conv_params.dilation.w = 1;
@@ -214,7 +282,7 @@ TfLiteStatus EvalQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     per_channel_quant_params.shift =
         const_cast<int32_t*>(data.per_channel_output_shift);
 
-    for (int i = 0; i < output_depth; i++) {
+    for (int i = 0; i < data.output_depth; i++) {
       per_channel_quant_params.multiplier[i] = quant_params.multiplier;
       per_channel_quant_params.shift[i] = quant_params.shift;
     }
@@ -226,14 +294,23 @@ TfLiteStatus EvalQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
             tflite::micro::GetTensorData<int8_t>(input), &filter_dims,
             tflite::micro::GetTensorData<int8_t>(filter), &bias_dims, bias_data,
             &output_dims, tflite::micro::GetTensorData<int8_t>(output)),
-        ARM_MATH_SUCCESS);
+        ARM_CMSIS_NN_SUCCESS);
   } else {
     cmsis_nn_fc_params fc_params;
     fc_params.input_offset = -data.reference_op_data.input_zero_point;
+    fc_params.filter_offset = -data.reference_op_data.filter_zero_point;
     fc_params.output_offset = data.reference_op_data.output_zero_point;
-    fc_params.filter_offset = 0;
     fc_params.activation.min = data.reference_op_data.output_activation_min;
     fc_params.activation.max = data.reference_op_data.output_activation_max;
+
+    if (data.kernel_sums != nullptr) {
+      ctx.buf = data.kernel_sums;
+    } else if (ctx.buf != nullptr) {
+      // If behaving like batch matmul we calculate kernel sums in eval.
+      arm_vector_sum_s8(
+          static_cast<int32_t*>(ctx.buf), filter_dims.n, data.output_depth,
+          tflite::micro::GetTensorData<int8_t>(filter), 1, nullptr);
+    }
 
     TF_LITE_ENSURE_EQ(
         context,
@@ -242,8 +319,46 @@ TfLiteStatus EvalQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
             tflite::micro::GetTensorData<int8_t>(input), &filter_dims,
             tflite::micro::GetTensorData<int8_t>(filter), &bias_dims, bias_data,
             &output_dims, tflite::micro::GetTensorData<int8_t>(output)),
-        ARM_MATH_SUCCESS);
+        ARM_CMSIS_NN_SUCCESS);
   }
+  return kTfLiteOk;
+}
+
+TfLiteStatus EvalQuantizedInt16(TfLiteContext* context, TfLiteNode* node,
+                                const OpData& data,
+                                const TfLiteEvalTensor* input,
+                                const TfLiteEvalTensor* filter,
+                                const TfLiteEvalTensor* bias,
+                                TfLiteEvalTensor* output) {
+  cmsis_nn_per_tensor_quant_params quant_params;
+  cmsis_nn_dims input_dims;
+  cmsis_nn_dims filter_dims;
+  cmsis_nn_dims bias_dims;
+  cmsis_nn_dims output_dims;
+  cmsis_nn_context ctx;
+
+  PopulateCommonParams(context, &quant_params, &input_dims, &filter_dims,
+                       &bias_dims, &output_dims, &ctx, data);
+
+  const int64_t* bias_data =
+      tflite::micro::GetOptionalTensorData<int64_t>(bias);
+
+  cmsis_nn_fc_params fc_params;
+  fc_params.input_offset = -data.reference_op_data.input_zero_point;
+  fc_params.output_offset = data.reference_op_data.output_zero_point;
+  fc_params.filter_offset = 0;
+  fc_params.activation.min = data.reference_op_data.output_activation_min;
+  fc_params.activation.max = data.reference_op_data.output_activation_max;
+
+  TF_LITE_ENSURE_EQ(
+      context,
+      arm_fully_connected_s16(
+          &ctx, &fc_params, &quant_params, &input_dims,
+          tflite::micro::GetTensorData<int16_t>(input), &filter_dims,
+          tflite::micro::GetTensorData<int8_t>(filter), &bias_dims, bias_data,
+          &output_dims, tflite::micro::GetTensorData<int16_t>(output)),
+      ARM_CMSIS_NN_SUCCESS);
+
   return kTfLiteOk;
 }
 
@@ -268,8 +383,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   switch (input->type) {
     case kTfLiteFloat32: {
       const float* bias_data =
-          nullptr != bias ? tflite::micro::GetTensorData<float>(bias) : nullptr;
-
+          tflite::micro::GetOptionalTensorData<float>(bias);
       tflite::reference_ops::FullyConnected(
           FullyConnectedParamsFloat(params->activation),
           tflite::micro::GetTensorShape(input),
@@ -282,16 +396,54 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       break;
     }
     case kTfLiteInt8: {
-      return EvalQuantizedInt8(context, node, data, input, filter, bias,
-                               output);
+      switch (filter->type) {
+        case kTfLiteInt4:
+          return EvalQuantizedInt4(context, node, data, input, filter, bias,
+                                   output);
+        case kTfLiteInt8:
+          return EvalQuantizedInt8(context, node, data, input, filter, bias,
+                                   output);
+        default:
+          MicroPrintf("Filter Type %s (%d) not supported.",
+                      TfLiteTypeGetName(filter->type), filter->type);
+          return kTfLiteError;
+      }
+      break;
+    }
+    case kTfLiteInt16: {
+      return EvalQuantizedInt16(context, node, data, input, filter, bias,
+                                output);
     }
     default: {
-      TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
-                         TfLiteTypeGetName(input->type), input->type);
+      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                  input->type);
       return kTfLiteError;
     }
   }
   return kTfLiteOk;
+}
+
+TfLiteStatus EvalInt4(TfLiteContext* context, TfLiteNode* node) {
+  const TfLiteEvalTensor* input =
+      tflite::micro::GetEvalInput(context, node, kFullyConnectedInputTensor);
+  const TfLiteEvalTensor* filter =
+      tflite::micro::GetEvalInput(context, node, kFullyConnectedWeightsTensor);
+  const TfLiteEvalTensor* bias =
+      tflite::micro::GetEvalInput(context, node, kFullyConnectedBiasTensor);
+  TfLiteEvalTensor* output =
+      tflite::micro::GetEvalOutput(context, node, kFullyConnectedOutputTensor);
+
+  TFLITE_DCHECK(node->user_data != nullptr);
+  const OpData& data = *(static_cast<const OpData*>(node->user_data));
+
+  // Checks in Prepare ensure input, output and filter types are all the same.
+  if (input->type != kTfLiteInt8 && filter->type != kTfLiteInt4) {
+    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                input->type);
+    return kTfLiteError;
+  }
+
+  return EvalQuantizedInt4(context, node, data, input, filter, bias, output);
 }
 
 // Note that the current function names are not ideal at all (this EvalInt8
@@ -315,38 +467,57 @@ TfLiteStatus EvalInt8(TfLiteContext* context, TfLiteNode* node) {
 
   // Checks in Prepare ensure input, output and filter types are all the same.
   if (input->type != kTfLiteInt8) {
-    TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
-                       TfLiteTypeGetName(input->type), input->type);
+    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                input->type);
     return kTfLiteError;
   }
 
   return EvalQuantizedInt8(context, node, data, input, filter, bias, output);
 }
 
-}  // namespace
+TfLiteStatus EvalInt16(TfLiteContext* context, TfLiteNode* node) {
+  const TfLiteEvalTensor* input =
+      tflite::micro::GetEvalInput(context, node, kFullyConnectedInputTensor);
+  const TfLiteEvalTensor* filter =
+      tflite::micro::GetEvalInput(context, node, kFullyConnectedWeightsTensor);
+  const TfLiteEvalTensor* bias =
+      tflite::micro::GetEvalInput(context, node, kFullyConnectedBiasTensor);
+  TfLiteEvalTensor* output =
+      tflite::micro::GetEvalOutput(context, node, kFullyConnectedOutputTensor);
 
-TfLiteRegistration Register_FULLY_CONNECTED() {
-  fully_connected_registration.init = Init;
-  fully_connected_registration.free = nullptr;
-  fully_connected_registration.prepare = Prepare;
-  fully_connected_registration.invoke = Eval;
-  fully_connected_registration.profiling_string = nullptr;
-  fully_connected_registration.builtin_code = 0;
-  fully_connected_registration.custom_name = nullptr;
-  fully_connected_registration.version = 0;
-  return fully_connected_registration;
+  TFLITE_DCHECK(node->user_data != nullptr);
+  const OpData& data = *(static_cast<const OpData*>(node->user_data));
+
+  // Checks in Prepare ensure input, output and filter types are all the same.
+  if (input->type != kTfLiteInt16) {
+    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                input->type);
+    return kTfLiteError;
+  }
+
+  return EvalQuantizedInt16(context, node, data, input, filter, bias, output);
 }
 
-TfLiteRegistration Register_FULLY_CONNECTED_INT8() {
-  fully_connected_registration.init = Init;
-  fully_connected_registration.free = nullptr;
-  fully_connected_registration.prepare = Prepare;
-  fully_connected_registration.invoke = EvalInt8;
-  fully_connected_registration.profiling_string = nullptr;
-  fully_connected_registration.builtin_code = 0;
-  fully_connected_registration.custom_name = nullptr;
-  fully_connected_registration.version = 0;
-  return fully_connected_registration;
+}  // namespace
+
+TFLMRegistration Register_FULLY_CONNECTED() {
+  return tflite::micro::RegisterOp(Init, Prepare, Eval);
+}
+
+TFLMRegistration Register_FULLY_CONNECTED_INT4() {
+  return tflite::micro::RegisterOp(Init, Prepare, EvalInt4);
+}
+
+TFLMRegistration Register_FULLY_CONNECTED_INT8() {
+  return tflite::micro::RegisterOp(Init, Prepare, EvalInt8);
+}
+
+TFLMRegistration Register_FULLY_CONNECTED_INT16() {
+  return tflite::micro::RegisterOp(Init, Prepare, EvalInt16);
+}
+
+TFLMInferenceRegistration RegisterInference_FULLY_CONNECTED() {
+  return tflite::micro::RegisterOp(Eval);
 }
 
 }  // namespace tflite

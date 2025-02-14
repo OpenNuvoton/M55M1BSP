@@ -52,9 +52,17 @@ size_t          Remaining;
 size_t          ReturnSize;
 
 // I2S PCM buffer x2
-signed int aPCMBuffer[2][PCM_BUFFER_SIZE];
+#if (NVT_DCACHE_ON == 1)
+// If DCACHE is enabled, each buffer is aligned to a full cache line and is padded to a full cache line size
+signed int aPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+// File IO buffer for MP3 library
+unsigned char MadInputBuffer[DCACHE_ALIGN_LINE_SIZE(FILE_IO_BUFFER_SIZE + MAD_BUFFER_GUARD)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+#else
+// Otherwise, each buffer is not aligned to a full cache line and is not padded
+signed int aPCMBuffer[2][PCM_BUFFER_SIZE] = {0};
 // File IO buffer for MP3 library
 unsigned char MadInputBuffer[FILE_IO_BUFFER_SIZE + MAD_BUFFER_GUARD];
+#endif
 // buffer full flag x2
 volatile uint8_t aPCMBuffer_Full[2] = {0, 0};
 // audio information structure
@@ -182,15 +190,9 @@ void MP3Player(void)
     I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_DISABLE_MONO, I2S_FORMAT_I2S);
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-#if defined(ALIGN_AF_PINS)
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
-#else
-    SET_GPIO_PD4();
-    GPIO_SetMode(PD, BIT4, GPIO_MODE_OUTPUT);
-    PD4 = 0;
-#endif
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
 
     /* Set MCLK and enable MCLK */
     I2S_EnableMCLK(I2S0, 12000000);
@@ -215,6 +217,13 @@ void MP3Player(void)
 
     while (1)
     {
+        /* If DCACHE is enabled, invalidate the data cache for the PCM buffer */
+        /* This is to ensure that the data written to the cache is actually written to the memory */
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanInvalidateDCache_by_Addr((int *)&aPCMBuffer, sizeof(aPCMBuffer));
+        SCB_CleanInvalidateDCache_by_Addr((uint8_t *)&MadInputBuffer, sizeof(MadInputBuffer));
+#endif
+
         if (Stream.buffer == NULL || Stream.error == MAD_ERROR_BUFLEN)
         {
             if (Stream.next_frame != NULL)

@@ -19,6 +19,13 @@
 #ifndef ETHOSU_CONFIG_H
 #define ETHOSU_CONFIG_H
 
+#define AXI_LIMIT_MEM_TYPE 0x2      //Normal_non_cacheable_non_bufferable
+
+#define AXI_LIMIT0_MEM_TYPE AXI_LIMIT_MEM_TYPE
+#define AXI_LIMIT1_MEM_TYPE AXI_LIMIT_MEM_TYPE
+#define AXI_LIMIT2_MEM_TYPE AXI_LIMIT_MEM_TYPE
+#define AXI_LIMIT3_MEM_TYPE AXI_LIMIT_MEM_TYPE
+
 /* Set default values if not manually overriden */
 
 #ifndef NPU_QCONFIG

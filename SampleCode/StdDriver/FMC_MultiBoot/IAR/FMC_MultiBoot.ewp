@@ -74,7 +74,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -1160,7 +1160,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -1206,7 +1206,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -2246,7 +2246,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -2292,7 +2292,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -3332,7 +3332,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -3378,7 +3378,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -4418,7 +4418,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -4464,7 +4464,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -5504,7 +5504,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -5550,7 +5550,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -6198,7 +6198,7 @@
                 </option>
                 <option>
                     <name>IlinkIcfFile</name>
-                    <state>$PROJ_DIR$\FMC_MultiBoot_LDROM.icf</state>
+                    <state>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\M55M1\Source\IAR\M55M1-LDROM.icf</state>
                 </option>
                 <option>
                     <name>IlinkIcfFileSlave</name>

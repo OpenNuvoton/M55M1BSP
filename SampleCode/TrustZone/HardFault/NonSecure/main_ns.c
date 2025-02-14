@@ -25,7 +25,7 @@
 
 void HardFault_Handler(void)
 {
-    PA10_NS = 0;
+    PD5_NS = 0;
     printf("Non-secure Hard Fault Handler\n");
 
     while (1);
@@ -37,7 +37,7 @@ void HardFault_Handler(void)
 int main(void)
 {
     char ch;
-    int32_t i;
+    volatile int32_t i;
 
     printf("+-----------------------------------------+\n");
     printf("|       Non-secure code is running        |\n");
@@ -85,21 +85,20 @@ int main(void)
                 break;
 
             case '3':
-                printf("LED blinking...\n");
-                PA10_NS = 0;
-                PA11_NS = 1;
+                printf("LED blinking ...\n");
+                PD5_NS = 0;
+                PD6_NS = 1;
 
                 while (1)
                 {
-                    PA10_NS ^= 1;
-                    PA11_NS ^= 1;
+                    PD5_NS ^= 1;
+                    PD6_NS ^= 1;
                     i = 0x100000;
 
-                    while (i-- > 0);
-
+                    while (i-- > 0)
+                        ;
                 }
 
-            //break;
             default:
                 break;
         }

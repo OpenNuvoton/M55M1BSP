@@ -12,10 +12,6 @@
 #include "NuMicro.h"
 
 /*---------------------------------------------------------------------------------------------------------*/
-/* Global variables                                                                                        */
-/*---------------------------------------------------------------------------------------------------------*/
-
-/*---------------------------------------------------------------------------------------------------------*/
 /* Define functions prototype                                                                              */
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void);
@@ -46,7 +42,7 @@ void SYS_Init(void)
     /* Waiting for External RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 160MHz clock */
+    /* Enable PLL0 160MHz clock and set all bus clock */
     CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_160MHZ);
 
     /* Update System Core Clock */
@@ -59,7 +55,7 @@ void SYS_Init(void)
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/
@@ -67,9 +63,9 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* Set PJ multi-function pins for CAN RXD and TXD */
-    SET_CAN0_RXD_PJ11();
-    SET_CAN0_TXD_PJ10();
+    /* Set PJ multi-function pins for CANFD RXD and TXD */
+    SET_CANFD0_RXD_PJ11();
+    SET_CANFD0_TXD_PJ10();
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -93,7 +89,7 @@ void CAN_Init(void)
     printf("|          |-----------|         |-----------|                  |\n");
     printf("|                                                               |\n");
     printf("+---------------------------------------------------------------+\n\n");
-    /*Use defined configuration */
+    /* Use defined configuration */
     sCANFD_Config.sElemSize.u32UserDef = 0;
     CANFD_GetDefaultConfig(&sCANFD_Config, CANFD_OP_CAN_MODE);
     sCANFD_Config.sBtConfig.sNormBitRate.u32BitRate = 1000000;
@@ -113,7 +109,7 @@ void CAN_Init(void)
     CANFD_SetXIDFltr(CANFD0, 1, CANFD_RX_BUFFER_EXT_LOW(0x3333, 1), CANFD_RX_BUFFER_EXT_HIGH(0x3333, 1));
     /* receive 0x44444 (29-bit id) in CAN rx message buffer 1 by setting mask 3 */
     CANFD_SetXIDFltr(CANFD0, 2, CANFD_RX_BUFFER_EXT_LOW(0x44444, 1), CANFD_RX_BUFFER_EXT_HIGH(0x44444, 1));
-    /* CAN FD0 Run to Normal mode  */
+    /* CAN FD0 Run to Normal mode */
     CANFD_RunToNormal(CANFD0, TRUE);
 }
 
@@ -128,7 +124,7 @@ void CAN_TxRxTest(void)
     CANFD_FD_MSG_T      sRxFrame;
     CANFD_FD_MSG_T      sTxMsgFrame;
 
-    /* CAN interface initialization*/
+    /* CAN interface initialization */
     CAN_Init();
 
     printf("+--------------------------------------------------------------------------+\n");
@@ -161,18 +157,18 @@ void CAN_TxRxTest(void)
             else if (u8TxTestNum == 4) sTxMsgFrame.u32Id = 0x3333;
             else if (u8TxTestNum == 5) sTxMsgFrame.u32Id = 0x44444;
 
-            /*Set the ID type*/
+            /* Set the ID type */
             if (u8TxTestNum < 3)
                 sTxMsgFrame.eIdType = eCANFD_SID;
             else
                 sTxMsgFrame.eIdType = eCANFD_XID;
 
-            /*Set the frame type*/
+            /* Set the frame type */
             sTxMsgFrame.eFrmType = eCANFD_DATA_FRM;
-            /*Set the bitrate switch */
+            /* Set the bitrate switch */
             sTxMsgFrame.bBitRateSwitch = 0;
 
-            /*Set the data lenght */
+            /* Set the data lenght */
             if (u8TxTestNum == 0  ||  u8TxTestNum == 3)     sTxMsgFrame.u32DLC = 2;
             else if (u8TxTestNum == 1 || u8TxTestNum == 4)  sTxMsgFrame.u32DLC = 4;
             else if (u8TxTestNum == 2 || u8TxTestNum == 5)  sTxMsgFrame.u32DLC = 8;
@@ -316,6 +312,7 @@ int32_t main(void)
 #endif
     /* Init Debug UART for printf */
     InitDebugUart();
+
     /* Lock protected registers */
     SYS_LockReg();
 

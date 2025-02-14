@@ -39,9 +39,9 @@ void CAN_TxTest(void);
 NVT_ITCM void CANFD00_IRQHandler(void)
 {
     printf("IR =0x%08X \n", CANFD0->IR);
-    /*Clear the Interrupt flag */
+    /* Clear the Interrupt flag */
     CANFD_ClearStatusFlag(CANFD0, CANFD_IR_TOO_Msk | CANFD_IR_RF0N_Msk);
-    /*Recieve the Rx Fifo0 message */
+    /* Recieve the Rx Fifo0 message */
     CANFD_ReadRxFifoMsg(CANFD0, 0, &g_sRxMsgFrame);
     g_u8RxFifO0CompleteFlag = 1;
 }
@@ -65,7 +65,7 @@ void SYS_Init(void)
     /* Waiting for External RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 160MHz clock */
+    /* Enable PLL0 160MHz clock and set all bus clock */
     CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_160MHZ);
 
     /* Update System Core Clock */
@@ -78,7 +78,7 @@ void SYS_Init(void)
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/
@@ -86,9 +86,9 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* Set PJ multi-function pins for CAN RXD and TXD */
-    SET_CAN0_RXD_PJ11();
-    SET_CAN0_TXD_PJ10();
+    /* Set PJ multi-function pins for CANFD RXD and TXD */
+    SET_CANFD0_RXD_PJ11();
+    SET_CANFD0_TXD_PJ10();
 }
 
 
@@ -129,39 +129,38 @@ void CAN_TxTest(void)
         switch (u8Item)
         {
             case '1':
-                /*Standard ID =0x111,Data lenght 8 bytes*/
+                /* Standard ID =0x111,Data lenght 8 bytes */
                 CAN_SendMessage(&g_sTxMsgFrame, eCANFD_SID, 0x111, 8);
                 break;
 
             case '2':
-                /*Standard ID =0x22F,Data lenght 8 bytes*/
+                /* Standard ID =0x22F,Data lenght 8 bytes */
                 CAN_SendMessage(&g_sTxMsgFrame, eCANFD_SID, 0x22F, 8);
                 break;
 
             case '3':
-                /*Standard ID =0x333,Data lenght 8 bytes*/
+                /* Standard ID =0x333,Data lenght 8 bytes */
                 CAN_SendMessage(&g_sTxMsgFrame, eCANFD_SID, 0x333, 8);
                 break;
 
             case '4':
-                /*Extend ID =0x111,Data lenght 8 bytes*/
+                /* Extend ID =0x221,Data lenght 8 bytes */
                 CAN_SendMessage(&g_sTxMsgFrame, eCANFD_XID, 0x221, 8);
                 break;
 
             case '5':
-                /*Extend ID =0x3333,Data lenght 8 bytes*/
+                /* Extend ID =0x3333,Data lenght 8 bytes */
                 CAN_SendMessage(&g_sTxMsgFrame, eCANFD_XID, 0x3333, 8);
                 break;
 
             case '6':
-                /*Extend ID =0x44444,Data lenght 8 bytes*/
+                /* Extend ID =0x44444,Data lenght 8 bytes */
                 CAN_SendMessage(&g_sTxMsgFrame, eCANFD_XID, 0x44444, 8);
                 break;
 
             default:
                 break;
         }
-
     } while (u8Item != 27);
 }
 
@@ -260,14 +259,15 @@ void CAN_Init(void)
     printf("|          |-----------|         |-----------|                  |\n");
     printf("|                                                               |\n");
     printf("+---------------------------------------------------------------+\n\n");
-    /*Use defined configuration */
+
+    /* Use defined configuration */
     sCANFD_Config.sElemSize.u32UserDef = 0;
-    /*Get the CAN configuration value*/
+    /* Get the CAN configuration value */
     CANFD_GetDefaultConfig(&sCANFD_Config, CANFD_OP_CAN_MODE);
     sCANFD_Config.sBtConfig.sNormBitRate.u32BitRate = 1000000;
     sCANFD_Config.sBtConfig.sDataBitRate.u32BitRate = 0;
 
-    /*Open the CAN feature*/
+    /* Open the CAN feature */
     CANFD_Open(CANFD0, &sCANFD_Config);
 
     /* receive 0x110~0x11F in CAN rx fifo0 buffer by setting mask 0 */
@@ -283,13 +283,13 @@ void CAN_Init(void)
     CANFD_SetXIDFltr(CANFD0, 1, CANFD_RX_FIFO0_EXT_MASK_LOW(0x3333), CANFD_RX_FIFO0_EXT_MASK_HIGH(0x1FFFFFFF));
     /* receive 0x4444 (29-bit id) in CAN rx fifo0 buffer by setting mask 2 */
     CANFD_SetXIDFltr(CANFD0, 2, CANFD_RX_FIFO0_EXT_MASK_LOW(0x44444), CANFD_RX_FIFO0_EXT_MASK_HIGH(0x1FFFFFFF));
-    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo0)*/
+    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo0) */
     CANFD_SetGFC(CANFD0, eCANFD_REJ_NON_MATCH_FRM, eCANFD_REJ_NON_MATCH_FRM, 1, 1);
     /* Enable RX fifo0 new message interrupt using interrupt line 0. */
     CANFD_EnableInt(CANFD0, (CANFD_IE_TOOE_Msk | CANFD_IE_RF0NE_Msk), 0, 0, 0);
-    /* Enable CANFD0 IRQ00 Handler*/
+    /* Enable CANFD0 IRQ00 Handler */
     NVIC_EnableIRQ(CANFD00_IRQn);
-    /* CAN FD0 Run to Normal mode  */
+    /* CAN FD0 Run to Normal mode */
     CANFD_RunToNormal(CANFD0, TRUE);
 }
 
@@ -301,7 +301,7 @@ void CAN_TxRxINTTest(void)
 {
     uint8_t u8Item;
 
-    /* CAN interface initialization*/
+    /* CAN interface initialization */
     CAN_Init();
 
     printf("+--------------------------------------------------------------------------+\n");
@@ -347,6 +347,7 @@ int32_t main(void)
 #endif
     /* Init Debug UART for printf */
     InitDebugUart();
+
     /* Lock protected registers */
     SYS_LockReg();
 

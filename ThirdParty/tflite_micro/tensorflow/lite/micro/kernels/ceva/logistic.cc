@@ -27,6 +27,8 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/ceva/ceva_tflm_lib.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/logistic.h"
+#include "tensorflow/lite/micro/micro_log.h"
+
 #ifdef MCPS_MEASUREMENT
 #include "tensorflow/lite/micro/kernels/ceva/mcps_macros.h"
 #endif
@@ -76,9 +78,9 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
         return kTfLiteOk;
       }
       default:
-        TF_LITE_KERNEL_LOG(context, "Input %s, output %s not supported.",
-                           TfLiteTypeGetName(input->type),
-                           TfLiteTypeGetName(output->type));
+        MicroPrintf("Input %s, output %s not supported.",
+                    TfLiteTypeGetName(input->type),
+                    TfLiteTypeGetName(output->type));
         return kTfLiteError;
     }
   } else if (input->type == kTfLiteInt8) {
@@ -114,15 +116,15 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
         return kTfLiteOk;
       }
       default:
-        TF_LITE_KERNEL_LOG(context, "Input %s, output %s not supported.",
-                           TfLiteTypeGetName(input->type),
-                           TfLiteTypeGetName(output->type));
+        MicroPrintf("Input %s, output %s not supported.",
+                    TfLiteTypeGetName(input->type),
+                    TfLiteTypeGetName(output->type));
         return kTfLiteError;
     }
   } else {
-    TF_LITE_KERNEL_LOG(context, "Input %s, output %s not supported.",
-                       TfLiteTypeGetName(input->type),
-                       TfLiteTypeGetName(output->type));
+    MicroPrintf("Input %s, output %s not supported.",
+                TfLiteTypeGetName(input->type),
+                TfLiteTypeGetName(output->type));
     return kTfLiteError;
   }
   return kTfLiteOk;
@@ -130,14 +132,7 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration Register_LOGISTIC() {
-  return {/*init=*/LogisticInit,
-          /*free=*/nullptr,
-          /*prepare=*/LogisticPrepare,
-          /*invoke=*/LogisticEval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+TFLMRegistration Register_LOGISTIC() {
+  return tflite::micro::RegisterOp(LogisticInit, LogisticPrepare, LogisticEval);
 }
 }  // namespace tflite

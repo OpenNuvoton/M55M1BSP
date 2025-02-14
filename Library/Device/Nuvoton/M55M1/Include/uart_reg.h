@@ -27,6 +27,8 @@
 
 typedef struct
 {
+
+
     /**
      * @var UART_T::DAT
      * Offset: 0x00  UART Receive/Transmit Buffer Register
@@ -42,8 +44,7 @@ typedef struct
      * |[8]     |PARITY    |Parity Bit Receive/Transmit Buffer
      * |        |          |Write Operation:
      * |        |          |By writing to this bit, the parity bit will be stored in transmitter FIFO
-     * |        |          |If PBE (UART_LINE[3]) and PSS (UART_LINE[7]) are set,
-     * |        |          |the UART controller will send out this bit follow the DAT (UART_DAT[7:0]) through the UART_TXD.
+     * |        |          |If PBE (UART_LINE[3]) and PSS (UART_LINE[7]) are set, the UART controller will send out this bit follow the DAT (UART_DAT[7:0]) through the UART_TXD.
      * |        |          |Read Operation:
      * |        |          |If PBE (UART_LINE[3]) and PSS (UART_LINE[7]) are enabled, the parity bit can be read by this bit.
      * |        |          |Note: This bit has effect only when PBE (UART_LINE[3]) and PSS (UART_LINE[7]) are set.
@@ -89,18 +90,17 @@ typedef struct
      * |        |          |1 = nCTS auto-flow control Enabled.
      * |        |          |Note: When nCTS auto-flow is enabled, the UART will send data to external device if nCTS input assert (UART will not send data to device until nCTS is asserted).
      * |[14]    |TXPDMAEN  |TX PDMA Enable Bit
-     * |        |          |This bit can enable or disable TX PDMA service.
      * |        |          |0 = TX PDMA Disabled.
      * |        |          |1 = TX PDMA Enabled.
      * |        |          |Note: If RLSIEN (UART_INTEN[2]) is enabled and HWRLSINT (UART_INTSTS[26]) is set to 1, the RLS (Receive Line Status) Interrupt is caused
-     * |        |          |If RLS interrupt is caused by Break Error Flag BIF(UART_FIFOSTS[6]), Frame Error Flag FEF(UART_FIFO[5]) or Parity Error Flag PEF(UART_FIFOSTS[4]) , UART PDMA transmit request operation is stop
+     * |        |          |If RLS interrupt is caused by Break Error Flag BIF(UART_FIFOSTS[6]), Frame Error Flag FEF(UART_FIFO[5]) or Parity Error Flag PEF(UART_FIFOSTS[4]), UART PDMA transmit request operation is stopped
      * |        |          |Clear Break Error Flag BIF or Frame Error Flag FEF or Parity Error Flag PEF by writing '1' to corresponding BIF, FEF and PEF to make UART PDMA transmit request operation continue.
      * |[15]    |RXPDMAEN  |RX PDMA Enable Bit
      * |        |          |This bit can enable or disable RX PDMA service.
      * |        |          |0 = RX PDMA Disabled.
      * |        |          |1 = RX PDMA Enabled.
      * |        |          |Note: If RLSIEN (UART_INTEN[2]) is enabled and HWRLSINT (UART_INTSTS[26]) is set to 1, the RLS (Receive Line Status) Interrupt is caused
-     * |        |          |If RLS interrupt is caused by Break Error Flag BIF(UART_FIFOSTS[6]), Frame Error Flag FEF(UART_FIFO[5]) or Parity Error Flag PEF(UART_FIFOSTS[4]) , UART PDMA receive request operation is stop
+     * |        |          |If RLS interrupt is caused by Break Error Flag BIF(UART_FIFOSTS[6]), Frame Error Flag FEF(UART_FIFO[5]) or Parity Error Flag PEF(UART_FIFOSTS[4]), UART PDMA receive request operation is stopped
      * |        |          |Clear Break Error Flag BIF or Frame Error Flag FEF or Parity Error Flag PEF by writing '1' to corresponding BIF, FEF and PEF to make UART PDMA receive request operation continue.
      * |[16]    |SWBEIEN   |Single-wire Bit Error Detection Interrupt Enable Bit
      * |        |          |Set this bit, the Single-wire Half Duplex Bit Error Detection Interrupt SWBEINT(UART_INTSTS[24]) is generated when Single-wire Bit Error Detection SWBEIF(UART_INTSTS[16]) is set.
@@ -123,16 +123,16 @@ typedef struct
      * |        |          |When RXRST (UART_FIFO[1]) is set, all the byte in the receiver FIFO and RX internal state machine are cleared.
      * |        |          |0 = No effect.
      * |        |          |1 = Reset the RX internal state machine and pointers.
-     * |        |          |Note1: This bit will automatically clear at least 3 UART peripheral clock cycles.
-     * |        |          |Note2: Before setting this bit, it should wait for the RXIDLE (UART_FIFOSTS[29]) be set.
+     * |        |          |Note 1: This bit will automatically clear at least 3 UART peripheral clock cycles.
+     * |        |          |Note 2: Before setting this bit, it should wait for the RXIDLE (UART_FIFOSTS[29]) be set.
      * |[2]     |TXRST     |TX Field Software Reset
      * |        |          |When TXRST (UART_FIFO[2]) is set, all the byte in the transmit FIFO and TX internal state machine are cleared.
      * |        |          |0 = No effect.
      * |        |          |1 = Reset the TX internal state machine and pointers.
-     * |        |          |Note1: This bit will automatically clear at least 3 UART peripheral clock cycles.
-     * |        |          |Note2: Before setting this bit, it should wait for the TXEMPTYF (UART_FIFOSTS[28]) be set.
+     * |        |          |Note 1: This bit will automatically clear at least 3 UART peripheral clock cycles.
+     * |        |          |Note 2: Before setting this bit, it should wait for the TXEMPTYF (UART_FIFOSTS[28]) be set.
      * |[7:4]   |RFITL     |RX FIFO Interrupt Trigger Level
-     * |        |          |When the number of bytes in the receive FIFO equals the RFITL, the RDAIF (UART_INTSTS[0]) will be set (if RDAIEN (UART_INTEN [0]) enabled, and an interrupt will be generated).
+     * |        |          |When the number of bytes in the receive FIFO equals the RFITL, the RDAIF (UART_INTSTS[0]) will be set (if RDAIEN (UART_INTEN[0]) enabled, and an interrupt will be generated).
      * |        |          |0000 = RX FIFO Interrupt Trigger Level is 1 byte.
      * |        |          |0001 = RX FIFO Interrupt Trigger Level is 4 bytes.
      * |        |          |0010 = RX FIFO Interrupt Trigger Level is 8 bytes.
@@ -143,8 +143,8 @@ typedef struct
      * |        |          |0 = Receiver Enabled.
      * |        |          |1 = Receiver Disabled.
      * |        |          |Note: This bit is used for RS-485 Normal Multi-drop mode
-     * |        |          |It should be programmed before RS485NMM (UART_ALTCTL [8]) is programmed.
-     * |[19:16] |RTSTRGLV  |nRTS Trigger Level for Auto-flow Control Use
+     * |        |          |It should be programmed before RS485NMM (UART_ALTCTL[8]) is programmed.
+     * |[19:16] |RTSTRGLV  |nRTS Trigger Level for Auto-flow Control
      * |        |          |0000 = nRTS Trigger Level is 1 byte.
      * |        |          |0001 = nRTS Trigger Level is 4 bytes.
      * |        |          |0010 = nRTS Trigger Level is 8 bytes.
@@ -188,37 +188,39 @@ typedef struct
      * |        |          |The parity bit can be selected to be generated and checked automatically or by software.
      * |        |          |0 = Parity bit is generated by EPE (UART_LINE[4]) and SPE (UART_LINE[5]) setting and checked automatically.
      * |        |          |1 = Parity bit generated and checked by software.
-     * |        |          |Note1: This bit has effect only when PBE (UART_LINE[3]) is set.
-     * |        |          |Note2: If PSS is 0, the parity bit is transmitted and checked automatically
+     * |        |          |Note 1: This bit has effect only when PBE (UART_LINE[3]) is set.
+     * |        |          |Note 2: If PSS is 0, the parity bit is transmitted and checked automatically
      * |        |          |If PSS is 1, the transmitted parity bit value can be determined by writing PARITY (UART_DAT[8]) and the parity bit can be read by reading PARITY (UART_DAT[8]).
      * |[8]     |TXDINV    |TX Data Inverted
      * |        |          |0 = Transmitted data signal inverted Disabled.
      * |        |          |1 = Transmitted data signal inverted Enabled.
-     * |        |          |Note1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
+     * |        |          |Note 1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
      * |        |          |When the configuration is done, cleared TXRXDIS (UART_FUNCSEL[3]) to activate UART controller.
-     * |        |          |Note2: This bit is valid when FUNCSEL (UART_FUNCSEL[1:0]) is select UART, LIN or RS485 function.
+     * |        |          |Note 2: This bit is valid when FUNCSEL (UART_FUNCSEL[2:0]) is select UART, LIN or RS485 function.
      * |[9]     |RXDINV    |RX Data Inverted
      * |        |          |0 = Received data signal inverted Disabled.
      * |        |          |1 = Received data signal inverted Enabled.
-     * |        |          |Note1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
+     * |        |          |Note 1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
      * |        |          |When the configuration is done, cleared TXRXDIS (UART_FUNCSEL[3]) to activate UART controller.
-     * |        |          |Note2: This bit is valid when FUNCSEL (UART_FUNCSEL[1:0]) is select UART, LIN or RS485 function.
+     * |        |          |Note 2: This bit is valid when FUNCSEL (UART_FUNCSEL[2:0]) is select UART, LIN or RS485 function.
      * @var UART_T::MODEM
      * Offset: 0x10  UART Modem Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[1]     |RTS       |nRTS (Request-to-send) Signal Control
-     * |        |          |This bit is direct control internal nRTS signal active or not, and then drive the nRTS pin output with RTSACTLV bit configuration.
+     * |[1]     |RTS       |nRTS Signal Control
+     * |        |          |This bit is direct control internal nRTS (Request-to-send) signal active or not, and then drive the nRTS pin output with RTSACTLV bit configuration.
      * |        |          |0 = nRTS signal is active.
      * |        |          |1 = nRTS signal is inactive.
-     * |        |          |Note1: This nRTS signal control bit is not effective when nRTS auto-flow control is enabled in UART function mode.
-     * |        |          |Note2: This nRTS signal control bit is not effective when RS-485 auto direction mode (AUD) is enabled in RS-485 function mode.
+     * |        |          |Note 1: The nRTS signal control bit is not effective when nRTS auto-flow control is enabled in UART function mode.
+     * |        |          |Note 2: The nRTS signal control bit is not effective when RS-485 auto direction mode (AUD) is enabled in RS-485 function mode.
      * |[9]     |RTSACTLV  |nRTS Pin Active Level
      * |        |          |This bit defines the active level state of nRTS pin output.
      * |        |          |0 = nRTS pin output is high level active.
      * |        |          |1 = nRTS pin output is low level active. (Default)
-     * |        |          |Note1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
+     * |        |          |Note 1: Refer to Figure 6.26-13 and Figure 6.26-14 for UART function mode.
+     * |        |          |Note 2: Refer to Figure 6.26-24 and Figure 6.26-25 for RS-485 function mode.
+     * |        |          |Note 3: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
      * |        |          |When the configuration is done, cleared TXRXDIS (UART_FUNCSEL[3]) to activate UART controller.
      * |[13]    |RTSSTS    |nRTS Pin Status (Read Only)
      * |        |          |This bit mirror from nRTS pin output of voltage logic status.
@@ -230,7 +232,7 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[0]     |CTSDETF   |Detect nCTS State Change Flag
-     * |        |          |This bit is set whenever nCTS input has change state, and it will generate Modem interrupt to CPU when MODEMIEN (UART_INTEN [3]) is set to 1.
+     * |        |          |This bit is set whenever nCTS input has change state, and it will generate Modem interrupt to CPU when MODEMIEN (UART_INTEN[3]) is set to 1.
      * |        |          |0 = nCTS input has not change state.
      * |        |          |1 = nCTS input has change state.
      * |        |          |Note: This bit can be cleared by writing '1' to it.
@@ -269,8 +271,8 @@ typedef struct
      * |[3]     |ADDRDETF  |RS-485 Address Byte Detect Flag
      * |        |          |0 = Receiver detects a data that is not an address bit (bit 9 ='0').
      * |        |          |1 = Receiver detects a data that is an address bit (bit 9 ='1').
-     * |        |          |Note1: This field is used for RS-485 function mode and ADDRDEN (UART_ALTCTL[15]) is set to 1 to enable Address detection mode.
-     * |        |          |Note2: This bit can be cleared by writing '1' to it.
+     * |        |          |Note 1: This field is used for RS-485 function mode and ADDRDEN (UART_ALTCTL[15]) is set to 1 to enable Address detection mode.
+     * |        |          |Note 2: This bit can be cleared by writing '1' to it.
      * |[4]     |PEF       |Parity Error Flag
      * |        |          |This bit is set to logic 1 whenever the received character does not have a valid 'parity bit'.
      * |        |          |0 = No parity error is generated.
@@ -283,8 +285,8 @@ typedef struct
      * |        |          |1 = Framing error is generated.
      * |        |          |Note: This bit can be cleared by writing '1' to it.
      * |[6]     |BIF       |Break Interrupt Flag
-     * |        |          |This bit is set to logic 1 whenever the received data input (RX) is held in the 'spacing state' (logic 0)
-     * |        |          |for longer than a full word transmission time (that is, the total time of start bit + data bits + parity + stop bits).
+     * |        |          |This bit is set to logic 1 whenever the received data input (RX) is held in the 'spacing state' (logic 0) for longer than a full word transmission time
+     * |        |          |(that is, the total time of start bit + data bits + parity + stop bits).
      * |        |          |0 = No Break interrupt is generated.
      * |        |          |1 = Break interrupt is generated.
      * |        |          |Note: This bit can be cleared by writing '1' to it.
@@ -343,53 +345,57 @@ typedef struct
      * |        |          |0 = TX and RX are inactive.
      * |        |          |1 = TX and RX are active. (Default)
      * |        |          |Note: When TXRXDIS (UART_FUNCSEL[3]) is set and both TX and RX are in idle state, this bit is cleared
-     * |        |          |The UART controller can not transmit or receive data at this moment
+     * |        |          |The UART controller cannot transmit or receive data at this moment
      * |        |          |Otherwise this bit is set.
      * @var UART_T::INTSTS
      * Offset: 0x1C  UART Interrupt Status Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |RDAIF     |Receive Data Available Interrupt Flag
+     * |[0]     |RDAIF     |Receive Data Available Interrupt Flag (Read Only)
      * |        |          |When the number of bytes in the RX FIFO equals the RFITL then the RDAIF(UART_INTSTS[0]) will be set
-     * |        |          |If RDAIEN (UART_INTEN [0]) is enabled, the RDA interrupt will be generated.
+     * |        |          |If RDAIEN (UART_INTEN[0]) is enabled, the RDA interrupt will be generated.
      * |        |          |0 = No RDA interrupt flag is generated.
      * |        |          |1 = RDA interrupt flag is generated.
-     * |        |          |Note: This bit is read only and it will be cleared when the number of unread bytes of RX FIFO drops below the threshold level (RFITL(UART_FIFO[7:4]).
-     * |[1]     |THREIF    |Transmit Holding Register Empty Interrupt Flag
+     * |        |          |Note: This bit is read only and will be cleared when the number of unread bytes of RX FIFO drops below the threshold level (RFITL(UART_FIFO[7:4]).
+     * |[1]     |THREIF    |Transmit Holding Register Empty Interrupt Flag (Read Only)
      * |        |          |This bit is set when the last data of TX FIFO is transferred to Transmitter Shift Register
      * |        |          |If THREIEN (UART_INTEN[1]) is enabled, the THRE interrupt will be generated.
      * |        |          |0 = No THRE interrupt flag is generated.
      * |        |          |1 = THRE interrupt flag is generated.
-     * |        |          |Note: This bit is read only and it will be cleared when writing data into UART_DAT (TX FIFO not empty).
+     * |        |          |Note: This bit is read only and will be cleared when writing data into UART_DAT (TX FIFO is not empty).
      * |[2]     |RLSIF     |Receive Line Interrupt Flag (Read Only)
      * |        |          |This bit is set when the RX receive data have parity error, frame error or break error (at least one of 3 bits, BIF(UART_FIFOSTS[6]), FEF(UART_FIFOSTS[5]) and PEF(UART_FIFOSTS[4]), is set)
-     * |        |          |If RLSIEN (UART_INTEN [2]) is enabled, the RLS interrupt will be generated.
+     * |        |          |If RLSIEN (UART_INTEN[2]) is enabled, the RLS interrupt will be generated.
      * |        |          |0 = No RLS interrupt flag is generated.
      * |        |          |1 = RLS interrupt flag is generated.
-     * |        |          |Note1: In RS-485 function mode, this field is set include "receiver detect and received address byte character (bit9 = '1') bit"
+     * |        |          |Note 1: In RS-485 function mode, this field is set include "receiver detect and received address byte character (bit9 = '1') bit"
      * |        |          |At the same time, the bit of ADDRDETF (UART_FIFOSTS[3]) is also set.
-     * |        |          |Note2: This bit is read only and reset to 0 when all bits of BIF (UART_FIFOSTS[6]), FEF(UART_FIFOSTS[5]) and PEF(UART_FIFOSTS[4]) are cleared.
-     * |        |          |Note3: In RS-485 function mode, this bit is read only and reset to 0 when all bits of BIF (UART_FIFOSTS[6]) , FEF(UART_FIFOSTS[5]), PEF(UART_FIFOSTS[4]) and ADDRDETF (UART_FIFOSTS[3]) are cleared.
+     * |        |          |Note 2: This bit is read only and reset to 0 when all bits of BIF (UART_FIFOSTS[6]), FEF(UART_FIFOSTS[5]) and PEF(UART_FIFOSTS[4]) are cleared.
+     * |        |          |Note 3: In RS-485 function mode, this bit is read only and reset to 0 when all bits of BIF (UART_FIFOSTS[6]), FEF(UART_FIFOSTS[5]), PEF(UART_FIFOSTS[4]) and ADDRDETF (UART_FIFOSTS[3]) are cleared.
+     * |        |          |Note 4: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[3]     |MODEMIF   |MODEM Interrupt Flag (Read Only)
      * |        |          |This bit is set when the nCTS pin has state change (CTSDETF (UART_MODEMSTS[0]) = 1)
-     * |        |          |If MODEMIEN (UART_INTEN [3]) is enabled, the Modem interrupt will be generated.
+     * |        |          |If MODEMIEN (UART_INTEN[3]) is enabled, the Modem interrupt will be generated.
      * |        |          |0 = No Modem interrupt flag is generated.
      * |        |          |1 = Modem interrupt flag is generated.
-     * |        |          |Note: This bit is read only and reset to 0 when bit CTSDETF is cleared by a write 1 on CTSDETF(UART_MODEMSTS[0]).
+     * |        |          |Note 1: This bit is read only and reset to 0 when bit CTSDETF is cleared by a write 1 on CTSDETF(UART_MODEMSTS[0]).
+     * |        |          |Note 2: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[4]     |RXTOIF    |RX Time-out Interrupt Flag (Read Only)
      * |        |          |This bit is set when the RX FIFO is not empty and no activities occurred in the RX FIFO and the time-out counter equal to TOIC (UART_TOUT[7:0])
-     * |        |          |If RXTOIEN (UART_INTEN [4]) is enabled, the RX time-out interrupt will be generated.
+     * |        |          |If RXTOIEN (UART_INTEN[4]) is enabled, the RX time-out interrupt will be generated.
      * |        |          |0 = No RX time-out interrupt flag is generated.
      * |        |          |1 = RX time-out interrupt flag is generated.
-     * |        |          |Note: This bit is read only and user can read UART_DAT (RX is in active) to clear it.
+     * |        |          |Note 1: This bit is read only and user can read UART_DAT (RX is in active) to clear it.
+     * |        |          |Note 2: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[5]     |BUFERRIF  |Buffer Error Interrupt Flag (Read Only)
      * |        |          |This bit is set when the TX FIFO or RX FIFO overflows (TXOVIF (UART_FIFOSTS[24]) or RXOVIF (UART_FIFOSTS[0]) is set)
      * |        |          |When BUFERRIF (UART_INTSTS[5]) is set, the transfer is not correct
-     * |        |          |If BUFERRIEN (UART_INTEN [5]) is enabled, the buffer error interrupt will be generated.
+     * |        |          |If BUFERRIEN (UART_INTEN[5]) is enabled, the buffer error interrupt will be generated.
      * |        |          |0 = No buffer error interrupt flag is generated.
      * |        |          |1 = Buffer error interrupt flag is generated.
-     * |        |          |Note: This bit is cleared if both of RXOVIF(UART_FIFOSTS[0]) and TXOVIF(UART_FIFOSTS[24]) are cleared to 0 by writing 1 to RXOVIF(UART_FIFOSTS[0]) and TXOVIF(UART_FIFOSTS[24]).
+     * |        |          |Note 1: This bit is cleared if both of RXOVIF(UART_FIFOSTS[0]) and TXOVIF(UART_FIFOSTS[24]) are cleared to 0 by writing 1 to RXOVIF(UART_FIFOSTS[0]) and TXOVIF(UART_FIFOSTS[24]).
+     * |        |          |Note 2: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[6]     |WKIF      |UART Wake-up Interrupt Flag (Read Only)
      * |        |          |This bit is set when TOUTWKF (UART_WKSTS[4]), RS485WKF (UART_WKSTS[3]), RFRTWKF (UART_WKSTS[2]), DATWKF (UART_WKSTS[1]) or CTSWKF(UART_WKSTS[0]) is set to 1.
      * |        |          |0 = No UART wake-up interrupt flag is generated.
@@ -397,7 +403,7 @@ typedef struct
      * |        |          |Note: This bit is cleared if all of TOUTWKF, RS485WKF, RFRTWKF, DATWKF and CTSWKF are cleared to 0 by writing 1 to the corresponding interrupt flag.
      * |[7]     |LINIF     |LIN Bus Interrupt Flag
      * |        |          |This bit is set when LIN slave header detect (SLVHDETF (UART_LINSTS[0] = 1)), LIN break detect (BRKDETF(UART_LINSTS[8]=1)), bit error detect (BITEF(UART_LINSTS[9]=1)), LIN slave ID parity error (SLVIDPEF(UART_LINSTS[2] = 1)) or LIN slave header error detect (SLVHEF (UART_LINSTS[1]))
-     * |        |          |If LINIEN (UART_INTEN [8]) is enabled the LIN interrupt will be generated.
+     * |        |          |If LINIEN (UART_INTEN[8]) is enabled the LIN interrupt will be generated.
      * |        |          |0 = None of SLVHDETF, BRKDETF, BITEF, SLVIDPEF and SLVHEF is generated.
      * |        |          |1 = At least one of SLVHDETF, BRKDETF, BITEF, SLVIDPEF and SLVHEF is generated.
      * |        |          |Note: This bit is cleared when SLVHDETF(UART_LINSTS[0]), BRKDETF(UART_LINSTS[8]), BITEF(UART_LINSTS[9]), SLVIDPEF (UART_LINSTS[2]) and SLVHEF(UART_LINSTS[1]) all are cleared and software writing '1' to LINIF(UART_INTSTS[7]).
@@ -413,18 +419,22 @@ typedef struct
      * |        |          |This bit is set if RLSIEN (UART_INTEN[2]) and RLSIF(UART_INTSTS[2]) are both set to 1.
      * |        |          |0 = No RLS interrupt is generated.
      * |        |          |1 = RLS interrupt is generated.
+     * |        |          |Note: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[11]    |MODEMINT  |MODEM Status Interrupt Indicator (Read Only)
      * |        |          |This bit is set if MODEMIEN(UART_INTEN[3]) and MODEMIF(UART_INTSTS[3]) are both set to 1
      * |        |          |0 = No Modem interrupt is generated.
      * |        |          |1 = Modem interrupt is generated.
+     * |        |          |Note: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[12]    |RXTOINT   |RX Time-out Interrupt Indicator (Read Only)
      * |        |          |This bit is set if RXTOIEN (UART_INTEN[4]) and RXTOIF(UART_INTSTS[4]) are both set to 1.
      * |        |          |0 = No RX time-out interrupt is generated.
      * |        |          |1 = RX time-out interrupt is generated.
+     * |        |          |Note: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[13]    |BUFERRINT |Buffer Error Interrupt Indicator (Read Only)
      * |        |          |This bit is set if BUFERRIEN(UART_INTEN[5]) and BUFERRIF(UART_ INTSTS[5]) are both set to 1.
      * |        |          |0 = No buffer error interrupt is generated.
      * |        |          |1 = Buffer error interrupt is generated.
+     * |        |          |Note: This bit is valid only when RXPDMAEN (UART_INTEN[15]) and TXPDMAEN (UART_INTEN[14]) are both 0.
      * |[14]    |WKINT     |UART Wake-up Interrupt Indicator (Read Only)
      * |        |          |This bit is set if WKIEN (UART_INTEN[6]) and WKIF (UART_INTSTS[6]) are both set to 1.
      * |        |          |0 = No UART wake-up interrupt is generated.
@@ -437,34 +447,34 @@ typedef struct
      * |        |          |This bit is set when the single wire bus state not equals to UART controller TX state in Single-wire mode.
      * |        |          |0 = No single-wire bit error detection interrupt flag is generated.
      * |        |          |1 = Single-wire bit error detection interrupt flag is generated.
-     * |        |          |Note1: This bit is active when FUNCSEL (UART_FUNCSEL[2:0]) is select UART Single-wire mode.
-     * |        |          |Note2: This bit can be cleared by writing "1" to it.
+     * |        |          |Note 1: This bit is active when FUNCSEL (UART_FUNCSEL[2:0]) is select UART Single-wire mode.
+     * |        |          |Note 2: This bit can be cleared by writing '1' to it.
      * |[18]    |HWRLSIF   |PDMA Mode Receive Line Status Flag (Read Only)
      * |        |          |This bit is set when the RX receive data have parity error, frame error or break error (at least one of 3 bits, BIF (UART_FIFOSTS[6]), FEF (UART_FIFOSTS[5]) and PEF (UART_FIFOSTS[4]) is set)
-     * |        |          |If RLSIEN (UART_INTEN [2]) is enabled, the RLS interrupt will be generated.
-     * |        |          |0 = No RLS interrupt flag is generated in PDMA mode.
-     * |        |          |1 = RLS interrupt flag is generated in PDMA mode.
-     * |        |          |Note1: In RS-485 function mode, this field include "receiver detect any address byte received address byte character (bit9 = '1') bit".
-     * |        |          |Note2: In UART function mode, this bit is read only and reset to 0 when all bits of BIF(UART_FIFOSTS[6]) , FEF(UART_FIFOSTS[5]) and PEF(UART_FIFOSTS[4]) are cleared.
-     * |        |          |Note3: In RS-485 function mode, this bit is read only and reset to 0 when all bits of BIF(UART_FIFOSTS[6]), FEF(UART_FIFOSTS[5]), PEF(UART_FIFOSTS[4]) and ADDRDETF (UART_FIFOSTS[3]) are cleared
+     * |        |          |If RLSIEN (UART_INTEN[2]) is enabled, the RLS interrupt will be generated.
+     * |        |          |0 = No RLS interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = RLS interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |Note 1: In RS-485 function mode, this field include "receiver detect any address byte received address byte character (bit9 = '1') bit".
+     * |        |          |Note 2: In UART function mode, this bit is read only and reset to 0 when all bits of BIF(UART_FIFOSTS[6]), FEF(UART_FIFOSTS[5]) and PEF(UART_FIFOSTS[4]) are cleared.
+     * |        |          |Note 3: In RS-485 function mode, this bit is read only and reset to 0 when all bits of BIF(UART_FIFOSTS[6]), FEF(UART_FIFOSTS[5]), PEF(UART_FIFOSTS[4]) and ADDRDETF (UART_FIFOSTS[3]) are cleared
      * |[19]    |HWMODIF   |PDMA Mode MODEM Interrupt Flag (Read Only)
-     * |        |          |This bit is set when the nCTS pin has state change (CTSDETF (UART_MODEMSTS [0] =1))
-     * |        |          |If MODEMIEN (UART_INTEN [3]) is enabled, the Modem interrupt will be generated.
-     * |        |          |0 = No Modem interrupt flag is generated in PDMA mode.
-     * |        |          |1 = Modem interrupt flag is generated in PDMA mode.
-     * |        |          |Note: This bit is read only and reset to 0 when the bit CTSDETF (UART_MODEMSTS[0]) is cleared by writing 1 on CTSDETF (UART_MODEMSTS [0]).
+     * |        |          |This bit is set when the nCTS pin has state change (CTSDETF (UART_MODEMSTS[0] =1))
+     * |        |          |If MODEMIEN (UART_INTEN[3]) is enabled, the Modem interrupt will be generated.
+     * |        |          |0 = No Modem interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = Modem interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |Note: This bit is read only and reset to 0 when the bit CTSDETF (UART_MODEMSTS[0]) is cleared by writing 1 on CTSDETF (UART_MODEMSTS[0]).
      * |[20]    |HWTOIF    |PDMA Mode RX Time-out Interrupt Flag (Read Only)
      * |        |          |This bit is set when the RX FIFO is not empty and no activities occurred in the RX FIFO and the time-out counter equal to TOIC (UART_TOUT[7:0])
-     * |        |          |If RXTOIEN (UART_INTEN [4]) is enabled, the RX time-out interrupt will be generated .
-     * |        |          |0 = No RX time-out interrupt flag is generated in PDMA mode.
-     * |        |          |1 = RX time-out interrupt flag is generated in PDMA mode.
+     * |        |          |If RXTOIEN (UART_INTEN[4]) is enabled, the RX time-out interrupt will be generated.
+     * |        |          |0 = No RX time-out interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = RX time-out interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
      * |        |          |Note: This bit is read only and user can read UART_DAT (RX is in active) to clear it.
      * |[21]    |HWBUFEIF  |PDMA Mode Buffer Error Interrupt Flag (Read Only)
-     * |        |          |This bit is set when the TX or RX FIFO overflows (TXOVIF (UART_FIFOSTS [24]) or RXOVIF (UART_FIFOSTS[0]) is set)
+     * |        |          |This bit is set when the TX or RX FIFO overflows (TXOVIF (UART_FIFOSTS[24]) or RXOVIF (UART_FIFOSTS[0]) is set)
      * |        |          |When BUFERRIF (UART_INTSTS[5]) is set, the transfer maybe is not correct
-     * |        |          |If BUFERRIEN (UART_INTEN [5]) is enabled, the buffer error interrupt will be generated.
-     * |        |          |0 = No buffer error interrupt flag is generated in PDMA mode.
-     * |        |          |1 = Buffer error interrupt flag is generated in PDMA mode.
+     * |        |          |If BUFERRIEN (UART_INTEN[5]) is enabled, the buffer error interrupt will be generated.
+     * |        |          |0 = No buffer error interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = Buffer error interrupt flag is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
      * |        |          |Note: This bit is cleared when both TXOVIF (UART_FIFOSTS[24]]) and RXOVIF (UART_FIFOSTS[0]) are cleared.
      * |[22]    |TXENDIF   |Transmitter Empty Interrupt Flag
      * |        |          |This bit is set when TX FIFO (UART_DAT) is empty and the STOP bit of the last byte has been transmitted (TXEMPTYF (UART_FIFOSTS[28]) is set)
@@ -478,20 +488,20 @@ typedef struct
      * |        |          |1 = Single-wire Bit Error Detection Interrupt generated.
      * |[26]    |HWRLSINT  |PDMA Mode Receive Line Status Interrupt Indicator (Read Only)
      * |        |          |This bit is set if RLSIEN (UART_INTEN[2]) and HWRLSIF(UART_INTSTS[18]) are both set to 1.
-     * |        |          |0 = No RLS interrupt is generated in PDMA mode.
-     * |        |          |1 = RLS interrupt is generated in PDMA mode.
+     * |        |          |0 = No RLS interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = RLS interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
      * |[27]    |HWMODINT  |PDMA Mode MODEM Status Interrupt Indicator (Read Only)
      * |        |          |This bit is set if MODEMIEN (UART_INTEN[3]) and HWMODIF(UART_INTSTS[19]) are both set to 1.
-     * |        |          |0 = No Modem interrupt is generated in PDMA mode.
-     * |        |          |1 = Modem interrupt is generated in PDMA mode.
+     * |        |          |0 = No Modem interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = Modem interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
      * |[28]    |HWTOINT   |PDMA Mode RX Time-out Interrupt Indicator (Read Only)
      * |        |          |This bit is set if RXTOIEN (UART_INTEN[4]) and HWTOIF(UART_INTSTS[20]) are both set to 1.
-     * |        |          |0 = No RX time-out interrupt is generated in PDMA mode.
-     * |        |          |1 = RX time-out interrupt is generated in PDMA mode.
+     * |        |          |0 = No RX time-out interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = RX time-out interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
      * |[29]    |HWBUFEINT |PDMA Mode Buffer Error Interrupt Indicator (Read Only)
      * |        |          |This bit is set if BUFERRIEN (UART_INTEN[5]) and HWBUFEIF (UART_INTSTS[21]) are both set to 1.
-     * |        |          |0 = No buffer error interrupt is generated in PDMA mode.
-     * |        |          |1 = Buffer error interrupt is generated in PDMA mode.
+     * |        |          |0 = No buffer error interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
+     * |        |          |1 = Buffer error interrupt is generated when RXPDMAEN (UART_INTEN[15]) or TXPDMAEN (UART_INTEN[14]) is 1.
      * |[30]    |TXENDINT  |Transmitter Empty Interrupt Indicator (Read Only)
      * |        |          |This bit is set if TXENDIEN (UART_INTEN[22]) and TXENDIF(UART_INTSTS[22]) are both set to 1.
      * |        |          |0 = No Transmitter Empty interrupt is generated.
@@ -507,18 +517,18 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[7:0]   |TOIC      |Time-out Interrupt Comparator
      * |        |          |The time-out counter resets and starts counting (the counting clock = baud rate) whenever the RX FIFO receives a new data word if time out counter is enabled by setting TOCNTEN (UART_INTEN[11])
-     * |        |          |Once the content of time-out counter is equal to that of time-out interrupt comparator (TOIC (UART_TOUT[7:0])), a receiver time-out interrupt (RXTOINT(UART_INTSTS[12])) is generated if RXTOIEN (UART_INTEN [4]) enabled
+     * |        |          |Once the content of time-out counter is equal to that of time-out interrupt comparator (TOIC (UART_TOUT[7:0])), a receiver time-out interrupt (RXTOINT(UART_INTSTS[12])) is generated if RXTOIEN (UART_INTEN[4]) enabled
      * |        |          |A new incoming data word or RX FIFO empty will clear RXTOIF (UART_INTSTS[4])
      * |        |          |In order to avoid receiver time-out interrupt generation immediately during one character is being received, TOIC value should be set between 40 and 255
-     * |        |          |So, for example, if TOIC is set with 40, the time-out interrupt is generated after four characters are not received when 1 stop bit and no parity check is set for UART transfer.
+     * |        |          |So, for example, if TOIC is set with 40, the time-out interrupt is generated after four characters are not received when 1 STOP bit and no parity check is set for UART transfer.
      * |[15:8]  |DLY       |TX Delay Time Value
-     * |        |          |This field is used to programming the transfer delay time between the last stop bit and next start bit
+     * |        |          |This field is used to program the transfer delay time between the last STOP bit and next START bit
      * |        |          |The unit is bit time.
      * |[31]    |BITOMEN   |Bus Idle Time-out Mode Enable Bit
      * |        |          |If BITOMEN (UART_TOUT[31]) is enabled, the reset conditions of the time-out counter and RXTOIF (UART_INTSTS[4]) will be changed to detect the bus idle.
-     * |        |          |When BITOMEN (UART_TOUT[31]) is disabled, the time-out counter and RXTOIF (UART_INTSTS[4]) maintain reset value whenever the RX FIFO is empty.
+     * |        |          |When BITOMEN (UART_TOUT[31]) is disabled, the time-out counter and RXTOIF (UART_INTSTS[4]) maintain reset value whenever the RX FIFO is empty
      * |        |          |In addition, a new incoming data word will also clear RXTOIF (UART_INTSTS[4]).
-     * |        |          |On the other hand, when BITOMEN (UART_TOUT[31]) is enabled, the RX FIFO empty state will not reset the time-out counter and RXTOIF (UART_INTSTS[4]),and the new incoming data word event will not clear RXTOIF (UART_INTSTS[4]).
+     * |        |          |On the other hand, when BITOMEN (UART_TOUT[31]) is enabled, the RX FIFO empty state will not reset the time-out counter and RXTOIF (UART_INTSTS[4]), and the new incoming data word event will not clear RXTOIF (UART_INTSTS[4]).
      * |        |          |0 = Bus idle time-out mode Disabled.
      * |        |          |1 = Bus idle time-out mode Enabled.
      * @var UART_T::BAUD
@@ -529,7 +539,7 @@ typedef struct
      * |[15:0]  |BRD       |Baud Rate Divider
      * |        |          |The field indicates the baud rate divider
      * |        |          |This filed is used in baud rate calculation
-     * |        |          |The detail description is shown in Table 7.15-4.
+     * |        |          |The detail description is shown in Table 6.26-4.
      * |[23:16] |BRFD      |Baud Rate Fractional Divider
      * |        |          |This field is the fractional part of the baud rate divisor.
      * |        |          |When BRFDEN (UART_BAUD[30]) is set, the Baud Rate Equation goes to UART_CLK / ((BRD+2) + (BRFD/256)).
@@ -538,17 +548,17 @@ typedef struct
      * |        |          |As another example, if BRD = 0x8 and BRFD = 0x20, the baud rate would be UART_CLK / 10.125, which means 1 bit = 10 clocks, and for every 8 bits, the bit length becomes 11 clocks.
      * |[27:24] |EDIVM1    |Extra Divider for BAUD Rate Mode 1
      * |        |          |This field is used for baud rate calculation in mode 1 and has no effect for baud rate calculation in mode 0 and mode 2
-     * |        |          |The detail description is shown in Table 7.15-4
+     * |        |          |The detail description is shown in Table 6.26-4
      * |[28]    |BAUDM0    |BAUD Rate Mode Selection Bit 0
      * |        |          |This bit is baud rate mode selection bit 0
      * |        |          |UART provides three baud rate calculation modes
      * |        |          |This bit combines with BAUDM1 (UART_BAUD[29]) to select baud rate calculation mode
-     * |        |          |The detail description is shown in Table 7.15-4.
+     * |        |          |The detail description is shown in Table 6.26-4.
      * |[29]    |BAUDM1    |BAUD Rate Mode Selection Bit 1
      * |        |          |This bit is baud rate mode selection bit 1
      * |        |          |UART provides three baud rate calculation modes
      * |        |          |This bit combines with BAUDM0 (UART_BAUD[28]) to select baud rate calculation mode
-     * |        |          |The detail description is shown in Table 7.15-4.
+     * |        |          |The detail description is shown in Table 6.26-4.
      * |        |          |Note: In IrDA mode must be operated in mode 0.
      * |[30]    |BRFDEN    |Baud Rate Fractional Divider Enable Bit
      * |        |          |0 = Baud Rate Fractional Divider Disabled.
@@ -565,15 +575,15 @@ typedef struct
      * |[5]     |TXINV     |IrDA Inverse Transmitting Output Signal
      * |        |          |0 = None inverse transmitting signal. (Default).
      * |        |          |1 = Inverse transmitting output signal.
-     * |        |          |Note1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
+     * |        |          |Note 1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
      * |        |          |When the configuration is done, cleared TXRXDIS (UART_FUNCSEL[3]) to activate UART controller.
-     * |        |          |Note2: This bit is valid when FUNCSEL (UART_FUNCSEL[1:0]) is select IrDA function.
+     * |        |          |Note 2: This bit is valid when FUNCSEL (UART_FUNCSEL[2:0]) is select IrDA function.
      * |[6]     |RXINV     |IrDA Inverse Receive Input Signal
      * |        |          |0 = None inverse receiving input signal.
      * |        |          |1 = Inverse receiving input signal. (Default)
-     * |        |          |Note1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
+     * |        |          |Note 1: Before setting this bit, TXRXDIS (UART_FUNCSEL[3]) should be set then waited for TXRXACT (UART_FIFOSTS[31]) is cleared
      * |        |          |When the configuration is done, cleared TXRXDIS (UART_FUNCSEL[3]) to activate UART controller.
-     * |        |          |Note2: This bit is valid when FUNCSEL (UART_FUNCSEL[1:0]) is select IrDA function.
+     * |        |          |Note 2: This bit is valid when FUNCSEL (UART_FUNCSEL[2:0]) is select IrDA function.
      * @var UART_T::ALTCTL
      * Offset: 0x2C  UART Alternate Control/Status Register
      * ---------------------------------------------------------------------------------------------------
@@ -581,8 +591,8 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[3:0]   |BRKFL     |UART LIN Break Field Length
      * |        |          |This field indicates a 4-bit LIN TX break field count.
-     * |        |          |Note1: This break field length is BRKFL + 1.
-     * |        |          |Note2: According to LIN spec, the reset value is 0xC (break field length = 13).
+     * |        |          |Note 1: This break field length is BRKFL + 1.
+     * |        |          |Note 2: According to LIN spec, the reset value is 0xC (break field length = 13).
      * |[6]     |LINRXEN   |LIN RX Enable Bit
      * |        |          |0 = LIN RX mode Disabled.
      * |        |          |1 = LIN RX mode Enabled.
@@ -590,15 +600,15 @@ typedef struct
      * |        |          |0 = LIN TX Break mode Disabled.
      * |        |          |1 = LIN TX Break mode Enabled.
      * |        |          |Note: When TX break field transfer operation finished, this bit will be cleared automatically.
-     * |[8]     |RS485NMM  |RS-485 Normal Multi-drop Operation Mode (NMM)
+     * |[8]     |RS485NMM  |RS-485 Normal Multi-drop Operation Mode
      * |        |          |0 = RS-485 Normal Multi-drop Operation mode (NMM) Disabled.
      * |        |          |1 = RS-485 Normal Multi-drop Operation mode (NMM) Enabled.
      * |        |          |Note: It cannot be active with RS-485_AAD operation mode.
-     * |[9]     |RS485AAD  |RS-485 Auto Address Detection Operation Mode (AAD)
+     * |[9]     |RS485AAD  |RS-485 Auto Address Detection Operation Mode
      * |        |          |0 = RS-485 Auto Address Detection Operation mode (AAD) Disabled.
      * |        |          |1 = RS-485 Auto Address Detection Operation mode (AAD) Enabled.
      * |        |          |Note: It cannot be active with RS-485_NMM operation mode.
-     * |[10]    |RS485AUD  |RS-485 Auto Direction Function (AUD)
+     * |[10]    |RS485AUD  |RS-485 Auto Direction Function
      * |        |          |0 = RS-485 Auto Direction Operation function (AUD) Disabled.
      * |        |          |1 = RS-485 Auto Direction Operation function (AUD) Enabled.
      * |        |          |Note: It can be active with RS-485_AAD or RS-485_NMM operation mode.
@@ -608,7 +618,7 @@ typedef struct
      * |        |          |1 = Address detection mode Enabled.
      * |        |          |Note: This bit is used for RS-485 any operation mode.
      * |[17]    |ABRIF     |Auto-baud Rate Interrupt Flag (Read Only)
-     * |        |          |This bit is set when auto-baud rate detection function finished or the auto-baud rate counter was overflow and if ABRIEN(UART_INTEN [18]) is set then the auto-baud rate interrupt will be generated.
+     * |        |          |This bit is set when auto-baud rate detection function finished or the auto-baud rate counter was overflow and if ABRIEN(UART_INTEN[18]) is set then the auto-baud rate interrupt will be generated.
      * |        |          |0 = No auto-baud rate interrupt flag is generated.
      * |        |          |1 = Auto-baud rate interrupt flag is generated.
      * |        |          |Note: This bit is read only, but it can be cleared by writing '1' to ABRDTOIF (UART_FIFOSTS[2]) and ABRDIF(UART_FIFOSTS[1])
@@ -617,10 +627,10 @@ typedef struct
      * |        |          |1 = Auto-baud rate detect function Enabled.
      * |        |          |Note : This bit is cleared automatically after auto-baud detection is finished.
      * |[20:19] |ABRDBITS  |Auto-baud Rate Detect Bit Length
-     * |        |          |00 = 1-bit time from Start bit to the 1st rising edge. The input pattern shall be 0x01.
-     * |        |          |01 = 2-bit time from Start bit to the 1st rising edge. The input pattern shall be 0x02.
-     * |        |          |10 = 4-bit time from Start bit to the 1st rising edge. The input pattern shall be 0x08.
-     * |        |          |11 = 8-bit time from Start bit to the 1st rising edge. The input pattern shall be 0x80.
+     * |        |          |00 = 1-bit time from START bit to the 1st rising edge. The input pattern shall be 0x01.
+     * |        |          |01 = 2-bit time from START bit to the 1st rising edge. The input pattern shall be 0x02.
+     * |        |          |10 = 4-bit time from START bit to the 1st rising edge. The input pattern shall be 0x08.
+     * |        |          |11 = 8-bit time from START bit to the 1st rising edge. The input pattern shall be 0x80.
      * |        |          |Note : The calculation of bit number includes the START bit.
      * |[31:24] |ADDRMV    |Address Match Value
      * |        |          |This field contains the RS-485 address match values.
@@ -630,18 +640,20 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[1:0]   |FUNCSEL   |Function Select
-     * |        |          |00 = UART function.
-     * |        |          |01 = LIN function.
-     * |        |          |10 = IrDA function.
-     * |        |          |11 = RS-485 function.
+     * |[2:0]   |FUNCSEL   |Function Select
+     * |        |          |000 = UART function.
+     * |        |          |001 = LIN function.
+     * |        |          |010 = IrDA function.
+     * |        |          |011 = RS-485 function.
+     * |        |          |100 = UART Single-wire function.
+     * |        |          |Others = Reserved.
      * |[3]     |TXRXDIS   |TX and RX Disable Bit
      * |        |          |Setting this bit can disable TX and RX.
      * |        |          |0 = TX and RX Enabled.
      * |        |          |1 = TX and RX Disabled.
-     * |        |          |Note: The TX and RX will not disable immediately when this bit is set
-     * |        |          |The TX and RX complete current task before disable TX and RX
-     * |        |          |When TX and RX disable, the TXRXACT (UART_FIFOSTS[31]) is cleared.
+     * |        |          |Note: The TX and RX will not be disabled immediately when this bit is set
+     * |        |          |The TX and RX complete current task before TX and RX are disabled
+     * |        |          |When TX and RX are disabled, the TXRXACT (UART_FIFOSTS[31]) is cleared.
      * |[6]     |DGE       |Deglitch Enable Bit
      * |        |          |0 = Deglitch Disabled.
      * |        |          |1 = Deglitch Enabled.
@@ -663,48 +675,48 @@ typedef struct
      * |[1]     |SLVHDEN   |LIN Slave Header Detection Enable Bit
      * |        |          |0 = LIN slave header detection Disabled.
      * |        |          |1 = LIN slave header detection Enabled.
-     * |        |          |Note1: This bit only valid when in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1).
-     * |        |          |Note2: In LIN function mode, when detect header field (break + sync + frame ID), SLVHDETF (UART_LINSTS [0]) flag will be asserted
+     * |        |          |Note 1: This bit is only valid in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1).
+     * |        |          |Note 2: In LIN function mode, when detect header field (break + sync + frame ID), SLVHDETF (UART_LINSTS[0]) flag will be asserted
      * |        |          |If the LINIEN (UART_INTEN[8]) = 1, an interrupt will be generated.
      * |[2]     |SLVAREN   |LIN Slave Automatic Resynchronization Mode Enable Bit
      * |        |          |0 = LIN automatic resynchronization Disabled.
      * |        |          |1 = LIN automatic resynchronization Enabled.
-     * |        |          |Note1: This bit only valid when in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1).
-     * |        |          |Note2: When operation in Automatic Resynchronization mode, the baud rate setting must be mode2 (BAUDM1 (UART_BAUD [29]) and BAUDM0 (UART_BAUD [28]) must be 1).
-     * |        |          |Note3: The control and interactions of this field are explained in 7.15.5.9 (Slave mode with automatic resynchronization).
+     * |        |          |Note 1: This bit only is valid in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1).
+     * |        |          |Note 2: When operation in Automatic Resynchronization mode, the baud rate setting must be mode2 (BAUDM1 (UART_BAUD[29]) and BAUDM0 (UART_BAUD[28]) must be 1).
+     * |        |          |Note 3: The control and interactions of this field are explained in 6.26.5.10 (Slave mode with automatic resynchronization).
      * |[3]     |SLVDUEN   |LIN Slave Divider Update Method Enable Bit
      * |        |          |0 = UART_BAUD updated is written by software (if no automatic resynchronization update occurs at the same time).
      * |        |          |1 = UART_BAUD is updated at the next received character
      * |        |          |User must set the bit before checksum reception.
-     * |        |          |Note1: This bit only valid when in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1).
-     * |        |          |Note2: This bit used for LIN Slave Automatic Resynchronization mode
+     * |        |          |Note 1: This bit only is valid in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1).
+     * |        |          |Note 2: This bit used for LIN Slave Automatic Resynchronization mode
      * |        |          |(for Non-Automatic Resynchronization mode, this bit should be kept cleared)
-     * |        |          |Note3: The control and interactions of this field are explained in 7.15.5.9 (Slave mode with automatic resynchronization).
+     * |        |          |Note 3: The control and interactions of this field are explained in 6.26.5.10 (Slave mode with automatic resynchronization).
      * |[4]     |MUTE      |LIN Mute Mode Enable Bit
      * |        |          |0 = LIN mute mode Disabled.
      * |        |          |1 = LIN mute mode Enabled.
-     * |        |          |Note: The exit from mute mode condition and each control and interactions of this field are explained in 7.15.5.9 (LIN slave mode).
+     * |        |          |Note: The exit from mute mode condition and each control and interactions of this field are explained in 6.26.5.10 (LIN slave mode).
      * |[8]     |SENDH     |LIN TX Send Header Enable Bit
-     * |        |          |The LIN TX header can be break field or 'break and sync field' or 'break, sync and frame ID field', it is depend on setting HSEL (UART_LINCTL[23:22]).
+     * |        |          |The LIN TX header can be 'break field' or 'break and sync field' or 'break, sync and frame ID field', it is depend on setting HSEL (UART_LINCTL[23:22]).
      * |        |          |0 = Send LIN TX header Disabled.
      * |        |          |1 = Send LIN TX header Enabled.
-     * |        |          |Note1: This bit is shadow bit of LINTXEN (UART_ALTCTL [7]); user can read/write it by setting LINTXEN (UART_ALTCTL [7]) or SENDH (UART_LINCTL [8]).
-     * |        |          |Note2: When transmitter header field (it may be 'break' or 'break + sync' or 'break + sync + frame ID' selected by HSEL (UART_LINCTL[23:22]) field) transfer operation finished, this bit will be cleared automatically.
+     * |        |          |Note 1: This bit is shadow bit of LINTXEN (UART_ALTCTL[7]); user can read/write it by setting LINTXEN (UART_ALTCTL[7]) or SENDH (UART_LINCTL[8]).
+     * |        |          |Note 2: When transmitter header field (it may be 'break' or 'break + sync' or 'break + sync + frame ID' selected by HSEL (UART_LINCTL[23:22]) field) transfer operation finished, this bit will be cleared automatically.
      * |[9]     |IDPEN     |LIN ID Parity Enable Bit
      * |        |          |0 = LIN frame ID parity Disabled.
      * |        |          |1 = LIN frame ID parity Enabled.
-     * |        |          |Note1: This bit can be used for LIN master to sending header field (SENDH (UART_LINCTL[8])) = 1 and HSEL (UART_LINCTL[23:22]) = 10 or be used for enable LIN slave received frame ID parity checked.
-     * |        |          |Note2: This bit is only used when the operation header transmitter is in HSEL (UART_LINCTL[23:22]) = 10
+     * |        |          |Note 1: This bit can be used for LIN master to sending header field (SENDH (UART_LINCTL[8])) = 1 and HSEL (UART_LINCTL[23:22]) = 10 or be used for enable LIN slave received frame ID parity checked.
+     * |        |          |Note 2: This bit is only used when the operation header transmitter is in HSEL (UART_LINCTL[23:22]) = 10
      * |[10]    |BRKDETEN  |LIN Break Detection Enable Bit
      * |        |          |When detect consecutive dominant greater than 11 bits, and are followed by a delimiter character, the BRKDETF (UART_LINSTS[8]) flag is set at the end of break field
-     * |        |          |If the LINIEN (UART_INTEN [8])=1, an interrupt will be generated.
-     * |        |          |0 = LIN break detection Disabled .
+     * |        |          |If the LINIEN (UART_INTEN[8])=1, an interrupt will be generated.
+     * |        |          |0 = LIN break detection Disabled.
      * |        |          |1 = LIN break detection Enabled.
      * |[11]    |LINRXOFF  |LIN Receiver Disable Bit
-     * |        |          |If the receiver is enabled (LINRXOFF (UART_LINCTL[11] ) = 0), all received byte data will be accepted and stored in the RX FIFO, and if the receiver is disabled (LINRXOFF (UART_LINCTL[11] = 1), all received byte data will be ignore.
+     * |        |          |If the receiver is enabled (LINRXOFF (UART_LINCTL[11]) = 0), all received byte data will be accepted and stored in the RX FIFO, and if the receiver is disabled (LINRXOFF (UART_LINCTL[11] = 1), all received byte data will be ignore.
      * |        |          |0 = LIN receiver Enabled.
      * |        |          |1 = LIN receiver Disabled.
-     * |        |          |Note: This bit is only valid when operating in LIN function mode (FUNCSEL (UART_FUNCSEL[1:0]) = 01).
+     * |        |          |Note: This bit is only valid when operating in LIN function mode (FUNCSEL (UART_FUNCSEL[2:0]) = 001).
      * |[12]    |BITERREN  |Bit Error Detect Enable Bit
      * |        |          |0 = Bit error detection function Disabled.
      * |        |          |1 = Bit error detection function Enabled.
@@ -712,9 +724,10 @@ typedef struct
      * |        |          |If the LINIEN (UART_INTEN[8]) = 1, an interrupt will be generated.
      * |[19:16] |BRKFL     |LIN Break Field Length
      * |        |          |This field indicates a 4-bit LIN TX break field count.
-     * |        |          |Note1: These registers are shadow registers of BRKFL (UART_ALTCTL[3:0]), User can read/write it by setting BRKFL (UART_ALTCTL[3:0]) or BRKFL (UART_LINCTL[19:16]).
-     * |        |          |Note2: This break field length is BRKFL + 1.
-     * |        |          |Note3: According to LIN spec, the reset value is 12 (break field length = 13).
+     * |        |          |Note 1: These registers are shadow registers of BRKFL (UART_ALTCTL[3:0])
+     * |        |          |User can read/write it by setting BRKFL (UART_ALTCTL[3:0]) or BRKFL (UART_LINCTL[19:16]).
+     * |        |          |Note 2: This break field length is BRKFL + 1.
+     * |        |          |Note 3: According to LIN spec, the reset value is 12 (break field length = 13).
      * |[21:20] |BSL       |LIN Break/Sync Delimiter Length
      * |        |          |00 = The LIN break/sync delimiter length is 1-bit time.
      * |        |          |01 = The LIN break/sync delimiter length is 2-bit time.
@@ -726,12 +739,12 @@ typedef struct
      * |        |          |01 = The LIN header includes 'break field' and 'sync field'.
      * |        |          |10 = The LIN header includes 'break field', 'sync field' and 'frame ID field'.
      * |        |          |11 = Reserved.
-     * |        |          |Note: This bit is used to master mode for LIN to send header field (SENDH (UART_LINCTL [8]) = 1) or used to slave to indicates exit from mute mode condition (MUTE (UART_LINCTL[4] = 1).
+     * |        |          |Note: This bit is used to master mode for LIN to send header field (SENDH (UART_LINCTL[8]) = 1) or used to slave to indicate exit from mute mode condition (MUTE (UART_LINCTL[4] = 1).
      * |[31:24] |PID       |LIN PID Bits
-     * |        |          |This field contains the LIN frame ID value when in LIN function mode, the frame ID parity can be generated by software or hardware depends on IDPEN (UART_LINCTL[9]) = 1.
-     * |        |          |If the parity generated by hardware, user fill ID0~ID5 (PID [29:24] ), hardware will calculate P0 (PID[30]) and P1 (PID[31]), otherwise user must filled frame ID and parity in this field.
-     * |        |          |Note1: User can fill any 8-bit value to this field and the bit 24 indicates ID0 (LSB first).
-     * |        |          |Note2: This field can be used for LIN master mode or slave mode.
+     * |        |          |This field contains the LIN frame ID value in LIN function mode, and the frame ID parity can be generated by software or hardware depends on IDPEN (UART_LINCTL[9]) = 1.
+     * |        |          |If the parity generated by hardware, user fill ID0~ID5 (PID[29:24]), hardware will calculate P0 (PID[30]) and P1 (PID[31]), otherwise user must filled frame ID and parity in this field.
+     * |        |          |Note 1: User can fill any 8-bit value to this field and the bit 24 indicates ID0 (LSB first).
+     * |        |          |Note 2: This field can be used for LIN master mode or slave mode.
      * @var UART_T::LINSTS
      * Offset: 0x38  UART LIN Status Register
      * ---------------------------------------------------------------------------------------------------
@@ -741,46 +754,43 @@ typedef struct
      * |        |          |This bit is set by hardware when a LIN header is detected in LIN slave mode and be cleared by writing 1 to it.
      * |        |          |0 = LIN header not detected.
      * |        |          |1 = LIN header detected (break + sync + frame ID).
-     * |        |          |Note1: This bit can be cleared by writing 1 to it.
-     * |        |          |Note2: This bit is only valid when in LIN slave mode (SLVEN (UART_LINCTL [0]) = 1) and enable LIN slave header detection function (SLVHDEN (UART_LINCTL [1])).
-     * |        |          |Note3: When enable ID parity check IDPEN (UART_LINCTL [9]), if hardware detect complete header ('break + sync + frame ID'), the SLVHDETF will be set whether the frame ID correct or not.
+     * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+     * |        |          |Note 2: This bit is only valid in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1) and enable LIN slave header detection function (SLVHDEN (UART_LINCTL[1])).
+     * |        |          |Note 3: When enable ID parity check IDPEN (UART_LINCTL[9]), if hardware detect complete header ('break + sync + frame ID'), the SLVHDETF will be set whether the frame ID correct or not.
      * |[1]     |SLVHEF    |LIN Slave Header Error Flag
      * |        |          |This bit is set by hardware when a LIN header error is detected in LIN slave mode and be cleared by writing 1 to it
-     * |        |          |The header errors include 'break delimiter is too short (less than 0.5 bit time)', 'frame error in sync field or Identifier field',
-     * |        |          |'sync field data is not 0x55 in Non-Automatic Resynchronization mode', 'sync field deviation error with Automatic Resynchronization mode',
-     * |        |          |'sync field measure time-out with Automatic Resynchronization mode' and 'LIN header reception time-out'.
+     * |        |          |The header errors include 'break delimiter is too short (less than 0.5 bit time)', 'frame error in sync field or Identifier field', 'sync field data is not 0x55 in Non-Automatic Resynchronization mode', 'sync field deviation error with Automatic Resynchronization mode', 'sync field measure time-out with Automatic Resynchronization mode' and 'LIN header reception time-out'.
      * |        |          |0 = LIN header error not detected.
      * |        |          |1 = LIN header error detected.
-     * |        |          |Note1: This bit can be cleared by writing 1 to it.
-     * |        |          |Note2: This bit is only valid when UART is operated in LIN slave mode (SLVEN (UART_LINCTL [0]) = 1) and
-     * |        |          |enables LIN slave header detection function (SLVHDEN (UART_LINCTL [1])).
+     * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+     * |        |          |Note 2: This bit is only valid when UART is operated in LIN slave mode (SLVEN (UART_LINCTL[0]) = 1) and enables LIN slave header detection function (SLVHDEN (UART_LINCTL[1])).
      * |[2]     |SLVIDPEF  |LIN Slave ID Parity Error Flag
      * |        |          |This bit is set by hardware when receipted frame ID parity is not correct.
      * |        |          |0 = No active.
      * |        |          |1 = Receipted frame ID parity is not correct.
-     * |        |          |Note1: This bit can be cleared by writing 1 to it.
-     * |        |          |Note2: This bit is only valid when in LIN slave mode (SLVEN (UART_LINCTL [0])= 1) and enable LIN frame ID parity check function IDPEN (UART_LINCTL [9]).
+     * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+     * |        |          |Note 2: This bit is only valid in LIN slave mode (SLVEN (UART_LINCTL[0])= 1) and enable LIN frame ID parity check function IDPEN (UART_LINCTL[9]).
      * |[3]     |SLVSYNCF  |LIN Slave Sync Field
      * |        |          |This bit indicates that the LIN sync field is being analyzed in Automatic Resynchronization mode
      * |        |          |When the receiver header have some error been detect, user must reset the internal circuit to re-search new frame header by writing 1 to this bit.
      * |        |          |0 = The current character is not at LIN sync state.
      * |        |          |1 = The current character is at LIN sync state.
-     * |        |          |Note1: This bit is only valid when in LIN Slave mode (SLVEN(UART_LINCTL[0]) = 1).
-     * |        |          |Note2: This bit can be cleared by writing 1 to it.
-     * |        |          |Note3: When writing 1 to it, hardware will reload the initial baud rate and re-search a new frame header.
+     * |        |          |Note 1: This bit is only valid in LIN Slave mode (SLVEN(UART_LINCTL[0]) = 1).
+     * |        |          |Note 2: This bit can be cleared by writing 1 to it.
+     * |        |          |Note 3: When writing 1 to it, hardware will reload the initial baud rate and re-search a new frame header.
      * |[8]     |BRKDETF   |LIN Break Detection Flag
      * |        |          |This bit is set by hardware when a break is detected and be cleared by writing 1 to it through software.
      * |        |          |0 = LIN break not detected.
      * |        |          |1 = LIN break detected.
-     * |        |          |Note1: This bit can be cleared by writing 1 to it.
-     * |        |          |Note2: This bit is only valid when LIN break detection function is enabled (BRKDETEN (UART_LINCTL[10]) =1).
+     * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+     * |        |          |Note 2: This bit is only valid when LIN break detection function is enabled (BRKDETEN (UART_LINCTL[10]) =1).
      * |[9]     |BITEF     |Bit Error Detect Status Flag
      * |        |          |At TX transfer state, hardware will monitor the bus state, if the input pin (UART_RXD) state not equals to the output pin (UART_TXD) state, BITEF (UART_LINSTS[9]) will be set.
      * |        |          |When occur bit error, if the LINIEN (UART_INTEN[8]) = 1, an interrupt will be generated.
      * |        |          |0 = Bit error not detected.
      * |        |          |1 = Bit error detected.
-     * |        |          |Note1: This bit can be cleared by writing 1 to it.
-     * |        |          |Note2: This bit is only valid when enable bit error detection function (BITERREN (UART_LINCTL [12]) = 1).
+     * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+     * |        |          |Note 2: This bit is only valid when enable bit error detection function (BITERREN (UART_LINCTL[12]) = 1).
      * @var UART_T::BRCOMP
      * Offset: 0x3C  UART Baud Rate Compensation Register
      * ---------------------------------------------------------------------------------------------------
@@ -788,7 +798,7 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[8:0]   |BRCOMP    |Baud Rate Compensation Patten
      * |        |          |These 9-bits are used to define the relative bit is compensated or not.
-     * |        |          |BRCOMP[7:0] is used to define the compensation of UART_DAT[7:0] and BRCOM[8] is used to define the parity bit.
+     * |        |          |BRCOMP[7:0] is used to define the compensation of DAT (UART_DAT[7:0]) and BRCOM[8] is used to define PARITY (UART_DAT[8]).
      * |[31]    |BRCOMPDEC |Baud Rate Compensation Decrease
      * |        |          |0 = Positive (increase one module clock) compensation for each compensated bit.
      * |        |          |1 = Negative (decrease one module clock) compensation for each compensated bit.
@@ -799,29 +809,26 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[0]     |WKCTSEN   |nCTS Wake-up Enable Bit
      * |        |          |0 = nCTS Wake-up system function Disabled.
-     * |        |          |1 = nCTS Wake-up system function Enabled, when the system is in Power-down mode, an external.
-     * |        |          |nCTS change will wake-up system from Power-down mode.
+     * |        |          |1 = nCTS Wake-up system function Enabled.
+     * |        |          |Note: When the system is in Power-down mode, an external nCTS change will wake up system from Power-down mode.
      * |[1]     |WKDATEN   |Incoming Data Wake-up Enable Bit
      * |        |          |0 = Incoming data wake-up system function Disabled.
-     * |        |          |1 = Incoming data wake-up system function Enabled, when the system is in Power-down mode,.
-     * |        |          |incoming data will wake-up system from Power-down mode.
+     * |        |          |1 = Incoming data wake-up system function Enabled.
+     * |        |          |Note: When the system is in Power-down mode, incoming data will wake-up system from Power-down mode.
      * |[2]     |WKRFRTEN  |Received Data FIFO Reached Threshold Wake-up Enable Bit
      * |        |          |0 = Received Data FIFO reached threshold wake-up system function Disabled.
-     * |        |          |1 = Received Data FIFO reached threshold wake-up system function Enabled, when the system is.
-     * |        |          |in Power-down mode, Received Data FIFO reached threshold will wake-up system from
-     * |        |          |Power-down mode.
-     * |[3]     |WKRS485EN |RS-485 Address Match (AAD Mode) Wake-up Enable Bit
+     * |        |          |1 = Received Data FIFO reached threshold wake-up system function Enabled.
+     * |        |          |Note: When the system is in Power-down mode, Received Data FIFO reached threshold will wake-up system from Power-down mode.
+     * |[3]     |WKRS485EN |RS-485 Address Match Wake-up Enable Bit
      * |        |          |0 = RS-485 Address Match (AAD mode) wake-up system function Disabled.
-     * |        |          |1 = RS-485 Address Match (AAD mode) wake-up system function Enabled, when the system is in.
-     * |        |          |Power-down mode, RS-485 Address Match will wake-up system from Power-down mode.
-     * |        |          |Note: This bit is used for RS-485 Auto Address Detection (AAD) mode in RS-485 function mode
-     * |        |          |and ADDRDEN (UART_ALTCTL[15]) is set to 1.
+     * |        |          |1 = RS-485 Address Match (AAD mode) wake-up system function Enabled.
+     * |        |          |Note 1: When the system is in Power-down mode, RS-485 Address Match will wake-up system from Power-down mode.
+     * |        |          |Note 2: This bit is used for RS-485 Auto Address Detection (AAD) mode in RS-485 function mode and ADDRDEN (UART_ALTCTL[15]) is set to 1.
      * |[4]     |WKTOUTEN  |Received Data FIFO Reached Threshold Time-out Wake-up Enable Bit
      * |        |          |0 = Received Data FIFO reached threshold time-out wake-up system function Disabled.
-     * |        |          |1 = Received Data FIFO reached threshold time-out wake-up system function Enabled, when the.
-     * |        |          |system is in Power-down mode, Received Data FIFO reached threshold time-out will wake-up
-     * |        |          |system from Power-down mode.
-     * |        |          |Note: It is suggest the function is enabled when the WKRFRTEN (UART_WKCTL[2]) is set to 1.
+     * |        |          |1 = Received Data FIFO reached threshold time-out wake-up system function Enabled.
+     * |        |          |Note 1: When the system is in Power-down mode, Received Data FIFO reached threshold time-out will wake up system from Power-down mode.
+     * |        |          |Note 2: It is suggested the function is enabled when the WKRFRTEN (UART_WKCTL[2]) is set to 1.
      * @var UART_T::WKSTS
      * Offset: 0x44  UART Wake-up Status Register
      * ---------------------------------------------------------------------------------------------------
@@ -831,42 +838,40 @@ typedef struct
      * |        |          |This bit is set if chip wake-up from power-down state by nCTS wake-up.
      * |        |          |0 = Chip stays in power-down state.
      * |        |          |1 = Chip wake-up from power-down state by nCTS wake-up.
-     * |        |          |Note1: If WKCTSEN (UART_WKCTL[0]) is enabled, the nCTS wake-up cause this bit is set to '1'.
-     * |        |          |Note2: This bit can be cleared by writing '1' to it.
+     * |        |          |Note 1: If WKCTSEN (UART_WKCTL[0]) is enabled, the nCTS wake-up cause this bit is set to '1'.
+     * |        |          |Note 2: This bit can be cleared by writing '1' to it.
      * |[1]     |DATWKF    |Incoming Data Wake-up Flag
      * |        |          |This bit is set if chip wake-up from power-down state by data wake-up.
      * |        |          |0 = Chip stays in power-down state.
      * |        |          |1 = Chip wake-up from power-down state by Incoming Data wake-up.
-     * |        |          |Note1: If WKDATEN (UART_WKCTL[1]) is enabled, the Incoming Data wake-up cause this bit is set to '1'.
-     * |        |          |Note2: This bit can be cleared by writing '1' to it.
+     * |        |          |Note 1: If WKDATEN (UART_WKCTL[1]) is enabled, the Incoming Data wake-up cause this bit is set to '1'.
+     * |        |          |Note 2: This bit can be cleared by writing '1' to it.
      * |[2]     |RFRTWKF   |Received Data FIFO Reached Threshold Wake-up Flag
-     * |        |          |This bit is set if chip wake-up from power-down state by Received Data FIFO reached threshold
-     * |        |          |wake-up .
+     * |        |          |This bit is set if chip wake-up from power-down state by Received Data FIFO reached threshold wake-up.
      * |        |          |0 = Chip stays in power-down state.
      * |        |          |1 = Chip wake-up from power-down state by Received Data FIFO Reached Threshold wake-up.
-     * |        |          |Note1: If WKRFRTEN (UART_WKCTL[2]) is enabled, the Received Data FIFO Reached Threshold wake-up cause this bit is set to '1'.
-     * |        |          |Note2: This bit can be cleared by writing '1' to it.
-     * |[3]     |RS485WKF  |RS-485 Address Match (AAD Mode) Wake-up Flag
+     * |        |          |Note 1: If WKRFRTEN (UART_WKCTL[2]) is enabled, the Received Data FIFO Reached Threshold wake-up cause this bit is set to '1'.
+     * |        |          |Note 2: This bit can be cleared by writing '1' to it.
+     * |[3]     |RS485WKF  |RS-485 Address Match Wake-up Flag
      * |        |          |This bit is set if chip wake-up from power-down state by RS-485 Address Match (AAD mode).
      * |        |          |0 = Chip stays in power-down state.
      * |        |          |1 = Chip wake-up from power-down state by RS-485 Address Match (AAD mode) wake-up.
-     * |        |          |Note1: If WKRS485EN (UART_WKCTL[3]) is enabled, the RS-485 Address Match (AAD mode) wake-up cause this bit is set to '1'.
-     * |        |          |Note2: This bit can be cleared by writing '1' to it.
+     * |        |          |Note 1: If WKRS485EN (UART_WKCTL[3]) is enabled, the RS-485 Address Match (AAD mode) wake-up cause this bit is set to '1'.
+     * |        |          |Note 2: This bit can be cleared by writing '1' to it.
      * |[4]     |TOUTWKF   |Received Data FIFO Threshold Time-out Wake-up Flag
      * |        |          |This bit is set if chip wake-up from power-down state by Received Data FIFO Threshold Time-out
      * |        |          |wake-up.
      * |        |          |0 = Chip stays in power-down state.
      * |        |          |1 = Chip wake-up from power-down state by Received Data FIFO reached threshold time-out.
-     * |        |          |wake-up.
-     * |        |          |Note1: If WKTOUTEN (UART_WKCTL[4]) is enabled, the Received Data FIFO reached threshold time-out wake-up cause this bit is set to '1'.
-     * |        |          |Note2: This bit can be cleared by writing '1' to it.
+     * |        |          |Note 1: If WKTOUTEN (UART_WKCTL[4]) is enabled, the Received Data FIFO reached threshold time-out wake-up cause this bit is set to '1'.
+     * |        |          |Note 2: This bit can be cleared by writing '1' to it.
      * @var UART_T::DWKCOMP
      * Offset: 0x48  UART Incoming Data Wake-up Compensation Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[15:0]  |STCOMP    |Start Bit Compensation Value
-     * |        |          |These bits field indicate how many clock cycle selected by UART_CLK do the UART controller can get the 1st bit (start bit) when the device is wake-up from power-down mode.
+     * |[15:0]  |STCOMP    |START Bit Compensation Value
+     * |        |          |These bits field indicate how many clock cycle selected by UART_CLK do the UART controller can get the 1st bit (START bit) when the device is wake-up from Power-down mode.
      * |        |          |Note: It is valid only when WKDATEN (UART_WKCTL[1]) is set.
      * @var UART_T::RS485DD
      * Offset: 0x4C  UART RS485 Transceiver Deactivate Delay Register
@@ -877,7 +882,7 @@ typedef struct
      * |        |          |These bits field indicate how many clock cycles selected by UART_CLK do the UART controller delay the RS485 transceiver state trancing when the state trancing of RS485 transceiver is from TX to RX state
      * |        |          |These bits field have no effect when the state trancing of RS485 transceiver is from RX to TX state.
      * |        |          |Note: It is valid only when RS485AUD (UART_ALTCTL[10]) is set.
-     */
+    */
     __IO uint32_t DAT;                   /*!< [0x0000] UART Receive/Transmit Buffer Register                            */
     __IO uint32_t INTEN;                 /*!< [0x0004] UART Interrupt Enable Register                                   */
     __IO uint32_t FIFO;                  /*!< [0x0008] UART FIFO Control Register                                       */
@@ -897,9 +902,7 @@ typedef struct
     __IO uint32_t WKCTL;                 /*!< [0x0040] UART Wake-up Control Register                                    */
     __IO uint32_t WKSTS;                 /*!< [0x0044] UART Wake-up Status Register                                     */
     __IO uint32_t DWKCOMP;               /*!< [0x0048] UART Incoming Data Wake-up Compensation Register                 */
-    __IO uint32_t RS485DD;               /*!< [0x004C] UART RS485 Transceiver Deactivate Delay Register                 */
-    __I  uint32_t RESERVE0[1003];
-    __I  uint32_t VERSION;               /*!< [0x0ffc] UART Module Version Register                                     */
+    __IO uint32_t RS485DD;               /*!< [0x004c] UART RS485 Transceiver Deactivate Delay Register                 */
 
 } UART_T;
 
@@ -908,449 +911,440 @@ typedef struct
     Constant Definitions for UART Controller
 @{ */
 
-#define UART_DAT_DAT_Pos                 (0)                                               /*!< UART_T::DAT: DAT Position              */
-#define UART_DAT_DAT_Msk                 (0xfful << UART_DAT_DAT_Pos)                      /*!< UART_T::DAT: DAT Mask                  */
+#define UART_DAT_DAT_Pos                (0)                                               /*!< UART_T::DAT: DAT Position             */
+#define UART_DAT_DAT_Msk                (0xfful << UART_DAT_DAT_Pos)                      /*!< UART_T::DAT: DAT Mask                 */
 
-#define UART_DAT_PARITY_Pos              (8)                                               /*!< UART_T::DAT: PARITY Position           */
-#define UART_DAT_PARITY_Msk              (0x1ul << UART_DAT_PARITY_Pos)                    /*!< UART_T::DAT: PARITY Mask               */
+#define UART_DAT_PARITY_Pos             (8)                                               /*!< UART_T::DAT: PARITY Position          */
+#define UART_DAT_PARITY_Msk             (0x1ul << UART_DAT_PARITY_Pos)                    /*!< UART_T::DAT: PARITY Mask              */
 
-#define UART_INTEN_RDAIEN_Pos            (0)                                               /*!< UART_T::INTEN: RDAIEN Position         */
-#define UART_INTEN_RDAIEN_Msk            (0x1ul << UART_INTEN_RDAIEN_Pos)                  /*!< UART_T::INTEN: RDAIEN Mask             */
+#define UART_INTEN_RDAIEN_Pos           (0)                                               /*!< UART_T::INTEN: RDAIEN Position        */
+#define UART_INTEN_RDAIEN_Msk           (0x1ul << UART_INTEN_RDAIEN_Pos)                  /*!< UART_T::INTEN: RDAIEN Mask            */
 
-#define UART_INTEN_THREIEN_Pos           (1)                                               /*!< UART_T::INTEN: THREIEN Position        */
-#define UART_INTEN_THREIEN_Msk           (0x1ul << UART_INTEN_THREIEN_Pos)                 /*!< UART_T::INTEN: THREIEN Mask            */
+#define UART_INTEN_THREIEN_Pos          (1)                                               /*!< UART_T::INTEN: THREIEN Position       */
+#define UART_INTEN_THREIEN_Msk          (0x1ul << UART_INTEN_THREIEN_Pos)                 /*!< UART_T::INTEN: THREIEN Mask           */
 
-#define UART_INTEN_RLSIEN_Pos            (2)                                               /*!< UART_T::INTEN: RLSIEN Position         */
-#define UART_INTEN_RLSIEN_Msk            (0x1ul << UART_INTEN_RLSIEN_Pos)                  /*!< UART_T::INTEN: RLSIEN Mask             */
+#define UART_INTEN_RLSIEN_Pos           (2)                                               /*!< UART_T::INTEN: RLSIEN Position        */
+#define UART_INTEN_RLSIEN_Msk           (0x1ul << UART_INTEN_RLSIEN_Pos)                  /*!< UART_T::INTEN: RLSIEN Mask            */
 
-#define UART_INTEN_MODEMIEN_Pos          (3)                                               /*!< UART_T::INTEN: MODEMIEN Position       */
-#define UART_INTEN_MODEMIEN_Msk          (0x1ul << UART_INTEN_MODEMIEN_Pos)                /*!< UART_T::INTEN: MODEMIEN Mask           */
+#define UART_INTEN_MODEMIEN_Pos         (3)                                               /*!< UART_T::INTEN: MODEMIEN Position      */
+#define UART_INTEN_MODEMIEN_Msk         (0x1ul << UART_INTEN_MODEMIEN_Pos)                /*!< UART_T::INTEN: MODEMIEN Mask          */
 
-#define UART_INTEN_RXTOIEN_Pos           (4)                                               /*!< UART_T::INTEN: RXTOIEN Position        */
-#define UART_INTEN_RXTOIEN_Msk           (0x1ul << UART_INTEN_RXTOIEN_Pos)                 /*!< UART_T::INTEN: RXTOIEN Mask            */
+#define UART_INTEN_RXTOIEN_Pos          (4)                                               /*!< UART_T::INTEN: RXTOIEN Position       */
+#define UART_INTEN_RXTOIEN_Msk          (0x1ul << UART_INTEN_RXTOIEN_Pos)                 /*!< UART_T::INTEN: RXTOIEN Mask           */
 
-#define UART_INTEN_BUFERRIEN_Pos         (5)                                               /*!< UART_T::INTEN: BUFERRIEN Position      */
-#define UART_INTEN_BUFERRIEN_Msk         (0x1ul << UART_INTEN_BUFERRIEN_Pos)               /*!< UART_T::INTEN: BUFERRIEN Mask          */
+#define UART_INTEN_BUFERRIEN_Pos        (5)                                               /*!< UART_T::INTEN: BUFERRIEN Position     */
+#define UART_INTEN_BUFERRIEN_Msk        (0x1ul << UART_INTEN_BUFERRIEN_Pos)               /*!< UART_T::INTEN: BUFERRIEN Mask         */
 
-#define UART_INTEN_WKIEN_Pos             (6)                                               /*!< UART_T::INTEN: WKIEN Position          */
-#define UART_INTEN_WKIEN_Msk             (0x1ul << UART_INTEN_WKIEN_Pos)                   /*!< UART_T::INTEN: WKIEN Mask              */
+#define UART_INTEN_WKIEN_Pos            (6)                                               /*!< UART_T::INTEN: WKIEN Position         */
+#define UART_INTEN_WKIEN_Msk            (0x1ul << UART_INTEN_WKIEN_Pos)                   /*!< UART_T::INTEN: WKIEN Mask             */
 
-#define UART_INTEN_LINIEN_Pos            (8)                                               /*!< UART_T::INTEN: LINIEN Position         */
-#define UART_INTEN_LINIEN_Msk            (0x1ul << UART_INTEN_LINIEN_Pos)                  /*!< UART_T::INTEN: LINIEN Mask             */
+#define UART_INTEN_LINIEN_Pos           (8)                                               /*!< UART_T::INTEN: LINIEN Position        */
+#define UART_INTEN_LINIEN_Msk           (0x1ul << UART_INTEN_LINIEN_Pos)                  /*!< UART_T::INTEN: LINIEN Mask            */
 
-#define UART_INTEN_TOCNTEN_Pos           (11)                                              /*!< UART_T::INTEN: TOCNTEN Position        */
-#define UART_INTEN_TOCNTEN_Msk           (0x1ul << UART_INTEN_TOCNTEN_Pos)                 /*!< UART_T::INTEN: TOCNTEN Mask            */
+#define UART_INTEN_TOCNTEN_Pos          (11)                                              /*!< UART_T::INTEN: TOCNTEN Position       */
+#define UART_INTEN_TOCNTEN_Msk          (0x1ul << UART_INTEN_TOCNTEN_Pos)                 /*!< UART_T::INTEN: TOCNTEN Mask           */
 
-#define UART_INTEN_ATORTSEN_Pos          (12)                                              /*!< UART_T::INTEN: ATORTSEN Position       */
-#define UART_INTEN_ATORTSEN_Msk          (0x1ul << UART_INTEN_ATORTSEN_Pos)                /*!< UART_T::INTEN: ATORTSEN Mask           */
+#define UART_INTEN_ATORTSEN_Pos         (12)                                              /*!< UART_T::INTEN: ATORTSEN Position      */
+#define UART_INTEN_ATORTSEN_Msk         (0x1ul << UART_INTEN_ATORTSEN_Pos)                /*!< UART_T::INTEN: ATORTSEN Mask          */
 
-#define UART_INTEN_ATOCTSEN_Pos          (13)                                              /*!< UART_T::INTEN: ATOCTSEN Position       */
-#define UART_INTEN_ATOCTSEN_Msk          (0x1ul << UART_INTEN_ATOCTSEN_Pos)                /*!< UART_T::INTEN: ATOCTSEN Mask           */
+#define UART_INTEN_ATOCTSEN_Pos         (13)                                              /*!< UART_T::INTEN: ATOCTSEN Position      */
+#define UART_INTEN_ATOCTSEN_Msk         (0x1ul << UART_INTEN_ATOCTSEN_Pos)                /*!< UART_T::INTEN: ATOCTSEN Mask          */
 
-#define UART_INTEN_TXPDMAEN_Pos          (14)                                              /*!< UART_T::INTEN: TXPDMAEN Position       */
-#define UART_INTEN_TXPDMAEN_Msk          (0x1ul << UART_INTEN_TXPDMAEN_Pos)                /*!< UART_T::INTEN: TXPDMAEN Mask           */
+#define UART_INTEN_TXPDMAEN_Pos         (14)                                              /*!< UART_T::INTEN: TXPDMAEN Position      */
+#define UART_INTEN_TXPDMAEN_Msk         (0x1ul << UART_INTEN_TXPDMAEN_Pos)                /*!< UART_T::INTEN: TXPDMAEN Mask          */
 
-#define UART_INTEN_RXPDMAEN_Pos          (15)                                              /*!< UART_T::INTEN: RXPDMAEN Position       */
-#define UART_INTEN_RXPDMAEN_Msk          (0x1ul << UART_INTEN_RXPDMAEN_Pos)                /*!< UART_T::INTEN: RXPDMAEN Mask           */
+#define UART_INTEN_RXPDMAEN_Pos         (15)                                              /*!< UART_T::INTEN: RXPDMAEN Position      */
+#define UART_INTEN_RXPDMAEN_Msk         (0x1ul << UART_INTEN_RXPDMAEN_Pos)                /*!< UART_T::INTEN: RXPDMAEN Mask          */
 
-#define UART_INTEN_SWBEIEN_Pos           (16)                                              /*!< UART_T::INTEN: SWBEIEN Position        */
-#define UART_INTEN_SWBEIEN_Msk           (0x1ul << UART_INTEN_SWBEIEN_Pos)                 /*!< UART_T::INTEN: SWBEIEN Mask            */
+#define UART_INTEN_SWBEIEN_Pos          (16)                                              /*!< UART_T::INTEN: SWBEIEN Position       */
+#define UART_INTEN_SWBEIEN_Msk          (0x1ul << UART_INTEN_SWBEIEN_Pos)                 /*!< UART_T::INTEN: SWBEIEN Mask           */
 
-#define UART_INTEN_ABRIEN_Pos            (18)                                              /*!< UART_T::INTEN: ABRIEN Position         */
-#define UART_INTEN_ABRIEN_Msk            (0x1ul << UART_INTEN_ABRIEN_Pos)                  /*!< UART_T::INTEN: ABRIEN Mask             */
+#define UART_INTEN_ABRIEN_Pos           (18)                                              /*!< UART_T::INTEN: ABRIEN Position        */
+#define UART_INTEN_ABRIEN_Msk           (0x1ul << UART_INTEN_ABRIEN_Pos)                  /*!< UART_T::INTEN: ABRIEN Mask            */
 
-#define UART_INTEN_TXENDIEN_Pos          (22)                                              /*!< UART_T::INTEN: TXENDIEN Position       */
-#define UART_INTEN_TXENDIEN_Msk          (0x1ul << UART_INTEN_TXENDIEN_Pos)                /*!< UART_T::INTEN: TXENDIEN Mask           */
+#define UART_INTEN_TXENDIEN_Pos         (22)                                              /*!< UART_T::INTEN: TXENDIEN Position      */
+#define UART_INTEN_TXENDIEN_Msk         (0x1ul << UART_INTEN_TXENDIEN_Pos)                /*!< UART_T::INTEN: TXENDIEN Mask          */
 
-#define UART_FIFO_RXRST_Pos              (1)                                               /*!< UART_T::FIFO: RXRST Position           */
-#define UART_FIFO_RXRST_Msk              (0x1ul << UART_FIFO_RXRST_Pos)                    /*!< UART_T::FIFO: RXRST Mask               */
+#define UART_FIFO_RXRST_Pos             (1)                                               /*!< UART_T::FIFO: RXRST Position          */
+#define UART_FIFO_RXRST_Msk             (0x1ul << UART_FIFO_RXRST_Pos)                    /*!< UART_T::FIFO: RXRST Mask              */
 
-#define UART_FIFO_TXRST_Pos              (2)                                               /*!< UART_T::FIFO: TXRST Position           */
-#define UART_FIFO_TXRST_Msk              (0x1ul << UART_FIFO_TXRST_Pos)                    /*!< UART_T::FIFO: TXRST Mask               */
+#define UART_FIFO_TXRST_Pos             (2)                                               /*!< UART_T::FIFO: TXRST Position          */
+#define UART_FIFO_TXRST_Msk             (0x1ul << UART_FIFO_TXRST_Pos)                    /*!< UART_T::FIFO: TXRST Mask              */
 
-#define UART_FIFO_RFITL_Pos              (4)                                               /*!< UART_T::FIFO: RFITL Position           */
-#define UART_FIFO_RFITL_Msk              (0xful << UART_FIFO_RFITL_Pos)                    /*!< UART_T::FIFO: RFITL Mask               */
+#define UART_FIFO_RFITL_Pos             (4)                                               /*!< UART_T::FIFO: RFITL Position          */
+#define UART_FIFO_RFITL_Msk             (0xful << UART_FIFO_RFITL_Pos)                    /*!< UART_T::FIFO: RFITL Mask              */
 
-#define UART_FIFO_RXOFF_Pos              (8)                                               /*!< UART_T::FIFO: RXOFF Position           */
-#define UART_FIFO_RXOFF_Msk              (0x1ul << UART_FIFO_RXOFF_Pos)                    /*!< UART_T::FIFO: RXOFF Mask               */
+#define UART_FIFO_RXOFF_Pos             (8)                                               /*!< UART_T::FIFO: RXOFF Position          */
+#define UART_FIFO_RXOFF_Msk             (0x1ul << UART_FIFO_RXOFF_Pos)                    /*!< UART_T::FIFO: RXOFF Mask              */
 
-#define UART_FIFO_RTSTRGLV_Pos           (16)                                              /*!< UART_T::FIFO: RTSTRGLV Position        */
-#define UART_FIFO_RTSTRGLV_Msk           (0xful << UART_FIFO_RTSTRGLV_Pos)                 /*!< UART_T::FIFO: RTSTRGLV Mask            */
+#define UART_FIFO_RTSTRGLV_Pos          (16)                                              /*!< UART_T::FIFO: RTSTRGLV Position       */
+#define UART_FIFO_RTSTRGLV_Msk          (0xful << UART_FIFO_RTSTRGLV_Pos)                 /*!< UART_T::FIFO: RTSTRGLV Mask           */
 
-#define UART_LINE_WLS_Pos                (0)                                               /*!< UART_T::LINE: WLS Position             */
-#define UART_LINE_WLS_Msk                (0x3ul << UART_LINE_WLS_Pos)                      /*!< UART_T::LINE: WLS Mask                 */
+#define UART_LINE_WLS_Pos               (0)                                               /*!< UART_T::LINE: WLS Position            */
+#define UART_LINE_WLS_Msk               (0x3ul << UART_LINE_WLS_Pos)                      /*!< UART_T::LINE: WLS Mask                */
 
-#define UART_LINE_NSB_Pos                (2)                                               /*!< UART_T::LINE: NSB Position             */
-#define UART_LINE_NSB_Msk                (0x1ul << UART_LINE_NSB_Pos)                      /*!< UART_T::LINE: NSB Mask                 */
+#define UART_LINE_NSB_Pos               (2)                                               /*!< UART_T::LINE: NSB Position            */
+#define UART_LINE_NSB_Msk               (0x1ul << UART_LINE_NSB_Pos)                      /*!< UART_T::LINE: NSB Mask                */
 
-#define UART_LINE_PBE_Pos                (3)                                               /*!< UART_T::LINE: PBE Position             */
-#define UART_LINE_PBE_Msk                (0x1ul << UART_LINE_PBE_Pos)                      /*!< UART_T::LINE: PBE Mask                 */
+#define UART_LINE_PBE_Pos               (3)                                               /*!< UART_T::LINE: PBE Position            */
+#define UART_LINE_PBE_Msk               (0x1ul << UART_LINE_PBE_Pos)                      /*!< UART_T::LINE: PBE Mask                */
 
-#define UART_LINE_EPE_Pos                (4)                                               /*!< UART_T::LINE: EPE Position             */
-#define UART_LINE_EPE_Msk                (0x1ul << UART_LINE_EPE_Pos)                      /*!< UART_T::LINE: EPE Mask                 */
+#define UART_LINE_EPE_Pos               (4)                                               /*!< UART_T::LINE: EPE Position            */
+#define UART_LINE_EPE_Msk               (0x1ul << UART_LINE_EPE_Pos)                      /*!< UART_T::LINE: EPE Mask                */
 
-#define UART_LINE_SPE_Pos                (5)                                               /*!< UART_T::LINE: SPE Position             */
-#define UART_LINE_SPE_Msk                (0x1ul << UART_LINE_SPE_Pos)                      /*!< UART_T::LINE: SPE Mask                 */
+#define UART_LINE_SPE_Pos               (5)                                               /*!< UART_T::LINE: SPE Position            */
+#define UART_LINE_SPE_Msk               (0x1ul << UART_LINE_SPE_Pos)                      /*!< UART_T::LINE: SPE Mask                */
 
-#define UART_LINE_BCB_Pos                (6)                                               /*!< UART_T::LINE: BCB Position             */
-#define UART_LINE_BCB_Msk                (0x1ul << UART_LINE_BCB_Pos)                      /*!< UART_T::LINE: BCB Mask                 */
+#define UART_LINE_BCB_Pos               (6)                                               /*!< UART_T::LINE: BCB Position            */
+#define UART_LINE_BCB_Msk               (0x1ul << UART_LINE_BCB_Pos)                      /*!< UART_T::LINE: BCB Mask                */
 
-#define UART_LINE_PSS_Pos                (7)                                               /*!< UART_T::LINE: PSS Position             */
-#define UART_LINE_PSS_Msk                (0x1ul << UART_LINE_PSS_Pos)                      /*!< UART_T::LINE: PSS Mask                 */
+#define UART_LINE_PSS_Pos               (7)                                               /*!< UART_T::LINE: PSS Position            */
+#define UART_LINE_PSS_Msk               (0x1ul << UART_LINE_PSS_Pos)                      /*!< UART_T::LINE: PSS Mask                */
 
-#define UART_LINE_TXDINV_Pos             (8)                                               /*!< UART_T::LINE: TXDINV Position          */
-#define UART_LINE_TXDINV_Msk             (0x1ul << UART_LINE_TXDINV_Pos)                   /*!< UART_T::LINE: TXDINV Mask              */
+#define UART_LINE_TXDINV_Pos            (8)                                               /*!< UART_T::LINE: TXDINV Position         */
+#define UART_LINE_TXDINV_Msk            (0x1ul << UART_LINE_TXDINV_Pos)                   /*!< UART_T::LINE: TXDINV Mask             */
 
-#define UART_LINE_RXDINV_Pos             (9)                                               /*!< UART_T::LINE: RXDINV Position          */
-#define UART_LINE_RXDINV_Msk             (0x1ul << UART_LINE_RXDINV_Pos)                   /*!< UART_T::LINE: RXDINV Mask              */
+#define UART_LINE_RXDINV_Pos            (9)                                               /*!< UART_T::LINE: RXDINV Position         */
+#define UART_LINE_RXDINV_Msk            (0x1ul << UART_LINE_RXDINV_Pos)                   /*!< UART_T::LINE: RXDINV Mask             */
 
-#define UART_MODEM_RTS_Pos               (1)                                               /*!< UART_T::MODEM: RTS Position            */
-#define UART_MODEM_RTS_Msk               (0x1ul << UART_MODEM_RTS_Pos)                     /*!< UART_T::MODEM: RTS Mask                */
+#define UART_MODEM_RTS_Pos              (1)                                               /*!< UART_T::MODEM: RTS Position           */
+#define UART_MODEM_RTS_Msk              (0x1ul << UART_MODEM_RTS_Pos)                     /*!< UART_T::MODEM: RTS Mask               */
 
-#define UART_MODEM_LOOKBACK_Pos          (4)                                               /*!< UART_T::MODEM: LOOKBACK Position       */
-#define UART_MODEM_LOOKBACK_Msk          (0x1ul << UART_MODEM_LOOKBACK_Pos)                /*!< UART_T::MODEM: LOOKBACK Mask           */
+#define UART_MODEM_RTSACTLV_Pos         (9)                                               /*!< UART_T::MODEM: RTSACTLV Position      */
+#define UART_MODEM_RTSACTLV_Msk         (0x1ul << UART_MODEM_RTSACTLV_Pos)                /*!< UART_T::MODEM: RTSACTLV Mask          */
 
-#define UART_MODEM_RTSACTLV_Pos          (9)                                               /*!< UART_T::MODEM: RTSACTLV Position       */
-#define UART_MODEM_RTSACTLV_Msk          (0x1ul << UART_MODEM_RTSACTLV_Pos)                /*!< UART_T::MODEM: RTSACTLV Mask           */
+#define UART_MODEM_RTSSTS_Pos           (13)                                              /*!< UART_T::MODEM: RTSSTS Position        */
+#define UART_MODEM_RTSSTS_Msk           (0x1ul << UART_MODEM_RTSSTS_Pos)                  /*!< UART_T::MODEM: RTSSTS Mask            */
 
-#define UART_MODEM_RTSSTS_Pos            (13)                                              /*!< UART_T::MODEM: RTSSTS Position         */
-#define UART_MODEM_RTSSTS_Msk            (0x1ul << UART_MODEM_RTSSTS_Pos)                  /*!< UART_T::MODEM: RTSSTS Mask             */
+#define UART_MODEMSTS_CTSDETF_Pos       (0)                                               /*!< UART_T::MODEMSTS: CTSDETF Position    */
+#define UART_MODEMSTS_CTSDETF_Msk       (0x1ul << UART_MODEMSTS_CTSDETF_Pos)              /*!< UART_T::MODEMSTS: CTSDETF Mask        */
 
-#define UART_MODEMSTS_CTSDETF_Pos        (0)                                               /*!< UART_T::MODEMSTS: CTSDETF Position     */
-#define UART_MODEMSTS_CTSDETF_Msk        (0x1ul << UART_MODEMSTS_CTSDETF_Pos)              /*!< UART_T::MODEMSTS: CTSDETF Mask         */
+#define UART_MODEMSTS_CTSSTS_Pos        (4)                                               /*!< UART_T::MODEMSTS: CTSSTS Position     */
+#define UART_MODEMSTS_CTSSTS_Msk        (0x1ul << UART_MODEMSTS_CTSSTS_Pos)               /*!< UART_T::MODEMSTS: CTSSTS Mask         */
 
-#define UART_MODEMSTS_CTSSTS_Pos         (4)                                               /*!< UART_T::MODEMSTS: CTSSTS Position      */
-#define UART_MODEMSTS_CTSSTS_Msk         (0x1ul << UART_MODEMSTS_CTSSTS_Pos)               /*!< UART_T::MODEMSTS: CTSSTS Mask          */
+#define UART_MODEMSTS_CTSACTLV_Pos      (8)                                               /*!< UART_T::MODEMSTS: CTSACTLV Position   */
+#define UART_MODEMSTS_CTSACTLV_Msk      (0x1ul << UART_MODEMSTS_CTSACTLV_Pos)             /*!< UART_T::MODEMSTS: CTSACTLV Mask       */
 
-#define UART_MODEMSTS_CTSACTLV_Pos       (8)                                               /*!< UART_T::MODEMSTS: CTSACTLV Position    */
-#define UART_MODEMSTS_CTSACTLV_Msk       (0x1ul << UART_MODEMSTS_CTSACTLV_Pos)             /*!< UART_T::MODEMSTS: CTSACTLV Mask        */
+#define UART_FIFOSTS_RXOVIF_Pos         (0)                                               /*!< UART_T::FIFOSTS: RXOVIF Position      */
+#define UART_FIFOSTS_RXOVIF_Msk         (0x1ul << UART_FIFOSTS_RXOVIF_Pos)                /*!< UART_T::FIFOSTS: RXOVIF Mask          */
 
-#define UART_FIFOSTS_RXOVIF_Pos          (0)                                               /*!< UART_T::FIFOSTS: RXOVIF Position       */
-#define UART_FIFOSTS_RXOVIF_Msk          (0x1ul << UART_FIFOSTS_RXOVIF_Pos)                /*!< UART_T::FIFOSTS: RXOVIF Mask           */
+#define UART_FIFOSTS_ABRDIF_Pos         (1)                                               /*!< UART_T::FIFOSTS: ABRDIF Position      */
+#define UART_FIFOSTS_ABRDIF_Msk         (0x1ul << UART_FIFOSTS_ABRDIF_Pos)                /*!< UART_T::FIFOSTS: ABRDIF Mask          */
 
-#define UART_FIFOSTS_ABRDIF_Pos          (1)                                               /*!< UART_T::FIFOSTS: ABRDIF Position       */
-#define UART_FIFOSTS_ABRDIF_Msk          (0x1ul << UART_FIFOSTS_ABRDIF_Pos)                /*!< UART_T::FIFOSTS: ABRDIF Mask           */
+#define UART_FIFOSTS_ABRDTOIF_Pos       (2)                                               /*!< UART_T::FIFOSTS: ABRDTOIF Position    */
+#define UART_FIFOSTS_ABRDTOIF_Msk       (0x1ul << UART_FIFOSTS_ABRDTOIF_Pos)              /*!< UART_T::FIFOSTS: ABRDTOIF Mask        */
 
-#define UART_FIFOSTS_ABRDTOIF_Pos        (2)                                               /*!< UART_T::FIFOSTS: ABRDTOIF Position     */
-#define UART_FIFOSTS_ABRDTOIF_Msk        (0x1ul << UART_FIFOSTS_ABRDTOIF_Pos)              /*!< UART_T::FIFOSTS: ABRDTOIF Mask         */
+#define UART_FIFOSTS_ADDRDETF_Pos       (3)                                               /*!< UART_T::FIFOSTS: ADDRDETF Position    */
+#define UART_FIFOSTS_ADDRDETF_Msk       (0x1ul << UART_FIFOSTS_ADDRDETF_Pos)              /*!< UART_T::FIFOSTS: ADDRDETF Mask        */
 
-#define UART_FIFOSTS_ADDRDETF_Pos        (3)                                               /*!< UART_T::FIFOSTS: ADDRDETF Position     */
-#define UART_FIFOSTS_ADDRDETF_Msk        (0x1ul << UART_FIFOSTS_ADDRDETF_Pos)              /*!< UART_T::FIFOSTS: ADDRDETF Mask         */
+#define UART_FIFOSTS_PEF_Pos            (4)                                               /*!< UART_T::FIFOSTS: PEF Position         */
+#define UART_FIFOSTS_PEF_Msk            (0x1ul << UART_FIFOSTS_PEF_Pos)                   /*!< UART_T::FIFOSTS: PEF Mask             */
 
-#define UART_FIFOSTS_PEF_Pos             (4)                                               /*!< UART_T::FIFOSTS: PEF Position          */
-#define UART_FIFOSTS_PEF_Msk             (0x1ul << UART_FIFOSTS_PEF_Pos)                   /*!< UART_T::FIFOSTS: PEF Mask              */
+#define UART_FIFOSTS_FEF_Pos            (5)                                               /*!< UART_T::FIFOSTS: FEF Position         */
+#define UART_FIFOSTS_FEF_Msk            (0x1ul << UART_FIFOSTS_FEF_Pos)                   /*!< UART_T::FIFOSTS: FEF Mask             */
 
-#define UART_FIFOSTS_FEF_Pos             (5)                                               /*!< UART_T::FIFOSTS: FEF Position          */
-#define UART_FIFOSTS_FEF_Msk             (0x1ul << UART_FIFOSTS_FEF_Pos)                   /*!< UART_T::FIFOSTS: FEF Mask              */
+#define UART_FIFOSTS_BIF_Pos            (6)                                               /*!< UART_T::FIFOSTS: BIF Position         */
+#define UART_FIFOSTS_BIF_Msk            (0x1ul << UART_FIFOSTS_BIF_Pos)                   /*!< UART_T::FIFOSTS: BIF Mask             */
 
-#define UART_FIFOSTS_BIF_Pos             (6)                                               /*!< UART_T::FIFOSTS: BIF Position          */
-#define UART_FIFOSTS_BIF_Msk             (0x1ul << UART_FIFOSTS_BIF_Pos)                   /*!< UART_T::FIFOSTS: BIF Mask              */
+#define UART_FIFOSTS_RXPTR_Pos          (8)                                               /*!< UART_T::FIFOSTS: RXPTR Position       */
+#define UART_FIFOSTS_RXPTR_Msk          (0x3ful << UART_FIFOSTS_RXPTR_Pos)                /*!< UART_T::FIFOSTS: RXPTR Mask           */
 
-#define UART_FIFOSTS_RXPTR_Pos           (8)                                               /*!< UART_T::FIFOSTS: RXPTR Position        */
-#define UART_FIFOSTS_RXPTR_Msk           (0x3ful << UART_FIFOSTS_RXPTR_Pos)                /*!< UART_T::FIFOSTS: RXPTR Mask            */
+#define UART_FIFOSTS_RXEMPTY_Pos        (14)                                              /*!< UART_T::FIFOSTS: RXEMPTY Position     */
+#define UART_FIFOSTS_RXEMPTY_Msk        (0x1ul << UART_FIFOSTS_RXEMPTY_Pos)               /*!< UART_T::FIFOSTS: RXEMPTY Mask         */
 
-#define UART_FIFOSTS_RXEMPTY_Pos         (14)                                              /*!< UART_T::FIFOSTS: RXEMPTY Position      */
-#define UART_FIFOSTS_RXEMPTY_Msk         (0x1ul << UART_FIFOSTS_RXEMPTY_Pos)               /*!< UART_T::FIFOSTS: RXEMPTY Mask          */
+#define UART_FIFOSTS_RXFULL_Pos         (15)                                              /*!< UART_T::FIFOSTS: RXFULL Position      */
+#define UART_FIFOSTS_RXFULL_Msk         (0x1ul << UART_FIFOSTS_RXFULL_Pos)                /*!< UART_T::FIFOSTS: RXFULL Mask          */
 
-#define UART_FIFOSTS_RXFULL_Pos          (15)                                              /*!< UART_T::FIFOSTS: RXFULL Position       */
-#define UART_FIFOSTS_RXFULL_Msk          (0x1ul << UART_FIFOSTS_RXFULL_Pos)                /*!< UART_T::FIFOSTS: RXFULL Mask           */
+#define UART_FIFOSTS_TXPTR_Pos          (16)                                              /*!< UART_T::FIFOSTS: TXPTR Position       */
+#define UART_FIFOSTS_TXPTR_Msk          (0x3ful << UART_FIFOSTS_TXPTR_Pos)                /*!< UART_T::FIFOSTS: TXPTR Mask           */
 
-#define UART_FIFOSTS_TXPTR_Pos           (16)                                              /*!< UART_T::FIFOSTS: TXPTR Position        */
-#define UART_FIFOSTS_TXPTR_Msk           (0x3ful << UART_FIFOSTS_TXPTR_Pos)                /*!< UART_T::FIFOSTS: TXPTR Mask            */
+#define UART_FIFOSTS_TXEMPTY_Pos        (22)                                              /*!< UART_T::FIFOSTS: TXEMPTY Position     */
+#define UART_FIFOSTS_TXEMPTY_Msk        (0x1ul << UART_FIFOSTS_TXEMPTY_Pos)               /*!< UART_T::FIFOSTS: TXEMPTY Mask         */
 
-#define UART_FIFOSTS_TXEMPTY_Pos         (22)                                              /*!< UART_T::FIFOSTS: TXEMPTY Position      */
-#define UART_FIFOSTS_TXEMPTY_Msk         (0x1ul << UART_FIFOSTS_TXEMPTY_Pos)               /*!< UART_T::FIFOSTS: TXEMPTY Mask          */
+#define UART_FIFOSTS_TXFULL_Pos         (23)                                              /*!< UART_T::FIFOSTS: TXFULL Position      */
+#define UART_FIFOSTS_TXFULL_Msk         (0x1ul << UART_FIFOSTS_TXFULL_Pos)                /*!< UART_T::FIFOSTS: TXFULL Mask          */
 
-#define UART_FIFOSTS_TXFULL_Pos          (23)                                              /*!< UART_T::FIFOSTS: TXFULL Position       */
-#define UART_FIFOSTS_TXFULL_Msk          (0x1ul << UART_FIFOSTS_TXFULL_Pos)                /*!< UART_T::FIFOSTS: TXFULL Mask           */
+#define UART_FIFOSTS_TXOVIF_Pos         (24)                                              /*!< UART_T::FIFOSTS: TXOVIF Position      */
+#define UART_FIFOSTS_TXOVIF_Msk         (0x1ul << UART_FIFOSTS_TXOVIF_Pos)                /*!< UART_T::FIFOSTS: TXOVIF Mask          */
 
-#define UART_FIFOSTS_TXOVIF_Pos          (24)                                              /*!< UART_T::FIFOSTS: TXOVIF Position       */
-#define UART_FIFOSTS_TXOVIF_Msk          (0x1ul << UART_FIFOSTS_TXOVIF_Pos)                /*!< UART_T::FIFOSTS: TXOVIF Mask           */
+#define UART_FIFOSTS_TXEMPTYF_Pos       (28)                                              /*!< UART_T::FIFOSTS: TXEMPTYF Position    */
+#define UART_FIFOSTS_TXEMPTYF_Msk       (0x1ul << UART_FIFOSTS_TXEMPTYF_Pos)              /*!< UART_T::FIFOSTS: TXEMPTYF Mask        */
 
-#define UART_FIFOSTS_TXEMPTYF_Pos        (28)                                              /*!< UART_T::FIFOSTS: TXEMPTYF Position     */
-#define UART_FIFOSTS_TXEMPTYF_Msk        (0x1ul << UART_FIFOSTS_TXEMPTYF_Pos)              /*!< UART_T::FIFOSTS: TXEMPTYF Mask         */
+#define UART_FIFOSTS_RXIDLE_Pos         (29)                                              /*!< UART_T::FIFOSTS: RXIDLE Position      */
+#define UART_FIFOSTS_RXIDLE_Msk         (0x1ul << UART_FIFOSTS_RXIDLE_Pos)                /*!< UART_T::FIFOSTS: RXIDLE Mask          */
 
-#define UART_FIFOSTS_RXIDLE_Pos          (29)                                              /*!< UART_T::FIFOSTS: RXIDLE Position       */
-#define UART_FIFOSTS_RXIDLE_Msk          (0x1ul << UART_FIFOSTS_RXIDLE_Pos)                /*!< UART_T::FIFOSTS: RXIDLE Mask           */
+#define UART_FIFOSTS_TXRXACT_Pos        (31)                                              /*!< UART_T::FIFOSTS: TXRXACT Position     */
+#define UART_FIFOSTS_TXRXACT_Msk        (0x1ul << UART_FIFOSTS_TXRXACT_Pos)               /*!< UART_T::FIFOSTS: TXRXACT Mask         */
 
-#define UART_FIFOSTS_TXRXACT_Pos         (31)                                              /*!< UART_T::FIFOSTS: TXRXACT Position      */
-#define UART_FIFOSTS_TXRXACT_Msk         (0x1ul << UART_FIFOSTS_TXRXACT_Pos)               /*!< UART_T::FIFOSTS: TXRXACT Mask          */
+#define UART_INTSTS_RDAIF_Pos           (0)                                               /*!< UART_T::INTSTS: RDAIF Position        */
+#define UART_INTSTS_RDAIF_Msk           (0x1ul << UART_INTSTS_RDAIF_Pos)                  /*!< UART_T::INTSTS: RDAIF Mask            */
 
-#define UART_INTSTS_RDAIF_Pos            (0)                                               /*!< UART_T::INTSTS: RDAIF Position         */
-#define UART_INTSTS_RDAIF_Msk            (0x1ul << UART_INTSTS_RDAIF_Pos)                  /*!< UART_T::INTSTS: RDAIF Mask             */
+#define UART_INTSTS_THREIF_Pos          (1)                                               /*!< UART_T::INTSTS: THREIF Position       */
+#define UART_INTSTS_THREIF_Msk          (0x1ul << UART_INTSTS_THREIF_Pos)                 /*!< UART_T::INTSTS: THREIF Mask           */
 
-#define UART_INTSTS_THREIF_Pos           (1)                                               /*!< UART_T::INTSTS: THREIF Position        */
-#define UART_INTSTS_THREIF_Msk           (0x1ul << UART_INTSTS_THREIF_Pos)                 /*!< UART_T::INTSTS: THREIF Mask            */
+#define UART_INTSTS_RLSIF_Pos           (2)                                               /*!< UART_T::INTSTS: RLSIF Position        */
+#define UART_INTSTS_RLSIF_Msk           (0x1ul << UART_INTSTS_RLSIF_Pos)                  /*!< UART_T::INTSTS: RLSIF Mask            */
 
-#define UART_INTSTS_RLSIF_Pos            (2)                                               /*!< UART_T::INTSTS: RLSIF Position         */
-#define UART_INTSTS_RLSIF_Msk            (0x1ul << UART_INTSTS_RLSIF_Pos)                  /*!< UART_T::INTSTS: RLSIF Mask             */
+#define UART_INTSTS_MODEMIF_Pos         (3)                                               /*!< UART_T::INTSTS: MODEMIF Position      */
+#define UART_INTSTS_MODEMIF_Msk         (0x1ul << UART_INTSTS_MODEMIF_Pos)                /*!< UART_T::INTSTS: MODEMIF Mask          */
 
-#define UART_INTSTS_MODEMIF_Pos          (3)                                               /*!< UART_T::INTSTS: MODEMIF Position       */
-#define UART_INTSTS_MODEMIF_Msk          (0x1ul << UART_INTSTS_MODEMIF_Pos)                /*!< UART_T::INTSTS: MODEMIF Mask           */
+#define UART_INTSTS_RXTOIF_Pos          (4)                                               /*!< UART_T::INTSTS: RXTOIF Position       */
+#define UART_INTSTS_RXTOIF_Msk          (0x1ul << UART_INTSTS_RXTOIF_Pos)                 /*!< UART_T::INTSTS: RXTOIF Mask           */
 
-#define UART_INTSTS_RXTOIF_Pos           (4)                                               /*!< UART_T::INTSTS: RXTOIF Position        */
-#define UART_INTSTS_RXTOIF_Msk           (0x1ul << UART_INTSTS_RXTOIF_Pos)                 /*!< UART_T::INTSTS: RXTOIF Mask            */
+#define UART_INTSTS_BUFERRIF_Pos        (5)                                               /*!< UART_T::INTSTS: BUFERRIF Position     */
+#define UART_INTSTS_BUFERRIF_Msk        (0x1ul << UART_INTSTS_BUFERRIF_Pos)               /*!< UART_T::INTSTS: BUFERRIF Mask         */
 
-#define UART_INTSTS_BUFERRIF_Pos         (5)                                               /*!< UART_T::INTSTS: BUFERRIF Position      */
-#define UART_INTSTS_BUFERRIF_Msk         (0x1ul << UART_INTSTS_BUFERRIF_Pos)               /*!< UART_T::INTSTS: BUFERRIF Mask          */
+#define UART_INTSTS_WKIF_Pos            (6)                                               /*!< UART_T::INTSTS: WKIF Position         */
+#define UART_INTSTS_WKIF_Msk            (0x1ul << UART_INTSTS_WKIF_Pos)                   /*!< UART_T::INTSTS: WKIF Mask             */
 
-#define UART_INTSTS_WKIF_Pos             (6)                                               /*!< UART_T::INTSTS: WKIF Position          */
-#define UART_INTSTS_WKIF_Msk             (0x1ul << UART_INTSTS_WKIF_Pos)                   /*!< UART_T::INTSTS: WKIF Mask              */
+#define UART_INTSTS_LINIF_Pos           (7)                                               /*!< UART_T::INTSTS: LINIF Position        */
+#define UART_INTSTS_LINIF_Msk           (0x1ul << UART_INTSTS_LINIF_Pos)                  /*!< UART_T::INTSTS: LINIF Mask            */
 
-#define UART_INTSTS_LINIF_Pos            (7)                                               /*!< UART_T::INTSTS: LINIF Position         */
-#define UART_INTSTS_LINIF_Msk            (0x1ul << UART_INTSTS_LINIF_Pos)                  /*!< UART_T::INTSTS: LINIF Mask             */
+#define UART_INTSTS_RDAINT_Pos          (8)                                               /*!< UART_T::INTSTS: RDAINT Position       */
+#define UART_INTSTS_RDAINT_Msk          (0x1ul << UART_INTSTS_RDAINT_Pos)                 /*!< UART_T::INTSTS: RDAINT Mask           */
 
-#define UART_INTSTS_RDAINT_Pos           (8)                                               /*!< UART_T::INTSTS: RDAINT Position        */
-#define UART_INTSTS_RDAINT_Msk           (0x1ul << UART_INTSTS_RDAINT_Pos)                 /*!< UART_T::INTSTS: RDAINT Mask            */
+#define UART_INTSTS_THREINT_Pos         (9)                                               /*!< UART_T::INTSTS: THREINT Position      */
+#define UART_INTSTS_THREINT_Msk         (0x1ul << UART_INTSTS_THREINT_Pos)                /*!< UART_T::INTSTS: THREINT Mask          */
 
-#define UART_INTSTS_THREINT_Pos          (9)                                               /*!< UART_T::INTSTS: THREINT Position       */
-#define UART_INTSTS_THREINT_Msk          (0x1ul << UART_INTSTS_THREINT_Pos)                /*!< UART_T::INTSTS: THREINT Mask           */
+#define UART_INTSTS_RLSINT_Pos          (10)                                              /*!< UART_T::INTSTS: RLSINT Position       */
+#define UART_INTSTS_RLSINT_Msk          (0x1ul << UART_INTSTS_RLSINT_Pos)                 /*!< UART_T::INTSTS: RLSINT Mask           */
 
-#define UART_INTSTS_RLSINT_Pos           (10)                                              /*!< UART_T::INTSTS: RLSINT Position        */
-#define UART_INTSTS_RLSINT_Msk           (0x1ul << UART_INTSTS_RLSINT_Pos)                 /*!< UART_T::INTSTS: RLSINT Mask            */
+#define UART_INTSTS_MODEMINT_Pos        (11)                                              /*!< UART_T::INTSTS: MODEMINT Position     */
+#define UART_INTSTS_MODEMINT_Msk        (0x1ul << UART_INTSTS_MODEMINT_Pos)               /*!< UART_T::INTSTS: MODEMINT Mask         */
 
-#define UART_INTSTS_MODEMINT_Pos         (11)                                              /*!< UART_T::INTSTS: MODEMINT Position      */
-#define UART_INTSTS_MODEMINT_Msk         (0x1ul << UART_INTSTS_MODEMINT_Pos)               /*!< UART_T::INTSTS: MODEMINT Mask          */
+#define UART_INTSTS_RXTOINT_Pos         (12)                                              /*!< UART_T::INTSTS: RXTOINT Position      */
+#define UART_INTSTS_RXTOINT_Msk         (0x1ul << UART_INTSTS_RXTOINT_Pos)                /*!< UART_T::INTSTS: RXTOINT Mask          */
 
-#define UART_INTSTS_RXTOINT_Pos          (12)                                              /*!< UART_T::INTSTS: RXTOINT Position       */
-#define UART_INTSTS_RXTOINT_Msk          (0x1ul << UART_INTSTS_RXTOINT_Pos)                /*!< UART_T::INTSTS: RXTOINT Mask           */
+#define UART_INTSTS_BUFERRINT_Pos       (13)                                              /*!< UART_T::INTSTS: BUFERRINT Position    */
+#define UART_INTSTS_BUFERRINT_Msk       (0x1ul << UART_INTSTS_BUFERRINT_Pos)              /*!< UART_T::INTSTS: BUFERRINT Mask        */
 
-#define UART_INTSTS_BUFERRINT_Pos        (13)                                              /*!< UART_T::INTSTS: BUFERRINT Position     */
-#define UART_INTSTS_BUFERRINT_Msk        (0x1ul << UART_INTSTS_BUFERRINT_Pos)              /*!< UART_T::INTSTS: BUFERRINT Mask         */
+#define UART_INTSTS_WKINT_Pos           (14)                                              /*!< UART_T::INTSTS: WKINT Position        */
+#define UART_INTSTS_WKINT_Msk           (0x1ul << UART_INTSTS_WKINT_Pos)                  /*!< UART_T::INTSTS: WKINT Mask            */
 
-#define UART_INTSTS_WKINT_Pos            (14)                                              /*!< UART_T::INTSTS: WKINT Position         */
-#define UART_INTSTS_WKINT_Msk            (0x1ul << UART_INTSTS_WKINT_Pos)                  /*!< UART_T::INTSTS: WKINT Mask             */
+#define UART_INTSTS_LININT_Pos          (15)                                              /*!< UART_T::INTSTS: LININT Position       */
+#define UART_INTSTS_LININT_Msk          (0x1ul << UART_INTSTS_LININT_Pos)                 /*!< UART_T::INTSTS: LININT Mask           */
 
-#define UART_INTSTS_LININT_Pos           (15)                                              /*!< UART_T::INTSTS: LININT Position        */
-#define UART_INTSTS_LININT_Msk           (0x1ul << UART_INTSTS_LININT_Pos)                 /*!< UART_T::INTSTS: LININT Mask            */
+#define UART_INTSTS_SWBEIF_Pos          (16)                                              /*!< UART_T::INTSTS: SWBEIF Position       */
+#define UART_INTSTS_SWBEIF_Msk          (0x1ul << UART_INTSTS_SWBEIF_Pos)                 /*!< UART_T::INTSTS: SWBEIF Mask           */
 
-#define UART_INTSTS_SWBEIF_Pos           (16)                                              /*!< UART_T::INTSTS: SWBEIF Position        */
-#define UART_INTSTS_SWBEIF_Msk           (0x1ul << UART_INTSTS_SWBEIF_Pos)                 /*!< UART_T::INTSTS: SWBEIF Mask            */
+#define UART_INTSTS_HWRLSIF_Pos         (18)                                              /*!< UART_T::INTSTS: HWRLSIF Position      */
+#define UART_INTSTS_HWRLSIF_Msk         (0x1ul << UART_INTSTS_HWRLSIF_Pos)                /*!< UART_T::INTSTS: HWRLSIF Mask          */
 
-#define UART_INTSTS_HWRLSIF_Pos          (18)                                              /*!< UART_T::INTSTS: HWRLSIF Position       */
-#define UART_INTSTS_HWRLSIF_Msk          (0x1ul << UART_INTSTS_HWRLSIF_Pos)                /*!< UART_T::INTSTS: HWRLSIF Mask           */
+#define UART_INTSTS_HWMODIF_Pos         (19)                                              /*!< UART_T::INTSTS: HWMODIF Position      */
+#define UART_INTSTS_HWMODIF_Msk         (0x1ul << UART_INTSTS_HWMODIF_Pos)                /*!< UART_T::INTSTS: HWMODIF Mask          */
 
-#define UART_INTSTS_HWMODIF_Pos          (19)                                              /*!< UART_T::INTSTS: HWMODIF Position       */
-#define UART_INTSTS_HWMODIF_Msk          (0x1ul << UART_INTSTS_HWMODIF_Pos)                /*!< UART_T::INTSTS: HWMODIF Mask           */
+#define UART_INTSTS_HWTOIF_Pos          (20)                                              /*!< UART_T::INTSTS: HWTOIF Position       */
+#define UART_INTSTS_HWTOIF_Msk          (0x1ul << UART_INTSTS_HWTOIF_Pos)                 /*!< UART_T::INTSTS: HWTOIF Mask           */
 
-#define UART_INTSTS_HWTOIF_Pos           (20)                                              /*!< UART_T::INTSTS: HWTOIF Position        */
-#define UART_INTSTS_HWTOIF_Msk           (0x1ul << UART_INTSTS_HWTOIF_Pos)                 /*!< UART_T::INTSTS: HWTOIF Mask            */
+#define UART_INTSTS_HWBUFEIF_Pos        (21)                                              /*!< UART_T::INTSTS: HWBUFEIF Position     */
+#define UART_INTSTS_HWBUFEIF_Msk        (0x1ul << UART_INTSTS_HWBUFEIF_Pos)               /*!< UART_T::INTSTS: HWBUFEIF Mask         */
 
-#define UART_INTSTS_HWBUFEIF_Pos         (21)                                              /*!< UART_T::INTSTS: HWBUFEIF Position      */
-#define UART_INTSTS_HWBUFEIF_Msk         (0x1ul << UART_INTSTS_HWBUFEIF_Pos)               /*!< UART_T::INTSTS: HWBUFEIF Mask          */
+#define UART_INTSTS_TXENDIF_Pos         (22)                                              /*!< UART_T::INTSTS: TXENDIF Position      */
+#define UART_INTSTS_TXENDIF_Msk         (0x1ul << UART_INTSTS_TXENDIF_Pos)                /*!< UART_T::INTSTS: TXENDIF Mask          */
 
-#define UART_INTSTS_TXENDIF_Pos          (22)                                              /*!< UART_T::INTSTS: TXENDIF Position       */
-#define UART_INTSTS_TXENDIF_Msk          (0x1ul << UART_INTSTS_TXENDIF_Pos)                /*!< UART_T::INTSTS: TXENDIF Mask           */
+#define UART_INTSTS_SWBEINT_Pos         (24)                                              /*!< UART_T::INTSTS: SWBEINT Position      */
+#define UART_INTSTS_SWBEINT_Msk         (0x1ul << UART_INTSTS_SWBEINT_Pos)                /*!< UART_T::INTSTS: SWBEINT Mask          */
 
-#define UART_INTSTS_SWBEINT_Pos          (24)                                              /*!< UART_T::INTSTS: SWBEINT Position       */
-#define UART_INTSTS_SWBEINT_Msk          (0x1ul << UART_INTSTS_SWBEINT_Pos)                /*!< UART_T::INTSTS: SWBEINT Mask           */
+#define UART_INTSTS_HWRLSINT_Pos        (26)                                              /*!< UART_T::INTSTS: HWRLSINT Position     */
+#define UART_INTSTS_HWRLSINT_Msk        (0x1ul << UART_INTSTS_HWRLSINT_Pos)               /*!< UART_T::INTSTS: HWRLSINT Mask         */
 
-#define UART_INTSTS_HWRLSINT_Pos         (26)                                              /*!< UART_T::INTSTS: HWRLSINT Position      */
-#define UART_INTSTS_HWRLSINT_Msk         (0x1ul << UART_INTSTS_HWRLSINT_Pos)               /*!< UART_T::INTSTS: HWRLSINT Mask          */
+#define UART_INTSTS_HWMODINT_Pos        (27)                                              /*!< UART_T::INTSTS: HWMODINT Position     */
+#define UART_INTSTS_HWMODINT_Msk        (0x1ul << UART_INTSTS_HWMODINT_Pos)               /*!< UART_T::INTSTS: HWMODINT Mask         */
 
-#define UART_INTSTS_HWMODINT_Pos         (27)                                              /*!< UART_T::INTSTS: HWMODINT Position      */
-#define UART_INTSTS_HWMODINT_Msk         (0x1ul << UART_INTSTS_HWMODINT_Pos)               /*!< UART_T::INTSTS: HWMODINT Mask          */
+#define UART_INTSTS_HWTOINT_Pos         (28)                                              /*!< UART_T::INTSTS: HWTOINT Position      */
+#define UART_INTSTS_HWTOINT_Msk         (0x1ul << UART_INTSTS_HWTOINT_Pos)                /*!< UART_T::INTSTS: HWTOINT Mask          */
 
-#define UART_INTSTS_HWTOINT_Pos          (28)                                              /*!< UART_T::INTSTS: HWTOINT Position       */
-#define UART_INTSTS_HWTOINT_Msk          (0x1ul << UART_INTSTS_HWTOINT_Pos)                /*!< UART_T::INTSTS: HWTOINT Mask           */
+#define UART_INTSTS_HWBUFEINT_Pos       (29)                                              /*!< UART_T::INTSTS: HWBUFEINT Position    */
+#define UART_INTSTS_HWBUFEINT_Msk       (0x1ul << UART_INTSTS_HWBUFEINT_Pos)              /*!< UART_T::INTSTS: HWBUFEINT Mask        */
 
-#define UART_INTSTS_HWBUFEINT_Pos        (29)                                              /*!< UART_T::INTSTS: HWBUFEINT Position     */
-#define UART_INTSTS_HWBUFEINT_Msk        (0x1ul << UART_INTSTS_HWBUFEINT_Pos)              /*!< UART_T::INTSTS: HWBUFEINT Mask         */
+#define UART_INTSTS_TXENDINT_Pos        (30)                                              /*!< UART_T::INTSTS: TXENDINT Position     */
+#define UART_INTSTS_TXENDINT_Msk        (0x1ul << UART_INTSTS_TXENDINT_Pos)               /*!< UART_T::INTSTS: TXENDINT Mask         */
 
-#define UART_INTSTS_TXENDINT_Pos         (30)                                              /*!< UART_T::INTSTS: TXENDINT Position      */
-#define UART_INTSTS_TXENDINT_Msk         (0x1ul << UART_INTSTS_TXENDINT_Pos)               /*!< UART_T::INTSTS: TXENDINT Mask          */
+#define UART_INTSTS_ABRINT_Pos          (31)                                              /*!< UART_T::INTSTS: ABRINT Position       */
+#define UART_INTSTS_ABRINT_Msk          (0x1ul << UART_INTSTS_ABRINT_Pos)                 /*!< UART_T::INTSTS: ABRINT Mask           */
 
-#define UART_INTSTS_ABRINT_Pos           (31)                                              /*!< UART_T::INTSTS: ABRINT Position        */
-#define UART_INTSTS_ABRINT_Msk           (0x1ul << UART_INTSTS_ABRINT_Pos)                 /*!< UART_T::INTSTS: ABRINT Mask            */
+#define UART_TOUT_TOIC_Pos              (0)                                               /*!< UART_T::TOUT: TOIC Position           */
+#define UART_TOUT_TOIC_Msk              (0xfful << UART_TOUT_TOIC_Pos)                    /*!< UART_T::TOUT: TOIC Mask               */
 
-#define UART_TOUT_TOIC_Pos               (0)                                               /*!< UART_T::TOUT: TOIC Position            */
-#define UART_TOUT_TOIC_Msk               (0xfful << UART_TOUT_TOIC_Pos)                    /*!< UART_T::TOUT: TOIC Mask                */
+#define UART_TOUT_DLY_Pos               (8)                                               /*!< UART_T::TOUT: DLY Position            */
+#define UART_TOUT_DLY_Msk               (0xfful << UART_TOUT_DLY_Pos)                     /*!< UART_T::TOUT: DLY Mask                */
 
-#define UART_TOUT_DLY_Pos                (8)                                               /*!< UART_T::TOUT: DLY Position             */
-#define UART_TOUT_DLY_Msk                (0xfful << UART_TOUT_DLY_Pos)                     /*!< UART_T::TOUT: DLY Mask                 */
+#define UART_TOUT_BITOMEN_Pos           (31)                                              /*!< UART_T::TOUT: BITOMEN Position        */
+#define UART_TOUT_BITOMEN_Msk           (0x1ul << UART_TOUT_BITOMEN_Pos)                  /*!< UART_T::TOUT: BITOMEN Mask            */
 
-#define UART_TOUT_BITOMEM_Pos            (31)                                              /*!< UART_T::TOUT: BITOMEN Position             */
-#define UART_TOUT_BITOMEN_Msk            (0x1ul << UART_TOUT_BITOMEM_Pos)                  /*!< UART_T::TOUT: BITOMEN Mask                 */
+#define UART_BAUD_BRD_Pos               (0)                                               /*!< UART_T::BAUD: BRD Position            */
+#define UART_BAUD_BRD_Msk               (0xfffful << UART_BAUD_BRD_Pos)                   /*!< UART_T::BAUD: BRD Mask                */
 
-#define UART_BAUD_BRD_Pos                (0)                                               /*!< UART_T::BAUD: BRD Position             */
-#define UART_BAUD_BRD_Msk                (0xfffful << UART_BAUD_BRD_Pos)                   /*!< UART_T::BAUD: BRD Mask                 */
+#define UART_BAUD_BRFD_Pos              (16)                                              /*!< UART_T::BAUD: BRFD Position           */
+#define UART_BAUD_BRFD_Msk              (0xfful << UART_BAUD_BRFD_Pos)                    /*!< UART_T::BAUD: BRFD Mask               */
 
-#define UART_BAUD_BRFD_Pos               (16)                                              /*!< UART_T::BAUD: BRFD Position            */
-#define UART_BAUD_BRFD_Msk               (0xfful << UART_BAUD_BRFD_Pos)                    /*!< UART_T::BAUD: BRFD Mask                */
+#define UART_BAUD_EDIVM1_Pos            (24)                                              /*!< UART_T::BAUD: EDIVM1 Position         */
+#define UART_BAUD_EDIVM1_Msk            (0xful << UART_BAUD_EDIVM1_Pos)                   /*!< UART_T::BAUD: EDIVM1 Mask             */
 
-#define UART_BAUD_EDIVM1_Pos             (24)                                              /*!< UART_T::BAUD: EDIVM1 Position          */
-#define UART_BAUD_EDIVM1_Msk             (0xful << UART_BAUD_EDIVM1_Pos)                   /*!< UART_T::BAUD: EDIVM1 Mask              */
+#define UART_BAUD_BAUDM0_Pos            (28)                                              /*!< UART_T::BAUD: BAUDM0 Position         */
+#define UART_BAUD_BAUDM0_Msk            (0x1ul << UART_BAUD_BAUDM0_Pos)                   /*!< UART_T::BAUD: BAUDM0 Mask             */
 
-#define UART_BAUD_BAUDM0_Pos             (28)                                              /*!< UART_T::BAUD: BAUDM0 Position          */
-#define UART_BAUD_BAUDM0_Msk             (0x1ul << UART_BAUD_BAUDM0_Pos)                   /*!< UART_T::BAUD: BAUDM0 Mask              */
+#define UART_BAUD_BAUDM1_Pos            (29)                                              /*!< UART_T::BAUD: BAUDM1 Position         */
+#define UART_BAUD_BAUDM1_Msk            (0x1ul << UART_BAUD_BAUDM1_Pos)                   /*!< UART_T::BAUD: BAUDM1 Mask             */
 
-#define UART_BAUD_BAUDM1_Pos             (29)                                              /*!< UART_T::BAUD: BAUDM1 Position          */
-#define UART_BAUD_BAUDM1_Msk             (0x1ul << UART_BAUD_BAUDM1_Pos)                   /*!< UART_T::BAUD: BAUDM1 Mask              */
+#define UART_BAUD_BRFDEN_Pos            (30)                                              /*!< UART_T::BAUD: BRFDEN Position         */
+#define UART_BAUD_BRFDEN_Msk            (0x1ul << UART_BAUD_BRFDEN_Pos)                   /*!< UART_T::BAUD: BRFDEN Mask             */
 
-#define UART_BAUD_BRFDEN_Pos             (30)                                              /*!< UART_T::BAUD: BRFDEN Position          */
-#define UART_BAUD_BRFDEN_Msk             (0x1ul << UART_BAUD_BRFDEN_Pos)                   /*!< UART_T::BAUD: BRFDEN Mask              */
+#define UART_IRDA_TXEN_Pos              (1)                                               /*!< UART_T::IRDA: TXEN Position           */
+#define UART_IRDA_TXEN_Msk              (0x1ul << UART_IRDA_TXEN_Pos)                     /*!< UART_T::IRDA: TXEN Mask               */
 
-#define UART_IRDA_TXEN_Pos               (1)                                               /*!< UART_T::IRDA: TXEN Position            */
-#define UART_IRDA_TXEN_Msk               (0x1ul << UART_IRDA_TXEN_Pos)                     /*!< UART_T::IRDA: TXEN Mask                */
+#define UART_IRDA_TXINV_Pos             (5)                                               /*!< UART_T::IRDA: TXINV Position          */
+#define UART_IRDA_TXINV_Msk             (0x1ul << UART_IRDA_TXINV_Pos)                    /*!< UART_T::IRDA: TXINV Mask              */
 
-#define UART_IRDA_IRDALOOP_Pos           (2)                                               /*!< UART_T::IRDA: IRDALOOP Position           */
-#define UART_IRDA_IRDALOOP_Msk           (0x1ul << UART_IRDA_IRDALOOP_Pos)                 /*!< UART_T::IRDA: IRDALOOP Mask               */
+#define UART_IRDA_RXINV_Pos             (6)                                               /*!< UART_T::IRDA: RXINV Position          */
+#define UART_IRDA_RXINV_Msk             (0x1ul << UART_IRDA_RXINV_Pos)                    /*!< UART_T::IRDA: RXINV Mask              */
 
-#define UART_IRDA_RXDEBEN_Pos            (3)                                               /*!< UART_T::IRDA: RXDEBEN Position           */
-#define UART_IRDA_RXDEBEN_Msk            (0x1ul << UART_IRDA_RXDEBEN_Pos)                   /*!< UART_T::IRDA: RXDEBEN Mask               */
+#define UART_ALTCTL_BRKFL_Pos           (0)                                               /*!< UART_T::ALTCTL: BRKFL Position        */
+#define UART_ALTCTL_BRKFL_Msk           (0xful << UART_ALTCTL_BRKFL_Pos)                  /*!< UART_T::ALTCTL: BRKFL Mask            */
 
-#define UART_IRDA_TXINV_Pos              (5)                                               /*!< UART_T::IRDA: TXINV Position           */
-#define UART_IRDA_TXINV_Msk              (0x1ul << UART_IRDA_TXINV_Pos)                    /*!< UART_T::IRDA: TXINV Mask               */
+#define UART_ALTCTL_LINRXEN_Pos         (6)                                               /*!< UART_T::ALTCTL: LINRXEN Position      */
+#define UART_ALTCTL_LINRXEN_Msk         (0x1ul << UART_ALTCTL_LINRXEN_Pos)               /*!< UART_T::ALTCTL: LINRXEN Mask          */
 
-#define UART_IRDA_RXINV_Pos              (6)                                               /*!< UART_T::IRDA: RXINV Position           */
-#define UART_IRDA_RXINV_Msk              (0x1ul << UART_IRDA_RXINV_Pos)                    /*!< UART_T::IRDA: RXINV Mask               */
+#define UART_ALTCTL_LINTXEN_Pos         (7)                                               /*!< UART_T::ALTCTL: LINTXEN Position      */
+#define UART_ALTCTL_LINTXEN_Msk         (0x1ul << UART_ALTCTL_LINTXEN_Pos)                /*!< UART_T::ALTCTL: LINTXEN Mask          */
 
-#define UART_ALTCTL_BRKFL_Pos            (0)                                               /*!< UART_T::ALTCTL: BRKFL Position         */
-#define UART_ALTCTL_BRKFL_Msk            (0xful << UART_ALTCTL_BRKFL_Pos)                  /*!< UART_T::ALTCTL: BRKFL Mask             */
+#define UART_ALTCTL_RS485NMM_Pos        (8)                                               /*!< UART_T::ALTCTL: RS485NMM Position     */
+#define UART_ALTCTL_RS485NMM_Msk        (0x1ul << UART_ALTCTL_RS485NMM_Pos)               /*!< UART_T::ALTCTL: RS485NMM Mask         */
 
-#define UART_ALTCTL_LINRXEN_Pos          (6)                                               /*!< UART_T::ALTCTL: LINRXEN Position       */
-#define UART_ALTCTL_LINRXEN_Msk          (0x1ul << UART_ALTCTL_LINRXEN_Pos)                /*!< UART_T::ALTCTL: LINRXEN Mask           */
+#define UART_ALTCTL_RS485AAD_Pos        (9)                                               /*!< UART_T::ALTCTL: RS485AAD Position     */
+#define UART_ALTCTL_RS485AAD_Msk        (0x1ul << UART_ALTCTL_RS485AAD_Pos)               /*!< UART_T::ALTCTL: RS485AAD Mask         */
 
-#define UART_ALTCTL_LINTXEN_Pos          (7)                                               /*!< UART_T::ALTCTL: LINTXEN Position       */
-#define UART_ALTCTL_LINTXEN_Msk          (0x1ul << UART_ALTCTL_LINTXEN_Pos)                /*!< UART_T::ALTCTL: LINTXEN Mask           */
+#define UART_ALTCTL_RS485AUD_Pos        (10)                                              /*!< UART_T::ALTCTL: RS485AUD Position     */
+#define UART_ALTCTL_RS485AUD_Msk        (0x1ul << UART_ALTCTL_RS485AUD_Pos)               /*!< UART_T::ALTCTL: RS485AUD Mask         */
 
-#define UART_ALTCTL_RS485NMM_Pos         (8)                                               /*!< UART_T::ALTCTL: RS485NMM Position      */
-#define UART_ALTCTL_RS485NMM_Msk         (0x1ul << UART_ALTCTL_RS485NMM_Pos)               /*!< UART_T::ALTCTL: RS485NMM Mask          */
+#define UART_ALTCTL_ADDRDEN_Pos         (15)                                              /*!< UART_T::ALTCTL: ADDRDEN Position      */
+#define UART_ALTCTL_ADDRDEN_Msk         (0x1ul << UART_ALTCTL_ADDRDEN_Pos)                /*!< UART_T::ALTCTL: ADDRDEN Mask          */
 
-#define UART_ALTCTL_RS485AAD_Pos         (9)                                               /*!< UART_T::ALTCTL: RS485AAD Position      */
-#define UART_ALTCTL_RS485AAD_Msk         (0x1ul << UART_ALTCTL_RS485AAD_Pos)               /*!< UART_T::ALTCTL: RS485AAD Mask          */
+#define UART_ALTCTL_ABRIF_Pos           (17)                                              /*!< UART_T::ALTCTL: ABRIF Position        */
+#define UART_ALTCTL_ABRIF_Msk           (0x1ul << UART_ALTCTL_ABRIF_Pos)                  /*!< UART_T::ALTCTL: ABRIF Mask            */
 
-#define UART_ALTCTL_RS485AUD_Pos         (10)                                              /*!< UART_T::ALTCTL: RS485AUD Position      */
-#define UART_ALTCTL_RS485AUD_Msk         (0x1ul << UART_ALTCTL_RS485AUD_Pos)               /*!< UART_T::ALTCTL: RS485AUD Mask          */
+#define UART_ALTCTL_ABRDEN_Pos          (18)                                              /*!< UART_T::ALTCTL: ABRDEN Position       */
+#define UART_ALTCTL_ABRDEN_Msk          (0x1ul << UART_ALTCTL_ABRDEN_Pos)                 /*!< UART_T::ALTCTL: ABRDEN Mask           */
 
-#define UART_ALTCTL_ADDRDEN_Pos          (15)                                              /*!< UART_T::ALTCTL: ADDRDEN Position       */
-#define UART_ALTCTL_ADDRDEN_Msk          (0x1ul << UART_ALTCTL_ADDRDEN_Pos)                /*!< UART_T::ALTCTL: ADDRDEN Mask           */
+#define UART_ALTCTL_ABRDBITS_Pos        (19)                                              /*!< UART_T::ALTCTL: ABRDBITS Position     */
+#define UART_ALTCTL_ABRDBITS_Msk        (0x3ul << UART_ALTCTL_ABRDBITS_Pos)               /*!< UART_T::ALTCTL: ABRDBITS Mask         */
 
-#define UART_ALTCTL_ABRIF_Pos            (17)                                              /*!< UART_T::ALTCTL: ABRIF Position         */
-#define UART_ALTCTL_ABRIF_Msk            (0x1ul << UART_ALTCTL_ABRIF_Pos)                  /*!< UART_T::ALTCTL: ABRIF Mask             */
+#define UART_ALTCTL_ADDRMV_Pos          (24)                                              /*!< UART_T::ALTCTL: ADDRMV Position       */
+#define UART_ALTCTL_ADDRMV_Msk          (0xfful << UART_ALTCTL_ADDRMV_Pos)                /*!< UART_T::ALTCTL: ADDRMV Mask           */
 
-#define UART_ALTCTL_ABRDEN_Pos           (18)                                              /*!< UART_T::ALTCTL: ABRDEN Position        */
-#define UART_ALTCTL_ABRDEN_Msk           (0x1ul << UART_ALTCTL_ABRDEN_Pos)                 /*!< UART_T::ALTCTL: ABRDEN Mask            */
+#define UART_FUNCSEL_FUNCSEL_Pos        (0)                                               /*!< UART_T::FUNCSEL: FUNCSEL Position     */
+#define UART_FUNCSEL_FUNCSEL_Msk        (0x7ul << UART_FUNCSEL_FUNCSEL_Pos)               /*!< UART_T::FUNCSEL: FUNCSEL Mask         */
 
-#define UART_ALTCTL_ABRDBITS_Pos         (19)                                              /*!< UART_T::ALTCTL: ABRDBITS Position      */
-#define UART_ALTCTL_ABRDBITS_Msk         (0x3ul << UART_ALTCTL_ABRDBITS_Pos)               /*!< UART_T::ALTCTL: ABRDBITS Mask          */
+#define UART_FUNCSEL_TXRXDIS_Pos        (3)                                               /*!< UART_T::FUNCSEL: TXRXDIS Position     */
+#define UART_FUNCSEL_TXRXDIS_Msk        (0x1ul << UART_FUNCSEL_TXRXDIS_Pos)               /*!< UART_T::FUNCSEL: TXRXDIS Mask         */
 
-#define UART_ALTCTL_ADDRMV_Pos           (24)                                              /*!< UART_T::ALTCTL: ADDRMV Position        */
-#define UART_ALTCTL_ADDRMV_Msk           (0xfful << UART_ALTCTL_ADDRMV_Pos)                /*!< UART_T::ALTCTL: ADDRMV Mask            */
+#define UART_FUNCSEL_DGE_Pos            (6)                                               /*!< UART_T::FUNCSEL: DGE Position         */
+#define UART_FUNCSEL_DGE_Msk            (0x1ul << UART_FUNCSEL_DGE_Pos)                   /*!< UART_T::FUNCSEL: DGE Mask             */
 
-#define UART_FUNCSEL_FUNCSEL_Pos         (0)                                               /*!< UART_T::FUNCSEL: FUNCSEL Position      */
-#define UART_FUNCSEL_FUNCSEL_Msk         (0x7ul << UART_FUNCSEL_FUNCSEL_Pos)               /*!< UART_T::FUNCSEL: FUNCSEL Mask          */
+#define UART_FUNCSEL_TXRXSWP_Pos        (7)                                               /*!< UART_T::FUNCSEL: TXRXSWP Position     */
+#define UART_FUNCSEL_TXRXSWP_Msk        (0x1ul << UART_FUNCSEL_TXRXSWP_Pos)               /*!< UART_T::FUNCSEL: TXRXSWP Mask         */
 
-#define UART_FUNCSEL_TXRXDIS_Pos         (3)                                               /*!< UART_T::FUNCSEL: TXRXDIS Position      */
-#define UART_FUNCSEL_TXRXDIS_Msk         (0x1ul << UART_FUNCSEL_TXRXDIS_Pos)               /*!< UART_T::FUNCSEL: TXRXDIS Mask          */
+#define UART_LINCTL_SLVEN_Pos           (0)                                               /*!< UART_T::LINCTL: SLVEN Position        */
+#define UART_LINCTL_SLVEN_Msk           (0x1ul << UART_LINCTL_SLVEN_Pos)                  /*!< UART_T::LINCTL: SLVEN Mask            */
 
-#define UART_FUNCSEL_DGE_Pos             (6)                                               /*!< UART_T::FUNCSEL: DGE Position          */
-#define UART_FUNCSEL_DGE_Msk             (0x1ul << UART_FUNCSEL_DGE_Pos)                   /*!< UART_T::FUNCSEL: DGE Mask              */
+#define UART_LINCTL_SLVHDEN_Pos         (1)                                               /*!< UART_T::LINCTL: SLVHDEN Position      */
+#define UART_LINCTL_SLVHDEN_Msk         (0x1ul << UART_LINCTL_SLVHDEN_Pos)                /*!< UART_T::LINCTL: SLVHDEN Mask          */
 
-#define UART_FUNCSEL_TXRXSWP_Pos         (7)                                               /*!< UART_T::FUNCSEL: TXRXSWP Position      */
-#define UART_FUNCSEL_TXRXSWP_Msk         (0x1ul << UART_FUNCSEL_TXRXSWP_Pos)               /*!< UART_T::FUNCSEL: TXRXSWP Mask          */
+#define UART_LINCTL_SLVAREN_Pos         (2)                                               /*!< UART_T::LINCTL: SLVAREN Position      */
+#define UART_LINCTL_SLVAREN_Msk         (0x1ul << UART_LINCTL_SLVAREN_Pos)                /*!< UART_T::LINCTL: SLVAREN Mask          */
 
-#define UART_LINCTL_SLVEN_Pos            (0)                                               /*!< UART_T::LINCTL: SLVEN Position         */
-#define UART_LINCTL_SLVEN_Msk            (0x1ul << UART_LINCTL_SLVEN_Pos)                  /*!< UART_T::LINCTL: SLVEN Mask             */
+#define UART_LINCTL_SLVDUEN_Pos         (3)                                               /*!< UART_T::LINCTL: SLVDUEN Position      */
+#define UART_LINCTL_SLVDUEN_Msk         (0x1ul << UART_LINCTL_SLVDUEN_Pos)                /*!< UART_T::LINCTL: SLVDUEN Mask          */
 
-#define UART_LINCTL_SLVHDEN_Pos          (1)                                               /*!< UART_T::LINCTL: SLVHDEN Position       */
-#define UART_LINCTL_SLVHDEN_Msk          (0x1ul << UART_LINCTL_SLVHDEN_Pos)                /*!< UART_T::LINCTL: SLVHDEN Mask           */
+#define UART_LINCTL_MUTE_Pos            (4)                                               /*!< UART_T::LINCTL: MUTE Position         */
+#define UART_LINCTL_MUTE_Msk            (0x1ul << UART_LINCTL_MUTE_Pos)                   /*!< UART_T::LINCTL: MUTE Mask             */
 
-#define UART_LINCTL_SLVAREN_Pos          (2)                                               /*!< UART_T::LINCTL: SLVAREN Position       */
-#define UART_LINCTL_SLVAREN_Msk          (0x1ul << UART_LINCTL_SLVAREN_Pos)                /*!< UART_T::LINCTL: SLVAREN Mask           */
+#define UART_LINCTL_SENDH_Pos           (8)                                               /*!< UART_T::LINCTL: SENDH Position        */
+#define UART_LINCTL_SENDH_Msk           (0x1ul << UART_LINCTL_SENDH_Pos)                  /*!< UART_T::LINCTL: SENDH Mask            */
 
-#define UART_LINCTL_SLVDUEN_Pos          (3)                                               /*!< UART_T::LINCTL: SLVDUEN Position       */
-#define UART_LINCTL_SLVDUEN_Msk          (0x1ul << UART_LINCTL_SLVDUEN_Pos)                /*!< UART_T::LINCTL: SLVDUEN Mask           */
+#define UART_LINCTL_IDPEN_Pos           (9)                                               /*!< UART_T::LINCTL: IDPEN Position        */
+#define UART_LINCTL_IDPEN_Msk           (0x1ul << UART_LINCTL_IDPEN_Pos)                  /*!< UART_T::LINCTL: IDPEN Mask            */
 
-#define UART_LINCTL_MUTE_Pos             (4)                                               /*!< UART_T::LINCTL: MUTE Position          */
-#define UART_LINCTL_MUTE_Msk             (0x1ul << UART_LINCTL_MUTE_Pos)                   /*!< UART_T::LINCTL: MUTE Mask              */
+#define UART_LINCTL_BRKDETEN_Pos        (10)                                              /*!< UART_T::LINCTL: BRKDETEN Position     */
+#define UART_LINCTL_BRKDETEN_Msk        (0x1ul << UART_LINCTL_BRKDETEN_Pos)               /*!< UART_T::LINCTL: BRKDETEN Mask         */
 
-#define UART_LINCTL_SENDH_Pos            (8)                                               /*!< UART_T::LINCTL: SENDH Position         */
-#define UART_LINCTL_SENDH_Msk            (0x1ul << UART_LINCTL_SENDH_Pos)                  /*!< UART_T::LINCTL: SENDH Mask             */
+#define UART_LINCTL_LINRXOFF_Pos        (11)                                              /*!< UART_T::LINCTL: LINRXOFF Position     */
+#define UART_LINCTL_LINRXOFF_Msk        (0x1ul << UART_LINCTL_LINRXOFF_Pos)               /*!< UART_T::LINCTL: LINRXOFF Mask         */
 
-#define UART_LINCTL_IDPEN_Pos            (9)                                               /*!< UART_T::LINCTL: IDPEN Position         */
-#define UART_LINCTL_IDPEN_Msk            (0x1ul << UART_LINCTL_IDPEN_Pos)                  /*!< UART_T::LINCTL: IDPEN Mask             */
+#define UART_LINCTL_BITERREN_Pos        (12)                                              /*!< UART_T::LINCTL: BITERREN Position     */
+#define UART_LINCTL_BITERREN_Msk        (0x1ul << UART_LINCTL_BITERREN_Pos)               /*!< UART_T::LINCTL: BITERREN Mask         */
 
-#define UART_LINCTL_BRKDETEN_Pos         (10)                                              /*!< UART_T::LINCTL: BRKDETEN Position      */
-#define UART_LINCTL_BRKDETEN_Msk         (0x1ul << UART_LINCTL_BRKDETEN_Pos)               /*!< UART_T::LINCTL: BRKDETEN Mask          */
+#define UART_LINCTL_BRKFL_Pos           (16)                                              /*!< UART_T::LINCTL: BRKFL Position        */
+#define UART_LINCTL_BRKFL_Msk           (0xful << UART_LINCTL_BRKFL_Pos)                  /*!< UART_T::LINCTL: BRKFL Mask            */
 
-#define UART_LINCTL_LINRXOFF_Pos         (11)                                              /*!< UART_T::LINCTL: LINRXOFF Position      */
-#define UART_LINCTL_LINRXOFF_Msk         (0x1ul << UART_LINCTL_LINRXOFF_Pos)               /*!< UART_T::LINCTL: LINRXOFF Mask          */
+#define UART_LINCTL_BSL_Pos             (20)                                              /*!< UART_T::LINCTL: BSL Position          */
+#define UART_LINCTL_BSL_Msk             (0x3ul << UART_LINCTL_BSL_Pos)                    /*!< UART_T::LINCTL: BSL Mask              */
 
-#define UART_LINCTL_BITERREN_Pos         (12)                                              /*!< UART_T::LINCTL: BITERREN Position      */
-#define UART_LINCTL_BITERREN_Msk         (0x1ul << UART_LINCTL_BITERREN_Pos)               /*!< UART_T::LINCTL: BITERREN Mask          */
+#define UART_LINCTL_HSEL_Pos            (22)                                              /*!< UART_T::LINCTL: HSEL Position         */
+#define UART_LINCTL_HSEL_Msk            (0x3ul << UART_LINCTL_HSEL_Pos)                   /*!< UART_T::LINCTL: HSEL Mask             */
 
-#define UART_LINCTL_BRKFL_Pos            (16)                                              /*!< UART_T::LINCTL: BRKFL Position         */
-#define UART_LINCTL_BRKFL_Msk            (0xful << UART_LINCTL_BRKFL_Pos)                  /*!< UART_T::LINCTL: BRKFL Mask             */
+#define UART_LINCTL_PID_Pos             (24)                                              /*!< UART_T::LINCTL: PID Position          */
+#define UART_LINCTL_PID_Msk             (0xfful << UART_LINCTL_PID_Pos)                   /*!< UART_T::LINCTL: PID Mask              */
 
-#define UART_LINCTL_BSL_Pos              (20)                                              /*!< UART_T::LINCTL: BSL Position           */
-#define UART_LINCTL_BSL_Msk              (0x3ul << UART_LINCTL_BSL_Pos)                    /*!< UART_T::LINCTL: BSL Mask               */
+#define UART_LINSTS_SLVHDETF_Pos        (0)                                               /*!< UART_T::LINSTS: SLVHDETF Position     */
+#define UART_LINSTS_SLVHDETF_Msk        (0x1ul << UART_LINSTS_SLVHDETF_Pos)               /*!< UART_T::LINSTS: SLVHDETF Mask         */
 
-#define UART_LINCTL_HSEL_Pos             (22)                                              /*!< UART_T::LINCTL: HSEL Position          */
-#define UART_LINCTL_HSEL_Msk             (0x3ul << UART_LINCTL_HSEL_Pos)                   /*!< UART_T::LINCTL: HSEL Mask              */
+#define UART_LINSTS_SLVHEF_Pos          (1)                                               /*!< UART_T::LINSTS: SLVHEF Position       */
+#define UART_LINSTS_SLVHEF_Msk          (0x1ul << UART_LINSTS_SLVHEF_Pos)                 /*!< UART_T::LINSTS: SLVHEF Mask           */
 
-#define UART_LINCTL_PID_Pos              (24)                                              /*!< UART_T::LINCTL: PID Position           */
-#define UART_LINCTL_PID_Msk              (0xfful << UART_LINCTL_PID_Pos)                   /*!< UART_T::LINCTL: PID Mask               */
+#define UART_LINSTS_SLVIDPEF_Pos        (2)                                               /*!< UART_T::LINSTS: SLVIDPEF Position     */
+#define UART_LINSTS_SLVIDPEF_Msk        (0x1ul << UART_LINSTS_SLVIDPEF_Pos)               /*!< UART_T::LINSTS: SLVIDPEF Mask         */
 
-#define UART_LINSTS_SLVHDETF_Pos         (0)                                               /*!< UART_T::LINSTS: SLVHDETF Position      */
-#define UART_LINSTS_SLVHDETF_Msk         (0x1ul << UART_LINSTS_SLVHDETF_Pos)               /*!< UART_T::LINSTS: SLVHDETF Mask          */
+#define UART_LINSTS_SLVSYNCF_Pos        (3)                                               /*!< UART_T::LINSTS: SLVSYNCF Position     */
+#define UART_LINSTS_SLVSYNCF_Msk        (0x1ul << UART_LINSTS_SLVSYNCF_Pos)               /*!< UART_T::LINSTS: SLVSYNCF Mask         */
 
-#define UART_LINSTS_SLVHEF_Pos           (1)                                               /*!< UART_T::LINSTS: SLVHEF Position        */
-#define UART_LINSTS_SLVHEF_Msk           (0x1ul << UART_LINSTS_SLVHEF_Pos)                 /*!< UART_T::LINSTS: SLVHEF Mask            */
+#define UART_LINSTS_BRKDETF_Pos         (8)                                               /*!< UART_T::LINSTS: BRKDETF Position      */
+#define UART_LINSTS_BRKDETF_Msk         (0x1ul << UART_LINSTS_BRKDETF_Pos)                /*!< UART_T::LINSTS: BRKDETF Mask          */
 
-#define UART_LINSTS_SLVIDPEF_Pos         (2)                                               /*!< UART_T::LINSTS: SLVIDPEF Position      */
-#define UART_LINSTS_SLVIDPEF_Msk         (0x1ul << UART_LINSTS_SLVIDPEF_Pos)               /*!< UART_T::LINSTS: SLVIDPEF Mask          */
+#define UART_LINSTS_BITEF_Pos           (9)                                               /*!< UART_T::LINSTS: BITEF Position        */
+#define UART_LINSTS_BITEF_Msk           (0x1ul << UART_LINSTS_BITEF_Pos)                  /*!< UART_T::LINSTS: BITEF Mask            */
 
-#define UART_LINSTS_SLVSYNCF_Pos         (3)                                               /*!< UART_T::LINSTS: SLVSYNCF Position      */
-#define UART_LINSTS_SLVSYNCF_Msk         (0x1ul << UART_LINSTS_SLVSYNCF_Pos)               /*!< UART_T::LINSTS: SLVSYNCF Mask          */
+#define UART_BRCOMP_BRCOMP_Pos          (0)                                               /*!< UART_T::BRCOMP: BRCOMP Position       */
+#define UART_BRCOMP_BRCOMP_Msk          (0x1fful << UART_BRCOMP_BRCOMP_Pos)               /*!< UART_T::BRCOMP: BRCOMP Mask           */
 
-#define UART_LINSTS_BRKDETF_Pos          (8)                                               /*!< UART_T::LINSTS: BRKDETF Position       */
-#define UART_LINSTS_BRKDETF_Msk          (0x1ul << UART_LINSTS_BRKDETF_Pos)                /*!< UART_T::LINSTS: BRKDETF Mask           */
+#define UART_BRCOMP_BRCOMPDEC_Pos       (31)                                              /*!< UART_T::BRCOMP: BRCOMPDEC Position    */
+#define UART_BRCOMP_BRCOMPDEC_Msk       (0x1ul << UART_BRCOMP_BRCOMPDEC_Pos)              /*!< UART_T::BRCOMP: BRCOMPDEC Mask        */
 
-#define UART_LINSTS_BITEF_Pos            (9)                                               /*!< UART_T::LINSTS: BITEF Position         */
-#define UART_LINSTS_BITEF_Msk            (0x1ul << UART_LINSTS_BITEF_Pos)                  /*!< UART_T::LINSTS: BITEF Mask             */
+#define UART_WKCTL_WKCTSEN_Pos          (0)                                               /*!< UART_T::WKCTL: WKCTSEN Position       */
+#define UART_WKCTL_WKCTSEN_Msk          (0x1ul << UART_WKCTL_WKCTSEN_Pos)                 /*!< UART_T::WKCTL: WKCTSEN Mask           */
 
-#define UART_BRCOMP_BRCOMP_Pos           (0)                                               /*!< UART_T::BRCOMP: BRCOMP Position        */
-#define UART_BRCOMP_BRCOMP_Msk           (0x1fful << UART_BRCOMP_BRCOMP_Pos)               /*!< UART_T::BRCOMP: BRCOMP Mask            */
+#define UART_WKCTL_WKDATEN_Pos          (1)                                               /*!< UART_T::WKCTL: WKDATEN Position       */
+#define UART_WKCTL_WKDATEN_Msk          (0x1ul << UART_WKCTL_WKDATEN_Pos)                 /*!< UART_T::WKCTL: WKDATEN Mask           */
 
-#define UART_BRCOMP_BRCOMPDEC_Pos        (31)                                              /*!< UART_T::BRCOMP: BRCOMPDEC Position     */
-#define UART_BRCOMP_BRCOMPDEC_Msk        (0x1ul << UART_BRCOMP_BRCOMPDEC_Pos)              /*!< UART_T::BRCOMP: BRCOMPDEC Mask         */
+#define UART_WKCTL_WKRFRTEN_Pos         (2)                                               /*!< UART_T::WKCTL: WKRFRTEN Position      */
+#define UART_WKCTL_WKRFRTEN_Msk         (0x1ul << UART_WKCTL_WKRFRTEN_Pos)                /*!< UART_T::WKCTL: WKRFRTEN Mask          */
 
-#define UART_WKCTL_WKCTSEN_Pos           (0)                                               /*!< UART_T::WKCTL: WKCTSEN Position        */
-#define UART_WKCTL_WKCTSEN_Msk           (0x1ul << UART_WKCTL_WKCTSEN_Pos)                 /*!< UART_T::WKCTL: WKCTSEN Mask            */
+#define UART_WKCTL_WKRS485EN_Pos        (3)                                               /*!< UART_T::WKCTL: WKRS485EN Position     */
+#define UART_WKCTL_WKRS485EN_Msk        (0x1ul << UART_WKCTL_WKRS485EN_Pos)               /*!< UART_T::WKCTL: WKRS485EN Mask         */
 
-#define UART_WKCTL_WKDATEN_Pos           (1)                                               /*!< UART_T::WKCTL: WKDATEN Position        */
-#define UART_WKCTL_WKDATEN_Msk           (0x1ul << UART_WKCTL_WKDATEN_Pos)                 /*!< UART_T::WKCTL: WKDATEN Mask            */
+#define UART_WKCTL_WKTOUTEN_Pos         (4)                                               /*!< UART_T::WKCTL: WKTOUTEN Position      */
+#define UART_WKCTL_WKTOUTEN_Msk         (0x1ul << UART_WKCTL_WKTOUTEN_Pos)                /*!< UART_T::WKCTL: WKTOUTEN Mask          */
 
-#define UART_WKCTL_WKRFRTEN_Pos          (2)                                               /*!< UART_T::WKCTL: WKRFRTEN Position       */
-#define UART_WKCTL_WKRFRTEN_Msk          (0x1ul << UART_WKCTL_WKRFRTEN_Pos)                /*!< UART_T::WKCTL: WKRFRTEN Mask           */
+#define UART_WKSTS_CTSWKF_Pos           (0)                                               /*!< UART_T::WKSTS: CTSWKF Position        */
+#define UART_WKSTS_CTSWKF_Msk           (0x1ul << UART_WKSTS_CTSWKF_Pos)                  /*!< UART_T::WKSTS: CTSWKF Mask            */
 
-#define UART_WKCTL_WKRS485EN_Pos         (3)                                               /*!< UART_T::WKCTL: WKRS485EN Position      */
-#define UART_WKCTL_WKRS485EN_Msk         (0x1ul << UART_WKCTL_WKRS485EN_Pos)               /*!< UART_T::WKCTL: WKRS485EN Mask          */
+#define UART_WKSTS_DATWKF_Pos           (1)                                               /*!< UART_T::WKSTS: DATWKF Position        */
+#define UART_WKSTS_DATWKF_Msk           (0x1ul << UART_WKSTS_DATWKF_Pos)                  /*!< UART_T::WKSTS: DATWKF Mask            */
 
-#define UART_WKCTL_WKTOUTEN_Pos          (4)                                               /*!< UART_T::WKCTL: WKTOUTEN Position       */
-#define UART_WKCTL_WKTOUTEN_Msk          (0x1ul << UART_WKCTL_WKTOUTEN_Pos)                /*!< UART_T::WKCTL: WKTOUTEN Mask           */
+#define UART_WKSTS_RFRTWKF_Pos          (2)                                               /*!< UART_T::WKSTS: RFRTWKF Position       */
+#define UART_WKSTS_RFRTWKF_Msk          (0x1ul << UART_WKSTS_RFRTWKF_Pos)                 /*!< UART_T::WKSTS: RFRTWKF Mask           */
 
-#define UART_WKSTS_CTSWKF_Pos            (0)                                               /*!< UART_T::WKSTS: CTSWKF Position         */
-#define UART_WKSTS_CTSWKF_Msk            (0x1ul << UART_WKSTS_CTSWKF_Pos)                  /*!< UART_T::WKSTS: CTSWKF Mask             */
+#define UART_WKSTS_RS485WKF_Pos         (3)                                               /*!< UART_T::WKSTS: RS485WKF Position      */
+#define UART_WKSTS_RS485WKF_Msk         (0x1ul << UART_WKSTS_RS485WKF_Pos)                /*!< UART_T::WKSTS: RS485WKF Mask          */
 
-#define UART_WKSTS_DATWKF_Pos            (1)                                               /*!< UART_T::WKSTS: DATWKF Position         */
-#define UART_WKSTS_DATWKF_Msk            (0x1ul << UART_WKSTS_DATWKF_Pos)                  /*!< UART_T::WKSTS: DATWKF Mask             */
+#define UART_WKSTS_TOUTWKF_Pos          (4)                                               /*!< UART_T::WKSTS: TOUTWKF Position       */
+#define UART_WKSTS_TOUTWKF_Msk          (0x1ul << UART_WKSTS_TOUTWKF_Pos)                 /*!< UART_T::WKSTS: TOUTWKF Mask           */
 
-#define UART_WKSTS_RFRTWKF_Pos           (2)                                               /*!< UART_T::WKSTS: RFRTWKF Position        */
-#define UART_WKSTS_RFRTWKF_Msk           (0x1ul << UART_WKSTS_RFRTWKF_Pos)                 /*!< UART_T::WKSTS: RFRTWKF Mask            */
+#define UART_DWKCOMP_STCOMP_Pos         (0)                                               /*!< UART_T::DWKCOMP: STCOMP Position      */
+#define UART_DWKCOMP_STCOMP_Msk         (0xfffful << UART_DWKCOMP_STCOMP_Pos)             /*!< UART_T::DWKCOMP: STCOMP Mask          */
 
-#define UART_WKSTS_RS485WKF_Pos          (3)                                               /*!< UART_T::WKSTS: RS485WKF Position       */
-#define UART_WKSTS_RS485WKF_Msk          (0x1ul << UART_WKSTS_RS485WKF_Pos)                /*!< UART_T::WKSTS: RS485WKF Mask           */
-
-#define UART_WKSTS_TOUTWKF_Pos           (4)                                               /*!< UART_T::WKSTS: TOUTWKF Position        */
-#define UART_WKSTS_TOUTWKF_Msk           (0x1ul << UART_WKSTS_TOUTWKF_Pos)                 /*!< UART_T::WKSTS: TOUTWKF Mask            */
-
-#define UART_DWKCOMP_STCOMP_Pos          (0)                                               /*!< UART_T::DWKCOMP: STCOMP Position       */
-#define UART_DWKCOMP_STCOMP_Msk          (0xfffful << UART_DWKCOMP_STCOMP_Pos)             /*!< UART_T::DWKCOMP: STCOMP Mask           */
-
-#define UART_RS485DD_RTSDDLY_Pos         (0)                                               /*!< UART_T::RS485DD: RTSDDLY Position      */
-#define UART_RS485DD_RTSDDLY_Msk         (0xfffful << UART_RS485DD_RTSDDLY_Pos)           /*!< UART_T::RS485DD: RTSDDLY Mask              */
+#define UART_RS485DD_RTSDDLY_Pos        (0)                                               /*!< UART_T::RS485DD: RTSDDLY Position     */
+#define UART_RS485DD_RTSDDLY_Msk        (0xfffful << UART_RS485DD_RTSDDLY_Pos)            /*!< UART_T::RS485DD: RTSDDLY Mask         */
 
 
 

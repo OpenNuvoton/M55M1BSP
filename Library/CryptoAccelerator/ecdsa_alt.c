@@ -138,11 +138,15 @@ static void ECC_Copy(uint32_t *dest, uint32_t *src, uint32_t size)
 
 static void ECC_InitCurve(mbedtls_ecp_group *grp)
 {
+    volatile uint32_t reg;
     CRYPTO_T *crpt = CRYPTO;
 
     /* Reset Crypto */
+    SYS_UnlockReg();
     SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
     SYS->CRYPTORST = 0;
+    SYS_LockReg();
+
     ECC_ENABLE_INT(crpt);
 
     ECC_Copy((uint32_t *)crpt->ECC_A, grp->A.MBEDTLS_PRIVATE(p), mbedtls_mpi_size(&grp->A));
@@ -246,7 +250,7 @@ static int run_ecc_codec(mbedtls_ecp_group *grp, uint32_t mode)
     while ((crpt->INTSTS & CRYPTO_INTSTS_ECCIF_Msk) == 0)
     {
         if (timeout-- <= 0)
-            return MBEDTLS_ERR_ECP_HW_ACCEL_FAILED;
+            return MBEDTLS_ERR_ECP_HW_ACCEL_FAILED; /* Check ECC STS for detail*/
     }
 
     return 0;
@@ -305,10 +309,7 @@ int32_t  ECC_Sign(mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
     /* Generate a random k. It will use CRYPTO SHA*/
     mbedtls_ecp_gen_privkey(grp, pk, f_rng, p_rng);
 
-    /* Reset Crypto */
-    SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
-    SYS->CRYPTORST = 0;
-
+    /* Fill ECC curve parameter. Reset Crypto to clear and reload ECC curve parameter */
     ECC_InitCurve(grp);
 
     /*
@@ -503,12 +504,10 @@ int  ECC_Verify(mbedtls_ecp_group *grp,
     mbedtls_mpi e;
     int32_t u1_zero_flag = 0;
 
-    /* Reset Crypto */
-    SYS->CRYPTORST |= SYS_CRYPTORST_CRYPTO0RST_Msk;
-    SYS->CRYPTORST = 0;
-
     crpt = CRYPTO;
     ECC_FixCurve(grp);
+
+    /* Fill ECC curve parameter. Reset Crypto to clear and reload ECC curve parameter */
     ECC_InitCurve(grp);
 
     /*

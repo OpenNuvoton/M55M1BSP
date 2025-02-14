@@ -14,9 +14,25 @@
 extern "C" {
 #endif
 
-#define CONFIG_LCD_EBI              EBI_BANK0
-//#define CONFIG_LCD_EBI_USE_PDMA     1
-#define CONFIG_LCD_EBI_ADDR         (EBI_BANK0_BASE_ADDR+(CONFIG_LCD_EBI*EBI_MAX_SIZE))
+#if __has_include("board_config.h")
+#include "board_config.h"
+#else
+#define __EBI_LCD_PANEL__
+//#define __SPI_LCD_PANEL__
+
+#define CONFIG_LCD_EBI                  EBI_BANK0
+#define CONFIG_LCD_EBI_ADDR             (EBI_BANK0_BASE_ADDR+(CONFIG_LCD_EBI*EBI_MAX_SIZE))
+#define CONFIG_LCD_EBI_CLK_MODULE       EBI0_MODULE
+
+#define CONFIG_LCD_SPI_PORT             SPI2
+#define CONFIG_LCD_SPI_CLK_MODULE       SPI2_MODULE
+#define CONFIG_LCD_SPI_CLK_SEL          CLK_SPISEL_SPI2SEL_PCLK0
+#define LT7381_LCD_PANEL
+//#define FSA506_LCD_PANEL
+#endif
+
+#define CONFIG_DISP_USE_PDMA
+#define CONFIG_LCD_SPI_FREQ          60000000
 
 #define C_WHITE     0xFFFF
 #define C_BLACK     0x0000
@@ -37,7 +53,7 @@ typedef struct
 } S_DISP_RECT;
 
 int Display_Init(void);
-void Display_FillRect(uint16_t *pu16Pixels, const S_DISP_RECT *psRect);
+void Display_FillRect(uint16_t *pu16Pixels, const S_DISP_RECT *psRect, int i32ScaleUpFactor);
 void Display_Delay(uint32_t u32MilliSec);
 int Display_PutText(
     const char *szText,
@@ -46,7 +62,8 @@ int Display_PutText(
     const uint32_t u32PosY,
     const uint32_t u32FontColor,
     const uint32_t u32BackgroundColor,
-    const bool bMultipleLines
+    const bool bMultipleLines,
+    int i32ScaleUpFactor
 );
 
 void Display_ClearRect(uint32_t u32Color, const S_DISP_RECT *psRect);

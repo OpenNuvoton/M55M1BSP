@@ -13,18 +13,74 @@
 
 //------------------------------------------------------------------------------
 #define SPIM_PORT                   SPIM0
+#define SPIM_PORT_DIV               1
+#define TRIM_PAT_SIZE               32
+#define FLH_SECTOR_SIZE             0x1000
+#define FLH_TRIM_ADDR               (0x400000 - FLH_SECTOR_SIZE)
 
+//------------------------------------------------------------------------------
 #define USE_4_BYTES_MODE            0   /* W25Q20 does not support 4-bytes address mode. */
-#define SPIM_CIPHER_ON              0
-//#define DMM_MODE_TRIM
+
+static SPIM_PHASE_T sWb0BhRdCMD =
+{
+    /* 0x0B: CMD_DMA_FAST_READ Command Phase Table */
+    CMD_DMA_FAST_READ,                                                        // Command Code
+    PHASE_NORMAL_MODE, PHASE_WIDTH_8, PHASE_DISABLE_DTR,                      // Command Phase
+    PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                     // Address Phase
+    PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE, // Data Phase
+    8,                                                                        // Dummy Cycle Phase
+};
+
+static SPIM_PHASE_T sWb02hWrCMD =
+{
+    CMD_NORMAL_PAGE_PROGRAM,                                                    //Command Code
+    PHASE_NORMAL_MODE, PHASE_WIDTH_8,  PHASE_DISABLE_DTR,                       //Command Phase
+    PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                       //Address Phase
+    PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,  //Data Phase
+    0,
+};
 
 //------------------------------------------------------------------------------
 void spim_routine(void);
+void SPIM_TrimRxClkDlyNum(SPIM_T *spim, SPIM_PHASE_T *psWbWrCMD, SPIM_PHASE_T *psWbRdCMD);
 
 //------------------------------------------------------------------------------
+void SPIFlash_Init(SPIM_T *spim)
+{
+    uint8_t idBuf[3] = {0};
+
+    /* Set SPIM clock as HCLK divided by 1 */
+    SPIM_SET_CLOCK_DIVIDER(SPIM_PORT, SPIM_PORT_DIV);
+
+    /* Disable SPIM Cipher */
+    SPIM_DISABLE_CIPHER(SPIM_PORT);
+
+    /* Initialized SPI flash */
+    if (SPIM_InitFlash(SPIM_PORT, SPIM_OP_ENABLE) != SPIM_OK)
+    {
+        printf("SPIM flash initialize failed!\n");
+
+        while (1) {}
+    }
+
+    SPIM_ReadJedecId(SPIM_PORT, idBuf, sizeof(idBuf), SPIM_BITMODE_1);
+    printf("SPIM get JEDEC ID=0x%02X, 0x%02X, 0x%02X\n", idBuf[0], idBuf[1], idBuf[2]);
+
+    SPIM_DMADMM_InitPhase(SPIM_PORT, &sWb02hWrCMD, SPIM_CTL0_OPMODE_PAGEWRITE);
+    SPIM_DMADMM_InitPhase(SPIM_PORT, &sWb0BhRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
+
+    SPIM_TrimRxClkDlyNum(SPIM_PORT, &sWb02hWrCMD, &sWb0BhRdCMD);
+
+    SPIM_DMADMM_InitPhase(SPIM_PORT, &sWb0BhRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
+    SPIM_EnterDirectMapMode(spim,
+                            (sWb0BhRdCMD.u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
+                            sWb0BhRdCMD.u32CMDCode,
+                            1);
+}
+
 void SPIM_SetDMMAddrNonCacheable(void)
 {
-    uint32_t u32DMMAddr = SPIM_GetDMMAddress(SPIM_PORT);
+    uint32_t u32DMMAddr = SPIM_GET_DMMADDR(SPIM_PORT);
 
     /* Disable D-Cache */
     SCB_DisableDCache();
@@ -51,14 +107,16 @@ void SPIM_SetDMMAddrNonCacheable(void)
 
 void SYS_Init(void)
 {
+    uint32_t u32SlewRate = GPIO_SLEWCTL_HIGH;
+
     /* Enable Internal RC 12MHz clock */
     CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
 
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -77,200 +135,244 @@ void SYS_Init(void)
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock and cyclesPerUs automatically. */
     SystemCoreClockUpdate();
 
-    /* Enable UART module clock */
-    SetDebugUartCLK();
+    /* Enable SPIM module clock */
+    CLK_EnableModuleClock(SPIM0_MODULE);
+    CLK_EnableModuleClock(OTFC0_MODULE);
 
     /* Enable GPIO Module clock */
-    CLK_EnableModuleClock(GPIOC_MODULE);
-    CLK_EnableModuleClock(GPIOG_MODULE);
     CLK_EnableModuleClock(GPIOH_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
+
+    /* Enable UART module clock */
+    SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    if (SPIM_PORT == SPIM0)
-    {
-        /* Enable SPIM module clock */
-        CLK_EnableModuleClock(SPIM0_MODULE);
+    /* Init SPIM multi-function pins */
+    SET_SPIM0_CLK_PH13();
+    SET_SPIM0_D2_PJ5();
+    SET_SPIM0_D3_PJ6();
+    SET_SPIM0_MISO_PJ4();
+    SET_SPIM0_MOSI_PJ3();
+    SET_SPIM0_RESETN_PJ2();
+    SET_SPIM0_SS_PJ7();
 
-        /* Init SPIM multi-function pins */
-        SET_SPIM0_CLK_PC4();
-        SET_SPIM0_MISO_PG12();
-        SET_SPIM0_MOSI_PG11();
-        SET_SPIM0_D2_PC0();
-        SET_SPIM0_D3_PG10();
-        SET_SPIM0_SS_PC3();
+    PH->SMTEN |= (GPIO_SMTEN_SMTEN13_Msk);
+    PJ->SMTEN |= (GPIO_SMTEN_SMTEN2_Msk |
+                  GPIO_SMTEN_SMTEN3_Msk |
+                  GPIO_SMTEN_SMTEN4_Msk |
+                  GPIO_SMTEN_SMTEN5_Msk |
+                  GPIO_SMTEN_SMTEN6_Msk |
+                  GPIO_SMTEN_SMTEN7_Msk);
 
-        PC->SMTEN |= (GPIO_SMTEN_SMTEN0_Msk |
-                      GPIO_SMTEN_SMTEN3_Msk |
-                      GPIO_SMTEN_SMTEN4_Msk);
+    /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
+    GPIO_SetSlewCtl(PH, BIT13, u32SlewRate);
 
-        PG->SMTEN |= (GPIO_SMTEN_SMTEN10_Msk |
-                      GPIO_SMTEN_SMTEN11_Msk |
-                      GPIO_SMTEN_SMTEN12_Msk);
-
-        /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
-        GPIO_SetSlewCtl(PC, BIT0, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PC, BIT3, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PC, BIT4, GPIO_SLEWCTL_HIGH);
-
-        GPIO_SetSlewCtl(PG, BIT10, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT11, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT12, GPIO_SLEWCTL_HIGH);
-    }
-    else if (SPIM_PORT == SPIM1)
-    {
-        /* Enable SPIM module clock */
-        CLK_EnableModuleClock(SPIM1_MODULE);
-
-        /* Init SPIM multi-function pins */
-        SET_SPIM1_CLK_PH13();
-        SET_SPIM1_MISO_PJ5();
-        SET_SPIM1_MOSI_PJ6();
-        SET_SPIM1_D2_PJ4();
-        SET_SPIM1_D3_PJ3();
-        SET_SPIM1_SS_PJ7();
-
-        PH->SMTEN |= (GPIO_SMTEN_SMTEN13_Msk);
-
-        PJ->SMTEN |= (GPIO_SMTEN_SMTEN3_Msk |
-                      GPIO_SMTEN_SMTEN4_Msk |
-                      GPIO_SMTEN_SMTEN5_Msk |
-                      GPIO_SMTEN_SMTEN6_Msk |
-                      GPIO_SMTEN_SMTEN7_Msk);
-
-        /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
-        GPIO_SetSlewCtl(PH, BIT13, GPIO_SLEWCTL_HIGH);
-
-        GPIO_SetSlewCtl(PJ, BIT3, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT4, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT5, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT6, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT7, GPIO_SLEWCTL_HIGH);
-    }
+    GPIO_SetSlewCtl(PJ, BIT2, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT3, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT4, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT5, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT6, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT7, u32SlewRate);
 }
 
-int SPIM_TrimRxClkDlyNum(SPIM_T *spim, SPIM_PHASE_T *psWbRdCMD)
+/**
+ * @brief Check if the given array of values is consecutive.
+ *
+ * @param psDlyNumRange Pointer to the structure to store the range of consecutive values.
+ * @param au8Src Array of values to be checked.
+ * @param size Size of the array.
+ */
+static uint8_t isConsecutive(uint8_t au8Src[], uint32_t size)
 {
-    volatile uint8_t u8RdDelay = 0;
-    uint8_t u8RdDelayIdx = 0;
-    uint8_t u8RdDelayRes[0x0F] = {0};
-    uint32_t u32SAddr = 0x10000;
-    volatile uint32_t u32i = 0;
-    uint32_t u32Div = SPIM_GET_CLOCK_DIVIDER(spim);
-    uint8_t au8TrimPatten[32] =
+    uint8_t u8Find = 0, u8StartIdx = 0, u8MaxRang = 0;
+    uint32_t u32i = 0, u32j = 1;
+
+    // Check if the sequence is increasing or decreasing
+    bool increasing = au8Src[1] > au8Src[0];
+
+    // Iterate over the array
+    for (u32i = 1; u32i < size; ++u32i)
     {
-        0xff, 0x0F, 0xFF, 0x00, 0xFF, 0xCC, 0xC3, 0xCC,
-        0xC3, 0x3C, 0xCC, 0xFF, 0xFE, 0xFF, 0xFE, 0xEF,
-        0xFF, 0xDF, 0xFF, 0xDD, 0xFF, 0xFB, 0xFF, 0xFB,
-        0xBF, 0xFF, 0x7F, 0xFF, 0x77, 0xF7, 0xBD, 0xEF,
-    };
-    uint8_t au8DestBuf[32] = {0};
-    SPIM_PHASE_T sWbWrCMD =
+        // Check if the current element is consecutive to the previous one
+        if ((increasing && au8Src[u32i] != au8Src[u32i - 1] + 1) ||
+                (!increasing && au8Src[u32i] != au8Src[u32i - 1] - 1))
+        {
+            // Update the start and end indices of the consecutive range
+            u8Find = u32i;
+            u32j = 0;
+        }
+
+        // Increment the number of consecutive elements
+        u32j++;
+
+        // Update the range if the current range is longer than the previous one
+        if (u32j >= u8MaxRang)
+        {
+            u8StartIdx = u8Find;
+            u8MaxRang = u32j;
+        }
+    }
+
+    return (u8MaxRang > 2) ?
+           au8Src[((u8StartIdx + u8MaxRang / 2) + (((u8MaxRang % 2) != 0) ? 1 : 0)) - 1] :
+           au8Src[u8StartIdx];
+}
+
+/**
+ * @brief Trim DLL component delay number
+ *
+ * @details This function is used to trim the delay number of DLL component,
+ *          it can improve the SPIM clock performance.
+ *
+ * @param[in] spim The pointer of the specified SPIM module
+ *
+ */
+void SPIM_TrimRxClkDlyNum(SPIM_T *spim, SPIM_PHASE_T *psWbWrCMD, SPIM_PHASE_T *psWbRdCMD)
+{
+    if (spim == NULL)
     {
-        CMD_NORMAL_PAGE_PROGRAM,                                    //Command Code
-        PHASE_NORMAL_MODE, PHASE_WIDTH_8,  PHASE_DISABLE_DTR,       //Command Phase
-        PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,       //Address Phase
-        PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,  //Data Phase
-        0,
-    };
+        return;
+    }
 
-#ifdef DMM_MODE_TRIM
-    uint32_t u32RdDataCnt = 0;
-    uint32_t u32DMMAddr = SPIM_GetDMMAddress(spim);
-    uint32_t *pu32RdData = NULL;
-#endif //
+    uint8_t u8RdDelay = 0;
+    uint8_t u8RdDelayRes[SPIM_MAX_DLL_LATENCY] = {0};
+    uint32_t u32PatternSize = TRIM_PAT_SIZE;
+    uint32_t u32ReTrimMaxCnt = 6;
+    uint32_t u32LoopAddr = 0;
+    uint32_t u32Val = 0;
+    uint32_t u32i = 0;
+    uint32_t u32j = 0;
+    uint32_t u32k = 0;
+    uint32_t u32ReTrimCnt = 0;
+    uint32_t u32SrcAddr = FLH_TRIM_ADDR;
+    uint32_t u32Div = SPIM_GET_CLOCK_DIVIDER(spim); // Divider value
+    uint64_t au64TrimPattern[(TRIM_PAT_SIZE * 2) / 8] = {0};
+    uint64_t au64VerifyBuf[(TRIM_PAT_SIZE / 8)] = {0};
+    uint8_t *pu8TrimPattern = (uint8_t *)au64TrimPattern;
+    uint8_t *pu8VerifyBuf = (uint8_t *)au64VerifyBuf;
+    uint32_t u32DMMAddr = SPIM_GET_DMMADDR(spim);
 
-    SPIM_DMADMM_InitPhase(spim, &sWbWrCMD, SPIM_CTL0_OPMODE_PAGEWRITE);
+    /* Create Trim Pattern */
+    for (u32k = 0; u32k < sizeof(au64TrimPattern); u32k++)
+    {
+        u32Val = (u32k & 0x0F) ^ (u32k >> 4) ^ (u32k >> 3);
 
+        if (u32k & 0x01)
+        {
+            u32Val = ~u32Val;
+        }
+
+        pu8TrimPattern[u32k] = ~(uint8_t)(u32Val ^ (u32k << 3) ^ (u32k >> 2));
+    }
+
+    /* Set SPIM clock divider to 8 */
     SPIM_SET_CLOCK_DIVIDER(spim, 8);
 
-    SPIM_EraseBlock(spim, u32SAddr, SPIM_OP_DISABLE, OPCODE_BE_64K, 1, SPIM_OP_ENABLE);
+    /* Erase 64KB block */
+    SPIM_EraseBlock(spim,
+                    u32SrcAddr,
+                    psWbWrCMD->u32AddrWidth == PHASE_WIDTH_32 ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
+                    OPCODE_SE_4K,
+                    SPIM_PhaseModeToNBit(psWbWrCMD->u32CMDPhase),
+                    SPIM_OP_ENABLE);
 
+    /* Write trim pattern */
     SPIM_DMA_Write(spim,
-                   u32SAddr,
-                   (sWbWrCMD.u32AddrWidth == PHASE_WIDTH_32) ? 1UL : 0UL,
-                   sizeof(au8TrimPatten),
-                   au8TrimPatten,
-                   sWbWrCMD.u32CMDCode);
+                   u32SrcAddr,
+                   psWbWrCMD->u32AddrWidth == PHASE_WIDTH_32 ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
+                   sizeof(au64TrimPattern),
+                   pu8TrimPattern,
+                   psWbWrCMD->u32CMDCode);
 
-    SPIM_SET_CLOCK_DIVIDER(spim, u32Div);
+    /* Restore clock divider */
+    SPIM_SET_CLOCK_DIVIDER(spim, u32Div); // Restore clock divider
 
-#ifdef DMM_MODE_TRIM
-
+    SPIM_DMADMM_InitPhase(spim, psWbRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
     SPIM_DMADMM_InitPhase(spim, psWbRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
-    SPIM_EnterDirectMapMode(spim,
-                            (psWbRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? 1UL : 0UL,
-                            psWbRdCMD->u32CMDCode,
-                            1);
+
+    for (u32ReTrimCnt = 0; u32ReTrimCnt < u32ReTrimMaxCnt; u32ReTrimCnt++)
+    {
+        for (u8RdDelay = 0; u8RdDelay < SPIM_MAX_RX_DLY_NUM; u8RdDelay++)
+        {
+            /* Set DLL calibration to select the valid delay step number */
+            SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8RdDelay);
+
+            memset(pu8VerifyBuf, 0, sizeof(au64VerifyBuf));
+
+#if (NVT_DCACHE_ON == 1)
+            // Invalidate the data cache for the DMA read buffer
+            SCB_InvalidateDCache_by_Addr(
+                (volatile uint32_t *)((u32ReTrimCnt == 1) ? u32SrcAddr : (u32DMMAddr + u32SrcAddr)), // Determine address based on re-trim count
+                (int32_t)TRIM_PAT_SIZE * 2); // Invalidate cache for the specified size
 #endif
 
-    for (u8RdDelay = 0; u8RdDelay <= 0xF; u8RdDelay++)
-    {
-        SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8RdDelay);
+            /* Calculate the pattern size based on the trim count */
+            u32PatternSize =
+                (((u32ReTrimCnt == 2) || (u32ReTrimCnt >= 3)) && (u8RdDelay == 0)) ?
+                (TRIM_PAT_SIZE - 0x08) :
+                TRIM_PAT_SIZE;
 
-        memset(au8DestBuf, 0, sizeof(au8DestBuf));
+            /* Read data from the HyperRAM */
+            u32LoopAddr = 0;
 
-#ifndef DMM_MODE_TRIM
+            for (u32k = 0; u32k < u32PatternSize; u32k += 0x08)
+            {
+                if (u32ReTrimCnt == 1)
+                {
+                    SPIM_DMA_Read(SPIM_PORT,
+                                  (u32SrcAddr + u32LoopAddr),
+                                  (psWbRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
+                                  0x08,
+                                  &pu8VerifyBuf[u32k],
+                                  psWbRdCMD->u32CMDCode,
+                                  SPIM_OP_ENABLE);
+                }
+                else
+                {
+                    SPIM_EnterDirectMapMode(spim,
+                                            (psWbRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
+                                            psWbRdCMD->u32CMDCode,
+                                            1);
 
-        SPIM_DMADMM_InitPhase(spim, psWbRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
-        SPIM_DMA_Read(spim,
-                      u32SAddr,
-                      ((psWbRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? 1UL : 0UL),
-                      sizeof(au8TrimPatten),
-                      au8DestBuf,
-                      psWbRdCMD->u32CMDCode,
-                      SPIM_OP_ENABLE);
-#else
-        u32RdDataCnt = 0;
-        pu32RdData = (uint32_t *)au8DestBuf;
+                    /* Read 8 bytes of data from the HyperRAM */
+                    *(volatile uint64_t *)&pu8VerifyBuf[u32k] = *(volatile uint64_t *)(u32DMMAddr + u32SrcAddr + u32LoopAddr);
+                }
 
-        for (u32i = u32SAddr; u32i < (u32SAddr + sizeof(au8TrimPatten)); u32i += 4)
-        {
-            pu32RdData[u32RdDataCnt++] = inpw(u32DMMAddr + u32i);
+                if ((u32i = memcmp(&pu8TrimPattern[u32LoopAddr], &pu8VerifyBuf[u32k], 0x08)) != 0)
+                {
+                    break;
+                }
+
+                u32LoopAddr += (u32ReTrimCnt >= 3) ? 0x10 : 0x08;
+            }
+
+            u8RdDelayRes[u8RdDelay] += ((u32i == 0) ? 1 : 0);
         }
+    }
 
-#endif
+    u32j = 0;
 
-        // Compare.
-        if (memcmp(au8TrimPatten, au8DestBuf, sizeof(au8TrimPatten)) == 0)
+    for (u32i = 0; u32i < SPIM_MAX_RX_DLY_NUM; u32i++)
+    {
+        if (u8RdDelayRes[u32i] == u32ReTrimMaxCnt)
         {
-            printf("RX Delay: %d = Pass\r\n", u8RdDelay);
-            u8RdDelayRes[u8RdDelayIdx++] = u8RdDelay;
+            u8RdDelayRes[u32j++] = u32i;
         }
     }
 
-    if (u8RdDelayIdx >= 2)
-    {
-        u8RdDelayIdx = (u8RdDelayIdx / 2) - 1;
-    }
-    else
-    {
-        u8RdDelayIdx = 0;
-    }
+    u8RdDelay = (u32j < 2) ? u8RdDelayRes[0] : isConsecutive(u8RdDelayRes, u32j);
 
-    printf("\r\nRX Delay = %d\r\n\r\n", u8RdDelayRes[u8RdDelayIdx]);
-    SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8RdDelayRes[u8RdDelayIdx]);
-
-    return u8RdDelay;
+    printf("RX Delay Num : %d\r\n", u8RdDelay);
+    /* Set the number of intermediate delay steps */
+    SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8RdDelay);
 }
 
 int main()
 {
-    uint8_t idBuf[3] = {0};
-    SPIM_PHASE_T sWb0BhRdCMD =
-    {
-        /* 0x0B: CMD_DMA_FAST_READ Command Phase Table */
-        CMD_DMA_FAST_READ,                                                        // Command Code
-        PHASE_NORMAL_MODE, PHASE_WIDTH_8, PHASE_DISABLE_DTR,                      // Command Phase
-        PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                     // Address Phase
-        PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE, // Data Phase
-        8,                                                                        // Dummy Cycle Phase
-    };
-
     /* Unlock protected registers */
     SYS_UnlockReg();
 
@@ -280,8 +382,6 @@ int main()
     /* Init Debug UART to 115200-8N1 for print message */
     InitDebugUart();
 
-    SPIM_SetDMMAddrNonCacheable();
-
     /**
      * GCC project users must use the ICP tool to burn binary to APROM and
      * SPI flash separately, and after entering the debugger, only APROM code can source debug.
@@ -290,32 +390,7 @@ int main()
     printf("|      SPIM DMM mode running program on flash      |\n");
     printf("+--------------------------------------------------+\n");
 
-    /* Set SPIM clock as HCLK divided by 8 */
-    SPIM_SET_CLOCK_DIVIDER(SPIM_PORT, 1);
-
-    SPIM_DISABLE_CIPHER(SPIM_PORT);             /* Disable SPIM Cipher */
-
-    SPIM_SET_RXCLKDLY_RDDLYSEL(SPIM_PORT, 1);   /* Insert 3 delay cycle. Adjust the sampling clock of received data to latch the correct data. */
-
-    if (SPIM_InitFlash(SPIM_PORT, 1) != 0)      /* Initialized SPI flash */
-    {
-        printf("SPIM flash initialize failed!\n");
-        goto lexit;
-    }
-
-    SPIM_ReadJedecId(SPIM_PORT, idBuf, sizeof(idBuf), 1, 0);
-    printf("SPIM get JEDEC ID=0x%02X, 0x%02X, 0x%02X\n",
-           idBuf[0], idBuf[1], idBuf[2]);
-
-#if (SPIM_REG_CACHE == 1) //TESTCHIP_ONLY not support
-    SPIM_ENABLE_CACHE(SPIM_PORT);
-    SPIM_PORT->CTL1 |= SPIM_CTL1_CDINVAL_Msk;        // invalid cache
-#endif
-
-    SPIM_TrimRxClkDlyNum(SPIM_PORT, &sWb0BhRdCMD);
-
-    SPIM_DMADMM_InitPhase(SPIM_PORT, &sWb0BhRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
-    SPIM_EnterDirectMapMode(SPIM_PORT, USE_4_BYTES_MODE, sWb0BhRdCMD.u32CMDCode, 1);
+    SPIFlash_Init(SPIM_PORT);
 
     while (1)
     {
@@ -326,13 +401,6 @@ int main()
 
         spim_routine();
     }
-
-lexit:
-
-    /* Lock protected registers */
-    SYS_LockReg();
-
-    while (1);
 }
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

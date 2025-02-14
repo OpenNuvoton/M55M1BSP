@@ -172,7 +172,7 @@ void PDMA_SetTransferAddr(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32SrcAddr, uin
  *                - \ref PDMA_EADC0_RX
  *                - \ref PDMA_EADC1_RX
  *                - \ref PDMA_DAC0_TX
- *                - \ref PDMA_DAC1_TX   (DAC1 is not support in TESTCHIP_ONLY)
+ *                - \ref PDMA_DAC1_TX
  *                - \ref PDMA_EPWM0_CH0_TX
  *                - \ref PDMA_EPWM0_CH1_TX
  *                - \ref PDMA_EPWM0_CH2_TX
@@ -278,8 +278,8 @@ void PDMA_SetTransferMode(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32Peripheral, 
 
     if (u32ScatterEn)
     {
-        pdma->DSCT[u32Ch].CTL = (pdma->DSCT[u32Ch].CTL & ~PDMA_DSCT_CTL_OPMODE_Msk) | PDMA_OP_SCATTER;
         pdma->DSCT[u32Ch].NEXT = u32DescAddr;
+        pdma->DSCT[u32Ch].CTL = (pdma->DSCT[u32Ch].CTL & ~PDMA_DSCT_CTL_OPMODE_Msk) | PDMA_OP_SCATTER;
     }
     else
     {
@@ -439,6 +439,8 @@ void PDMA_Trigger(PDMA_T *pdma, uint32_t u32Ch)
 {
     if (u32ChSelect[u32Ch] == PDMA_MEM)
     {
+        /* Ensure completion of memory access */
+        __DSB();
         pdma->SWREQ = (1ul << u32Ch);
     }
     else {}

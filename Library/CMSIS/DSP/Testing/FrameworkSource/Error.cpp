@@ -30,7 +30,7 @@
 #include "arm_math_types.h"
 #include "arm_math_types_f16.h"
 #include "Error.h"
-
+#include <cinttypes>
 
 namespace Client {
 
@@ -89,7 +89,11 @@ void assert_near_equal(unsigned long nb,q63_t pa, q63_t pb, q63_t threshold)
     if (abs(pa - pb) > threshold)
     {
          char details[200];
+         #if __sizeof_long == 8
+         sprintf(details,"diff %ld > %ld (0x%016lX,0x%016lX)",abs(pa - pb) , threshold,pa,pb);
+         #else 
          sprintf(details,"diff %lld > %lld (0x%016llX,0x%016llX)",abs(pa - pb) , threshold,pa,pb);
+         #endif
          throw (Error(EQUAL_ERROR,nb,details));
     }
 };
@@ -265,7 +269,7 @@ void assert_relative_error(unsigned long nb,AnyPattern<float64_t> &pa, AnyPatter
        }
        catch(Error &err)
        {          
-          sprintf(id," (nb=%lu)",i+1);
+          sprintf(id," (nb=%lu)",i);
           strcat(err.details,id);
           throw(err);
        }
@@ -296,7 +300,7 @@ void assert_relative_error(unsigned long nb,AnyPattern<float32_t> &pa, AnyPatter
        }
        catch(Error &err)
        {          
-          sprintf(id," (nb=%lu)",i+1);
+          sprintf(id," (nb=%lu)",i);
           strcat(err.details,id);
           throw(err);
        }
@@ -328,7 +332,7 @@ void assert_relative_error(unsigned long nb,AnyPattern<float16_t> &pa, AnyPatter
        }
        catch(Error &err)
        {          
-          sprintf(id," (nb=%lu)",i+1);
+          sprintf(id," (nb=%lu)",i);
           strcat(err.details,id);
           throw(err);
        }
@@ -371,7 +375,7 @@ void assert_close_error(unsigned long nb,AnyPattern<float64_t> &pref, AnyPattern
        }
        catch(Error &err)
        {          
-          sprintf(id," (nb=%lu)",i+1);
+          sprintf(id," (nb=%lu)",i);
           strcat(err.details,id);
           throw(err);
        }
@@ -414,7 +418,7 @@ void assert_close_error(unsigned long nb,AnyPattern<float32_t> &pref, AnyPattern
        }
        catch(Error &err)
        {          
-          sprintf(id," (nb=%lu)",i+1);
+          sprintf(id," (nb=%lu)",i);
           strcat(err.details,id);
           throw(err);
        }
@@ -458,7 +462,7 @@ void assert_close_error(unsigned long nb,AnyPattern<float16_t> &pref, AnyPattern
        }
        catch(Error &err)
        {          
-          sprintf(id," (nb=%lu)",i+1);
+          sprintf(id," (nb=%lu)",i);
           strcat(err.details,id);
           throw(err);
        }

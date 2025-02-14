@@ -55,8 +55,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 72MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_72MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
 
 
@@ -81,7 +81,7 @@ void SYS_Init(void)
 
     /* Enable TIMER 0 module clock */
     CLK_EnableModuleClock(TMR0_MODULE);
-    CLK_SetModuleClock(TMR0_MODULE, CLK_TMRSEL_TMR1SEL_HXT, 0);
+    CLK_SetModuleClock(TMR0_MODULE, CLK_TMRSEL_TMR0SEL_HXT, 0);
 
 
     /* Enable TIMER 1 module clock */
@@ -91,7 +91,7 @@ void SYS_Init(void)
 
     /* Enable EADC peripheral clock */
 
-    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_PCLK0, CLK_EADCDIV_EADC0DIV(1));
+    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_PCLK0, CLK_EADCDIV_EADC0DIV(15));
 
     CLK_EnableModuleClock(EADC0_MODULE);
 
@@ -165,7 +165,7 @@ void SYS_Init(void)
 /* The timer is used to maintain the PD protocol stack.                                                    */
 /* The tick unit is 1 millisecond.                                                                         */
 /*---------------------------------------------------------------------------------------------------------*/
-void TIMER0_Init(boid)
+void TIMER0_Init(void)
 {
     TIMER_Open(TIMER0, TIMER_PERIODIC_MODE, 1000);
     /* Enable timer interrupt */
@@ -271,7 +271,7 @@ void pd_task(void)
         return;
 
     /* Install UUTCPD Callback Function */
-    UTCPD_InstallCallback(port, UTCPD_Callback);
+    UTCPD_InstallCallback(port, (utcpd_pvFunPtr *)UTCPD_Callback);
 
     while (1)
     {

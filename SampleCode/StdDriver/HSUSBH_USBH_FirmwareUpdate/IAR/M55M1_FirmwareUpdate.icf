@@ -10,7 +10,7 @@ define symbol __ICFEDIT_region_ROM_start__  = 0x00100000;
 define symbol __ICFEDIT_region_ROM_end__    = 0x002FFFFF;
 
 define symbol __LD_region_ROM_start__  = 0x0F100000;
-define symbol __LD_region_ROM_end__    = 0x0F100FFF;
+define symbol __LD_region_ROM_end__    = 0x0F101FFF;
 
 define symbol __AP_ISP_region_ROM_start__  = 0x00120000;
 define symbol __AP_ISP_region_ROM_end__    = 0x0013FFFF;
@@ -23,24 +23,34 @@ define symbol __ICFEDIT_size_cstack__ = 0x00000800;
 define symbol __ICFEDIT_size_heap__   = 0x00000800;
 /**** End of ICF editor section. ###ICF###*/
 
+/* Start address and size of NonCacheable region must be 32 byte alignment */
+define symbol NonCacheable_start  = (__ICFEDIT_region_RAM_end__ + 1);
+define symbol NonCacheable_end    = 0x2024FFFF;
+export symbol NonCacheable_start;
+export symbol NonCacheable_end;
+
 define symbol ITCM_start = 0x00000010;
 define symbol ITCM_end   = 0x0000FFFF;
 define symbol DTCM_start = 0x20000000;
 define symbol DTCM_end   = 0x2001FFFF;
 define symbol DTCM_intvec_start__ = DTCM_start;
+define symbol LPSRAM_start  = 0x20310000;
+define symbol LPSRAM_end    = 0x20311FFF;
 
 define memory mem with size = 4G;
 define region ROM_region  = mem:[from __AP_ISP_region_ROM_start__ to __AP_ISP_region_ROM_end__] | mem:[from __LD_region_ROM_start__ to __LD_region_ROM_end__];
 define region RAM_region  = mem:[from __ICFEDIT_region_RAM_start__  to __ICFEDIT_region_RAM_end__ ];
+define region NonCacheable_region  = mem:[from NonCacheable_start to NonCacheable_end];
 define region ITCM_region = mem:[from ITCM_start to ITCM_end];
 define region DTCM_region = mem:[from DTCM_start to DTCM_end];
+define region LPSRAM_region = mem:[from LPSRAM_start to LPSRAM_end];
 
 define block CSTACK with alignment = 8, size = __ICFEDIT_size_cstack__ { };
 define block HEAP   with alignment = 8, size = __ICFEDIT_size_heap__   { };
 
-initialize by copy { readwrite, section DTCM.VTOR, section ITCM, section DTCM.Init };
+initialize by copy { readwrite, section DTCM.VTOR, section ITCM, section DTCM.Init, section NonCacheable.Init };
 
-do not initialize  { section .noinit, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
+do not initialize  { section .noinit, section .bss.NoInit, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
 
 place at address mem:__LDROM_intvec_start__   
 {
@@ -54,4 +64,6 @@ place in ITCM_region { section ITCM };
 place in ROM_region  { readonly };
 place in DTCM_region { section .bss.DTCM.ZeroInit, section DTCM.Init };
 place at end of DTCM_region { block CSTACK };
-place in RAM_region  { readwrite, block HEAP, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
+place in RAM_region  { section .noinit, section .bss.NoInit, readwrite, block HEAP, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
+place in LPSRAM_region  { section .lpSram };
+place in NonCacheable_region { section .bss.NonCacheable.ZeroInit, section NonCacheable.Init };

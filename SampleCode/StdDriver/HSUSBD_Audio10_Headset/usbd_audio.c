@@ -59,20 +59,24 @@ uint8_t volatile g_usbd_rxflag = 0;
 uint32_t volatile u32BuffLen = 0, u32RxBuffLen = 0;
 
 /* Player Buffer and its pointer */
-uint32_t PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] = {0};
+#if (NVT_DCACHE_ON == 1)
+/* Declare the Buffer dedicated DMA buffer as non-cacheable. */
+NVT_NONCACHEABLE uint32_t PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {0};
+NVT_NONCACHEABLE uint8_t PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {0};
+#else
+uint32_t PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {0};
+uint8_t PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {0};
+#endif
 uint32_t PcmPlayBuffLen[PDMA_TXBUFFER_CNT] = {0};
-
-uint8_t PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] = {0};
 uint8_t u8PcmRxBufFull[PDMA_RXBUFFER_CNT] = {0};
 
-uint32_t g_au32UsbTmpBuf[AUDIO_RATE_96K * 2 * PLAY_CHANNELS / 1000 / 4 + 16] = {0};
-uint32_t g_au32UsbTmpBuf1[AUDIO_RATE_96K * 2 * PLAY_CHANNELS / 1000 / 4 + 16] = {0};
-short g_a16AudioTmpBuf0[REC_RATE * 2 * REC_CHANNELS / 1000 + 16] = {0};
-
-/* Player Buffer and its pointer */
 volatile uint32_t u32BufPlayIdx = 0;
 volatile uint32_t u32PlayBufPos = 0;
 volatile uint32_t u32BufRecIdx = 0;
+
+uint32_t g_au32UsbTmpBuf[AUDIO_RATE_96K * 2 * PLAY_CHANNELS / 1000 / 4 + 16] __attribute__((aligned(4))) = {0};
+uint32_t g_au32UsbTmpBuf1[AUDIO_RATE_96K * 2 * PLAY_CHANNELS / 1000 / 4 + 16] __attribute__((aligned(4))) = {0};
+short g_a16AudioTmpBuf0[REC_RATE * 2 * REC_CHANNELS / 1000 + 16] __attribute__((aligned(4))) = {0};
 
 /*--------------------------------------------------------------------------*/
 /**
@@ -87,6 +91,7 @@ volatile uint32_t u32BufRecIdx = 0;
 NVT_ITCM void HSUSBD_IRQHandler(void)
 {
     __IO uint32_t IrqStL, IrqSt;
+    uint32_t u32TimeOutCnt;
 
     IrqStL = HSUSBD->GINTSTS & HSUSBD->GINTEN;    /* get interrupt status */
 
@@ -160,11 +165,24 @@ NVT_ITCM void HSUSBD_IRQHandler(void)
             {
                 /* USB Plug In */
                 HSUSBD_ENABLE_USB();
+                u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
+                while (!(HSUSBD->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
+                    if (--u32TimeOutCnt == 0) break;
+
+                HSUSBD_ENABLE_CEP_INT(HSUSBD_CEPINTEN_SETUPPKIEN_Msk);
+                HSUSBD_SET_ADDR(0);
+                HSUSBD_CLR_CEP_INT_FLAG(0x1ffc);
+
+                HSUSBD_CLR_SE0();
             }
             else
             {
                 /* USB Un-plug */
                 HSUSBD_DISABLE_USB();
+                HSUSBD_SwReset();
+                HSUSBD_ResetDMA();
+                u8TxDataCntInBuffer = u8RxDataCntInBuffer = 0;
             }
 
             HSUSBD_CLR_BUS_INT_FLAG(HSUSBD_BUSINTSTS_VBUSDETIF_Msk);
@@ -411,7 +429,8 @@ void EPB_Handler(void)
 {
     if (HSUSBD->EP[EPB].EPINTSTS & HSUSBD_EPINTSTS_RXPKIF_Msk)
     {
-        g_usbd_rxflag = 1;
+        //g_usbd_rxflag = 1;
+        UAC_GetPlayData();
     }
 }
 
@@ -448,6 +467,7 @@ void EPC_Handler(void)
     HSUSBD->EP[EPC].EPDAT_BYTE = (g_u32SampleRate & 0xFC) >> 2;
     HSUSBD->EP[EPC].EPTXCNT = 3;
 }
+
 #endif
 
 #ifdef __HID__
@@ -455,6 +475,7 @@ void EPD_Handler(void)  /* Interrupt IN handler */
 {
     g_u8EPDReady = 1;
 }
+
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -1028,7 +1049,7 @@ void UAC_GetPlayData(void)
 
     /* active usbd DMA to read data from FIFO and then send to I2S */
     HSUSBD_SET_DMA_WRITE(ISO_OUT_EP_NUM);
-    HSUSBD_ENABLE_BUS_INT(HSUSBD_BUSINTEN_DMADONEIEN_Msk | HSUSBD_BUSINTEN_SUSPENDIEN_Msk | HSUSBD_BUSINTEN_RSTIEN_Msk | HSUSBD_BUSINTEN_VBUSDETIEN_Msk);
+    HSUSBD_ENABLE_BUS_INT(HSUSBD_BUSINTEN_DMADONEIEN_Msk | HSUSBD_BUSINTEN_RSTIEN_Msk | HSUSBD_BUSINTEN_VBUSDETIEN_Msk);
     HSUSBD_SET_DMA_ADDR((uint32_t)g_au32UsbTmpBuf1);
     HSUSBD_SET_DMA_LEN(u32len);
     g_hsusbd_DmaDone = 0;
@@ -1047,6 +1068,10 @@ void UAC_GetPlayData(void)
             break;
     }
 
+#if (NVT_DCACHE_ON == 1)
+    /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)g_au32UsbTmpBuf1, u32len);
+#endif
     /* Get the address in USB buffer */
     p16Src = (short *)g_au32UsbTmpBuf1;
 
@@ -1150,9 +1175,13 @@ void UAC_SendRecData(void)
         else
             Resamples(E_RS_REC_CH0, p16Src, REC_CHANNELS, srt[g_resample_rec_s_idx].count, g_a16AudioTmpBuf0, g_resample_rec_s_idx);
 
+#if (NVT_DCACHE_ON == 1)
+        /* Device to host, so need clean data to sram. */
+        SCB_CleanDCache_by_Addr((uint8_t *)g_a16AudioTmpBuf0, g_resample_rec_s_idx);
+#endif
         /* active usbd DMA to read data to FIFO and then send to host */
         HSUSBD_SET_DMA_READ(ISO_IN_EP_NUM);
-        HSUSBD_ENABLE_BUS_INT(HSUSBD_BUSINTEN_DMADONEIEN_Msk | HSUSBD_BUSINTEN_SUSPENDIEN_Msk | HSUSBD_BUSINTEN_RSTIEN_Msk | HSUSBD_BUSINTEN_VBUSDETIEN_Msk);
+        HSUSBD_ENABLE_BUS_INT(HSUSBD_BUSINTEN_DMADONEIEN_Msk | HSUSBD_BUSINTEN_RSTIEN_Msk | HSUSBD_BUSINTEN_VBUSDETIEN_Msk);
         HSUSBD_SET_DMA_ADDR((uint32_t)g_a16AudioTmpBuf0);
         HSUSBD_SET_DMA_LEN(g_rec_max_packet_size);
         g_hsusbd_DmaDone = 0;
@@ -1207,8 +1236,8 @@ void AudioStartRecord(uint32_t u32SampleRate)
     PDMA0->CHCTL |= (1 << PDMA_I2S_RX_CH);
     //printf("Start Record ... \n");
 
-    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 0;
-    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 2;
+    //    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 0;
+    //    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 2;
 }
 
 
@@ -1232,4 +1261,5 @@ NVT_ITCM void TIMER0_IRQHandler(void)
         }
     }
 }
+
 #endif

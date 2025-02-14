@@ -12,7 +12,7 @@
 #include "xmodem.h"
 
 #define CREATE_BANK1_APP   1
-#define PLL_CLOCK          FREQ_180MHZ
+#define PLL_CLOCK          FREQ_220MHZ
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
@@ -24,7 +24,6 @@ static volatile uint32_t  s_u32TickCnt;              /* timer ticks - 100 ticks 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global Functions                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-void StartTimer0(void);
 void SYS_Init(void);
 void Download(void);
 
@@ -66,27 +65,6 @@ NVT_ITCM void WDT0_IRQHandler(void)
     }
 }
 
-void StartTimer0(void)
-{
-    /* Set TIMER0 clock source  */
-    CLK_SetModuleClock(TMR0_MODULE, CLK_TMRSEL_TMR0SEL_HXT, 0);
-    /* Enable TIMER0 clock */
-    CLK_EnableModuleClock(TMR0_MODULE);
-    /* Disable timer */
-    TIMER_Stop(TIMER0);
-    /* Clear interrupt status */
-    TIMER_ClearIntFlag(TIMER0);
-    TIMER_ClearWakeupFlag(TIMER0);
-    /* Clear timer counter */
-    //TIMER0->CNT = 0;
-
-    TIMER_Open(TIMER0, TIMER_ONESHOT_MODE, 12);
-    /* Maximum time  */
-    TIMER_SET_CMP_VALUE(TIMER0, 0xFFFFFE);
-    /* Start timer */
-    TIMER_Start(TIMER0);
-}
-
 void SYS_Init(void)
 {
     /* Unlock protected registers */
@@ -101,8 +79,8 @@ void SYS_Init(void)
     /* Waiting for external high speed crystal ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -144,8 +122,6 @@ void Download(void)
         while (1);
     }
 
-    StartTimer0();
-
     /* Use Xmodem to download firmware from PC*/
     i32Err = XmodemRecv(s_u32DbAddr);
 
@@ -163,44 +139,6 @@ void Download(void)
 
     printf("\n Firmware download completed.\n");
 }
-
-#ifdef TESTCHIP_ONLY
-// [Begin] TESTCHIP_ONLY - This function should be removed in M55M1.
-uint32_t FMC_CheckAllOne(uint32_t u32StartAddr, uint32_t u32ByteSize)
-{
-    uint32_t u32Addr;
-
-    for (u32Addr = u32StartAddr; u32Addr < (u32StartAddr + u32ByteSize); u32Addr += 4)
-    {
-        if (FMC_Read(u32Addr) != 0xFFFFFFFF)
-        {
-            return READ_ALLONE_NOT;
-        }
-    }
-
-    return READ_ALLONE_YES;
-}
-
-uint32_t FMC_GetChkSum(uint32_t u32StartAddr, uint32_t u32ByteSize)
-{
-    uint32_t u32CRC32Checksum = 0xFFFFFFFF;
-
-    /* Configure CRC controller for CRC-CRC32 mode */
-    CRC_Open(CRC_32, (CRC_WDATA_RVS | CRC_CHECKSUM_RVS | CRC_CHECKSUM_COM), 0xFFFFFFFFul, CRC_CPU_WDATA_32);
-    CRC_SET_DMA_SADDR(CRC, u32StartAddr);
-    CRC_SET_DMACNT_WORD(CRC, u32ByteSize / 4);
-    CRC_DMA_START(CRC);
-
-    while ((CRC_GET_STATUS(CRC) & CRC_DMASTS_FINISH_Msk) == 0)
-        ;
-
-    CRC->DMASTS = CRC_DMASTS_FINISH_Msk;
-    u32CRC32Checksum = CRC_GetChecksum();
-
-    return u32CRC32Checksum;
-}
-// [End] TESTCHIP_ONLY - This function should be removed in real chip.
-#endif
 
 int main()
 {

@@ -11,9 +11,14 @@
 #include "NuMicro.h"
 #include "usbd_audio.h"
 
-/* DMA scatter-gather descriptor */
-DMA_DESC_T DMA_TXDESC[PDMA_TXBUFFER_CNT];
-DMA_DESC_T DMA_RXDESC[PDMA_RXBUFFER_CNT];
+#if (NVT_DCACHE_ON == 1)
+    /* Declare the DMA scatter-gather descriptor buffer as non-cacheable. */
+    NVT_NONCACHEABLE DMA_DESC_T DMA_TXDESC[PDMA_TXBUFFER_CNT];
+    NVT_NONCACHEABLE DMA_DESC_T DMA_RXDESC[PDMA_RXBUFFER_CNT];
+#else
+    DMA_DESC_T DMA_TXDESC[PDMA_TXBUFFER_CNT];
+    DMA_DESC_T DMA_RXDESC[PDMA_RXBUFFER_CNT];
+#endif
 
 /* PDMA Interrupt handler */
 NVT_ITCM void PDMA0_IRQHandler(void)
@@ -103,8 +108,8 @@ void PDMA_WriteTxSGTable(void)
 
         if (i != PDMA_TXBUFFER_CNT - 1)
             DMA_TXDESC[i].offset = (uint32_t)&DMA_TXDESC[i + 1];
-
-        DMA_TXDESC[i].offset = (uint32_t)&DMA_TXDESC[0];
+        else
+            DMA_TXDESC[i].offset = (uint32_t)&DMA_TXDESC[0];
     }
 }
 

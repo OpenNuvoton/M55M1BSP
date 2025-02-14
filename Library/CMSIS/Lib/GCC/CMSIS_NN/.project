@@ -25,14 +25,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>ActivationFunctions/arm_nn_activations_q15.c</name>
+			<name>ActivationFunctions/arm_nn_activation_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ActivationFunctions/arm_nn_activations_q15.c</locationURI>
-		</link>
-		<link>
-			<name>ActivationFunctions/arm_nn_activations_q7.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ActivationFunctions/arm_nn_activations_q7.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ActivationFunctions/arm_nn_activation_s16.c</locationURI>
 		</link>
 		<link>
 			<name>ActivationFunctions/arm_relu6_s8.c</name>
@@ -50,14 +45,24 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ActivationFunctions/arm_relu_q7.c</locationURI>
 		</link>
 		<link>
+			<name>BasicMathFunctions/arm_elementwise_add_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_add_s8.c</locationURI>
+		</link>
+		<link>
 			<name>BasicMathFunctions/arm_elementwise_add_s16.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_add_s16.c</locationURI>
 		</link>
 		<link>
-			<name>BasicMathFunctions/arm_elementwise_add_s8.c</name>
+			<name>BasicMathFunctions/arm_elementwise_mul_acc_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_add_s8.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_mul_acc_s16.c</locationURI>
+		</link>
+		<link>
+			<name>BasicMathFunctions/arm_elementwise_mul_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_mul_s8.c</locationURI>
 		</link>
 		<link>
 			<name>BasicMathFunctions/arm_elementwise_mul_s16.c</name>
@@ -65,9 +70,14 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_mul_s16.c</locationURI>
 		</link>
 		<link>
-			<name>BasicMathFunctions/arm_elementwise_mul_s8.c</name>
+			<name>BasicMathFunctions/arm_elementwise_mul_s16_batch_offset.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_mul_s8.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_mul_s16_batch_offset.c</locationURI>
+		</link>
+		<link>
+			<name>BasicMathFunctions/arm_elementwise_mul_s16_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/BasicMathFunctions/arm_elementwise_mul_s16_s8.c</locationURI>
 		</link>
 		<link>
 			<name>ConcatenationFunctions/arm_concatenation_s8_w.c</name>
@@ -90,14 +100,29 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConcatenationFunctions/arm_concatenation_s8_z.c</locationURI>
 		</link>
 		<link>
+			<name>ConvolutionFunctions/arm_convolve_1_x_n_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_1_x_n_s4.c</locationURI>
+		</link>
+		<link>
 			<name>ConvolutionFunctions/arm_convolve_1_x_n_s8.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_1_x_n_s8.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_convolve_1x1_HWC_q7_fast_nonsquare.c</name>
+			<name>ConvolutionFunctions/arm_convolve_1x1_s4.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_1x1_HWC_q7_fast_nonsquare.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_1x1_s4.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_convolve_1x1_s4_fast.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_1x1_s4_fast.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_convolve_1x1_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_1x1_s8.c</locationURI>
 		</link>
 		<link>
 			<name>ConvolutionFunctions/arm_convolve_1x1_s8_fast.c</name>
@@ -105,54 +130,29 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_1x1_s8_fast.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q15_basic.c</name>
+			<name>ConvolutionFunctions/arm_convolve_get_buffer_sizes_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q15_basic.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_get_buffer_sizes_s16.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q15_fast.c</name>
+			<name>ConvolutionFunctions/arm_convolve_get_buffer_sizes_s4.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q15_fast.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_get_buffer_sizes_s4.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q15_fast_nonsquare.c</name>
+			<name>ConvolutionFunctions/arm_convolve_get_buffer_sizes_s8.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q15_fast_nonsquare.c</locationURI>
-		</link>
-		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q7_RGB.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q7_RGB.c</locationURI>
-		</link>
-		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q7_basic.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q7_basic.c</locationURI>
-		</link>
-		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q7_basic_nonsquare.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q7_basic_nonsquare.c</locationURI>
-		</link>
-		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q7_fast.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q7_fast.c</locationURI>
-		</link>
-		<link>
-			<name>ConvolutionFunctions/arm_convolve_HWC_q7_fast_nonsquare.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_HWC_q7_fast_nonsquare.c</locationURI>
-		</link>
-		<link>
-			<name>ConvolutionFunctions/arm_convolve_fast_s16.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_fast_s16.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_get_buffer_sizes_s8.c</locationURI>
 		</link>
 		<link>
 			<name>ConvolutionFunctions/arm_convolve_s16.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_s16.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_convolve_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_s4.c</locationURI>
 		</link>
 		<link>
 			<name>ConvolutionFunctions/arm_convolve_s8.c</name>
@@ -165,6 +165,11 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_wrapper_s16.c</locationURI>
 		</link>
 		<link>
+			<name>ConvolutionFunctions/arm_convolve_wrapper_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_wrapper_s4.c</locationURI>
+		</link>
+		<link>
 			<name>ConvolutionFunctions/arm_convolve_wrapper_s8.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_convolve_wrapper_s8.c</locationURI>
@@ -175,9 +180,39 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_3x3_s8.c</locationURI>
 		</link>
 		<link>
+			<name>ConvolutionFunctions/arm_depthwise_conv_fast_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_fast_s16.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_depthwise_conv_get_buffer_sizes_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_get_buffer_sizes_s16.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_depthwise_conv_get_buffer_sizes_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_get_buffer_sizes_s4.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_depthwise_conv_get_buffer_sizes_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_get_buffer_sizes_s8.c</locationURI>
+		</link>
+		<link>
 			<name>ConvolutionFunctions/arm_depthwise_conv_s16.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_s16.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_depthwise_conv_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_s4.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_depthwise_conv_s4_opt.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_s4_opt.c</locationURI>
 		</link>
 		<link>
 			<name>ConvolutionFunctions/arm_depthwise_conv_s8.c</name>
@@ -190,9 +225,14 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_s8_opt.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_depthwise_conv_u8_basic_ver1.c</name>
+			<name>ConvolutionFunctions/arm_depthwise_conv_wrapper_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_u8_basic_ver1.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_wrapper_s16.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_depthwise_conv_wrapper_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_wrapper_s4.c</locationURI>
 		</link>
 		<link>
 			<name>ConvolutionFunctions/arm_depthwise_conv_wrapper_s8.c</name>
@@ -200,29 +240,24 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_conv_wrapper_s8.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_depthwise_separable_conv_HWC_q7.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_separable_conv_HWC_q7.c</locationURI>
-		</link>
-		<link>
-			<name>ConvolutionFunctions/arm_depthwise_separable_conv_HWC_q7_nonsquare.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_depthwise_separable_conv_HWC_q7_nonsquare.c</locationURI>
-		</link>
-		<link>
 			<name>ConvolutionFunctions/arm_nn_depthwise_conv_s8_core.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_nn_depthwise_conv_s8_core.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_nn_mat_mult_kernel_q7_q15.c</name>
+			<name>ConvolutionFunctions/arm_nn_mat_mult_kernel_row_offset_s8_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_nn_mat_mult_kernel_q7_q15.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_nn_mat_mult_kernel_row_offset_s8_s16.c</locationURI>
 		</link>
 		<link>
-			<name>ConvolutionFunctions/arm_nn_mat_mult_kernel_q7_q15_reordered.c</name>
+			<name>ConvolutionFunctions/arm_nn_mat_mult_kernel_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_nn_mat_mult_kernel_q7_q15_reordered.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_nn_mat_mult_kernel_s16.c</locationURI>
+		</link>
+		<link>
+			<name>ConvolutionFunctions/arm_nn_mat_mult_kernel_s4_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_nn_mat_mult_kernel_s4_s16.c</locationURI>
 		</link>
 		<link>
 			<name>ConvolutionFunctions/arm_nn_mat_mult_kernel_s8_s16.c</name>
@@ -235,34 +270,24 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_nn_mat_mult_s8.c</locationURI>
 		</link>
 		<link>
-			<name>FullyConnectedFunctions/arm_fully_connected_mat_q7_vec_q15.c</name>
+			<name>ConvolutionFunctions/arm_transpose_conv_get_buffer_sizes_s8.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_mat_q7_vec_q15.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_transpose_conv_get_buffer_sizes_s8.c</locationURI>
 		</link>
 		<link>
-			<name>FullyConnectedFunctions/arm_fully_connected_mat_q7_vec_q15_opt.c</name>
+			<name>ConvolutionFunctions/arm_transpose_conv_s8.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_mat_q7_vec_q15_opt.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ConvolutionFunctions/arm_transpose_conv_s8.c</locationURI>
 		</link>
 		<link>
-			<name>FullyConnectedFunctions/arm_fully_connected_q15.c</name>
+			<name>FullyConnectedFunctions/arm_fully_connected_get_buffer_sizes_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_q15.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_get_buffer_sizes_s16.c</locationURI>
 		</link>
 		<link>
-			<name>FullyConnectedFunctions/arm_fully_connected_q15_opt.c</name>
+			<name>FullyConnectedFunctions/arm_fully_connected_get_buffer_sizes_s8.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_q15_opt.c</locationURI>
-		</link>
-		<link>
-			<name>FullyConnectedFunctions/arm_fully_connected_q7.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_q7.c</locationURI>
-		</link>
-		<link>
-			<name>FullyConnectedFunctions/arm_fully_connected_q7_opt.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_q7_opt.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_get_buffer_sizes_s8.c</locationURI>
 		</link>
 		<link>
 			<name>FullyConnectedFunctions/arm_fully_connected_s16.c</name>
@@ -270,19 +295,34 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_s16.c</locationURI>
 		</link>
 		<link>
+			<name>FullyConnectedFunctions/arm_fully_connected_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_s4.c</locationURI>
+		</link>
+		<link>
 			<name>FullyConnectedFunctions/arm_fully_connected_s8.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_fully_connected_s8.c</locationURI>
 		</link>
 		<link>
-			<name>NNSupportFunctions/arm_nn_accumulate_q7_to_q15.c</name>
+			<name>FullyConnectedFunctions/arm_vector_sum_s8.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_accumulate_q7_to_q15.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_vector_sum_s8.c</locationURI>
 		</link>
 		<link>
-			<name>NNSupportFunctions/arm_nn_add_q7.c</name>
+			<name>FullyConnectedFunctions/arm_vector_sum_s8_s64.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_add_q7.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/FullyConnectedFunctions/arm_vector_sum_s8_s64.c</locationURI>
+		</link>
+		<link>
+			<name>LSTMFunctions/arm_lstm_unidirectional_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/LSTMFunctions/arm_lstm_unidirectional_s16.c</locationURI>
+		</link>
+		<link>
+			<name>LSTMFunctions/arm_lstm_unidirectional_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/LSTMFunctions/arm_lstm_unidirectional_s8.c</locationURI>
 		</link>
 		<link>
 			<name>NNSupportFunctions/arm_nn_depthwise_conv_nt_t_padded_s8.c</name>
@@ -290,9 +330,44 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_depthwise_conv_nt_t_padded_s8.c</locationURI>
 		</link>
 		<link>
+			<name>NNSupportFunctions/arm_nn_depthwise_conv_nt_t_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_depthwise_conv_nt_t_s16.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_depthwise_conv_nt_t_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_depthwise_conv_nt_t_s4.c</locationURI>
+		</link>
+		<link>
 			<name>NNSupportFunctions/arm_nn_depthwise_conv_nt_t_s8.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_depthwise_conv_nt_t_s8.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_lstm_calculate_gate_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_lstm_calculate_gate_s16.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_lstm_calculate_gate_s8_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_lstm_calculate_gate_s8_s16.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_lstm_step_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_lstm_step_s16.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_lstm_step_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_lstm_step_s8.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_mat_mul_core_1x_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mat_mul_core_1x_s4.c</locationURI>
 		</link>
 		<link>
 			<name>NNSupportFunctions/arm_nn_mat_mul_core_1x_s8.c</name>
@@ -305,9 +380,14 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mat_mul_core_4x_s8.c</locationURI>
 		</link>
 		<link>
-			<name>NNSupportFunctions/arm_nn_mat_mul_kernel_s16.c</name>
+			<name>NNSupportFunctions/arm_nn_mat_mult_nt_t_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mat_mul_kernel_s16.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mat_mult_nt_t_s16.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_mat_mult_nt_t_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mat_mult_nt_t_s4.c</locationURI>
 		</link>
 		<link>
 			<name>NNSupportFunctions/arm_nn_mat_mult_nt_t_s8.c</name>
@@ -315,19 +395,29 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mat_mult_nt_t_s8.c</locationURI>
 		</link>
 		<link>
-			<name>NNSupportFunctions/arm_nn_mult_q15.c</name>
+			<name>NNSupportFunctions/arm_nn_mat_mult_nt_t_s8_s32.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mult_q15.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mat_mult_nt_t_s8_s32.c</locationURI>
 		</link>
 		<link>
-			<name>NNSupportFunctions/arm_nn_mult_q7.c</name>
+			<name>NNSupportFunctions/arm_nn_vec_mat_mul_result_acc_s16.c</name>
 			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_mult_q7.c</locationURI>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_vec_mat_mul_result_acc_s16.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_vec_mat_mul_result_acc_s8_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_vec_mat_mul_result_acc_s8_s16.c</locationURI>
 		</link>
 		<link>
 			<name>NNSupportFunctions/arm_nn_vec_mat_mult_t_s16.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_vec_mat_mult_t_s16.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_nn_vec_mat_mult_t_s4.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nn_vec_mat_mult_t_s4.c</locationURI>
 		</link>
 		<link>
 			<name>NNSupportFunctions/arm_nn_vec_mat_mult_t_s8.c</name>
@@ -345,24 +435,24 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_nntables.c</locationURI>
 		</link>
 		<link>
-			<name>NNSupportFunctions/arm_q7_to_q15_no_shift.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_q7_to_q15_no_shift.c</locationURI>
-		</link>
-		<link>
-			<name>NNSupportFunctions/arm_q7_to_q15_reordered_no_shift.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_q7_to_q15_reordered_no_shift.c</locationURI>
-		</link>
-		<link>
-			<name>NNSupportFunctions/arm_q7_to_q15_reordered_with_offset.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_q7_to_q15_reordered_with_offset.c</locationURI>
-		</link>
-		<link>
 			<name>NNSupportFunctions/arm_q7_to_q15_with_offset.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_q7_to_q15_with_offset.c</locationURI>
+		</link>
+		<link>
+			<name>NNSupportFunctions/arm_s8_to_s16_unordered_with_offset.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/NNSupportFunctions/arm_s8_to_s16_unordered_with_offset.c</locationURI>
+		</link>
+		<link>
+			<name>PoolingFunctions/arm_avgpool_get_buffer_sizes_s16.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/PoolingFunctions/arm_avgpool_get_buffer_sizes_s16.c</locationURI>
+		</link>
+		<link>
+			<name>PoolingFunctions/arm_avgpool_get_buffer_sizes_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/PoolingFunctions/arm_avgpool_get_buffer_sizes_s8.c</locationURI>
 		</link>
 		<link>
 			<name>PoolingFunctions/arm_avgpool_s16.c</name>
@@ -385,14 +475,14 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/PoolingFunctions/arm_max_pool_s8.c</locationURI>
 		</link>
 		<link>
-			<name>PoolingFunctions/arm_pool_q7_HWC.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/PoolingFunctions/arm_pool_q7_HWC.c</locationURI>
-		</link>
-		<link>
 			<name>ReshapeFunctions/arm_reshape_s8.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/ReshapeFunctions/arm_reshape_s8.c</locationURI>
+		</link>
+		<link>
+			<name>SVDFunctions/arm_svdf_get_buffer_sizes_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SVDFunctions/arm_svdf_get_buffer_sizes_s8.c</locationURI>
 		</link>
 		<link>
 			<name>SVDFunctions/arm_svdf_s8.c</name>
@@ -400,19 +490,14 @@
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SVDFunctions/arm_svdf_s8.c</locationURI>
 		</link>
 		<link>
+			<name>SVDFunctions/arm_svdf_state_s16_s8.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SVDFunctions/arm_svdf_state_s16_s8.c</locationURI>
+		</link>
+		<link>
 			<name>SoftmaxFunctions/arm_nn_softmax_common_s8.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SoftmaxFunctions/arm_nn_softmax_common_s8.c</locationURI>
-		</link>
-		<link>
-			<name>SoftmaxFunctions/arm_softmax_q15.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SoftmaxFunctions/arm_softmax_q15.c</locationURI>
-		</link>
-		<link>
-			<name>SoftmaxFunctions/arm_softmax_q7.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SoftmaxFunctions/arm_softmax_q7.c</locationURI>
 		</link>
 		<link>
 			<name>SoftmaxFunctions/arm_softmax_s16.c</name>
@@ -433,11 +518,6 @@
 			<name>SoftmaxFunctions/arm_softmax_u8.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SoftmaxFunctions/arm_softmax_u8.c</locationURI>
-		</link>
-		<link>
-			<name>SoftmaxFunctions/arm_softmax_with_batch_q7.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-3-PROJECT_LOC%7D/NN/Source/SoftmaxFunctions/arm_softmax_with_batch_q7.c</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

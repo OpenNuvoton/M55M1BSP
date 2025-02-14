@@ -18,8 +18,14 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-static uint8_t g_u8Tx_Buffer[PDMA_TEST_LENGTH];
-static uint8_t g_u8Rx_Buffer[PDMA_TEST_LENGTH];
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    uint8_t g_u8Tx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_u8Rx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    __attribute__((aligned)) static uint8_t g_u8Tx_Buffer[PDMA_TEST_LENGTH];
+    __attribute__((aligned)) static uint8_t g_u8Rx_Buffer[PDMA_TEST_LENGTH];
+#endif
 
 static volatile uint32_t u32IsTxTestOver = 0;
 static volatile uint32_t u32IsRxTestOver = 0;
@@ -98,37 +104,22 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
+    /*---------------------------------------------------------------------------------------------------------*/
+    /* Init I/O Multi-function                                                                                 */
+    /*---------------------------------------------------------------------------------------------------------*/
+    SetDebugUartMFP();
     /* Enable UART1 module clock */
     CLK_EnableModuleClock(UART1_MODULE);
     /* Select UART1 module clock source as HIRC and UART1 module clock divider as 1 */
     CLK_SetModuleClock(UART1_MODULE, CLK_UARTSEL0_UART1SEL_HIRC, CLK_UARTDIV0_UART1DIV(1));
     /* Enable PDMA0 clock source */
     CLK_EnableModuleClock(PDMA0_MODULE);
-    /*---------------------------------------------------------------------------------------------------------*/
-    /* Init I/O Multi-function                                                                                 */
-    /*---------------------------------------------------------------------------------------------------------*/
-    SetDebugUartMFP();
     /* Set multi-function pins for UART1 RXD and TXD */
     SET_UART1_RXD_PA2();
     SET_UART1_TXD_PA3();
@@ -200,6 +191,15 @@ int main(void)
         g_u8Tx_Buffer[i] = (uint8_t)i;
         g_u8Rx_Buffer[i] = 0xff;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the source buffer will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr(g_u8Tx_Buffer, sizeof(g_u8Tx_Buffer));
+    SCB_CleanDCache_by_Addr(g_u8Rx_Buffer, sizeof(g_u8Rx_Buffer));
+#endif  // (NVT_DCACHE_ON == 1)
 
     while (1)
     {

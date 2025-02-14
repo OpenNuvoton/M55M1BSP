@@ -16,8 +16,8 @@
 #
 # Called with following arguments:
 # 1 - Path to the downloads folder which is typically
-#     tensorflow/lite/micro/tools/make/downloads
-#
+#    ${TENSORFLOW_ROOT}tensorflow/lite/micro/tools/make/downloads
+# 2 - (optional) TENSORFLOW_ROOT: path to root of the TFLM tree (relative to directory from where the script is called.
 # This script is called from the Makefile and uses the following convention to
 # enable determination of sucess/failure:
 #
@@ -31,11 +31,7 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR=${SCRIPT_DIR}/../../../../..
-cd "${ROOT_DIR}"
-
-source tensorflow/lite/micro/tools/make/bash_helpers.sh
+source ${2}tensorflow/lite/micro/tools/make/bash_helpers.sh
 
 DOWNLOADS_DIR=${1}
 if [ ! -d ${DOWNLOADS_DIR} ]; then
@@ -63,7 +59,7 @@ else
 
   pushd ${DOWNLOADED_KISSFFT_PATH} > /dev/null
   create_git_repo ./
-  apply_patch_to_folder ./ ../../kissfft.patch "TFLM patch"
+  apply_patch_to_folder ./ ../../../../../../../third_party/kissfft/kissfft.patch "TFLM patch"
   popd > /dev/null
 fi
 

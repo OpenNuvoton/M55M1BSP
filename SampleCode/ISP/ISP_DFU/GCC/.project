@@ -77,7 +77,7 @@
 		<link>
 			<name>User/fmc_user.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/fmc_user.c</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/common/fmc_user.c</locationURI>
 		</link>
 		<link>
 			<name>User/main.c</name>

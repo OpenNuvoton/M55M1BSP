@@ -31,6 +31,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/arc_mli/scratch_buf_mgr.h"
 #include "tensorflow/lite/micro/kernels/arc_mli/scratch_buffers.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
@@ -385,9 +386,8 @@ void EvalFloat(TfLiteContext* context, TfLiteNode* node,
       tflite::micro::GetTensorShape(output),
       tflite::micro::GetTensorData<float>(output));
 #else
-  TF_LITE_KERNEL_LOG(context,
-                     "Type %s (%d) is not supported by ARC MLI Library.",
-                     TfLiteTypeGetName(input->type), input->type);
+  MicroPrintf("Type %s (%d) is not supported by ARC MLI Library.",
+              TfLiteTypeGetName(input->type), input->type);
 #endif
 }
 TfLiteStatus EvalMliQuantizedPerChannel(
@@ -556,8 +556,7 @@ TfLiteStatus EvalMliQuantizedPerChannel(
         // memory.
         if (mli_weights_shape[weight_out_ch_dimension] !=
             w_slice.Sub()->shape[3]) {
-          TF_LITE_KERNEL_LOG(
-              context, "Slicing is not supported with real-time permutation.");
+          MicroPrintf("Slicing is not supported with real-time permutation.");
           return kTfLiteError;
         }
         uint8_t dim_order[] = {1, 2, 0, 3};
@@ -625,8 +624,7 @@ void EvalQuantizedPerChannel(TfLiteContext* context, TfLiteNode* node,
       tflite::micro::GetTensorShape(output),
       tflite::micro::GetTensorData<int8_t>(output));
 #else
-  TF_LITE_KERNEL_LOG(context,
-                     "Node configuration is not supported by ARC MLI Library.");
+  MicroPrintf("Node configuration is not supported by ARC MLI Library.");
 #endif
 }
 
@@ -662,9 +660,33 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                                 bias, output);
       }
       break;
+    case kTfLiteInt16: {
+      switch (filter->type) {
+        case kTfLiteInt8: {
+          reference_integer_ops::DepthwiseConvPerChannel(
+              DepthwiseConvParamsQuantized(params, data),
+              data.per_channel_output_multiplier, data.per_channel_output_shift,
+              tflite::micro::GetTensorShape(input),
+              tflite::micro::GetTensorData<int16_t>(input),
+              tflite::micro::GetTensorShape(filter),
+              tflite::micro::GetTensorData<int8_t>(filter),
+              tflite::micro::GetTensorShape(bias),
+              tflite::micro::GetOptionalTensorData<int64_t>(bias),
+              tflite::micro::GetTensorShape(output),
+              tflite::micro::GetTensorData<int16_t>(output));
+          break;
+        }
+        default:
+          MicroPrintf("Filter type %s (%d) for input type %s not supported.",
+                      TfLiteTypeGetName(filter->type), filter->type,
+                      TfLiteTypeGetName(input->type));
+          return kTfLiteError;
+      }
+      break;
+    }
     default:
-      TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
-                         TfLiteTypeGetName(input->type), input->type);
+      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                  input->type);
       return kTfLiteError;
   }
   return kTfLiteOk;
@@ -672,15 +694,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration Register_DEPTHWISE_CONV_2D() {
-  return {/*init=*/Init,
-          /*free=*/nullptr,
-          /*prepare=*/Prepare,
-          /*invoke=*/Eval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+TFLMRegistration Register_DEPTHWISE_CONV_2D() {
+  return tflite::micro::RegisterOp(Init, Prepare, Eval);
 }
 
 }  // namespace tflite

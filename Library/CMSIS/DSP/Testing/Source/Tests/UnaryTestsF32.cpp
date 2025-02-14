@@ -15,6 +15,24 @@ a double precision computation.
 
 /*
 
+Comparisons for Householder
+
+*/
+#define SNR_HOUSEHOLDER_THRESHOLD 140
+#define REL_HOUSEHOLDER_ERROR (1.0e-7)
+#define ABS_HOUSEHOLDER_ERROR (1.0e-7)
+
+/*
+
+Comparisons for QR decomposition
+
+*/
+#define SNR_QR_THRESHOLD 90
+#define REL_QR_ERROR (1.0e-4)
+#define ABS_QR_ERROR (2.0e-4)
+
+/*
+
 Comparisons for inverse
 
 */
@@ -22,9 +40,9 @@ Comparisons for inverse
 /* Not very accurate for big matrix.
 But big matrix needed for checking the vectorized code */
 
-#define SNR_THRESHOLD_INV 67
-#define REL_ERROR_INV (1.0e-3)
-#define ABS_ERROR_INV (1.0e-3)
+#define SNR_THRESHOLD_INV 99
+#define REL_ERROR_INV (3.0e-5)
+#define ABS_ERROR_INV (2.0e-5)
 
 /*
 
@@ -185,6 +203,119 @@ static void checkInnerTailOverflow(float32_t *b)
      A[j*n + w] = tmp;       \
   }
 
+void UnaryTestsF32::test_householder_f32()
+{
+   int32_t vecDim;
+   const int16_t *dimsp = dims.ptr();          
+   const int nbVectors = dims.nbSamples();
+   const float32_t *inp1=input1.ptr(); 
+
+   float32_t *outp=output.ptr();   
+   float32_t *outBetap=outputBeta.ptr();  
+
+
+   for(int i=0; i < nbVectors ; i++)
+   {
+      vecDim = *dimsp++;
+
+      float32_t beta = arm_householder_f32(inp1,DEFAULT_HOUSEHOLDER_THRESHOLD_F32,vecDim,outp);
+      *outBetap = beta; 
+
+      outp += vecDim;
+      inp1 += vecDim;
+      outBetap++;
+      checkInnerTailOverflow(outp);
+      checkInnerTailOverflow(outBetap);
+
+   }
+
+   ASSERT_EMPTY_TAIL(output);
+   ASSERT_EMPTY_TAIL(outputBeta);
+
+   ASSERT_SNR(output,ref,(float32_t)SNR_HOUSEHOLDER_THRESHOLD);
+   ASSERT_SNR(outputBeta,refBeta,(float32_t)SNR_HOUSEHOLDER_THRESHOLD);
+
+   ASSERT_CLOSE_ERROR(output,ref,ABS_HOUSEHOLDER_ERROR,REL_HOUSEHOLDER_ERROR);
+   ASSERT_CLOSE_ERROR(outputBeta,refBeta,ABS_HOUSEHOLDER_ERROR,REL_HOUSEHOLDER_ERROR);
+
+  
+}
+
+
+void UnaryTestsF32::test_mat_qr_f32()
+{
+   int32_t rows, columns, rank;
+   int nb;
+   const int16_t *dimsp = dims.ptr();          
+   const int nbMatrixes = dims.nbSamples() / 3;
+   const float32_t *inp1=input1.ptr(); 
+
+   float32_t *outTaup=outputTau.ptr();   
+   float32_t *outRp=outputR.ptr(); 
+   float32_t *outQp=outputQ.ptr();  
+ 
+   float32_t *pTmpA=a.ptr();  
+   float32_t *pTmpB=b.ptr();  
+
+   (void) outTaup;
+   (void) outRp; 
+   (void) outQp; 
+   (void)nbMatrixes;
+   (void)nb;
+
+   nb=0;
+   for(int i=0; i < nbMatrixes ; i++)
+   //for(int i=0; i < 1 ; i++)
+   {
+      rows = *dimsp++;
+      columns = *dimsp++;
+      rank = *dimsp++;
+      (void)rank;
+
+      //printf("--> %d %d\n",nb,i);
+      nb += rows * columns;
+
+
+      in1.numRows=rows;
+      in1.numCols=columns;
+      in1.pData = (float32_t*)inp1;
+
+      outR.numRows = rows;
+      outR.numCols = columns;
+      outR.pData = (float32_t*)outRp;
+
+      outQ.numRows = rows;
+      outQ.numCols = rows;
+      outQ.pData = (float32_t*)outQp;
+
+    
+      arm_status status=arm_mat_qr_f32(&in1,DEFAULT_HOUSEHOLDER_THRESHOLD_F32,&outR,&outQ,outTaup,pTmpA,pTmpB);
+      ASSERT_TRUE(status==ARM_MATH_SUCCESS);
+
+
+      inp1 += rows * columns;
+      outRp += rows * columns;
+      outQp += rows * rows;
+      outTaup += columns;
+
+      checkInnerTailOverflow(outRp);
+      checkInnerTailOverflow(outQp);
+      checkInnerTailOverflow(outTaup);
+
+   }
+
+   ASSERT_EMPTY_TAIL(outputR);
+   ASSERT_EMPTY_TAIL(outputQ);
+   ASSERT_EMPTY_TAIL(outputTau);
+
+   ASSERT_SNR(refQ,outputQ,(float32_t)SNR_QR_THRESHOLD);
+   ASSERT_SNR(refR,outputR,(float32_t)SNR_QR_THRESHOLD);
+   ASSERT_SNR(refTau,outputTau,(float32_t)SNR_QR_THRESHOLD);
+
+   ASSERT_CLOSE_ERROR(refQ,outputQ,ABS_QR_ERROR,REL_QR_ERROR);
+   ASSERT_CLOSE_ERROR(refR,outputR,ABS_QR_ERROR,REL_QR_ERROR);
+   ASSERT_CLOSE_ERROR(refTau,outputTau,ABS_QR_ERROR,REL_QR_ERROR);
+}
 
 void UnaryTestsF32::test_mat_vec_mult_f32()
     {     
@@ -370,6 +501,7 @@ static void checkInnerTail(float32_t *b)
 
 
 
+
 void UnaryTestsF32::test_mat_inverse_f32()
     {     
       const float32_t *inp1=input1.ptr();    
@@ -383,7 +515,9 @@ void UnaryTestsF32::test_mat_inverse_f32()
       int i;
       arm_status status;
 
-      for(i=0;i < nbMatrixes ; i ++)
+      // Non singular matrixes
+      // Last matrix is singular
+      for(i=0;i < nbMatrixes-1 ; i ++)
       {
           rows = *dimsp++;
           columns = rows;
@@ -402,10 +536,28 @@ void UnaryTestsF32::test_mat_inverse_f32()
 
       }
 
+      /*** Singular matrix **/
+      rows = *dimsp++;
+      columns = rows;
+
+      PREPAREDATA1(false);
+
+      refInnerTail(outp+(rows * columns));
+
+      status=arm_mat_inverse_f32(&this->in1,&this->out);
+      ASSERT_TRUE(status==ARM_MATH_SINGULAR);
+
+      outp += (rows * columns);
+      inp1 += (rows * columns);
+
+      checkInnerTail(outp);
+
+      /*********************/
+
+      ASSERT_CLOSE_ERROR(output,ref,ABS_ERROR_INV,REL_ERROR_INV);
 
       ASSERT_SNR(output,ref,(float32_t)SNR_THRESHOLD_INV);
 
-      ASSERT_CLOSE_ERROR(output,ref,ABS_ERROR_INV,REL_ERROR_INV);
 
     }
 
@@ -870,6 +1022,35 @@ void UnaryTestsF32::test_mat_inverse_f32()
 
          break;
 
+         case TEST_HOUSEHOLDER_F32_13:
+            input1.reload(UnaryTestsF32::INPUTS_HOUSEHOLDER_F32_ID,mgr);
+            dims.reload(UnaryTestsF32::DIMS_HOUSEHOLDER_S16_ID,mgr);
+            ref.reload(UnaryTestsF32::REF_HOUSEHOLDER_V_F32_ID,mgr);
+            refBeta.reload(UnaryTestsF32::REF_HOUSEHOLDER_BETA_F32_ID,mgr);
+
+
+            output.create(ref.nbSamples(),UnaryTestsF32::TMPA_F32_ID,mgr);
+            outputBeta.create(refBeta.nbSamples(),UnaryTestsF32::TMPB_F32_ID,mgr);
+         break;
+
+
+         case TEST_MAT_QR_F32_14:
+            input1.reload(UnaryTestsF32::INPUTS_QR_F32_ID,mgr);
+            dims.reload(UnaryTestsF32::DIMS_QR_S16_ID,mgr);
+            refTau.reload(UnaryTestsF32::REF_QR_TAU_F32_ID,mgr);
+            refR.reload(UnaryTestsF32::REF_QR_R_F32_ID,mgr);
+            refQ.reload(UnaryTestsF32::REF_QR_Q_F32_ID,mgr);
+
+
+            outputTau.create(refTau.nbSamples(),UnaryTestsF32::TMPA_F32_ID,mgr);
+            outputR.create(refR.nbSamples(),UnaryTestsF32::TMPB_F32_ID,mgr);
+            outputQ.create(refQ.nbSamples(),UnaryTestsF32::TMPC_F32_ID,mgr);
+
+            a.create(47,UnaryTestsF32::TMPC_F32_ID,mgr);
+            b.create(47,UnaryTestsF32::TMPD_F32_ID,mgr);
+         break;
+
+
       }
        
 
@@ -885,6 +1066,9 @@ void UnaryTestsF32::test_mat_inverse_f32()
        {
         case TEST_MAT_LDL_F32_11:
           //outputll.dump(mgr);
+        break;
+        case TEST_MAT_QR_F32_14:
+          //outputR.dump(mgr);
         break;
        }
        //output.dump(mgr);

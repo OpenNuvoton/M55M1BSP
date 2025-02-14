@@ -14,7 +14,14 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Functions and variables declaration                                                                     */
 /*---------------------------------------------------------------------------------------------------------*/
-volatile uint32_t   g_RxBuf[I3C_DEVICE_RX_BUF_CNT], g_TxBuf[I3C_DEVICE_RX_BUF_CNT];
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    uint32_t g_RxBuf[DCACHE_ALIGN_LINE_SIZE(I3C_DEVICE_RX_BUF_CNT * 4) / 4] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint32_t g_TxBuf[DCACHE_ALIGN_LINE_SIZE(I3C_DEVICE_TX_BUF_CNT * 4) / 4] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    __attribute__((aligned)) static uint32_t g_RxBuf[I3C_DEVICE_RX_BUF_CNT];
+    __attribute__((aligned)) static uint32_t g_TxBuf[I3C_DEVICE_TX_BUF_CNT];
+#endif
 
 int32_t I3C_EnableRxPDMA(I3C_T *i3c, uint32_t u32Src, uint32_t u32Dest, uint32_t u32ByteCnts);
 int32_t I3C_EnableTxPDMA(I3C_T *i3c, uint32_t u32Src, uint32_t u32Dest, uint32_t u32ByteCnts);
@@ -252,24 +259,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -284,6 +276,11 @@ static void SYS_Init(void)
     SET_I3C0_SCL_PB1();
     SET_I3C0_SDA_PB0();
     SYS_ResetModule(SYS_I3C0RST);
+    /* Enable GPIO Module clock */
+    CLK_EnableModuleClock(GPIOB_MODULE);
+    /* Set SCL slew rate to GPIO_SLEWCTL_FAST0, SDA slew rate to GPIO_SLEWCTL_HIGH */
+    GPIO_SetSlewCtl(PB, BIT1, GPIO_SLEWCTL_FAST0);
+    GPIO_SetSlewCtl(PB, BIT0, GPIO_SLEWCTL_HIGH);
     /* Lock protected registers */
     SYS_LockReg();
 }
@@ -309,6 +306,8 @@ int32_t main(void)
     printf("+------------------------------------------------------+\n\n");
     /* Initial I3C0 default settings */
     I3C_Open(I3C0, I3C_MASTER, 0, 0);
+    /* Enable I3C0 controller */
+    I3C_Enable(I3C0);
     /* Dynamic Address for Enter Dynamic Address Assignment (ENTDAA) */
     I3C_SetDeviceAddr(I3C0, 0, I3C_DEVTYPE_I3C, 0x18, 0x00);
 
@@ -336,6 +335,13 @@ int32_t main(void)
 
     while (1)
     {
+#if (NVT_DCACHE_ON == 1)
+        /*
+            Clean the CPU Data cache before starting the DMA transfer.
+            This guarantees that the source buffer will be up to date before starting the transfer.
+        */
+        SCB_CleanDCache_by_Addr(g_TxBuf, sizeof(g_TxBuf));
+#endif  // (NVT_DCACHE_ON == 1)
         printf("press any key to Write I3C Target \n");
         getchar();
         ret = I3C_WritePDMA(I3C0, 0, I3C_DEVI3C_SPEED_SDR0, (uint32_t *)g_TxBuf, 16);
@@ -357,6 +363,14 @@ int32_t main(void)
 
             while (1);
         }
+
+#if (NVT_DCACHE_ON == 1)
+        /*
+            Invalidate the CPU Data cache after the DMA transfer.
+            As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+        */
+        SCB_InvalidateDCache_by_Addr(g_RxBuf, sizeof(g_RxBuf));
+#endif  // (NVT_DCACHE_ON == 1)
 
         for (i = 0; i < 4; i++)
         {

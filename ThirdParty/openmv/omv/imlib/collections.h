@@ -17,6 +17,11 @@
 // bitmap //
 ////////////
 
+/* Make this header file easier to include in C++ code */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct bitmap
 {
     size_t size;
@@ -124,5 +129,9 @@ list_lnk_t *iterator_next(list_lnk_t *lnk);
 list_lnk_t *iterator_prev(list_lnk_t *lnk);
 void iterator_get(list_t *ptr, list_lnk_t *lnk, void *data);
 void iterator_set(list_t *ptr, list_lnk_t *lnk, void *data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __COLLECTIONS_H__ */

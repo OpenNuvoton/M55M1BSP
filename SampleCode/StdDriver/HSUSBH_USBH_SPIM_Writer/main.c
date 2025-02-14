@@ -51,12 +51,26 @@ char      usbh_path[] = { '3', ':', 0 };    /* USB drive started from 3         
 uint8_t   idBuf[3];
 
 #ifdef __ICCARM__
-    #pragma data_alignment=32
-    uint8_t  Buff1[BUFF_SIZE] ;                 /* Working buffer                             */
-    uint8_t  Buff2[BUFF_SIZE] ;                 /* Working buffer                             */
+    #if (NVT_DCACHE_ON == 1)
+        /* Declare a DCache-line aligned variable for the buffer.  */
+        #pragma data_alignment=DCACHE_LINE_SIZE
+        uint8_t  Buff1[DCACHE_ALIGN_LINE_SIZE(BUFF_SIZE)] ;                 /* Working buffer                             */
+        uint8_t  Buff2[DCACHE_ALIGN_LINE_SIZE(BUFF_SIZE)] ;                 /* Working buffer                             */
+    #else
+        #pragma data_alignment=32
+        uint8_t  Buff1[BUFF_SIZE] ;                 /* Working buffer                             */
+        uint8_t  Buff2[BUFF_SIZE] ;                 /* Working buffer                             */
+    #endif
 #else
-    uint8_t  Buff1[BUFF_SIZE] __attribute__((aligned(32)));     /* Working buffer                             */
-    uint8_t  Buff2[BUFF_SIZE] __attribute__((aligned(32)));     /* Working buffer                             */
+    #if (NVT_DCACHE_ON == 1)
+        /* Declare a DCache-line aligned variable for the buffer.  */
+        uint8_t  Buff1[DCACHE_ALIGN_LINE_SIZE(BUFF_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));     /* Working buffer                             */
+        uint8_t  Buff2[DCACHE_ALIGN_LINE_SIZE(BUFF_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));     /* Working buffer                             */
+    #else
+        uint8_t  Buff1[BUFF_SIZE] __attribute__((aligned(32)));     /* Working buffer                             */
+        uint8_t  Buff2[BUFF_SIZE] __attribute__((aligned(32)));     /* Working buffer                             */
+    #endif
+
 #endif
 
 char      Line[128];                        /* Console input buffer                       */
@@ -149,8 +163,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
 #if (USE_USB_APLL1_CLOCK)
     /* Enable APLL1 96MHz clock */
@@ -169,6 +183,11 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
     CLK_EnableModuleClock(SPIM0_MODULE);
+
+    /* Enable HSOTG module clock */
+    CLK_EnableModuleClock(HSOTG0_MODULE);
+    /* Select HSOTG PHY Reference clock frequency which is from HXT*/
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
 #if (USE_USB_APLL1_CLOCK)
     /* USB Host desired input clock is 48 MHz. Set as APLL1 divided by 2 (96/2 = 48) */
@@ -202,37 +221,36 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* Init SPIM multi-function pins, MOSI(PJ.1), MISO(PI.13), CLK(PJ.0), SS(PI.12), D3(PI.15), and D2(PI.14) */
     /* Init SPIM multi-function pins */
-    SET_SPIM0_CLK_PC4();
-    SET_SPIM0_MISO_PG12();
-    SET_SPIM0_MOSI_PG11();
-    SET_SPIM0_D2_PC0();
-    SET_SPIM0_D3_PG10();
-    SET_SPIM0_SS_PC3();
+    SET_SPIM0_CLK_PH13();
+    SET_SPIM0_MISO_PJ4();
+    SET_SPIM0_MOSI_PJ3();
+    SET_SPIM0_D2_PJ5();
+    SET_SPIM0_D3_PJ6();
+    SET_SPIM0_SS_PJ7();
 
-    PC->SMTEN |= (GPIO_SMTEN_SMTEN0_Msk |
-                  GPIO_SMTEN_SMTEN3_Msk |
-                  GPIO_SMTEN_SMTEN4_Msk);
+    PH->SMTEN |= (GPIO_SMTEN_SMTEN13_Msk);
 
-    PG->SMTEN |= (GPIO_SMTEN_SMTEN10_Msk |
-                  GPIO_SMTEN_SMTEN11_Msk |
-                  GPIO_SMTEN_SMTEN12_Msk);
+    PJ->SMTEN |= (GPIO_SMTEN_SMTEN3_Msk |
+                  GPIO_SMTEN_SMTEN4_Msk |
+                  GPIO_SMTEN_SMTEN5_Msk |
+                  GPIO_SMTEN_SMTEN6_Msk |
+                  GPIO_SMTEN_SMTEN7_Msk);
 
     /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
-    GPIO_SetSlewCtl(PC, BIT0, GPIO_SLEWCTL_HIGH);
-    GPIO_SetSlewCtl(PC, BIT3, GPIO_SLEWCTL_HIGH);
-    GPIO_SetSlewCtl(PC, BIT4, GPIO_SLEWCTL_HIGH);
+    GPIO_SetSlewCtl(PH, BIT13, GPIO_SLEWCTL_HIGH);
 
-    GPIO_SetSlewCtl(PG, BIT10, GPIO_SLEWCTL_HIGH);
-    GPIO_SetSlewCtl(PG, BIT11, GPIO_SLEWCTL_HIGH);
-    GPIO_SetSlewCtl(PG, BIT12, GPIO_SLEWCTL_HIGH);
+    GPIO_SetSlewCtl(PJ, BIT3, GPIO_SLEWCTL_HIGH);
+    GPIO_SetSlewCtl(PJ, BIT4, GPIO_SLEWCTL_HIGH);
+    GPIO_SetSlewCtl(PJ, BIT5, GPIO_SLEWCTL_HIGH);
+    GPIO_SetSlewCtl(PJ, BIT6, GPIO_SLEWCTL_HIGH);
+    GPIO_SetSlewCtl(PJ, BIT7, GPIO_SLEWCTL_HIGH);
 
-    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.8     */
-    SET_USB_VBUS_EN_PB8();
+    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.15     */
+    SET_USB_VBUS_EN_PB15();
 
-    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.9   */
-    SET_USB_VBUS_ST_PB9();
+    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.14   */
+    SET_USB_VBUS_ST_PB14();
 
     /* HSUSB_VBUS_EN (USB 2.0 VBUS power enable pin) multi-function pin - PJ.13   */
     SET_HSUSB_VBUS_EN_PJ13();
@@ -282,9 +300,9 @@ void get_line(char *buff, int len)
 /* the system does not support an RTC.                     */
 /* This function is not required in read-only cfg.         */
 
-unsigned long get_fattime(void)
+DWORD get_fattime(void)
 {
-    unsigned long tmr;
+    DWORD tmr;
 
     tmr = 0x00000;
 
@@ -449,7 +467,7 @@ int  show_root_dir()
         }
 
         /* print file entry information               */
-        printf("%c%c%c%c%c %u/%02u/%02u %02u:%02u %9lu  %s",
+        printf("%c%c%c%c%c %u/%02u/%02u %02u:%02u %9u  %s",
                (Finfo.fattrib & AM_DIR) ? 'D' : '-',    /* is a directory?                */
                (Finfo.fattrib & AM_RDO) ? 'R' : '-',    /* is read-only?                  */
                (Finfo.fattrib & AM_HID) ? 'H' : '-',    /* is hidden?                     */
@@ -513,7 +531,7 @@ int  write_file_to_flash(char *cmdline)
         return -1;                          /* Abort...                                   */
     }
 
-    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1, 0);
+    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1);
     printf("Flash ID=0x%02X, 0x%02X, 0x%02X\n", idBuf[0], idBuf[1], idBuf[2]);
 
     //SPIM_Enable_4Bytes_Mode(SPIM0, IS_4BYTES_ADDR, 1);  /* Enable 4-bytes address mode?          */
@@ -546,6 +564,11 @@ int  write_file_to_flash(char *cmdline)
             /* DMA read SPIM flash                                                        */
             SPIM_DMA_Read(SPIM0, addr, IS_4BYTES_ADDR, BUFF_SIZE, Buff1, sWb03hRdCMD.u32CMDCode, 1);
 
+#if (NVT_DCACHE_ON == 1)
+            /* Invalidate the data cache for the SPIM read buffer to ensure data coherency if D-Cache is enabled. */
+            SCB_InvalidateDCache_by_Addr((void *)&Buff1, BUFF_SIZE);
+#endif
+
             if (memcmp(Buff1, Buff2, BUFF_SIZE) != 0)
             {
                 printf("Verify address 0x%x failed!\n", addr);
@@ -569,12 +592,21 @@ int  write_file_to_flash(char *cmdline)
                 return 0;                   /* done                                       */
             }
 
+#if (NVT_DCACHE_ON == 1)
+            /* Invalidate the data cache for the SPIM write buffer to ensure data coherency if D-Cache is enabled. */
+            SCB_CleanDCache_by_Addr((void *)&Buff1, BUFF_SIZE);
+#endif
             /* DMA write SPIM flash                       */
             SPIM_DMA_Write(SPIM0, addr, IS_4BYTES_ADDR, BUFF_SIZE, Buff1, sWb02hWrCMD.u32CMDCode);
 
             memset(Buff2, 0, BUFF_SIZE);
             /* DMA read SPIM flash                        */
             SPIM_DMA_Read(SPIM0, addr, IS_4BYTES_ADDR, BUFF_SIZE, Buff2, sWb03hRdCMD.u32CMDCode, 1);
+
+#if (NVT_DCACHE_ON == 1)
+            /* Invalidate the data cache for the SPIM read buffer to ensure data coherency if D-Cache is enabled. */
+            SCB_InvalidateDCache_by_Addr((void *)&Buff2, BUFF_SIZE);
+#endif
 
             if (memcmp(Buff1, Buff2, BUFF_SIZE) != 0)
             {
@@ -632,7 +664,7 @@ int  compare_file_with_flash(char *cmdline)
         return -1;                          /* Abort...                                   */
     }
 
-    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1, 0);
+    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1);
     printf("Flash ID=0x%02X, 0x%02X, 0x%02X\n", idBuf[0], idBuf[1], idBuf[2]);
 
     //SPIM_Enable_4Bytes_Mode(SPIM0, IS_4BYTES_ADDR, 1);  /* Enable 4-bytes address mode?          */
@@ -660,6 +692,11 @@ int  compare_file_with_flash(char *cmdline)
 
             /* DMA read SPIM flash                        */
             SPIM_DMA_Read(SPIM0, addr, IS_4BYTES_ADDR, BUFF_SIZE, Buff2, sWb03hRdCMD.u32CMDCode, 1);
+
+#if (NVT_DCACHE_ON == 1)
+            /* Invalidate the data cache for the SPIM read buffer to ensure data coherency if D-Cache is enabled. */
+            SCB_InvalidateDCache_by_Addr((void *)&Buff2, BUFF_SIZE);
+#endif
 
             if (memcmp(Buff1, Buff2, len) != 0)
             {
@@ -704,7 +741,7 @@ int  dump_spim_flash(char *cmdline)
         return -1;
     }
 
-    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1, 0);
+    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1);
     printf("Flash ID=0x%02X, 0x%02X, 0x%02X\n", idBuf[0], idBuf[1], idBuf[2]);
 
     //SPIM_Enable_4Bytes_Mode(SPIM0, IS_4BYTES_ADDR, 1);  /* Enable 4-bytes address mode?          */
@@ -715,8 +752,14 @@ int  dump_spim_flash(char *cmdline)
     for (addr = faddr; dump_len > 0; addr += BUFF_SIZE)
     {
         memset(Buff1, 0, BUFF_SIZE);        /* fill 0x00 to clear buffer                  */
+
         /* DMA read SPIM flash                        */
         SPIM_DMA_Read(SPIM0, addr, IS_4BYTES_ADDR, BUFF_SIZE, Buff1, sWb03hRdCMD.u32CMDCode, 1);
+
+#if (NVT_DCACHE_ON == 1)
+        /* Invalidate the data cache for the SPIM read buffer to ensure data coherency if D-Cache is enabled. */
+        SCB_InvalidateDCache_by_Addr((void *)&Buff1, BUFF_SIZE);
+#endif
 
         if (dump_len < BUFF_SIZE)
             len = dump_len;
@@ -750,29 +793,17 @@ int  go_to_flash(char *cmdline)
         return -1;
     }
 
-    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1, 0);
+    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1);
     printf("Flash ID=0x%02X, 0x%02X, 0x%02X\n", idBuf[0], idBuf[1], idBuf[2]);
-    //TestOnly
-#ifndef TESTCHIP_ONLY
-    SPIM_ENABLE_CACHE(SPIM0);
-#endif
+
     //SPIM_Enable_4Bytes_Mode(SPIM0, IS_4BYTES_ADDR, 1);  /* Enable 4-bytes address mode?          */
-#ifndef TESTCHIP_ONLY
-    SPIM0->CTL1 |= SPIM_CTL1_CDINVAL_Msk;    /* invalid cache                              */
-#endif
+
     /* Enable DMM mode                            */
     SPIM_EnterDirectMapMode(SPIM0, IS_4BYTES_ADDR, sWb03hRdCMD.u32CMDCode, 1);
 
     func = (FUNC_PTR *)(SPIM_DMM0_SADDR + faddr + 1);
 
     SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;   /* disable SYSTICK (prevent interrupt)   */
-
-    //#ifdef __GNUC__                        /* for GNU C compiler */
-    //    __ASM volatile("msr msp, r0");
-    //    __ASM volatile("bx  lr");
-    //#else
-    //    __set_SP(inpw(SPIM_DMM0_SADDR + faddr));
-    //#endif
 
     func();                                      /* branch to SPIM                        */
 
@@ -821,6 +852,10 @@ int SPIM_TrimRXClkDlyNum(SPIM_T *pSPIMx, SPIM_PHASE_T *psWbRdCMD)
 
 #ifndef DMM_MODE_TRIM
         SPIM_DMA_Read(pSPIMx, u32SAddr, SPIM_OP_DISABLE,  sizeof(au8TrimPatten), au8CmpBuf, sWb03hRdCMD.u32CMDCode, SPIM_OP_ENABLE);
+#if (NVT_DCACHE_ON == 1)
+        /* Invalidate the data cache for the SPIM read buffer to ensure data coherency if D-Cache is enabled. */
+        SCB_InvalidateDCache_by_Addr((void *)au8CmpBuf, sizeof(au8CmpBuf));
+#endif
 #else
         u32RdDataCnt = 0;
         pu32RdData = (uint32_t *)tstbuf2;
@@ -874,11 +909,9 @@ int32_t main(void)
 
     SYS_UnlockReg();                             /* Unlock register lock protect               */
 
-    SPIM_SET_CLOCK_DIVIDER(SPIM0, 1);            /* Set SPIM clock as HCLK divided by 4        */
+    SPIM_SET_CLOCK_DIVIDER(SPIM0, 8);            /* Set SPIM clock as HCLK divided by 4        */
 
     SPIM_DISABLE_CIPHER(SPIM0);
-
-    SPIM_DISABLE_CACHE(SPIM0);
 
     if (SPIM_InitFlash(SPIM0, SPIM_OP_ENABLE) != 0)            /* Initialized SPI flash                      */
     {
@@ -887,7 +920,7 @@ int32_t main(void)
         while (1);
     }
 
-    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1, 0);   /* read SPIM flash ID                   */
+    SPIM_ReadJedecId(SPIM0, idBuf, sizeof(idBuf), 1);   /* read SPIM flash ID                   */
     printf("SPIM get JEDEC ID=0x%02X, 0x%02X, 0x%02X\n", idBuf[0], idBuf[1], idBuf[2]);
 
     usbh_core_init();                       /* initialize USB Host library                */

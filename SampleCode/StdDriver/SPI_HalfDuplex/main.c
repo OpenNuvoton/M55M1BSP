@@ -11,15 +11,19 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
+//------------------------------------------------------------------------------
 #define TEST_COUNT              4
 
-static uint32_t s_au32DestinationData[TEST_COUNT] = {0};
-static uint32_t s_u32RxDataCount = 0;
+//------------------------------------------------------------------------------
+/* Buffer for SPI0 data transfer with half-duplex mode when DCache is disabled */
+static uint32_t g_au32DestinationData[TEST_COUNT] = {0};
 
+//------------------------------------------------------------------------------
 /* Function prototype declaration */
 void SYS_Init(void);
 void SPI_Init(void);
 
+//------------------------------------------------------------------------------
 void SYS_Init(void)
 {
     /* Enable Internal RC 12MHz clock */
@@ -28,8 +32,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -171,16 +175,25 @@ int main(void)
     SPI0->CTL &= ~SPI_CTL_DATDIR_Msk;
 
     /* Master SPI0 receive four data from slave SPI1 */
-    for (s_u32RxDataCount = 0; s_u32RxDataCount < 4; s_u32RxDataCount++)
+    for (u32DataCount = 0; u32DataCount < TEST_COUNT; u32DataCount++)
     {
         /* Master write TX for generating clock */
         SPI_WRITE_TX(SPI0, 0);
 
+        u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         /* Wait for Rx FIFO not empty */
-        while (SPI_GET_RX_FIFO_EMPTY_FLAG(SPI0)) {}
+        while (SPI_GET_RX_FIFO_EMPTY_FLAG(SPI0))
+        {
+            if (--u32TimeOutCnt == 0)
+            {
+                printf("Wait for SPI time-out!\n");
+                goto lexit;
+            }
+        }
 
         /* Read data from RX register */
-        s_au32DestinationData[s_u32RxDataCount] = SPI_READ_RX(SPI0);
+        g_au32DestinationData[u32DataCount] = SPI_READ_RX(SPI0);
     }
 
     /* Print the received data */
@@ -188,7 +201,7 @@ int main(void)
 
     for (u32DataCount = 0; u32DataCount < TEST_COUNT; u32DataCount++)
     {
-        printf("%d:\t0x%X\n", u32DataCount, s_au32DestinationData[u32DataCount]);
+        printf("%d:\t0x%X\n", u32DataCount, g_au32DestinationData[u32DataCount]);
     }
 
     /* Reset slave RX related flags. */
@@ -205,13 +218,22 @@ int main(void)
     SPI_WRITE_TX(SPI0, 0xAA550003);
 
     /* Slave SPI1 receive four data from master SPI0 */
-    for (s_u32RxDataCount = 0; s_u32RxDataCount < 4; s_u32RxDataCount++)
+    for (u32DataCount = 0; u32DataCount < TEST_COUNT; u32DataCount++)
     {
+        u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         /* Wait for Rx FIFO not empty */
-        while (SPI_GET_RX_FIFO_EMPTY_FLAG(SPI1)) {}
+        while (SPI_GET_RX_FIFO_EMPTY_FLAG(SPI1))
+        {
+            if (--u32TimeOutCnt == 0)
+            {
+                printf("Wait for SPI time-out!\n");
+                goto lexit;
+            }
+        }
 
         /* Read data from RX register */
-        s_au32DestinationData[s_u32RxDataCount] = SPI_READ_RX(SPI1);
+        g_au32DestinationData[u32DataCount] = SPI_READ_RX(SPI1);
     }
 
     /* Print the received data */
@@ -219,7 +241,7 @@ int main(void)
 
     for (u32DataCount = 0; u32DataCount < TEST_COUNT; u32DataCount++)
     {
-        printf("%d:\t0x%X\n", u32DataCount, s_au32DestinationData[u32DataCount]);
+        printf("%d:\t0x%X\n", u32DataCount, g_au32DestinationData[u32DataCount]);
     }
 
     printf("The data transfer was done.\n");

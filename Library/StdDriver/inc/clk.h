@@ -37,6 +37,7 @@ extern "C"
 #define FREQ_12MHZ         12000000UL   /*!< 12 MHz \hideinitializer */
 #define FREQ_24MHZ         24000000UL   /*!< 24 MHz \hideinitializer */
 #define FREQ_25MHZ         25000000UL   /*!< 25 MHz \hideinitializer */
+#define FREQ_36MHZ         36000000UL   /*!< 36 MHz \hideinitializer */
 #define FREQ_40MHZ         40000000UL   /*!< 40 MHz \hideinitializer */
 #define FREQ_45MHZ         45000000UL   /*!< 45 MHz \hideinitializer */
 #define FREQ_50MHZ         50000000UL   /*!< 50 MHz \hideinitializer */
@@ -54,19 +55,19 @@ extern "C"
 #define FREQ_180MHZ        180000000UL  /*!< 180 MHz \hideinitializer */
 #define FREQ_192MHZ        192000000UL  /*!< 192 MHz \hideinitializer */
 #define FREQ_200MHZ        200000000UL  /*!< 200 MHz \hideinitializer */
-#define FREQ_240MHZ        240000000UL  /*!< 200 MHz \hideinitializer */
+#define FREQ_220MHZ        220000000UL  /*!< 220 MHz \hideinitializer */
+#define FREQ_225MHZ        225000000UL  /*!< 225 MHz \hideinitializer */
+#define FREQ_240MHZ        240000000UL  /*!< 240 MHz \hideinitializer */
 #define FREQ_384MHZ        384000000UL  /*!< 384 MHz \hideinitializer */
 #define FREQ_500MHZ        500000000UL  /*!< 500 MHz \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  MIRC constant definitions.                                                                             */
 /*---------------------------------------------------------------------------------------------------------*/
-#if 0   // TESTCHIP_ONLY not support
 #define CLK_MIRCCTL_MIRCFSEL_1MHZ    (0x0UL << CLK_MIRCCTL_MIRCFSEL_Pos)          /*!< Select MIRC clock to 1 MHz \hideinitializer */
 #define CLK_MIRCCTL_MIRCFSEL_2MHZ    (0x1UL << CLK_MIRCCTL_MIRCFSEL_Pos)          /*!< Select MIRC clock to 1 MHz \hideinitializer */
 #define CLK_MIRCCTL_MIRCFSEL_4MHZ    (0x2UL << CLK_MIRCCTL_MIRCFSEL_Pos)          /*!< Select MIRC clock to 1 MHz \hideinitializer */
 #define CLK_MIRCCTL_MIRCFSEL_8MHZ    (0x3UL << CLK_MIRCCTL_MIRCFSEL_Pos)          /*!< Select MIRC clock to 1 MHz \hideinitializer */
-#endif
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  CLKSEL constant definitions.  (Write-protection)                                                       */
@@ -96,7 +97,9 @@ extern "C"
 #define CLK_CANFDSEL_CANFD1SEL_HIRC48M_DIV4 (0x4UL << CLK_CANFDSEL_CANFD1SEL_Pos)       /*!< Select CANFD1 clock source from HIRC48M/4 \hideinitializer */
 
 #define CLK_CCAPSEL_CCAP0SEL_MIRC           (0x0UL << CLK_CCAPSEL_CCAP0SEL_Pos)         /*!< Select CCAP sensor clock source from MIRC \hideinitializer */
+#define CLK_CCAPSEL_CCAP0SEL_HCLK2          (0x1UL << CLK_CCAPSEL_CCAP0SEL_Pos)         /*!< Select CCAP sensor clock source from HCLK2 \hideinitializer */
 #define CLK_CCAPSEL_CCAP0SEL_HIRC           (0x2UL << CLK_CCAPSEL_CCAP0SEL_Pos)         /*!< Select CCAP sensor clock source from HIRC \hideinitializer */
+#define CLK_CCAPSEL_CCAP0SEL_APLL0_DIV2     (0x3UL << CLK_CCAPSEL_CCAP0SEL_Pos)         /*!< Select CCAP sensor clock source from APLL0/2 \hideinitializer */
 #define CLK_CCAPSEL_CCAP0SEL_HXT            (0x4UL << CLK_CCAPSEL_CCAP0SEL_Pos)         /*!< Select CCAP sensor clock source from HXT \hideinitializer */
 
 #define CLK_CLKOSEL_CLKOSEL_SYSCLK          (0x0UL << CLK_CLKOSEL_CLKOSEL_Pos)          /*!< Select CLKO clock source from SYSCLK \hideinitializer */
@@ -126,10 +129,6 @@ extern "C"
 #define CLK_EADCSEL_EADC0SEL_APLL1_DIV2     (0x0UL << CLK_EADCSEL_EADC0SEL_Pos)         /*!< Select EADC0 clock source from APLL1/2 \hideinitializer */
 #define CLK_EADCSEL_EADC0SEL_APLL0_DIV2     (0x1UL << CLK_EADCSEL_EADC0SEL_Pos)         /*!< Select EADC0 clock source from APLL0/2 \hideinitializer */
 #define CLK_EADCSEL_EADC0SEL_PCLK0          (0x2UL << CLK_EADCSEL_EADC0SEL_Pos)         /*!< Select EADC0 clock source from PCLK0 \hideinitializer */
-
-#define CLK_EADCSEL_EADC1SEL_APLL1_DIV2     (0x0UL << CLK_EADCSEL_EADC1SEL_Pos)         /*!< Select EADC1 clock source from APLL1/2 \hideinitializer */
-#define CLK_EADCSEL_EADC1SEL_APLL0_DIV2     (0x1UL << CLK_EADCSEL_EADC1SEL_Pos)         /*!< Select EADC1 clock source from APLL0/2 \hideinitializer */
-#define CLK_EADCSEL_EADC1SEL_PCLK2          (0x2UL << CLK_EADCSEL_EADC1SEL_Pos)         /*!< Select EADC1 clock source from PCLK2 \hideinitializer */
 
 #define CLK_EPWMSEL_EPWM0SEL_PCLK0          (0x0UL << CLK_EPWMSEL_EPWM0SEL_Pos)         /*!< Select EPWM0 clock source from PCLK0 \hideinitializer */
 #define CLK_EPWMSEL_EPWM0SEL_HCLK0          (0x1UL << CLK_EPWMSEL_EPWM0SEL_Pos)         /*!< Select EPWM0 clock source from HCLK0 \hideinitializer */
@@ -269,10 +268,9 @@ extern "C"
 #define CLK_SPISEL_SPI3SEL_HIRC48M          (0x5UL << CLK_SPISEL_SPI3SEL_Pos)           /*!< Select SPI3 clock source from HIRC48M \hideinitializer */
 
 #define CLK_STSEL_ST0SEL_HXT                (0x0UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from HXT \hideinitializer */
-#define CLK_STSEL_ST0SEL_LXT                (0x1UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from LXT \hideinitializer */
-#define CLK_STSEL_ST0SEL_HXT_DIV2           (0x2UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from HXT/2 \hideinitializer */
-#define CLK_STSEL_ST0SEL_ACLK_DIV2          (0x3UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from ACLK/2 \hideinitializer */
-#define CLK_STSEL_ST0SEL_HIRC_DIV2          (0x4UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from HIRC/2 \hideinitializer */
+#define CLK_STSEL_ST0SEL_HXT_DIV2           (0x1UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from HXT/2 \hideinitializer */
+#define CLK_STSEL_ST0SEL_ACLK_DIV2          (0x2UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from ACLK/2 \hideinitializer */
+#define CLK_STSEL_ST0SEL_HIRC_DIV2          (0x3UL << CLK_STSEL_ST0SEL_Pos)             /*!< Select SysTick 0 clock source from HIRC/2 \hideinitializer */
 #define CLK_STSEL_ACLK                      (0x8UL)                                     /*!< Select SysTick 0 clock source from ACLK \hideinitializer */
 
 #define CLK_TMRSEL_TMR0SEL_HXT              (0x0UL << CLK_TMRSEL_TMR0SEL_Pos)           /*!< Select TMR0 clock source from HXT \hideinitializer */
@@ -383,35 +381,29 @@ extern "C"
 #define CLK_USBSEL_USBSEL_APLL1_DIV2        (0x1UL << CLK_USBSEL_USBSEL_Pos)            /*!< Select USB clock source from APLL1/2 \hideinitializer */
 
 #define CLK_WDTSEL_WDT0SEL_LXT              (0x0UL << CLK_WDTSEL_WDT0SEL_Pos)           /*!< Select WDT0 clock source from LXT \hideinitializer */
-#define CLK_WDTSEL_WDT0SEL_HCLK2_DIV2048    (0x1UL << CLK_WDTSEL_WDT0SEL_Pos)           /*!< Select WDT0 clock source from HCLK2/2048 \hideinitializer */
-#define CLK_WDTSEL_WDT0SEL_LIRC             (0x2UL << CLK_WDTSEL_WDT0SEL_Pos)           /*!< Select WDT0 clock source from LIRC \hideinitializer */
+#define CLK_WDTSEL_WDT0SEL_LIRC             (0x1UL << CLK_WDTSEL_WDT0SEL_Pos)           /*!< Select WDT0 clock source from LIRC \hideinitializer */
 
 #define CLK_WDTSEL_WDT1SEL_LXT              (0x0UL << CLK_WDTSEL_WDT1SEL_Pos)           /*!< Select WDT1 clock source from LXT \hideinitializer */
-#define CLK_WDTSEL_WDT1SEL_HCLK2_DIV2048    (0x1UL << CLK_WDTSEL_WDT1SEL_Pos)           /*!< Select WDT1 clock source from HCLK2/2048 \hideinitializer */
-#define CLK_WDTSEL_WDT1SEL_LIRC             (0x2UL << CLK_WDTSEL_WDT1SEL_Pos)           /*!< Select WDT1 clock source from LIRC \hideinitializer */
+#define CLK_WDTSEL_WDT1SEL_LIRC             (0x1UL << CLK_WDTSEL_WDT1SEL_Pos)           /*!< Select WDT1 clock source from LIRC \hideinitializer */
 
-#define CLK_WWDTSEL_WWDT0SEL_HCLK0_DIV2048  (0x0UL << CLK_WWDTSEL_WWDT0SEL_Pos)         /*!< Select WWDT0 clock source from HCLK0/2048 \hideinitializer */
-#define CLK_WWDTSEL_WWDT0SEL_LIRC           (0x1UL << CLK_WWDTSEL_WWDT0SEL_Pos)         /*!< Select WWDT0 clock source from LIRC \hideinitializer */
+#define CLK_WWDTSEL_WWDT0SEL_LIRC           (0x0UL << CLK_WWDTSEL_WWDT0SEL_Pos)         /*!< Select WWDT0 clock source from LIRC \hideinitializer */
+#define CLK_WWDTSEL_WWDT0SEL_LXT            (0x1UL << CLK_WWDTSEL_WWDT0SEL_Pos)         /*!< Select WWDT0 clock source from LXT \hideinitializer */
 
-#define CLK_WWDTSEL_WWDT1SEL_HCLK0_DIV2048  (0x0UL << CLK_WWDTSEL_WWDT1SEL_Pos)         /*!< Select WWDT1 clock source from HCLK0/2048 \hideinitializer */
-#define CLK_WWDTSEL_WWDT1SEL_LIRC           (0x1UL << CLK_WWDTSEL_WWDT1SEL_Pos)         /*!< Select WWDT1 clock source from LIRC \hideinitializer */
-
-/*---------------------------------------------------------------------------------------------------------*/
-/*  RTC clock source constant definitions.                                                                 */
-/*---------------------------------------------------------------------------------------------------------*/
-#define RTC_LXTCTL_RTCCKSEL_LXT          (0x0UL<<RTC_LXTCTL_RTCCKSEL_Pos)           /*!< Setting RTC clock source as LXT \hideinitializer */
-#define RTC_LXTCTL_RTCCKSEL_LIRC         (0x1UL<<RTC_LXTCTL_RTCCKSEL_Pos)           /*!< Setting RTC clock source as LIRC \hideinitializer */
+#define CLK_WWDTSEL_WWDT1SEL_LIRC           (0x0UL << CLK_WWDTSEL_WWDT1SEL_Pos)         /*!< Select WWDT1 clock source from LIRC \hideinitializer */
+#define CLK_WWDTSEL_WWDT1SEL_LXT            (0x1UL << CLK_WWDTSEL_WWDT1SEL_Pos)         /*!< Select WWDT1 clock source from LXT \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  CLKDIV constant definitions.                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
+#define CLK_SCLKDIV_SCLKDIV(x)              (((x) - 1UL) << CLK_SCLKDIV_SCLKDIV_Pos)        /*!< SCLKDIV Setting for SCLK clock divider. It could be 1~16 \hideinitializer */
 #define CLK_HCLKDIV_HCLK2DIV(x)             (((x) - 1UL) << CLK_HCLKDIV_HCLK2DIV_Pos)       /*!< HCLKDIV Setting for HCLK2 clock divider. It could be 1~16 \hideinitializer */
-
 #define CLK_PCLKDIV_PCLK0DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK0DIV_Pos)       /*!< PCLKDIV Setting for PCLK0 clock divider. It could be 1~16 \hideinitializer */
 #define CLK_PCLKDIV_PCLK1DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK1DIV_Pos)       /*!< PCLKDIV Setting for PCLK1 clock divider. It could be 1~16 \hideinitializer */
 #define CLK_PCLKDIV_PCLK2DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK2DIV_Pos)       /*!< PCLKDIV Setting for PCLK2 clock divider. It could be 1~16 \hideinitializer */
 #define CLK_PCLKDIV_PCLK3DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK3DIV_Pos)       /*!< PCLKDIV Setting for PCLK3 clock divider. It could be 1~16 \hideinitializer */
 #define CLK_PCLKDIV_PCLK4DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK4DIV_Pos)       /*!< PCLKDIV Setting for PCLK4 clock divider. It could be 1~16 \hideinitializer */
+
+#define CLK_STDIV_ST0DIV(x)                 (((x) - 1UL) << CLK_STDIV_ST0DIV_Pos)           /*!< STDIV Setting for ST0 clock divider. It could be 1~256 \hideinitializer */
 
 #define CLK_CANFDDIV_CANFD0DIV(x)           (((x) - 1UL) << CLK_CANFDDIV_CANFD0DIV_Pos)     /*!< CANFDDIV Setting for CANFD0 clock divider. It could be 1~256 \hideinitializer */
 #define CLK_CANFDDIV_CANFD1DIV(x)           (((x) - 1UL) << CLK_CANFDDIV_CANFD1DIV_Pos)     /*!< CANFDDIV Setting for CANFD1 clock divider. It could be 1~256 \hideinitializer */
@@ -419,12 +411,11 @@ extern "C"
 #define CLK_DMICDIV_DMIC0DIV(x)            (((x) - 1UL) << CLK_DMICDIV_DMIC0DIV_Pos)        /*!< DMICDIV Setting for DMIC0 clock divider. It could be 1~256 \hideinitializer */
 
 #define CLK_EADCDIV_EADC0DIV(x)             (((x) - 1UL) << CLK_EADCDIV_EADC0DIV_Pos)       /*!< CANFDDIV Setting for EADC0 clock divider. It could be 1~256 \hideinitializer */
-#define CLK_EADCDIV_EADC1DIV(x)             (((x) - 1UL) << CLK_EADCDIV_EADC1DIV_Pos)       /*!< CANFDDIV Setting for EADC1 clock divider. It could be 1~256 \hideinitializer */
 
 #define CLK_I2SDIV_I2S0DIV(x)               (((x) - 1UL) << CLK_I2SDIV_I2S0DIV_Pos)         /*!< I2SDIV Setting for I2S0 clock divider. It could be 1~256 \hideinitializer */
 #define CLK_I2SDIV_I2S1DIV(x)               (((x) - 1UL) << CLK_I2SDIV_I2S1DIV_Pos)         /*!< I2SDIV Setting for I2S1 clock divider. It could be 1~256 \hideinitializer */
 
-#define CLK_KPIDIV_KPI0DIV(x)               (((x) - 1UL) << CLK_KPIDIV_KPI0DIV_Pos)         /*!< KPIDIV Setting for KPI clock divider. It could be 1~16 \hideinitializer */
+#define CLK_KPIDIV_KPI0DIV(x)               (((x) - 1UL) << CLK_KPIDIV_KPI0DIV_Pos)         /*!< KPIDIV Setting for KPI clock divider. It could be 1~256 \hideinitializer */
 
 #define CLK_LPADCDIV_LPADC0DIV(x)           (((x) - 1UL) << CLK_LPADCDIV_LPADC0DIV_Pos)     /*!< LPADCDIV Setting for LPADC clock divider. It could be 1~16 \hideinitializer */
 
@@ -438,8 +429,6 @@ extern "C"
 
 #define CLK_SDHDIV_SDH0DIV(x)               (((x) - 1UL) << CLK_SDHDIV_SDH0DIV_Pos)         /*!< SDHDIV Setting for SDH0 clock divider. It could be 1~16 \hideinitializer */
 #define CLK_SDHDIV_SDH1DIV(x)               (((x) - 1UL) << CLK_SDHDIV_SDH1DIV_Pos)         /*!< SDHDIV Setting for SDH1 clock divider. It could be 1~16 \hideinitializer */
-
-#define CLK_STDIV_ST0DIV(x)                 (((x) - 1UL) << CLK_STDIV_ST0DIV_Pos)           /*!< STDIV Setting for ST0 clock divider. It could be 1~256 \hideinitializer */
 
 #define CLK_UARTDIV0_UART0DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART0DIV_Pos)      /*!< UARTDIV0 Setting for UART0 clock divider. It could be 1~16 \hideinitializer */
 #define CLK_UARTDIV0_UART1DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART1DIV_Pos)      /*!< UARTDIV0 Setting for UART1 clock divider. It could be 1~16 \hideinitializer */
@@ -463,8 +452,9 @@ extern "C"
 #define CLK_APLL1_SELECT     1UL
 
 #define CLK_APLLCTL_APLLSRC_HXT           0x00000000UL    /*!< For APLL clock source is HXT.       4MHz < FIN/NR < 8MHz \hideinitializer */
-#define CLK_APLLCTL_APLLSRC_HIRC          0x00000001UL    /*!< For APLL clock source is HIRC.      4MHz < FIN/NR < 8MHz \hideinitializer */
-#define CLK_APLLCTL_APLLSRC_HIRC48_DIV4   0x00000002UL    /*!< For APLL clock source is HIRC48/4.  4MHz < FIN/NR < 8MHz \hideinitializer */
+#define CLK_APLLCTL_APLLSRC_HXT_DIV2      0x00000001UL    /*!< For APLL clock source is HXT/2.     4MHz < FIN/NR < 8MHz \hideinitializer */
+#define CLK_APLLCTL_APLLSRC_HIRC          0x00000002UL    /*!< For APLL clock source is HIRC.      4MHz < FIN/NR < 8MHz \hideinitializer */
+#define CLK_APLLCTL_APLLSRC_HIRC48_DIV4   0x00000003UL    /*!< For APLL clock source is HIRC48/4.  4MHz < FIN/NR < 8MHz \hideinitializer */
 
 #define CLK_APLLCTL_NF(x)        (((x)-2UL))       /*!< x must be constant and 2 <= x <= 513.    200MHz < FIN*2*NF/NR < 500MHz. \hideinitializer */
 #define CLK_APLLCTL_NR(x)        (((x)-1UL)<<9)    /*!< x must be constant and 1 <= x <= 32.     4MHz < FIN/NR < 8MHz \hideinitializer */
@@ -480,17 +470,12 @@ extern "C"
 #define CLK_APLLCTL_180MHz          (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 45UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 180MHz APLL output with 12MHz \hideinitializer */
 #define CLK_APLLCTL_192MHz          (CLK_APLLCTL_NR(2UL) | CLK_APLLCTL_NF( 32UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 192MHz APLL output with 12MHz \hideinitializer */
 #define CLK_APLLCTL_200MHz          (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 25UL) | CLK_APLLCTL_NO_1) /*!< Predefined APLLCTL setting for 200MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_220MHz          (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 55UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 200MHz APLL output with 12MHz \hideinitializer */
 #define CLK_APLLCTL_384MHz          (CLK_APLLCTL_NR(2UL) | CLK_APLLCTL_NF( 32UL) | CLK_APLLCTL_NO_1) /*!< Predefined APLLCTL setting for 384MHz APLL output with 12MHz \hideinitializer */
 
-#define CLK_APLL0CTL_STBSEL_800     (0UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL0 stable time is 800 APLL0 source clock \hideinitializer */
-#define CLK_APLL0CTL_STBSEL_2400    (1UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL0 stable time is 2400 APLL0 source clock \hideinitializer */
-#define CLK_APLL0CTL_STBSEL_4800    (2UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL0 stable time is 4800 APLL0 source clock \hideinitializer */
-#define CLK_APLL0CTL_STBSEL_6400    (3UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL0 stable time is 6400 APLL0 source clock \hideinitializer */
-
-#define CLK_APLL1CTL_STBSEL_800     (0UL << CLK_APLL1CTL_STBSEL_Pos)    /*!< Select APLL1 stable time is 800 APLL1 source clock \hideinitializer */
-#define CLK_APLL1CTL_STBSEL_2400    (1UL << CLK_APLL1CTL_STBSEL_Pos)    /*!< Select APLL1 stable time is 2400 APLL1 source clock \hideinitializer */
-#define CLK_APLL1CTL_STBSEL_4800    (2UL << CLK_APLL1CTL_STBSEL_Pos)    /*!< Select APLL1 stable time is 4800 APLL1 source clock \hideinitializer */
-#define CLK_APLL1CTL_STBSEL_6400    (3UL << CLK_APLL1CTL_STBSEL_Pos)    /*!< Select APLL1 stable time is 6400 APLL1 source clock \hideinitializer */
+#define CLK_APLLCTL_STBSEL_820     (0UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL stable time is 820 APLL source clock \hideinitializer */
+#define CLK_APLLCTL_STBSEL_2460    (1UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL stable time is 2460 APLL source clock \hideinitializer */
+#define CLK_APLLCTL_STBSEL_4920    (2UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL stable time is 4920 APLL source clock \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  MODULE constant definitions.                                                                           */
@@ -575,10 +560,6 @@ extern "C"
 #define EADC0_MODULE    (MODULE_CLKCTL_ENC( 9ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_EADCCTL_EADC0CKEN_Pos)|\
                          MODULE_CLKSEL_ENC( 6ULL)|MODULE_CLKSEL_Msk_ENC( 0x3ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_EADCSEL_EADC0SEL_Pos)|\
                          MODULE_CLKDIV_ENC( 6ULL)|MODULE_CLKDIV_Msk_ENC(0xFFULL)|MODULE_CLKDIV_Pos_ENC((uint64_t)CLK_EADCDIV_EADC0DIV_Pos))        /*!< EADC0 Module */
-
-#define EADC1_MODULE    (MODULE_CLKCTL_ENC( 9ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_EADCCTL_EADC1CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC( 6ULL)|MODULE_CLKSEL_Msk_ENC( 0x3ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_EADCSEL_EADC1SEL_Pos)|\
-                         MODULE_CLKDIV_ENC( 6ULL)|MODULE_CLKDIV_Msk_ENC(0xFFULL)|MODULE_CLKDIV_Pos_ENC((uint64_t)CLK_EADCDIV_EADC1DIV_Pos))        /*!< EADC1 Module */
 
 #define EBI0_MODULE     (MODULE_CLKCTL_ENC(10ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_EBICTL_EBI0CKEN_Pos)|\
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
@@ -776,10 +757,6 @@ extern "C"
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< OTFC0 Module */
 
-#define OTFC1_MODULE    (MODULE_CLKCTL_ENC(37ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_OTFCCTL_OTFC1CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
-                         MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< OTFC1 Module */
-
 #define OTG0_MODULE     (MODULE_CLKCTL_ENC(38ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_OTGCTL_OTG0CKEN_Pos)|\
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< OTG0 Module */
@@ -852,10 +829,6 @@ extern "C"
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< SPIM0 Module */
 
-#define SPIM1_MODULE    (MODULE_CLKCTL_ENC(47ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_SPIMCTL_SPIM1CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
-                         MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< SPIM1 Module */
-
 #define SRAM0_MODULE    (MODULE_CLKCTL_ENC(48ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_SRAMCTL_SRAM0CKEN_Pos)|\
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< SRAM0 Module */
@@ -868,21 +841,13 @@ extern "C"
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< SRAM2 Module */
 
-#define SWDH0_MODULE    (MODULE_CLKCTL_ENC(49ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_SWDHCTL_SWDH0CKEN_Pos)|\
+#define SRAM3_MODULE    (MODULE_CLKCTL_ENC(48ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_SRAMCTL_SRAM3CKEN_Pos)|\
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
-                         MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< SWDH0 Module */
-
-#define SWODEC0_MODULE  (MODULE_CLKCTL_ENC(50ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_SWODECCTL_SWODEC0CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
-                         MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< SWODEC0 Module */
+                         MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< SRAM3 Module */
 
 #define ST0_MODULE      (MODULE_CLKCTL_ENC(51ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_STCTL_ST0CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(21ULL)|MODULE_CLKSEL_Msk_ENC( 0x7ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_STSEL_ST0SEL_Pos)|\
-                         MODULE_CLKDIV_ENC(14ULL)|MODULE_CLKDIV_Msk_ENC(0xFFULL)|MODULE_CLKDIV_Pos_ENC((uint64_t)CLK_STDIV_ST0DIV_Pos))            /*!< ST0 Module */
-
-#define TAMPER0_MODULE  (MODULE_CLKCTL_ENC(52ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_TAMPERCTL_TAMPER0CKEN_Pos)|\
                          MODULE_CLKSEL_ENC(   NA)|MODULE_CLKSEL_Msk_ENC(     NA)|MODULE_CLKSEL_Pos_ENC(NA)|\
-                         MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< TAMPER0 Module */
+                         MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< ST0 Module */
 
 #define TMR0_MODULE     (MODULE_CLKCTL_ENC(53ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_TMRCTL_TMR0CKEN_Pos)|\
                          MODULE_CLKSEL_ENC(22ULL)|MODULE_CLKSEL_Msk_ENC( 0x7ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_TMRSEL_TMR0SEL_Pos)|\
@@ -969,19 +934,19 @@ extern "C"
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< UTCPD0 Module */
 
 #define WDT0_MODULE     (MODULE_CLKCTL_ENC(61ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_WDTCTL_WDT0CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(27ULL)|MODULE_CLKSEL_Msk_ENC( 0x3ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WDTSEL_WDT0SEL_Pos)|\
+                         MODULE_CLKSEL_ENC(27ULL)|MODULE_CLKSEL_Msk_ENC( 0x1ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WDTSEL_WDT0SEL_Pos)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< WDT0 Module */
 
 #define WDT1_MODULE     (MODULE_CLKCTL_ENC(61ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_WDTCTL_WDT1CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(27ULL)|MODULE_CLKSEL_Msk_ENC( 0x3ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WDTSEL_WDT1SEL_Pos)|\
+                         MODULE_CLKSEL_ENC(27ULL)|MODULE_CLKSEL_Msk_ENC( 0x1ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WDTSEL_WDT1SEL_Pos)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< WDT1 Module */
 
 #define WWDT0_MODULE    (MODULE_CLKCTL_ENC(62ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_WWDTCTL_WWDT0CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(28ULL)|MODULE_CLKSEL_Msk_ENC( 0x1ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WWDTSEL_WWDT0SEL_Pos)|\
+                         MODULE_CLKSEL_ENC(31ULL)|MODULE_CLKSEL_Msk_ENC( 0x1ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WWDTSEL_WWDT0SEL_Pos)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< WWDT0 Module */
 
 #define WWDT1_MODULE    (MODULE_CLKCTL_ENC(62ULL)|MODULE_CLKEN_Pos_ENC((uint64_t)CLK_WWDTCTL_WWDT1CKEN_Pos)|\
-                         MODULE_CLKSEL_ENC(28ULL)|MODULE_CLKSEL_Msk_ENC( 0x1ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WWDTSEL_WWDT1SEL_Pos)|\
+                         MODULE_CLKSEL_ENC(31ULL)|MODULE_CLKSEL_Msk_ENC( 0x1ULL)|MODULE_CLKSEL_Pos_ENC((uint64_t)CLK_WWDTSEL_WWDT1SEL_Pos)|\
                          MODULE_CLKDIV_ENC(   NA)|MODULE_CLKDIV_Msk_ENC(     NA)|MODULE_CLKDIV_Pos_ENC(NA))                                        /*!< WWDT1 Module */
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -997,6 +962,13 @@ extern "C"
   @{
 */
 
+/**
+  * @brief      Set SCLK Divider
+  * @param      u32SclkDiv is SCLK clock divider.  It could be 1~16
+  * @return     None
+  * @details    This macro set SCLK clock divider
+  */
+#define CLK_SET_SCLKDIV(u32SclkDiv)        (CLK->SCLKDIV = (CLK->SCLKDIV & (~CLK_SCLKDIV_SCLKDIV_Msk)) | CLK_SCLKDIV_SCLKDIV(u32SclkDiv))
 
 /**
   * @brief      Set HCLK2 Divider
@@ -1046,6 +1018,13 @@ extern "C"
   */
 #define CLK_SET_PCLK4DIV(u32PCLK4Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (~CLK_PCLKDIV_PCLK4DIV_Msk)) | CLK_PCLKDIV_PCLK4DIV(u32PCLK4Div))
 
+/**
+  * @brief      Set System Tick Divider
+  * @param      u32ST0Div is system tick clock divider.  It could be 1~256
+  * @return     None
+  * @details    This macro set system tick clock divider
+  */
+#define CLK_SET_STDIV(u32ST0Div)        (CLK->STDIV = (CLK->STDIV & (~CLK_STDIV_ST0DIV_Msk)) | CLK_STDIV_ST0DIV(u32ST0Div))
 
 void CLK_DisableCKO(void);
 void CLK_EnableCKO(uint32_t u32ClkSrc, uint32_t u32ClkDiv, uint32_t u32ClkDivBy1En);
@@ -1072,11 +1051,8 @@ void CLK_SetModuleClock(uint64_t u64ModuleIdx, uint32_t u32ClkSrc, uint32_t u32C
 void CLK_SetSysTickClockSrc(uint32_t u32ClkSrc);
 void CLK_EnableXtalRC(uint32_t u32ClkMask);
 void CLK_DisableXtalRC(uint32_t u32ClkMask);
-uint32_t CLK_EnableModuleClock(uint64_t u64ModuleIdx);
+void CLK_EnableModuleClock(uint64_t u64ModuleIdx);
 void CLK_DisableModuleClock(uint64_t u64ModuleIdx);
-/* TESTCHIP_ONLY start*/
-uint32_t CLK_WaitModuleClockReady(uint64_t u64ModuleIdx);
-/* TESTCHIP_ONLY end*/
 uint32_t CLK_EnableAPLL(uint32_t u32APLLClkSrc, uint32_t u32APLLFreq, uint32_t u32APLLSelect);
 void CLK_DisableAPLL(uint32_t u32APLLSelect);
 uint32_t CLK_WaitClockReady(uint32_t u32ClkMask);

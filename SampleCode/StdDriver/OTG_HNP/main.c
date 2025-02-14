@@ -294,8 +294,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
 #if (USE_USB_APLL1_CLOCK)
     /* Enable APLL1 96MHz clock */
@@ -347,11 +347,11 @@ void SYS_Init(void)
     /* Set multi-function pins for UART RXD and TXD */
     SetDebugUartMFP();
 
-    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.8     */
-    SET_USB_VBUS_EN_PB8();
+    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.15     */
+    SET_USB_VBUS_EN_PB15();
 
-    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.9   */
-    SET_USB_VBUS_ST_PB9();
+    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.14   */
+    SET_USB_VBUS_ST_PB14();
 
 
     /* USB 1.1 port multi-function pin VBUS, D+, D-, and ID pins */
@@ -508,7 +508,6 @@ int32_t main(void)
 
     OTG_ENABLE_PHY();
     OTG_ENABLE_ID_DETECT();
-    //OTG->PHYCTL |= 0x4;
     NVIC_EnableIRQ(USBOTG_IRQn);
     delay_us(1000);
 
@@ -600,13 +599,19 @@ int32_t main(void)
                     printf("A suspend\n");
 
                     gStartHNP = 0;
+
+                    while (1)
+                    {
+                        if (otg_role_change)
+                        {
+                            printf("Role change: A->B  %d\n", otg_role_change);
+                            break;
+                        }
+                    }
                 }
 
                 if (otg_role_change)
-                {
-                    printf("Role change: A->B  %d\n", otg_role_change);
                     break;
-                }
             }
         }
 

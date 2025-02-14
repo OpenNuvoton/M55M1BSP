@@ -336,7 +336,7 @@
  * In TCPCI Rev 2.0, the TRANSMIT_BUFFER holds the I2C_WRITE_BYTE_COUNT and the
  * portion of the SOP* USB PD message payload (including the header and/or the
  * data bytes) most recently written by the TCPM in TX_BUF_BYTE_x. TX_BUF_BYTE_x
- * is ?œhidden??and can only be accessed by writing to register address 51h
+ * is ?ï¿½hidden??and can only be accessed by writing to register address 51h
  */
 #define TCPC_REG_TX_BUFFER                   0xA0 //0x51        /* TCPCi Rev 2.0 */
 
@@ -446,11 +446,11 @@
 #define UTCPD_SRST                       0x260
 #define UTCPD_VC_OC_V                0x264
 
-#define UTCPD_CLKDIV                0x300  //TC8260
+#define UTCPD_CLKDIV                0x300  //M55M1
 #define UTCPD_CLKDIV_WKEN           BIT(4)
 #define UTCPD_CLKDIV_DIV            (BIT(2)|BIT(1)|BIT(0))
 
-#define UTCPD_CLKINFO        0x300  //M2L31 
+#define UTCPD_CLKINFO        0x300  //M55M1 
 #define UTCPD_I2C_READY             BIT0
 
 #define UTCPD_TEST1        0x304

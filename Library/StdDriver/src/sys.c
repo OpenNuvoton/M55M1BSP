@@ -38,7 +38,6 @@
   *             - \ref SYS_DAC01RST
   *             - \ref SYS_DMIC0RST
   *             - \ref SYS_EADC0RST
-  *             - \ref SYS_EADC1RST
   *             - \ref SYS_EBI0RST
   *             - \ref SYS_ECAP0RST
   *             - \ref SYS_ECAP1RST
@@ -75,8 +74,8 @@
   *             - \ref SYS_LPTMR0RST
   *             - \ref SYS_LPTMR1RST
   *             - \ref SYS_LPUART0RST
+  *             - \ref SYS_NPURST
   *             - \ref SYS_OTFC0RST
-  *             - \ref SYS_OTFC1RST
   *             - \ref SYS_OTG0RST
   *             - \ref SYS_PDMA0RST
   *             - \ref SYS_PDMA1RST
@@ -95,8 +94,6 @@
   *             - \ref SYS_SPI2RST
   *             - \ref SYS_SPI3RST
   *             - \ref SYS_SPIM0RST
-  *             - \ref SYS_SPIM1RST
-  *             - \ref SYS_TAMPER0RST
   *             - \ref SYS_TMR0RST
   *             - \ref SYS_TMR1RST
   *             - \ref SYS_TMR2RST
@@ -118,6 +115,8 @@
   *             - \ref SYS_USBH0RST
   *             - \ref SYS_USCI0RST
   *             - \ref SYS_UTCPD0RST
+  *             - \ref SYS_WWDT0RST
+  *             - \ref SYS_WWDT1RST
   * @return     None
   * @details    This function reset selected module.
   *             The register write-protection function should be disabled before using this function.

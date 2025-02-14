@@ -433,28 +433,34 @@ typedef struct
     __IO uint32_t CWSP;                  /*!< [0x0020] Cropping Window Starting Address Register                        */
     __IO uint32_t CWS;                   /*!< [0x0024] Cropping Window Size Register                                    */
     __IO uint32_t PKTSL;                 /*!< [0x0028] Packet Scaling Vertical/Horizontal Factor Register (LSB)         */
-    __I  uint32_t RESERVE1[1];
+    __IO uint32_t PLNSL;                 /*!< [0x002C] Planar Scaling Vertical/Horizontal Factor Register (LSB)         */
     __IO uint32_t FRCTL;                 /*!< [0x0030] Scaling Frame Rate Factor Register                               */
     __IO uint32_t STRIDE;                /*!< [0x0034] Frame Output Pixel Stride Width Register                         */
-    __I  uint32_t RESERVE2[1];
+    __I  uint32_t RESERVE1[1];
     __IO uint32_t FIFOTH;                /*!< [0x003c] FIFO Threshold Register                                          */
     __IO uint32_t CMPADDR;               /*!< [0x0040] Compare Memory Base Address Register                             */
     __IO uint32_t LUMA_Y1_THD;           /*!< [0x0044] Luminance Y8 to Y1 Threshold Value Register                      */
     __IO uint32_t PKTSM;                 /*!< [0x0048] Packet Scaling Vertical/Horizontal Factor Register (MSB)         */
-    __I  uint32_t RESERVE3[1];
+    __IO uint32_t PLNSM;                 /*!< [0x004C] Planar Scaling Vertical/Horizontal Factor Register (MSB)         */
     __I  uint32_t CURADDRP;              /*!< [0x0050] Current Packet System Memory Address Byte Counter Register       */
-    __I  uint32_t RESERVE4[3];
+    __I  uint32_t CURADDRY;              /*!< [0x0054] Current Planar Y System Memory Address Register                  */
+    __I  uint32_t CURADDRU;              /*!< [0x0058] Current Planar U System Memory Address Register                  */
+    __I  uint32_t CURADDRV;              /*!< [0x005C] Current Planar V System Memory Address Register                  */
     __IO uint32_t PKTBA0;                /*!< [0x0060] System Memory Packet Base Address 0 Register                     */
-    __I  uint32_t RESERVE5[39];
+    __I  uint32_t RESERVE2[7];
+    __IO uint32_t YBA;                   /*!< [0x0080] System Memory Packet Base Address 0 Register                     */
+    __IO uint32_t UBA;                   /*!< [0x0084] System Memory Packet Base Address 0 Register                     */
+    __IO uint32_t VBA;                   /*!< [0x0088] System Memory Packet Base Address 0 Register                     */
+    __I  uint32_t RESERVE3[29];
     __IO uint32_t MDCTL;                 /*!< [0x0100] Motion Detection Control Register                                */
     __IO uint32_t MDTRG_WK;              /*!< [0x0104] Motion Detection Trigger and Wakeup Register                     */
-    __I  uint32_t RESERVE6[2];
+    __I  uint32_t RESERVE4[2];
     __IO uint32_t MDTTH;                 /*!< [0x0110] Motion Detection Total Threshold Register                        */
     __I  uint32_t MDTSAD;                /*!< [0x0114] Motion Detection Total SAD Register                              */
-    __I  uint32_t RESERVE7[2];
+    __I  uint32_t RESERVE5[2];
     __IO uint32_t MDWOCTH;               /*!< [0x0120] Motion Detection Window Overflow Counter Threshold Register      */
     __I  uint32_t MDWOC;                 /*!< [0x0124] Motion Detection Window Overflow Counter Register                */
-    __I  uint32_t RESERVE8[6];
+    __I  uint32_t RESERVE6[6];
     __IO uint32_t MDWTH[16];             /*!< [0x0140] ~ [0x017c] Motion Detection Window Threshold 0 ~ 15 Register      */
     __I  uint32_t MDWSAD[16];            /*!< [0x0180] ~ [0x01bc] Motion Detection Window SAD 0 ~ 15 Register            */
 } CCAP_T;
@@ -465,6 +471,9 @@ typedef struct
 
 #define CCAP_CTL_CCAPEN_Pos              (0)                                               /*!< CCAP_T::CTL: CCAPEN Position           */
 #define CCAP_CTL_CCAPEN_Msk              (0x1ul << CCAP_CTL_CCAPEN_Pos)                    /*!< CCAP_T::CTL: CCAPEN Mask               */
+
+#define CCAP_CTL_PLNEN_Pos               (5)                                               /*!< CCAP_T::CTL: PLNEN Position            */
+#define CCAP_CTL_PLNEN_Msk               (0x1ul << CCAP_CTL_PLNEN_Pos)                     /*!< CCAP_T::CTL: PLNEN Mask                */
 
 #define CCAP_CTL_PKTEN_Pos               (6)                                               /*!< CCAP_T::CTL: PKTEN Position            */
 #define CCAP_CTL_PKTEN_Msk               (0x1ul << CCAP_CTL_PKTEN_Pos)                     /*!< CCAP_T::CTL: PKTEN Mask                */
@@ -505,6 +514,9 @@ typedef struct
 #define CCAP_PAR_RANGE_Pos               (6)                                               /*!< CCAP_T::PAR: RANGE Position            */
 #define CCAP_PAR_RANGE_Msk               (0x1ul << CCAP_PAR_RANGE_Pos)                     /*!< CCAP_T::PAR: RANGE Mask                */
 
+#define CCAP_PAR_PLNFMT_Pos              (7)                                               /*!< CCAP_T::PAR: PLNFMT Position           */
+#define CCAP_PAR_PLNFMT_Msk              (0x1ul << CCAP_PAR_PLNFMT_Pos)                    /*!< CCAP_T::PAR: PLNFMT Mask               */
+
 #define CCAP_PAR_PCLKP_Pos               (8)                                               /*!< CCAP_T::PAR: PCLKP Position            */
 #define CCAP_PAR_PCLKP_Msk               (0x1ul << CCAP_PAR_PCLKP_Pos)                     /*!< CCAP_T::PAR: PCLKP Mask                */
 
@@ -517,18 +529,6 @@ typedef struct
 #define CCAP_PAR_FBB_Pos                 (18)                                              /*!< CCAP_T::PAR: FBB Position              */
 #define CCAP_PAR_FBB_Msk                 (0x1ul << CCAP_PAR_FBB_Pos)                       /*!< CCAP_T::PAR: FBB Mask                  */
 
-#define CCAP_INTEN_VIEN_Pos              (0)                                               /*!< CCAP_T::INTEN: VIEN Position           */
-#define CCAP_INTEN_VIEN_Msk              (0x1ul << CCAP_INTEN_VIEN_Pos)                    /*!< CCAP_T::INTEN: VIEN Mask               */
-
-#define CCAP_INTEN_MEIEN_Pos             (1)                                               /*!< CCAP_T::INTEN: MEIEN Position          */
-#define CCAP_INTEN_MEIEN_Msk             (0x1ul << CCAP_INTEN_MEIEN_Pos)                   /*!< CCAP_T::INTEN: MEIEN Mask              */
-
-#define CCAP_INTEN_ADDRMIEN_Pos          (3)                                               /*!< CCAP_T::INTEN: ADDRMIEN Position       */
-#define CCAP_INTEN_ADDRMIEN_Msk          (0x1ul << CCAP_INTEN_ADDRMIEN_Pos)                /*!< CCAP_T::INTEN: ADDRMIEN Mask           */
-
-#define CCAP_INTEN_MDIEN_Pos             (4)                                               /*!< CCAP_T::INTEN: MDIEN Position          */
-#define CCAP_INTEN_MDIEN_Msk             (0x3ul << CCAP_INTEN_MDIEN_Pos)                   /*!< CCAP_T::INTEN: MDIEN Mask              */
-
 #define CCAP_INTSTS_VINTF_Pos            (0)                                               /*!< CCAP_T::INTSTS: VINTF Position         */
 #define CCAP_INTSTS_VINTF_Msk            (0x1ul << CCAP_INTSTS_VINTF_Pos)                  /*!< CCAP_T::INTSTS: VINTF Mask             */
 
@@ -540,6 +540,18 @@ typedef struct
 
 #define CCAP_INTSTS_MDINTF_Pos           (4)                                               /*!< CCAP_T::INTSTS: MDINTF Position        */
 #define CCAP_INTSTS_MDINTF_Msk           (0x3ul << CCAP_INTSTS_MDINTF_Pos)                 /*!< CCAP_T::INTSTS: MDINTF Mask            */
+
+#define CCAP_INTEN_VIEN_Pos              (0)                                               /*!< CCAP_T::INTEN: VIEN Position           */
+#define CCAP_INTEN_VIEN_Msk              (0x1ul << CCAP_INTEN_VIEN_Pos)                    /*!< CCAP_T::INTEN: VIEN Mask               */
+
+#define CCAP_INTEN_MEIEN_Pos             (1)                                               /*!< CCAP_T::INTEN: MEIEN Position          */
+#define CCAP_INTEN_MEIEN_Msk             (0x1ul << CCAP_INTEN_MEIEN_Pos)                   /*!< CCAP_T::INTEN: MEIEN Mask              */
+
+#define CCAP_INTEN_ADDRMIEN_Pos          (3)                                               /*!< CCAP_T::INTEN: ADDRMIEN Position       */
+#define CCAP_INTEN_ADDRMIEN_Msk          (0x1ul << CCAP_INTEN_ADDRMIEN_Pos)                /*!< CCAP_T::INTEN: ADDRMIEN Mask           */
+
+#define CCAP_INTEN_MDIEN_Pos             (4)                                               /*!< CCAP_T::INTEN: MDIEN Position          */
+#define CCAP_INTEN_MDIEN_Msk             (0x3ul << CCAP_INTEN_MDIEN_Pos)                   /*!< CCAP_T::INTEN: MDIEN Mask              */
 
 #define CCAP_PARM_INFMTH_Pos             (0)                                               /*!< CCAP_T::PARM: INFMTH Position          */
 #define CCAP_PARM_INFMTH_Msk             (0x1ul << CCAP_PARM_INFMTH_Pos)                   /*!< CCAP_T::PARM: INFMTH Mask              */
@@ -577,6 +589,18 @@ typedef struct
 #define CCAP_PKTSL_PKTSVNL_Pos           (24)                                              /*!< CCAP_T::PKTSL: PKTSVNL Position        */
 #define CCAP_PKTSL_PKTSVNL_Msk           (0xfful << CCAP_PKTSL_PKTSVNL_Pos)                /*!< CCAP_T::PKTSL: PKTSVNL Mask            */
 
+#define CCAP_PLNSL_PLNSHML_Pos           (0)                                               /*!< CCAP_T::PLNSL: PLNSHML Position        */
+#define CCAP_PLNSL_PLNSHML_Msk           (0xfful << CCAP_PLNSL_PLNSHML_Pos)                /*!< CCAP_T::PLNSL: PLNSHML Mask            */
+
+#define CCAP_PLNSL_PLNSHNL_Pos           (8)                                               /*!< CCAP_T::PLNSL: PLNSHNL Position        */
+#define CCAP_PLNSL_PLNSHNL_Msk           (0xfful << CCAP_PLNSL_PLNSHNL_Pos)                /*!< CCAP_T::PLNSL: PLNSHNL Mask            */
+
+#define CCAP_PLNSL_PLNSVML_Pos           (16)                                              /*!< CCAP_T::PLNSL: PLNSVML Position        */
+#define CCAP_PLNSL_PLNSVML_Msk           (0xfful << CCAP_PLNSL_PLNSVML_Pos)                /*!< CCAP_T::PLNSL: PLNSVML Mask            */
+
+#define CCAP_PLNSL_PLNSVNL_Pos           (24)                                              /*!< CCAP_T::PLNSL: PLNSVNL Position        */
+#define CCAP_PLNSL_PLNSVNL_Msk           (0xfful << CCAP_PLNSL_PLNSVNL_Pos)                /*!< CCAP_T::PLNSL: PLNSVNL Mask            */
+
 #define CCAP_FRCTL_FRM_Pos               (0)                                               /*!< CCAP_T::FRCTL: FRM Position            */
 #define CCAP_FRCTL_FRM_Msk               (0x3ful << CCAP_FRCTL_FRM_Pos)                    /*!< CCAP_T::FRCTL: FRM Mask                */
 
@@ -585,6 +609,18 @@ typedef struct
 
 #define CCAP_STRIDE_PKTSTRIDE_Pos        (0)                                               /*!< CCAP_T::STRIDE: PKTSTRIDE Position     */
 #define CCAP_STRIDE_PKTSTRIDE_Msk        (0x3ffful << CCAP_STRIDE_PKTSTRIDE_Pos)           /*!< CCAP_T::STRIDE: PKTSTRIDE Mask         */
+
+#define CCAP_STRIDE_PLNSTRIDE_Pos        (16)                                              /*!< CCAP_T::STRIDE: PLNSTRIDE Position     */
+#define CCAP_STRIDE_PLNSTRIDE_Msk        (0x3ffful << CCAP_STRIDE_PLNSTRIDE_Pos)           /*!< CCAP_T::STRIDE: PLNSTRIDE Mask         */
+
+#define CCAP_FIFOTH_PLNVFTH_Pos          (0)                                               /*!< CCAP_T::FIFOTH: PLNVFTH Position       */
+#define CCAP_FIFOTH_PLNVFTH_Msk          (0xful << CCAP_FIFOTH_PLNVFTH_Pos)                /*!< CCAP_T::FIFOTH: PLNVFTH Mask           */
+
+#define CCAP_FIFOTH_PLNUFTH_Pos          (8)                                               /*!< CCAP_T::FIFOTH: PLNUFTH Position       */
+#define CCAP_FIFOTH_PLNUFTH_Msk          (0xful << CCAP_FIFOTH_PLNUFTH_Pos)                /*!< CCAP_T::FIFOTH: PLNUFTH Mask           */
+
+#define CCAP_FIFOTH_PLNYFTH_Pos          (16)                                              /*!< CCAP_T::FIFOTH: PLNYFTH Position       */
+#define CCAP_FIFOTH_PLNYFTH_Msk          (0x1ful << CCAP_FIFOTH_PLNYFTH_Pos)               /*!< CCAP_T::FIFOTH: PLNYFTH Mask           */
 
 #define CCAP_FIFOTH_PKTFTH_Pos           (24)                                              /*!< CCAP_T::FIFOTH: PKTFTH Position        */
 #define CCAP_FIFOTH_PKTFTH_Msk           (0x1ful << CCAP_FIFOTH_PKTFTH_Pos)                /*!< CCAP_T::FIFOTH: PKTFTH Mask            */
@@ -610,11 +646,41 @@ typedef struct
 #define CCAP_PKTSM_PKTSVNH_Pos           (24)                                              /*!< CCAP_T::PKTSM: PKTSVNH Position        */
 #define CCAP_PKTSM_PKTSVNH_Msk           (0xfful << CCAP_PKTSM_PKTSVNH_Pos)                /*!< CCAP_T::PKTSM: PKTSVNH Mask            */
 
+#define CCAP_PLNSM_PLNSHMH_Pos           (0)                                               /*!< CCAP_T::PLNSM: PLNSHMH Position        */
+#define CCAP_PLNSM_PLNSHMH_Msk           (0xfful << CCAP_PLNSM_PLNSHMH_Pos)                /*!< CCAP_T::PLNSM: PLNSHMH Mask            */
+
+#define CCAP_PLNSM_PLNSHNH_Pos           (8)                                               /*!< CCAP_T::PLNSM: PLNSHNH Position        */
+#define CCAP_PLNSM_PLNSHNH_Msk           (0xfful << CCAP_PLNSM_PLNSHNH_Pos)                /*!< CCAP_T::PLNSM: PLNSHNH Mask            */
+
+#define CCAP_PLNSM_PLNSVMH_Pos           (16)                                              /*!< CCAP_T::PLNSM: PLNSVMH Position        */
+#define CCAP_PLNSM_PLNSVMH_Msk           (0xfful << CCAP_PLNSM_PLNSVMH_Pos)                /*!< CCAP_T::PLNSM: PLNSVMH Mask            */
+
+#define CCAP_PLNSM_PLNSVNH_Pos           (24)                                              /*!< CCAP_T::PLNSM: PLNSVNH Position        */
+#define CCAP_PLNSM_PLNSVNH_Msk           (0xfful << CCAP_PLNSM_PLNSVNH_Pos)                /*!< CCAP_T::PLNSM: PLNSVNH Mask            */
+
 #define CCAP_CURADDRP_CURADDR_Pos        (0)                                               /*!< CCAP_T::CURADDRP: CURADDR Position     */
 #define CCAP_CURADDRP_CURADDR_Msk        (0xfffffffful << CCAP_CURADDRP_CURADDR_Pos)       /*!< CCAP_T::CURADDRP: CURADDR Mask         */
 
+#define CCAP_CURADDRY_CURADDR_Pos        (0)                                               /*!< CCAP_T::CURADDRY: CURADDR Position     */
+#define CCAP_CURADDRY_CURADDR_Msk        (0xfffffffful << CCAP_CURADDRY_CURADDR_Pos)       /*!< CCAP_T::CURADDRY: CURADDR Mask         */
+
+#define CCAP_CURADDRU_CURADDR_Pos        (0)                                               /*!< CCAP_T::CURADDRU: CURADDR Position     */
+#define CCAP_CURADDRU_CURADDR_Msk        (0xfffffffful << CCAP_CURADDRU_CURADDR_Pos)       /*!< CCAP_T::CURADDRU: CURADDR Mask         */
+
+#define CCAP_CURADDRV_CURADDR_Pos        (0)                                               /*!< CCAP_T::CURADDRV: CURADDR Position     */
+#define CCAP_CURADDRV_CURADDR_Msk        (0xfffffffful << CCAP_CURADDRV_CURADDR_Pos)       /*!< CCAP_T::CURADDRV: CURADDR Mask         */
+
 #define CCAP_PKTBA0_BASEADDR_Pos         (0)                                               /*!< CCAP_T::PKTBA0: BASEADDR Position      */
 #define CCAP_PKTBA0_BASEADDR_Msk         (0xfffffffful << CCAP_PKTBA0_BASEADDR_Pos)        /*!< CCAP_T::PKTBA0: BASEADDR Mask          */
+
+#define CCAP_YBA_BASEADDR_Pos            (0)                                               /*!< CCAP_T::YBA: BASEADDR Position         */
+#define CCAP_YBA_BASEADDR_Msk            (0xfffffffful << CCAP_YBA_BASEADDR_Pos)           /*!< CCAP_T::YBA: BASEADDR Mask             */
+
+#define CCAP_UBA_BASEADDR_Pos            (0)                                               /*!< CCAP_T::UBA: BASEADDR Position         */
+#define CCAP_UBA_BASEADDR_Msk            (0xfffffffful << CCAP_UBA_BASEADDR_Pos)           /*!< CCAP_T::UBA: BASEADDR Mask             */
+
+#define CCAP_VBA_BASEADDR_Pos            (0)                                               /*!< CCAP_T::VBA: BASEADDR Position         */
+#define CCAP_VBA_BASEADDR_Msk            (0xfffffffful << CCAP_VBA_BASEADDR_Pos)           /*!< CCAP_T::VBA: BASEADDR Mask             */
 
 #define CCAP_MDCTL_WEN0_Pos              (0)                                               /*!< CCAP_T::MDCTL: WEN0 Position           */
 #define CCAP_MDCTL_WEN0_Msk              (0x1ul << CCAP_MDCTL_WEN0_Pos)                    /*!< CCAP_T::MDCTL: WEN0 Mask               */

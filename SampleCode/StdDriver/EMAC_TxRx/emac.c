@@ -16,14 +16,14 @@
     #define USING_HW_CHECKSUM
 #endif
 
-#ifdef NVT_DCACHE_ON
-NVT_NONCACHEABLE static synopGMACdevice GMACdev = {0};
+static synopGMACdevice GMACdev = {0};
+#if (NVT_DCACHE_ON == 1)
+/* Descriptor and data buffer are placed in a non-cacheable region */
 NVT_NONCACHEABLE static DmaDesc tx_desc[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};
 NVT_NONCACHEABLE static DmaDesc rx_desc[RECEIVE_DESC_SIZE] __attribute__((aligned(32))) = {0};
 NVT_NONCACHEABLE static PKT_FRAME_T tx_buf[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};
 NVT_NONCACHEABLE static PKT_FRAME_T rx_buf[RECEIVE_DESC_SIZE] __attribute__((aligned(32))) = {0};
 #else
-static synopGMACdevice GMACdev = {0};
 static DmaDesc tx_desc[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};
 static DmaDesc rx_desc[RECEIVE_DESC_SIZE] __attribute__((aligned(32))) = {0};
 static PKT_FRAME_T tx_buf[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};

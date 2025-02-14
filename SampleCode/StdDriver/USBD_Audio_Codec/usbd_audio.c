@@ -45,18 +45,15 @@ uint8_t volatile g_u8PDMARxIdx = 0;
 uint32_t volatile g_u32BuffLen = 0, g_u32RxBuffLen = 0;
 
 /* Player Buffer and its pointer */
-#ifdef __ICCARM__
-#pragma data_alignment=4
-uint32_t g_au32PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] = {0};
-
-uint8_t g_au8PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] = {0};
-uint8_t g_au8PcmRxBufFull[PDMA_RXBUFFER_CNT] = {0};
+#if (NVT_DCACHE_ON == 1)
+/* Data buffer is placed in a non-cacheable region */
+NVT_NONCACHEABLE uint32_t g_au32PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
+NVT_NONCACHEABLE uint8_t g_au8PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
 #else
-uint32_t g_au32PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {{0}};
-
-uint8_t g_au8PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __attribute__((aligned(4))) = {{0}};
-uint8_t g_au8PcmRxBufFull[PDMA_RXBUFFER_CNT] __attribute__((aligned(4))) = {0};
+uint32_t g_au32PcmPlayBuff[PDMA_TXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
+uint8_t g_au8PcmRecBuff[PDMA_RXBUFFER_CNT][BUFF_LEN] __ALIGNED(4) = {0};
 #endif
+uint8_t g_au8PcmRxBufFull[PDMA_RXBUFFER_CNT] __ALIGNED(4) = {0};
 
 static volatile uint32_t s_u32BufPlayIdx = 0;
 static volatile uint32_t s_u32PlayBufPos = 0;
@@ -845,8 +842,8 @@ void AudioStartRecord(uint32_t u32SampleRate)
     PDMA0->CHCTL |= (1 << PDMA_I2S_RX_CH);
     printf("Start Record ... \n");
 
-    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 0;
-    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 2;
+    //    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 0;
+    //    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 2;
 }
 
 /* TIMER0 Interrupt handler */

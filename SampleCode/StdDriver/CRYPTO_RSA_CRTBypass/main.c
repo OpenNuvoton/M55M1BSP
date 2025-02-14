@@ -29,7 +29,15 @@ __ALIGNED(4) static char    Msg2[RSA_KBUF_HLEN] =
 __ALIGNED(4) static char    Sign2[RSA_KBUF_HLEN] =
     "11111111a05f626b028c75dc3fbf98963dce66d0f4c3ae4237cff304d84d8836cb6bad9ac86f9d1b8a28dd70404788b869d2429f1ec0663e51b753f7451c6b4645d99126e457c1dac49551d86a8a974a3131e9b371d5c214cc9ff240c299bd0e62dbc7a9a2dad9fa5404adb00632d36332d5be6106e9e6ec81cac45cd339cc87abbe7f89430800e16e032a66210b25e926eda243d9f09955496ddbc77ef74f17fee41c4435e78b46965b713d72ce8a31af641538add387fedfd88bb22a42eb3bda40f72ecad941dbffdd47b3e77737da741553a45b630d070bcc5205804bf80ee2d51612875dbc4796960052f1687e0074007e6a33ab8b2085c033f922222222";
 
-static RSA_BUF_CRT_T s_sRSABuf;
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    // Note sizeof(s_sRSABuf) is multiply of 128(also, multiply of DCACHE_LINE_SIZE(32))
+    RSA_BUF_CRT_T s_sRSABuf __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    // Standard buffer alignment when DCache is disabled
+    __ALIGNED(4) static RSA_BUF_CRT_T s_sRSABuf;
+#endif
+
 static volatile int g_RSA_done;
 static volatile int g_RSA_error;
 
@@ -84,8 +92,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -163,7 +171,12 @@ int32_t main(void)
 
     /* Set RSA private key */
     RSA_SetKey(CRYPTO, d);
-    RSA_SetDMATransfer(CRYPTO, Msg, N, P, Q);
+    RSA_SetDMATransfer(CRYPTO, Msg, N, P, Q);//Fillup sRSABuf.au32RsaM, au32RsaN, au32RsaP, au32RsaQ and so on
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//For sRSABuf.au32RsaM, au32RsaN, au32RsaP, au32RsaQ and so on
+#endif
+
     RSA_Start(CRYPTO);
 
     /* Waiting for RSA operation done */
@@ -185,6 +198,10 @@ int32_t main(void)
         return -1;
     }
 
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//For s_sRSABuf.au32RsaOutput
+    //Read OutputResult(stack) from sRSABuf.au32RsaOutput
+#endif
     /* Get RSA output result */
     RSA_Read(CRYPTO, OutputResult);
     printf("\nRSA sign 1: %s\n", OutputResult);
@@ -213,6 +230,10 @@ int32_t main(void)
 
     /* Use the same key, and change Msg */
     RSA_SetDMATransfer(CRYPTO, Msg2, N, P, Q);
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//For sRSABuf.au32RsaM, au32RsaN, au32RsaP, au32RsaQ and so on
+#endif
     RSA_Start(CRYPTO);
 
     /* Waiting for RSA operation done */
@@ -233,6 +254,11 @@ int32_t main(void)
         printf("\nRSA has error!!\n");
         return -1;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//For s_sRSABuf.au32RsaOutput
+    //Read OutputResult(stack) from sRSABuf.au32RsaOutput
+#endif
 
     /* Get RSA output result */
     RSA_Read(CRYPTO, OutputResult);

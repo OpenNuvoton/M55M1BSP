@@ -10,13 +10,13 @@
       <TargetName>Release</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6160000::V6.16::ARMCLANG</pCCUsed>
+      <pCCUsed>6190000::V6.19::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>ARMCM55</Device>
           <Vendor>ARM</Vendor>
-          <PackID>ARM.CMSIS.5.8.0</PackID>
+          <PackID>ARM.CMSIS.5.9.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x30000000,0x00020000) IRAM2(0x20000000,0x00020000) IROM(0x10000000,0x00200000) IROM2(0x00000000,0x00200000) CPUTYPE("Cortex-M55") FPU3(DFPU) DSP TZ MVE(FP) CLOCK(12000000) ESEL ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -186,6 +186,7 @@
             <RvdsVP>3</RvdsVP>
             <RvdsMve>2</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
+            <nBranchProt>0</nBranchProt>
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>1</hadIROM2>
             <StupSel>0</StupSel>
@@ -339,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>CMSIS_NN, ETHOSU, FLATBUFFERS_LOCALE_INDEPENDENT=0, TF_LITE_STATIC_MEMORY, NDEBUG</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\CMSIS\NN\Include;..\..\..\..\Library\CMSIS\DSP\Include;..\..\_deps\tensorflow-gemlowp-src;..\..\_deps\tensorflow-flatbuffers-src\include;..\..\_deps\tensorflow-ruy-src;..\..\..\..\Library;..\..\..\tflite_micro;..\..\..\..\Library\StdDriver\inc\npu</IncludePath>
+              <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\CMSIS\NN;..\..\..\..\Library\CMSIS\DSP\Include;..\..\_deps\tensorflow-gemlowp-src;..\..\_deps\tensorflow-flatbuffers-src\include;..\..\_deps\tensorflow-ruy-src;..\..\..\..\Library;..\..\..\..\Library\StdDriver\inc\npu;..\..\tensorflow;..\..\..\tflite_micro</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -423,6 +424,16 @@
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\cmsis_nn\svdf.cc</FilePath>
             </File>
+            <File>
+              <FileName>transpose_conv.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\cmsis_nn\transpose_conv.cc</FilePath>
+            </File>
+            <File>
+              <FileName>unidirectional_sequence_lstm.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\cmsis_nn\unidirectional_sequence_lstm.cc</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -454,11 +465,6 @@
           <GroupName>micro</GroupName>
           <Files>
             <File>
-              <FileName>all_ops_resolver.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\micro\all_ops_resolver.cc</FilePath>
-            </File>
-            <File>
               <FileName>fake_micro_context.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\fake_micro_context.cc</FilePath>
@@ -474,6 +480,11 @@
               <FilePath>..\..\tensorflow\lite\micro\memory_helpers.cc</FilePath>
             </File>
             <File>
+              <FileName>micro_allocation_info.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\micro_allocation_info.cc</FilePath>
+            </File>
+            <File>
               <FileName>micro_allocator.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\micro_allocator.cc</FilePath>
@@ -484,19 +495,29 @@
               <FilePath>..\..\tensorflow\lite\micro\micro_context.cc</FilePath>
             </File>
             <File>
-              <FileName>micro_error_reporter.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\micro\micro_error_reporter.cc</FilePath>
-            </File>
-            <File>
-              <FileName>micro_graph.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\micro\micro_graph.cc</FilePath>
-            </File>
-            <File>
               <FileName>micro_interpreter.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\micro_interpreter.cc</FilePath>
+            </File>
+            <File>
+              <FileName>micro_interpreter_context.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\micro_interpreter_context.cc</FilePath>
+            </File>
+            <File>
+              <FileName>micro_interpreter_graph.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\micro_interpreter_graph.cc</FilePath>
+            </File>
+            <File>
+              <FileName>micro_log.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\micro_log.cc</FilePath>
+            </File>
+            <File>
+              <FileName>micro_op_resolver.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\micro_op_resolver.cc</FilePath>
             </File>
             <File>
               <FileName>micro_profiler.cc</FileName>
@@ -507,11 +528,6 @@
               <FileName>micro_resource_variable.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\micro_resource_variable.cc</FilePath>
-            </File>
-            <File>
-              <FileName>micro_string.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\micro\micro_string.cc</FilePath>
             </File>
             <File>
               <FileName>micro_utils.cc</FileName>
@@ -527,16 +543,6 @@
               <FileName>recording_micro_allocator.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\recording_micro_allocator.cc</FilePath>
-            </File>
-            <File>
-              <FileName>recording_simple_memory_allocator.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\micro\recording_simple_memory_allocator.cc</FilePath>
-            </File>
-            <File>
-              <FileName>simple_memory_allocator.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\micro\simple_memory_allocator.cc</FilePath>
             </File>
             <File>
               <FileName>system_setup.cc</FileName>
@@ -609,9 +615,24 @@
               <FilePath>..\..\tensorflow\lite\micro\kernels\assign_variable.cc</FilePath>
             </File>
             <File>
+              <FileName>batch_matmul.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\batch_matmul.cc</FilePath>
+            </File>
+            <File>
               <FileName>batch_to_space_nd.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\batch_to_space_nd.cc</FilePath>
+            </File>
+            <File>
+              <FileName>broadcast_args.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\broadcast_args.cc</FilePath>
+            </File>
+            <File>
+              <FileName>broadcast_to.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\broadcast_to.cc</FilePath>
             </File>
             <File>
               <FileName>call_once.cc</FileName>
@@ -699,6 +720,11 @@
               <FilePath>..\..\tensorflow\lite\micro\kernels\detection_postprocess_flexbuffers_generated_data.cc</FilePath>
             </File>
             <File>
+              <FileName>div.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\div.cc</FilePath>
+            </File>
+            <File>
               <FileName>elementwise.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\elementwise.cc</FilePath>
@@ -707,6 +733,11 @@
               <FileName>elu.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\elu.cc</FilePath>
+            </File>
+            <File>
+              <FileName>embedding_lookup.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\embedding_lookup.cc</FilePath>
             </File>
             <File>
               <FileName>exp.cc</FileName>
@@ -824,9 +855,24 @@
               <FilePath>..\..\tensorflow\lite\micro\kernels\logistic_common.cc</FilePath>
             </File>
             <File>
+              <FileName>lstm_eval.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\lstm_eval.cc</FilePath>
+            </File>
+            <File>
+              <FileName>lstm_eval_common.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\lstm_eval_common.cc</FilePath>
+            </File>
+            <File>
               <FileName>maximum_minimum.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\maximum_minimum.cc</FilePath>
+            </File>
+            <File>
+              <FileName>micro_tensor_utils.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\micro_tensor_utils.cc</FilePath>
             </File>
             <File>
               <FileName>mirror_pad.cc</FileName>
@@ -889,9 +935,19 @@
               <FilePath>..\..\tensorflow\lite\micro\kernels\reduce.cc</FilePath>
             </File>
             <File>
+              <FileName>reduce_common.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\reduce_common.cc</FilePath>
+            </File>
+            <File>
               <FileName>reshape.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\reshape.cc</FilePath>
+            </File>
+            <File>
+              <FileName>reshape_common.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\reshape_common.cc</FilePath>
             </File>
             <File>
               <FileName>resize_bilinear.cc</FileName>
@@ -907,6 +963,11 @@
               <FileName>round.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\round.cc</FilePath>
+            </File>
+            <File>
+              <FileName>select.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\select.cc</FilePath>
             </File>
             <File>
               <FileName>shape.cc</FileName>
@@ -944,6 +1005,11 @@
               <FilePath>..\..\tensorflow\lite\micro\kernels\split_v.cc</FilePath>
             </File>
             <File>
+              <FileName>squared_difference.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\squared_difference.cc</FilePath>
+            </File>
+            <File>
               <FileName>squeeze.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\squeeze.cc</FilePath>
@@ -952,6 +1018,11 @@
               <FileName>strided_slice.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\strided_slice.cc</FilePath>
+            </File>
+            <File>
+              <FileName>strided_slice_common.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\strided_slice_common.cc</FilePath>
             </File>
             <File>
               <FileName>sub.cc</FileName>
@@ -979,11 +1050,6 @@
               <FilePath>..\..\tensorflow\lite\micro\kernels\transpose.cc</FilePath>
             </File>
             <File>
-              <FileName>transpose_conv.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\micro\kernels\transpose_conv.cc</FilePath>
-            </File>
-            <File>
               <FileName>unpack.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\unpack.cc</FilePath>
@@ -994,19 +1060,14 @@
               <FilePath>..\..\tensorflow\lite\micro\kernels\var_handle.cc</FilePath>
             </File>
             <File>
+              <FileName>while.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\kernels\while.cc</FilePath>
+            </File>
+            <File>
               <FileName>zeros_like.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\micro\kernels\zeros_like.cc</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>c</GroupName>
-          <Files>
-            <File>
-              <FileName>common.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\tensorflow\lite\c\common.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1022,11 +1083,6 @@
               <FileName>flatbuffer_conversions.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\core\api\flatbuffer_conversions.cc</FilePath>
-            </File>
-            <File>
-              <FileName>op_resolver.cc</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\..\tensorflow\lite\core\api\op_resolver.cc</FilePath>
             </File>
             <File>
               <FileName>tensor_utils.cc</FileName>
@@ -1049,9 +1105,34 @@
           <GroupName>kernels-internal</GroupName>
           <Files>
             <File>
+              <FileName>common.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\kernels\internal\common.cc</FilePath>
+            </File>
+            <File>
               <FileName>quantization_util.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\kernels\internal\quantization_util.cc</FilePath>
+            </File>
+            <File>
+              <FileName>portable_tensor_utils.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\kernels\internal\portable_tensor_utils.cc</FilePath>
+            </File>
+            <File>
+              <FileName>runtime_shape.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\kernels\internal\runtime_shape.cc</FilePath>
+            </File>
+            <File>
+              <FileName>tensor_ctypes.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\kernels\internal\tensor_ctypes.cc</FilePath>
+            </File>
+            <File>
+              <FileName>tensor_utils.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\kernels\internal\tensor_utils.cc</FilePath>
             </File>
           </Files>
         </Group>
@@ -1072,6 +1153,56 @@
               <FileName>schema_utils.cc</FileName>
               <FileType>8</FileType>
               <FilePath>..\..\tensorflow\lite\schema\schema_utils.cc</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>core-c</GroupName>
+          <Files>
+            <File>
+              <FileName>common.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\core\c\common.cc</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>micro-tflite_bridge</GroupName>
+          <Files>
+            <File>
+              <FileName>flatbuffer_conversions_bridge.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\tflite_bridge\flatbuffer_conversions_bridge.cc</FilePath>
+            </File>
+            <File>
+              <FileName>micro_error_reporter.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\tflite_bridge\micro_error_reporter.cc</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>micro-arena_allocator</GroupName>
+          <Files>
+            <File>
+              <FileName>non_persistent_arena_buffer_allocator.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\arena_allocator\non_persistent_arena_buffer_allocator.cc</FilePath>
+            </File>
+            <File>
+              <FileName>persistent_arena_buffer_allocator.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\arena_allocator\persistent_arena_buffer_allocator.cc</FilePath>
+            </File>
+            <File>
+              <FileName>recording_single_arena_buffer_allocator.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\arena_allocator\recording_single_arena_buffer_allocator.cc</FilePath>
+            </File>
+            <File>
+              <FileName>single_arena_buffer_allocator.cc</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\..\tensorflow\lite\micro\arena_allocator\single_arena_buffer_allocator.cc</FilePath>
             </File>
           </Files>
         </Group>

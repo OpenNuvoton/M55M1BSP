@@ -108,15 +108,15 @@ void vParTestInitialise(void)
     /* Waiting for HXT clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
     SystemCoreClockUpdate();
 
     /* Enable GPIO I module clock */
-    CLK_EnableModuleClock(GPIOI_MODULE);
+    CLK_EnableModuleClock(GPIOH_MODULE);
 
     /* Set debug uart module clock */
     SetDebugUartCLK();
@@ -131,8 +131,8 @@ void vParTestInitialise(void)
     /* Configure Debug port */
     InitDebugUart();
 
-    /* LED IO PI12 */
-    GPIO_SetMode(PI, BIT12, GPIO_MODE_OUTPUT);
+    /* LED IO PH4 */
+    GPIO_SetMode(PH, BIT4, GPIO_MODE_OUTPUT);
 
 #if 0 // ETM MFP
     SET_ETMC_TRACE_CLK_PB11();
@@ -157,7 +157,7 @@ void vParTestToggleLED(unsigned long ulLED)
 {
     (void)ulLED;
 
-    PI12 ^= 1;
+    PH4 ^= 1;
 }
 /*-----------------------------------------------------------*/
 

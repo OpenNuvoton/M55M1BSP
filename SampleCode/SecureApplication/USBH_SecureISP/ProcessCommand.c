@@ -50,9 +50,6 @@ void int_read_callback(HID_DEV_T *hdev, uint16_t ep_addr, int status, uint8_t *r
 void int_write_callback(HID_DEV_T *hdev, uint16_t ep_addr, int staus, uint8_t *wbuff, uint32_t *data_len);
 
 volatile HID_DEV_T  *g_pHDEV;
-
-volatile uint32_t   g_u32TmpBuf[1024]; // 4K byte temp buffer
-
 static uint32_t sysGetNum(void);
 
 
@@ -113,11 +110,18 @@ typedef struct
     uint32_t        au32Tmp[FMC_FLASH_PAGE_SIZE / 4];
 } CHIP_ISP_INFO_T;
 
-
 __ALIGNED(4) CHIP_ISP_INFO_T g_ChipISPInfo;
-__ALIGNED(4) CMD_PACKET_T    g_WriteCmd;
-__ALIGNED(4) CMD_PACKET_T    g_ReturnData;
 
+#if (NVT_DCACHE_ON == 1)
+    /* CMD_PACKET_T buffers are shared between CPU and USBH/CRC modules.
+    * Since these buffers are not used for intensive CPU calculations,
+    * they are placed in a NonCacheable region to prevent cache coherence issues. */
+    NVT_NONCACHEABLE __ALIGNED(4) CMD_PACKET_T    g_WriteCmd;
+    NVT_NONCACHEABLE __ALIGNED(4) CMD_PACKET_T    g_ReturnData;
+#else
+    __ALIGNED(4) CMD_PACKET_T    g_WriteCmd;
+    __ALIGNED(4) CMD_PACKET_T    g_ReturnData;
+#endif
 
 void  int_read_callback(HID_DEV_T *hdev, uint16_t ep_addr, int status, uint8_t *rdata, uint32_t data_len)
 {
@@ -1671,9 +1675,18 @@ int32_t Process_USBHCommand(HID_DEV_T *hdev)
 
                     while (1) {}
                 }
+                else
+                {
+                    printf(".");
+                }
 
                 j += 32;
+
+                if ((j % 2048) == 0)
+                    printf("\n");
             } while ((u32FlashStartAddr + j) < u32FlashEndAddr);
+
+            printf("\n");
         }
 
         if (u32Item == 3)
@@ -1737,9 +1750,18 @@ int32_t Process_USBHCommand(HID_DEV_T *hdev)
 
                     while (1) {}
                 }
+                else
+                {
+                    printf(".");
+                }
 
                 j += 32;
+
+                if ((j % 2048) == 0)
+                    printf("\n");
             } while ((u32FlashStartAddr + j) < u32FlashEndAddr);
+
+            printf("\n");
         }
 
         if (u32Item == 90)

@@ -293,8 +293,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Enable GPIOA module clock */
     CLK_EnableModuleClock(GPIOA_MODULE);
@@ -308,6 +308,10 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
 
+    /* Enable HSOTG module clock */
+    CLK_EnableModuleClock(HSOTG0_MODULE);
+    /* Select HSOTG PHY Reference clock frequency which is from HXT*/
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
     /* Enable USBH module clock */
     CLK_EnableModuleClock(HSUSBH0_MODULE);
@@ -315,13 +319,10 @@ void SYS_Init(void)
     /* Enable HSUSBD module clock */
     CLK_EnableModuleClock(HSUSBD0_MODULE);
 
-    /* Enable HSOTG module clock */
-    CLK_EnableModuleClock(HSOTG0_MODULE);
-
     /* Enable UART module clock */
     SetDebugUartCLK();
 
-    /* Set OTG as USB Host role */
+    /* Set OTG as USB OTG role */
     SYS->USBPHY = (0x1ul << (SYS_USBPHY_HSOTGPHYEN_Pos)) | (0x3ul << (SYS_USBPHY_HSUSBROLE_Pos)) | (0x1ul << (SYS_USBPHY_OTGPHYEN_Pos)) | (0x3 << SYS_USBPHY_USBROLE_Pos);
     delay_us(20);
     SYS->USBPHY |= SYS_USBPHY_HSUSBACT_Msk;//Set HSUSB PHY Active.
@@ -429,7 +430,7 @@ NVT_ITCM void HSOTG_IRQHandler(void)
         HSOTG_DISABLE_INT(HSOTG_INTEN_HOSTIEN_Msk);
         HSOTG_CLR_INT_FLAG(HSOTG_INTSTS_HOSTIF_Msk);
 
-        if (HSOTG->STATUS & 0x80)
+        if ((HSOTG->STATUS & 0x80) | (HSOTG->STATUS & 0x10))
         {
             if (otg_role_change == 3)
                 otg_role_change = 4;
@@ -484,10 +485,8 @@ int32_t main(void)
     printf("|                              |\n");
     printf("+------------------------------+\n");
 
-    HSOTG_SET_VBUS_STS_POL(HSOTG_VBUS_ST_VALID_LOW);
     HSOTG_ENABLE_PHY();
     HSOTG_ENABLE_ID_DETECT();
-    HSOTG->PHYCTL |= 0x4;
     NVIC_EnableIRQ(HSOTG_IRQn);
     delay_us(1000);
 

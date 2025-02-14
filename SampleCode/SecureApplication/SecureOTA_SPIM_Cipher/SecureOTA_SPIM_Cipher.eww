@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workspace>
+    <project>
+        <path>$WS_DIR$\NuBL2\IAR\NuBL2.ewp</path>
+    </project>
+    <project>
+        <path>$WS_DIR$\NuBL32\IAR\NuBL32.ewp</path>
+    </project>
+    <project>
+        <path>$WS_DIR$\NuBL33\IAR\NuBL33.ewp</path>
+    </project>
+    <batchBuild>
+        <batchDefinition>
+            <name>all</name>
+            <member>
+                <project>NuBL2</project>
+                <configuration>NuBL2_DirectBoot</configuration>
+            </member>
+            <member>
+                <project>NuBL2</project>
+                <configuration>NuBL2_SecureBoot</configuration>
+            </member>
+            <member>
+                <project>NuBL32</project>
+                <configuration>NuBL32</configuration>
+            </member>
+            <member>
+                <project>NuBL32</project>
+                <configuration>NuBL32_v2</configuration>
+            </member>
+            <member>
+                <project>NuBL33</project>
+                <configuration>NuBL33</configuration>
+            </member>
+            <member>
+                <project>NuBL33</project>
+                <configuration>NuBL33_v2</configuration>
+            </member>
+        </batchDefinition>
+    </batchBuild>
+</workspace>

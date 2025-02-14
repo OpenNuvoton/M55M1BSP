@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "NuMicro.h"
 #include "targetdev.h"
+#include "isp_user.h"
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */

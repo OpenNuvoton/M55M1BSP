@@ -10,7 +10,7 @@ package(
 
 cc_library(
     name = "common",
-    srcs = [],
+    srcs = ["common.cc"],
     hdrs = [
         "common.h",
         "optimized/neon_check.h",
@@ -19,6 +19,7 @@ cc_library(
     deps = [
         ":cppmath",
         ":types",
+        "//tensorflow/lite/core:macros",
         "@gemmlowp//:fixedpoint",
     ],
 )
@@ -57,6 +58,7 @@ cc_library(
 
 cc_library(
     name = "reference",
+    srcs = ["tensor_ctypes.cc"],
     hdrs = [
         "portable_tensor.h",
         "tensor_ctypes.h",
@@ -65,12 +67,15 @@ cc_library(
     deps = [
         ":types",
         "//tensorflow/lite/c:common",
+        "//tensorflow/lite/core:macros",
     ],
 )
 
 cc_library(
     name = "reference_base",
-    srcs = [],
+    srcs = glob([
+        "reference/*.cc",
+    ]),
     hdrs = glob([
         "reference/*.h",
         "reference/integer_ops/*.h",
@@ -93,6 +98,7 @@ cc_library(
         ":tensor",
         ":types",
         "//tensorflow/lite/c:common",
+        "//tensorflow/lite/core:macros",
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels:op_macros",
         "@gemmlowp//:fixedpoint",
@@ -135,5 +141,29 @@ cc_library(
     copts = tflite_copts(),
     deps = [
         ":compatibility",
+    ],
+)
+
+cc_library(
+    name = "tensor_utils_no_eigen",
+    srcs = [
+        "portable_tensor_utils.cc",
+        "reference/portable_tensor_utils.cc",
+        "tensor_utils.cc",
+    ],
+    hdrs = [
+        "portable_tensor_utils.h",
+        "reference/portable_tensor_utils.h",
+        "reference/portable_tensor_utils_impl.h",
+    ],
+    copts = tflite_copts(),
+    deps = [
+        ":common",
+        ":compatibility",
+        ":cppmath",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/core:macros",
+        "//tensorflow/lite/kernels:op_macros",
+        "@gemmlowp",
     ],
 )

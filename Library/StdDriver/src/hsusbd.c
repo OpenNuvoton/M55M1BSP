@@ -103,8 +103,9 @@ int32_t HSUSBD_Open(S_HSUSBD_INFO_T *param, HSUSBD_CLASS_REQ pfnClassReq, HSUSBD
  */
 void HSUSBD_Start(void)
 {
-    HSUSBD->OPER = HSUSBD_OPER_HISPDEN_Msk;   /* high-speed */
+    HSUSBD->OPER = HSUSBD_OPER_HISPDEN_Msk;   /* High-speed */
     HSUSBD_CLR_SE0();
+    HSUSBD->OPER |= HSUSBD_OPER_HISHSEN_Msk;  /* Start high speed handshake*/
 }
 
 /**
@@ -816,6 +817,60 @@ void HSUSBD_SwReset(void)
 void HSUSBD_SetVendorRequest(HSUSBD_VENDOR_REQ pfnVendorReq)
 {
     g_hsusbd_pfnVendorRequest = pfnVendorReq;
+}
+
+
+/**
+ * @brief       Enable HSUSB PHY
+ *
+ * @param[in]   None
+ *
+ * @return      None
+ *
+ * @details     This function is used to enable the HSUSB (High-Speed USB) PHY (Physical Layer)
+ */
+void SYS_Enable_HSUSB_PHY(void)
+{
+    uint32_t i;
+
+    /* Set HSOTG PHY to the reset status */
+    SYS->USBPHY = (SYS->USBPHY & ~SYS_USBPHY_HSUSBACT_Msk) | SYS_USBPHY_HSOTGPHYEN_Msk;
+
+    /* HSOTG PHY at reset mode at least 10us before changing to active mode */
+    for (i = 0; i < 0x1000; i++)
+    {
+        __NOP();
+    }
+
+    /* Set HSOTG PHY to active status */
+    SYS->USBPHY |= SYS_USBPHY_HSUSBACT_Msk;
+}
+
+/**
+ * @brief       Enable HSUSBD PHY
+ *
+ * @param[in]   None
+ *
+ * @return      None
+ *
+ * @details     This function is used to enable the HSUSBD (High-Speed USB device) PHY (Physical Layer)
+ */
+int32_t HSUSBD_Enable_PHY(void)
+{
+    uint32_t u32TimeOutCnt;
+
+    /* Initial USB engine */
+    HSUSBD_ENABLE_PHY();
+
+    /* wait PHY clock ready */
+    u32TimeOutCnt = HSUSBD_TIMEOUT;
+
+    while (!(HSUSBD->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
+    {
+        if (--u32TimeOutCnt == 0) return HSUSBD_ERR_TIMEOUT;
+    }
+
+    return HSUSBD_OK;
 }
 
 /** @} end of group HSUSBD_EXPORTED_FUNCTIONS */

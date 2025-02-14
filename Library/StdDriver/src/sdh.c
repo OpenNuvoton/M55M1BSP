@@ -33,9 +33,17 @@
 
 static uint32_t _SDH0_ReferenceClock, _SDH1_ReferenceClock;
 
-__attribute__((aligned(4))) static uint8_t _SDH0_ucSDHCBuffer[SDH_BLOCK_SIZE] = {0};
-__attribute__((aligned(4))) static uint8_t _SDH1_ucSDHCBuffer[SDH_BLOCK_SIZE] = {0};
-
+#if (NVT_DCACHE_ON == 1)
+/* Declare the SDH dedicated DMA buffer as non-cacheable. */
+/* Note: Ensure that NVT_DCACHE_ON is enabled and the ARM MPU is initialized for the non-cacheable region in your project. */
+NVT_NONCACHEABLE static uint8_t _SDH0_ucSDHCBuffer[SDH_BLOCK_SIZE] __attribute__((aligned(4)))  = {0} ;
+NVT_NONCACHEABLE static uint8_t _SDH1_ucSDHCBuffer[SDH_BLOCK_SIZE] __attribute__((aligned(4)))  = {0} ;
+#define DEF_ALIGNED_VALUE      DCACHE_LINE_SIZE
+#else
+static uint8_t _SDH0_ucSDHCBuffer[SDH_BLOCK_SIZE] __attribute__((aligned(4)))  = {0} ;
+static uint8_t _SDH1_ucSDHCBuffer[SDH_BLOCK_SIZE] __attribute__((aligned(4)))  = {0} ;
+#define DEF_ALIGNED_VALUE      4
+#endif
 SDH_INFO_T SD0, SD1;
 
 //------------------------------------------------------------------------------
@@ -428,7 +436,7 @@ void SDH_Set_clock(SDH_T *sdh, uint32_t sd_clock_khz)
     /* transfer state, clock source use sys_init() */
     else
     {
-        CLK->SRCCTL = u32SD_PwrCtl;
+        //CLK->SRCCTL = u32SD_PwrCtl;
 
         if (sdh == SDH0)
         {
@@ -1373,17 +1381,7 @@ uint32_t SDH_Probe(SDH_T *sdh)
     return 0ul;
 }
 
-/**
- *  @brief  This function use to read data from SD card.
- *
- *  @param[in]     sdh           Select SDH0 or SDH1.
- *  @param[out]    pu8BufAddr    The buffer to receive the data from SD card.
- *  @param[in]     u32StartSec   The start read sector address.
- *  @param[in]     u32SecCount   The the read sector number of data
- *
- *  @return None
- */
-uint32_t SDH_Read(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32_t u32SecCount)
+static uint32_t _SDH_Read(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32_t u32SecCount)
 {
     uint32_t volatile bIsSendCmd = FALSE, buf;
     uint32_t volatile reg;
@@ -1556,22 +1554,75 @@ uint32_t SDH_Read(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32_
     return Successful;
 }
 
-
 /**
- *  @brief  This function use to write data to SD card.
+ *  @brief  This function use to read data from SD card.
  *
- *  @param[in]    sdh           Select SDH0 or SDH1.
- *  @param[in]    pu8BufAddr    The buffer to send the data to SD card.
- *  @param[in]    u32StartSec   The start write sector address.
- *  @param[in]    u32SecCount   The the write sector number of data.
+ *  @param[in]     sdh           Select SDH0 or SDH1.
+ *  @param[out]    pu8BufAddr    The buffer to receive the data from SD card.
+ *  @param[in]     u32StartSec   The start read sector address.
+ *  @param[in]     u32SecCount   The the read sector number of data
  *
  *  @return   \ref SDH_SELECT_ERROR : u32SecCount is zero.
  *            \ref SDH_NO_SD_CARD : SD card be removed.
  *            \ref SDH_CRC_ERROR : CRC error happen.
  *            \ref SDH_CRC7_ERROR : CRC7 error happen.
- *            \ref Successful : Write data to SD card success.
+ *            \ref Successful : Read data from SD card success.
  */
-uint32_t SDH_Write(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32_t u32SecCount)
+uint32_t SDH_Read(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32_t u32SecCount)
+{
+    uint32_t u32DrvRet;
+
+    /* Check for alignment to word or cache line boundaries. */
+    if ((uint32_t)pu8BufAddr % DEF_ALIGNED_VALUE)
+    {
+        uint8_t *pu8NCBuffer;
+        int i = 0;
+
+        if (sdh == SDH0)
+        {
+            pu8NCBuffer = _SDH0_ucSDHCBuffer;
+        }
+        else if (sdh == SDH1)
+        {
+            pu8NCBuffer = _SDH1_ucSDHCBuffer;
+        }
+        else
+        {
+            return Fail;
+        }
+
+        while (i < u32SecCount)
+        {
+            /* Read data from SD card to the temporary buffer buffer. */
+            u32DrvRet = _SDH_Read(sdh, pu8NCBuffer, u32StartSec + i, 1);
+
+            if (u32DrvRet != Successful)
+                return u32DrvRet;
+
+            /* Copy temporary buffer to user-data buffer after reading. */
+            memcpy(pu8BufAddr + (i * SDH_BLOCK_SIZE), pu8NCBuffer, SDH_BLOCK_SIZE);
+
+            i++;
+        }
+    }
+    else
+    {
+        /* Read data from SD card to the destination buffer. */
+        u32DrvRet = _SDH_Read(sdh, pu8BufAddr, u32StartSec, u32SecCount);
+
+        if (u32DrvRet != Successful)
+            return u32DrvRet;
+
+#if (NVT_DCACHE_ON == 1)
+        /* Invalidate data cache for data coherence */
+        SCB_InvalidateDCache_by_Addr((void *)pu8BufAddr, u32SecCount * SDH_BLOCK_SIZE);
+#endif
+    }
+
+    return Successful;
+}
+
+static uint32_t _SDH_Write(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32_t u32SecCount)
 {
     uint32_t volatile bIsSendCmd = FALSE;
     uint32_t volatile reg;
@@ -1731,6 +1782,75 @@ uint32_t SDH_Write(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32
 
     if (pSD->i32ErrCode != 0)
         return Fail;
+
+    return Successful;
+}
+
+/**
+ *  @brief  This function use to write data to SD card.
+ *
+ *  @param[in]    sdh           Select SDH0 or SDH1.
+ *  @param[in]    pu8BufAddr    The buffer to send the data to SD card.
+ *  @param[in]    u32StartSec   The start write sector address.
+ *  @param[in]    u32SecCount   The the write sector number of data.
+ *
+ *  @return   \ref SDH_SELECT_ERROR : u32SecCount is zero.
+ *            \ref SDH_NO_SD_CARD : SD card be removed.
+ *            \ref SDH_CRC_ERROR : CRC error happen.
+ *            \ref SDH_CRC7_ERROR : CRC7 error happen.
+ *            \ref Successful : Write data to SD card success.
+ */
+uint32_t SDH_Write(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32_t u32SecCount)
+{
+    uint32_t u32DrvRet;
+
+    /* Check for alignment to word or cache line boundaries. */
+    if ((uint32_t)pu8BufAddr % DEF_ALIGNED_VALUE)
+    {
+        int i = 0;
+        uint8_t *puNCBuffer;
+
+        if (sdh == SDH0)
+        {
+            puNCBuffer = _SDH0_ucSDHCBuffer;
+        }
+        else if (sdh == SDH1)
+        {
+            puNCBuffer = _SDH1_ucSDHCBuffer;
+        }
+        else
+        {
+            return Fail;
+        }
+
+        while (i < u32SecCount)
+        {
+            /* Copy user data to the temporary buffer to prepare for writing to the SD card. */
+            memcpy(puNCBuffer, pu8BufAddr + (i * SDH_BLOCK_SIZE), SDH_BLOCK_SIZE);
+
+            /* Flush the data cache for the temporary buffer before writing to the SD card.
+             * This ensures that all cached data is written to memory before the write operation. */
+            u32DrvRet = _SDH_Write(sdh, puNCBuffer, u32StartSec + i, 1);
+
+            if (u32DrvRet != Successful)
+                return u32DrvRet;
+
+            i++;
+        }
+    }
+    else
+    {
+#if (NVT_DCACHE_ON == 1)
+        /* Flush specific data cache address before writing to the SD card */
+        SCB_CleanDCache_by_Addr((void *)pu8BufAddr, u32SecCount * SDH_BLOCK_SIZE);
+#endif
+
+        /* Write data from the destination buffer to specific sector address. */
+        u32DrvRet = _SDH_Write(sdh, pu8BufAddr, u32StartSec, u32SecCount);
+
+        if (u32DrvRet != Successful)
+            return u32DrvRet;
+    }
 
     return Successful;
 }

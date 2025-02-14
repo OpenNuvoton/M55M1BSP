@@ -35,8 +35,8 @@ uint32_t g_u32CbwSize = 0;
 struct CBW g_sCBW;
 struct CSW g_sCSW;
 
-uint8_t gMassBuf[MASS_BUFFER_SIZE];
-uint8_t gStorageBuf[STORAGE_BUFFER_SIZE];
+uint8_t gMassBuf[MASS_BUFFER_SIZE] __attribute__((aligned(4)));
+uint8_t gStorageBuf[STORAGE_BUFFER_SIZE] __attribute__((aligned(4)));
 
 /*--------------------------------------------------------------------------*/
 uint8_t g_au8InquiryID[36] =
@@ -261,6 +261,7 @@ static uint8_t g_au8ModePage[24] =
 NVT_ITCM void HSUSBD_IRQHandler(void)
 {
     __IO uint32_t IrqStL, IrqSt;
+    uint32_t u32TimeOutCnt;
 
     IrqStL = HSUSBD->GINTSTS & HSUSBD->GINTEN;    /* get interrupt status */
 
@@ -338,11 +339,18 @@ NVT_ITCM void HSUSBD_IRQHandler(void)
             {
                 /* USB Plug In */
                 HSUSBD_ENABLE_USB();
+                u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
+                while (!(HSUSBD->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
+                    if (--u32TimeOutCnt == 0) break;
+
+                HSUSBD->OPER |= (HSUSBD_OPER_HISHSEN_Msk | HSUSBD_OPER_HISPDEN_Msk);
             }
             else
             {
                 /* USB Un-plug */
                 HSUSBD_DISABLE_USB();
+                HSUSBD->OPER &= ~HSUSBD_OPER_HISHSEN_Msk;
             }
 
             HSUSBD_CLR_BUS_INT_FLAG(HSUSBD_BUSINTSTS_VBUSDETIF_Msk);
@@ -1083,6 +1091,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     for (i = 0; i < u32Loop; i++)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
+#if (NVT_DCACHE_ON == 1)
+        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
     }
 
     u32Loop = u32Len % USBD_MAX_DMA_LEN;
@@ -1090,6 +1102,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     if (u32Loop)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, u32Loop);
+#if (NVT_DCACHE_ON == 1)
+        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), DCACHE_ALIGN_LINE_SIZE(u32Loop));
+#endif
     }
 }
 
@@ -1112,6 +1128,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
         {
             if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
             {
+#if (NVT_DCACHE_ON == 1)
+                /* Device to host, so need clean data to sram. */
+                SCB_CleanDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
                 MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
                 break;
             }
@@ -1134,6 +1154,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    /* Device to host, so need clean data to sram. */
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), (count * g_u32EpMaxPacketSize));
+#endif
                     MSC_ActiveDMA(addr, count * g_u32EpMaxPacketSize);
                     break;
                 }
@@ -1153,6 +1177,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    /* Device to host, so need clean data to sram. */
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), DCACHE_ALIGN_LINE_SIZE(count));
+#endif
                     MSC_ActiveDMA(addr, count);
                     break;
                 }
@@ -1184,6 +1212,11 @@ void MSC_ReceiveCBW(uint32_t u32Buf, uint32_t u32Len)
         if (!HSUSBD_IS_ATTACHED())
             break;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Buf), DCACHE_ALIGN_LINE_SIZE(32));
+#endif
 }
 
 void MSC_ProcessCmd(void)

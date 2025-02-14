@@ -477,6 +477,73 @@ static void RGB888toRGB565_SW(
 	}	
 }
 
+static void GRAYSCALEtoRGB565_SW(
+	image_t *src,
+	image_t *dst,
+	uint8_t *pu8SrcData,
+	uint8_t *pu8DstData,
+	uint16_t au16RepeatePos[],
+	uint16_t u32RepetePosCnt,
+	uint32_t u32YRepeateCnt
+)
+{
+	uint16_t *pu16DestData = (uint16_t *)pu8DstData;
+	uint8_t *pu8GrayData;
+
+	for(int i = 0; i < u32RepetePosCnt; i ++)
+	{
+		uint8_t u8Temp;
+		uint16_t u16RGB565Data;
+		u8Temp = au16RepeatePos[i];
+		pu8GrayData = pu8SrcData + (u8Temp * src->bpp);
+		u16RGB565Data = COLOR_GRAYSCALE_TO_RGB565(pu8GrayData[0]);
+	
+		for(int j = 0 ; j < u32YRepeateCnt; j ++)
+		{
+			*(pu16DestData + (j * dst->w))=  u16RGB565Data;
+		}
+
+		pu16DestData ++;
+	}
+}
+
+
+static void RGB565toGRAYSCALE_SW(
+	image_t *src,
+	image_t *dst,
+	uint8_t *pu8SrcData,
+	uint8_t *pu8DstData,
+	uint16_t au16RepeatePos[],
+	uint16_t u32RepetePosCnt,
+	uint32_t u32YRepeateCnt
+)
+{
+	uint16_t *pu16SrcData = (uint16_t *)pu8SrcData;
+	int i32YOffset = dst->w * dst->bpp;
+	int pos = 0;
+
+	for(int i = 0; i < u32RepetePosCnt; i ++)
+	{
+		uint8_t u8Temp;
+		uint16_t u16RGB565Data;
+		uint8_t u8Gray;
+
+		u8Temp = au16RepeatePos[i];
+		pu16SrcData = (uint16_t *)(pu8SrcData + (u8Temp * src->bpp));
+		u16RGB565Data = *pu16SrcData;
+		u8Gray = COLOR_RGB565_TO_GRAYSCALE(u16RGB565Data);
+	
+		pos = 0;
+		for(int j = 0 ; j < u32YRepeateCnt; j ++)
+		{
+			pu8DstData[pos] = u8Gray;
+			pos += i32YOffset;
+		}
+
+		pu8DstData += 1;
+	}
+}
+
 static void RGB565toRGB888_SW(
 	image_t *src,
 	image_t *dst,
@@ -516,7 +583,89 @@ static void RGB565toRGB888_SW(
 	}	
 }
 
+static void RGB565toYUYV_SW(
+	image_t *src,
+	image_t *dst,
+	uint8_t *pu8SrcData,
+	uint8_t *pu8DstData,
+	uint16_t au16RepeatePos[],
+	uint16_t u32RepetePosCnt,
+	uint32_t u32YRepeateCnt
+)
+{
+	uint16_t *pu16SrcData = (uint16_t *)pu8SrcData;
 
+	int32_t u8Y;
+	int32_t u8U;
+	int32_t u8V;
+	int32_t u8UV;
+
+
+	for(int i = 0; i < u32RepetePosCnt; i ++)
+	{
+		uint8_t u8Temp;
+		uint16_t u16RGB565Data;
+
+		u8Temp = au16RepeatePos[i];
+		pu16SrcData = (uint16_t *)(pu8SrcData + (u8Temp * src->bpp));
+		u16RGB565Data = *pu16SrcData;
+
+		int R = COLOR_RGB565_TO_R8(u16RGB565Data);
+		int G = COLOR_RGB565_TO_G8(u16RGB565Data);
+		int B = COLOR_RGB565_TO_B8(u16RGB565Data);
+
+
+		u8Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
+
+		if(i & 0x1L)
+			u8UV = u8V;
+		else
+		{
+			u8U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
+			u8V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
+			
+			u8UV = u8U;
+		}
+		
+		for(int j = 0 ; j < u32YRepeateCnt; j ++)
+		{
+			int pos = j * dst->w * dst->bpp;
+			pu8DstData[pos] = u8Y;
+			pu8DstData[pos + 1] = u8UV;
+		}
+
+		pu8DstData += 2;
+	}
+}
+
+static void RGB565toRGB565_SW(
+	image_t *src,
+	image_t *dst,
+	uint8_t *pu8SrcData,
+	uint8_t *pu8DstData,
+	uint16_t au16RepeatePos[],
+	uint16_t u32RepetePosCnt,
+	uint32_t u32YRepeateCnt
+)
+{
+	uint16_t *pu16SrcData = (uint16_t *)pu8SrcData;;
+	uint16_t *pu16DestData = (uint16_t *)pu8DstData;
+	uint16_t u16RGB565;
+	
+	for(int i = 0; i < u32RepetePosCnt; i ++)
+	{
+		uint8_t u8Temp;
+		u8Temp = au16RepeatePos[i];
+		u16RGB565 = pu16SrcData[u8Temp];
+
+		for(int j = 0 ; j < u32YRepeateCnt; j ++)
+		{
+			int pos = j * dst->w;
+			pu16DestData[pos] = u16RGB565;
+		}
+		pu16DestData ++;
+	}
+}
 
 static void RGB888toRGB888_SW(
 	image_t *src,
@@ -697,6 +846,50 @@ void imlib_nvt_scale(image_t *src, image_t *dst, rectangle_t *roi)
 							u32RepeatCntY);						
 						
 					}
+					else if((src->pixfmt == PIXFORMAT_RGB565) && (dst->pixfmt == PIXFORMAT_GRAYSCALE))
+					{
+						RGB565toGRAYSCALE_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							PIXELS_LOOP,
+							u32RepeatCntY);						
+					}
+					else if((src->pixfmt == PIXFORMAT_GRAYSCALE) && (dst->pixfmt == PIXFORMAT_RGB565))
+					{
+						GRAYSCALEtoRGB565_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							PIXELS_LOOP,
+							u32RepeatCntY);						
+					}
+					else if((src->pixfmt == PIXFORMAT_RGB565) && (dst->pixfmt == PIXFORMAT_YUV422))
+					{
+						RGB565toYUYV_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							PIXELS_LOOP,
+							u32RepeatCntY);
+					}
+					else if((src->pixfmt == PIXFORMAT_RGB565) && (dst->pixfmt == PIXFORMAT_RGB565))
+					{
+						RGB565toRGB565_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							PIXELS_LOOP,
+							u32RepeatCntY);
+					}
 					else
 					{
 						//scaling only
@@ -747,12 +940,228 @@ void imlib_nvt_scale(image_t *src, image_t *dst, rectangle_t *roi)
 							u16RepeatIndex,
 							u32RepeatCntY);						
 			}
-
+			else if((src->pixfmt == PIXFORMAT_RGB565) && (dst->pixfmt == PIXFORMAT_GRAYSCALE))
+			{
+				RGB565toGRAYSCALE_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							u16RepeatIndex,
+							u32RepeatCntY);
+			}
+			else if((src->pixfmt == PIXFORMAT_GRAYSCALE) && (dst->pixfmt == PIXFORMAT_RGB565))
+			{
+				GRAYSCALEtoRGB565_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							u16RepeatIndex,
+							u32RepeatCntY);
+			}
+			else if((src->pixfmt == PIXFORMAT_RGB565) && (dst->pixfmt == PIXFORMAT_YUV422))
+			{
+				RGB565toYUYV_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							u16RepeatIndex,
+							u32RepeatCntY);
+			}
+			else if((src->pixfmt == PIXFORMAT_RGB565) && (dst->pixfmt == PIXFORMAT_RGB565))
+			{
+				RGB565toRGB565_SW(
+							src,
+							dst,
+							pu8CurSrcRowPos + (u16RepeatPosX * src->bpp),
+							pu8CurDstRowPos + (u16DestWinXPos * dst->bpp),
+							au16RepeatPosOffset,
+							u16RepeatIndex,
+							u32RepeatCntY);
+			}
 			u16RepeatIndex = 0;
 		}
 		
 		u16DestWinYPos += u32RepeatCntY;
 		u32RepeatCntY = 0;
+	}
+}
+
+void imlib_nvt_vflip(image_t *src, image_t *dst)
+{
+	int32_t i32Loops = src->h / 2;
+	int32_t i32Line0;
+	int32_t i32Col;
+	int32_t i32Line1 = src->h - 1;
+	uint32_t *pu32Line0SrcData;
+	uint32_t *pu32Line1SrcData;
+	uint32_t *pu32Line0DstData;
+	uint32_t *pu32Line1DstData;
+	uint32_t u32Temp;
+	uint32_t u32LineBytes = src->w * src->bpp;
+	
+	for( i32Line0 = 0; i32Line0 < i32Loops; i32Line0 ++)
+	{
+		pu32Line0SrcData = (uint32_t *)(src->data + (i32Line0 * u32LineBytes));
+		pu32Line0DstData = (uint32_t *)(dst->data + (i32Line0 * u32LineBytes));
+		pu32Line1SrcData = (uint32_t *)(src->data + (i32Line1 * u32LineBytes));
+		pu32Line1DstData = (uint32_t *)(dst->data + (i32Line1 * u32LineBytes));
+
+		for(i32Col = 0; i32Col < u32LineBytes; i32Col += 4)
+		{
+			u32Temp = *pu32Line1SrcData;
+			*pu32Line1DstData = *pu32Line0SrcData;
+			*pu32Line0DstData = u32Temp;
+			pu32Line0SrcData++;
+			pu32Line0DstData++;
+			pu32Line1SrcData++;
+			pu32Line1DstData++;
+		}
+		
+		i32Line1 --;
+	}
+}
+
+void imlib_nvt_RGB_blend(image_t *src0, image_t *src1, image_t *dst, float alpha)
+{
+	if((src0->pixfmt != PIXFORMAT_RGB565) &&(src0->pixfmt != PIXFORMAT_RGB888))
+		return;
+
+	if((src1->pixfmt != PIXFORMAT_RGB565) &&(src1->pixfmt != PIXFORMAT_RGB888))
+		return;
+
+	if((dst->pixfmt != PIXFORMAT_RGB565) &&(dst->pixfmt != PIXFORMAT_RGB888))
+		return;
+
+	if((src0->w != src1->w) || (src0->h != src1->h))
+		return;
+	
+	if((src0->w != dst->w) || (src0->h != dst->h))
+		return;
+	
+	int x, y;
+	uint8_t* pu8RGB888Src0 = NULL;
+	uint16_t* pu16RGB565Src0 = NULL;
+	uint8_t* pu8RGB888Src1 = NULL;
+	uint16_t* pu16RGB565Src1 = NULL;
+	
+	uint8_t* pu8RGB888Dst = NULL;
+	uint16_t* pu16RGB565Dst = NULL;
+	
+	uint32_t u32OffsetSrc0;
+	uint32_t u32OffsetSrc1;
+	uint32_t u32OffsetDst;
+	
+	if(src0->pixfmt == PIXFORMAT_RGB565)
+	{
+		pu16RGB565Src0 = (uint16_t*)(src0->data);
+		u32OffsetSrc0 = src0->w;
+	}
+	else
+	{
+		pu8RGB888Src0 = (uint8_t*)(src0->data);
+		u32OffsetSrc0 = src0->w * src0->bpp;
+	}
+
+	if(src1->pixfmt == PIXFORMAT_RGB565)
+	{
+		pu16RGB565Src1 = (uint16_t*)(src1->data);
+		u32OffsetSrc1 = src1->w;
+	}
+	else
+	{
+		pu8RGB888Src1 = (uint8_t*)(src1->data);
+		u32OffsetSrc1 = src1->w * src1->bpp;
+	}
+	
+	if(dst->pixfmt == PIXFORMAT_RGB565)
+	{
+		pu16RGB565Dst = (uint16_t*)(dst->data);
+		u32OffsetDst = dst->w;
+	}
+	else
+	{
+		pu8RGB888Dst = (uint8_t*)(dst->data);
+		u32OffsetDst = dst->w * dst->bpp;
+	}
+	
+	for( y = 0; y < src0->h; y ++)
+	{		
+		for( x = 0; x < src0->w; x ++)
+		{
+			uint16_t u16RGB;
+			uint8_t u8R0;
+			uint8_t u8G0;
+			uint8_t u8B0;
+
+			uint8_t u8R1;
+			uint8_t u8G1;
+			uint8_t u8B1;
+			
+			if(pu16RGB565Src0)
+			{
+				u16RGB = pu16RGB565Src0[x];
+				u8R0 = COLOR_RGB565_TO_R8(u16RGB);
+				u8G0 = COLOR_RGB565_TO_G8(u16RGB);
+				u8B0 = COLOR_RGB565_TO_B8(u16RGB);				
+			}
+			else
+			{
+				u8R0 = pu8RGB888Src0[x * src0->bpp];
+				u8G0 = pu8RGB888Src0[x * src0->bpp + 1];
+				u8B0 = pu8RGB888Src0[x * src0->bpp + 2];				
+			}
+
+			if(pu16RGB565Src1)
+			{
+				u16RGB = pu16RGB565Src1[x];
+				u8R1 = COLOR_RGB565_TO_R8(u16RGB);
+				u8G1 = COLOR_RGB565_TO_G8(u16RGB);
+				u8B1 = COLOR_RGB565_TO_B8(u16RGB);				
+			}
+			else
+			{
+				u8R1 = pu8RGB888Src1[x * src1->bpp];
+				u8G1 = pu8RGB888Src1[x * src1->bpp + 1];
+				u8B1 = pu8RGB888Src1[x * src1->bpp + 2];				
+			}
+
+
+			uint8_t rBlended = u8R0 * alpha + u8R1 * (1.0 - alpha);
+			uint8_t gBlended = u8G0 * alpha + u8G1 * (1.0 - alpha);
+			uint8_t bBlended = u8B0 * alpha + u8B1 * (1.0 - alpha);
+
+			if(pu16RGB565Dst)
+			{
+				pu16RGB565Dst[x] = COLOR_R8_G8_B8_TO_RGB565(rBlended, gBlended, bBlended);
+			}
+			else
+			{
+				pu8RGB888Dst[x * dst->bpp] = rBlended;
+				pu8RGB888Dst[x * dst->bpp + 1] = gBlended;
+				pu8RGB888Dst[x * dst->bpp + 2] = bBlended;				
+			}			
+		}
+		
+		if(pu16RGB565Src0)
+			pu16RGB565Src0 += u32OffsetSrc0;
+		else
+			pu8RGB888Src0 += u32OffsetSrc0;
+
+		if(pu16RGB565Src1)
+			pu16RGB565Src1 += u32OffsetSrc1;
+		else
+			pu8RGB888Src1 += u32OffsetSrc1;
+
+		if(pu16RGB565Dst)
+			pu16RGB565Dst += u32OffsetDst;
+		else
+			pu8RGB888Dst += u32OffsetDst;
 	}
 }
 

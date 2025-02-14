@@ -32,13 +32,9 @@ static uint32_t g_AES_CTL[4];
 static char  hex_char_tbl[] = "0123456789abcdef";
 static void dump_ecc_reg(char *str, uint32_t volatile regs[], int32_t count);
 static char get_Nth_nibble_char(uint32_t val32, uint32_t idx);
-void Hex2Reg(char input[], uint32_t volatile reg[]);
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
-void Hex2RegEx(char input[], uint32_t volatile reg[], int shift);
 static char ch2hex(char ch);
 static int  get_nibble_value(char c);
 void  dump_buff_hex(uint8_t *pucBuff, int nBytes);
-volatile int  g_CHAPOLY_done = 0;
 /** @endcond HIDDEN_SYMBOLS */
 
 
@@ -246,15 +242,15 @@ void AES_SetKey_KS(CRYPTO_T *crypto, KS_MEM_Type mem, int32_t i32KeyIdx)
 void AES_SetInitVect(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t au32IV[])
 {
     uint32_t  i;
-    void   *key_reg_addr;
-    uint32_t *u32p_key_reg;
-    key_reg_addr = (void *)((uint32_t)&crypto->AES_IV[0] + (u32Channel * 0x3CUL));
-    u32p_key_reg = (uint32_t *)key_reg_addr;
+    void   *iv_reg_addr;
+    uint32_t *u32p_iv_reg;
+    iv_reg_addr = (void *)((uint32_t)&crypto->AES_IV[0] + (u32Channel * 0x3CUL));
+    u32p_iv_reg = (uint32_t *)iv_reg_addr;
 
     for (i = 0U; i < 4U; i++)
     {
-        outpw(u32p_key_reg, au32IV[i]);
-        u32p_key_reg++;
+        outpw(u32p_iv_reg, au32IV[i]);
+        u32p_iv_reg++;
     }
 }
 
@@ -1128,15 +1124,12 @@ void ECC_Complete(CRYPTO_T *crypto)
     {
         g_ECC_done = 1UL;
         crypto->INTSTS = CRYPTO_INTSTS_ECCIF_Msk;
-        printf("ECC done IRQ.\n");
     }
 
     if (crypto->INTSTS & CRYPTO_INTSTS_ECCEIF_Msk)
     {
         g_ECCERR_done = 1UL;
         crypto->INTSTS = CRYPTO_INTSTS_ECCEIF_Msk;
-        printf("ECCERRIF is set!!\n");
-        printf("ECC_STS = 0x%x\n", crypto->ECC_STS);
 
         while (1);
     }
@@ -3482,209 +3475,6 @@ int32_t RSA_SetDMATransfer_KS(CRYPTO_T *crypto, char *Src, char *n, uint32_t u32
     }
 
     return 0;
-}
-
-/**
-  * @brief  ECC interrupt service routine. User application
-  *         must invoke this function in his CRYPTO_IRQHandler()
-  *         to let Crypto driver know ECC processing was done.
-  * @param[in]  crypto         The pointer of CRYPTO module
-  * @return   none
-  */
-void CHAPOLY_Complete(CRYPTO_T *crypto)
-{
-    if (CHAPOLY_GET_INT_FLAG(crypto))
-    {
-        g_CHAPOLY_done = 1;
-
-        if (crypto->INTSTS & CRYPTO_INTSTS_CHAPOLYEIF_Msk)
-        {
-            printf("CHAPOLY INTSTS error flag set!!\n");
-        }
-
-        printf("CHAPOLY INTSTS = 0x%08x !!\n", CRYPTO->CHAPOLY_STS);
-        CHAPOLY_CLR_INT_FLAG(crypto);
-    }
-}
-
-
-/**
-  * @brief  Start ChaCha Key anf Nonce
-  * @param[in]  crypto          The pointer of CRYPTO module
-  * @param[in]  key             The pointer of key array
-  * @param[in]  nonce           The pointer of nonce array
-  * @param[in]  counter         The block counter
-  * @return None
-  */
-void CHA_SetKeyandNonce(CRYPTO_T *crypto,  unsigned char *key, unsigned char *nonce, int counter)
-{
-    int i;
-
-    for (i = 0; i < 8; i++)
-    {
-        crypto->CHAPOLY_KEY[i] = *(uint32_t *)(&key[i * 4]);
-
-    }
-
-    for (i = 0; i < 3; i++)
-    {
-        crypto->CHAPOLY_NONCE[i] = *(uint32_t *)(&nonce[i * 4]);
-
-    }
-
-    crypto->CHAPOLY_BLOCKCNT = counter;
-}
-
-
-/**
-  * @brief  Configure ChaCha DMA source, destination, and source length
-  * @param[in]  crypto               The pointer of CRYPTO module
-  * @param[in]  u8pInputData         The pointer of DMA source address
-  * @param[in]  u8pOutputData        The pointer of DMA destination address
-  * @param[in]  src_len              The length of input data
-  * @return None
-  */
-void CHA_SetDMATransfer(CRYPTO_T *crypto, uint8_t *u8pInputData,  uint8_t *u8pOutputData, int src_len)
-{
-    crypto->CHAPOLY_SADDR = (uint32_t)u8pInputData;
-    crypto->CHAPOLY_DADDR = (uint32_t)u8pOutputData;
-    crypto->CHAPOLY_CNT = src_len;
-
-    memset(&u8pInputData[src_len], 0, 4);  // for non-4-bytes-aligned do_swap_to
-
-}
-
-
-/**
-  * @brief  Start ChaCha encrypt/decrypt
-  * @param[in]  crypto            The pointer of CRYPTO module
-  * @param[in]  is_encrypt        The mode of ChaCha operation, only works for AEAD
-  * @return None
-  */
-void CHA_Start(CRYPTO_T *crypto, int is_encrypt)
-{
-    uint32_t  ctrl = 0;
-    g_CHAPOLY_done = 0;
-
-    __DSB();
-
-    if (is_encrypt)
-    {
-        printf("Is encrypt.\n");
-        ctrl |= CRYPTO_CHAPOLY_CTL_ENCRYPTO_Msk;
-    }
-    else
-    {
-        printf(" Is decrypt.\n");
-    }
-
-    crypto->CHAPOLY_CTL = ctrl | (CHAPOLY_MODE_CHACHA20 << CRYPTO_CHAPOLY_CTL_OPMODE_Pos);
-
-    __DSB();
-    crypto->CHAPOLY_CTL |=  CRYPTO_CHAPOLY_CTL_DMAEN_Msk | CRYPTO_CHAPOLY_CTL_START_Msk;
-
-#ifdef ENABLE_INTERRUPT
-
-    while (!g_CHAPOLY_done);
-
-#else
-
-    while (crypto->CHAPOLY_STS & CRYPTO_CHAPOLY_STS_BUSY_Msk);
-
-#endif
-}
-
-/**
-  * @brief  Set Poly1305 encrypt/decrypt
-  * @param[in]  crypto    The pointer of CRYPTO module
-  * @param[in]  key       The pointer of the key
-  * @return None
-  */
-void POLY1305_SetKeyandClearNonce(CRYPTO_T *crypto,  unsigned char *key)
-{
-    int  i;
-
-    memcpy((void *)(crypto->CHAPOLY_KEY), key, 32);
-
-    for (i = 0; i < 8; i++)
-    {
-        crypto->CHAPOLY_KEY[i] = *(uint32_t *)(&key[i * 4]);
-    }
-
-    for (i = 0; i < 3; i++)
-        crypto->CHAPOLY_NONCE[i] = 0;
-}
-
-/**
-  * @brief  Set Poly1305 DMATransfer
-  * @param[in]  crypto          The pointer of CRYPTO module
-  * @param[in]  u8pInputData    The pointer of input data
-  * @param[in]  u8pOutputData   The pointer of output data
-  * @param[in]  src_len         The input data length
-  * @return None
-  */
-void POLY1305_SetDMATransfer(CRYPTO_T *crypto, uint8_t *u8pInputData,  uint8_t *u8pOutputData, int src_len)
-{
-    crypto->CHAPOLY_BLOCKCNT = 0;
-    crypto->CHAPOLY_SADDR = (uint32_t)u8pInputData;
-    crypto->CHAPOLY_DADDR = (uint32_t)u8pOutputData;
-    crypto->CHAPOLY_CNT = src_len;
-}
-
-/**
-  * @brief  Start Poly1305
-  * @param[in]  crypto          The pointer of CRYPTO module
-  * @return None
-  */
-void POLY1305_Start(CRYPTO_T *crypto)
-{
-    uint32_t  ctrl = 0;
-    g_CHAPOLY_done = 0;
-
-    __DSB();
-
-    ctrl |= (CHAPOLY_MODE_POLY1305 << CRYPTO_CHAPOLY_CTL_OPMODE_Pos);
-    // ctrl |= CRPT_CHAPOLY_CTL_INSWAP_Msk | CRPT_CHAPOLY_CTL_OUTSWAP_Msk;
-
-    crypto->CHAPOLY_CTL = ctrl | CRYPTO_CHAPOLY_CTL_DMAEN_Msk | CRYPTO_CHAPOLY_CTL_DMALAST_Msk | CRYPTO_CHAPOLY_CTL_START_Msk;
-
-#ifdef ENABLE_INTERRUPT
-
-    while (!g_CHAPOLY_done);
-
-#else
-
-    while (CRYPTO->CHAPOLY_STS & CRYPTO_CHAPOLY_STS_BUSY_Msk);
-
-#endif
-}
-
-/**
-  * @brief  Start Chachapoly AEAD
-  * @param[in]  crypto       The pointer of CRYPTO module
-  * @return None
-  */
-void CHAPOLY_Start(CRYPTO_T *crypto)
-{
-    uint32_t  ctrl = 0;
-    g_CHAPOLY_done = 0;
-
-    __DSB();
-
-    ctrl |= (CHAPOLY_MODE_AEAD << CRYPTO_CHAPOLY_CTL_OPMODE_Pos);
-    // ctrl |= CRPT_CHAPOLY_CTL_INSWAP_Msk | CRPT_CHAPOLY_CTL_OUTSWAP_Msk;
-
-    crypto->CHAPOLY_CTL = ctrl | CRYPTO_CHAPOLY_CTL_DMAEN_Msk | CRYPTO_CHAPOLY_CTL_DMALAST_Msk | CRYPTO_CHAPOLY_CTL_START_Msk;
-
-#ifdef ENABLE_INTERRUPT
-
-    while (!g_CHAPOLY_done);
-
-#else
-
-    while (CRYPTO->CHAPOLY_STS & CRYPTO_CHAPOLY_STS_BUSY_Msk);
-
-#endif
 }
 
 /** @} end of group CRYPTO_EXPORTED_FUNCTIONS */

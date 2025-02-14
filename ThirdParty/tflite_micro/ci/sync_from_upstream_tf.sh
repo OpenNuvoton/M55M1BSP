@@ -31,20 +31,38 @@ rm -rf /tmp/tensorflow
 
 git clone https://github.com/tensorflow/tensorflow.git --depth=1 /tmp/tensorflow
 
-# As part of the import from upstream TF, we generate the Python bindings for
-# the TfLite flatbuffer schema.
-cd /tmp/tensorflow
-bazel build tensorflow/lite/python:schema_py
-/bin/cp bazel-bin/tensorflow/lite/python/schema_py_generated.py tensorflow/lite/python
-cd -
-
 SHARED_TFL_CODE=$(<ci/tflite_files.txt)
+
+# Delete all the shared TFL/TFLM code prior to copying from upstream to ensure
+# no stale files are left in the tree.
+rm -f $(find tensorflow/lite/ -type d \( -path tensorflow/lite/experimental -o -path tensorflow/lite/micro \) -prune -false -o -name "*.cc" -o -name "*.c" -o -name "*.h" -o -name "*.py" -o -name "*.fbs")
 
 for filepath in ${SHARED_TFL_CODE}
 do
   mkdir -p $(dirname ${filepath})
   /bin/cp /tmp/tensorflow/${filepath} ${filepath}
 done
+
+# https://github.com/tensorflow/tflite-micro/pull/8
+git checkout tensorflow/lite/kernels/internal/optimized/neon_check.h
+# http://b/149862813
+git checkout tensorflow/lite/kernels/internal/runtime_shape.h
+git checkout tensorflow/lite/kernels/internal/runtime_shape.cc
+# http://b/187728891
+git checkout tensorflow/lite/kernels/op_macros.h
+# http://b/242077843
+git checkout tensorflow/lite/kernels/internal/tensor_utils.cc
+
+# We are still generating and checking in the C++ and Python bindings for the TfLite
+# flatbuffer schema in the nightly sync to keep it working with the Makefiles.
+bazel build tensorflow/lite/python:schema_py
+/bin/cp bazel-bin/tensorflow/lite/python/schema_py_generated.py tensorflow/lite/python/schema_py_generated.py
+
+bazel build tensorflow/lite/schema:schema_fbs_srcs
+/bin/cp ./bazel-bin/tensorflow/lite/schema/schema_generated.h tensorflow/lite/schema/schema_generated.h
+
+# Must clean the bazel directories out after building as we don't check these in.
+bazel clean
 
 # The shared TFL/TFLM python code uses a different bazel workspace in the two
 # repositories (TF and tflite-micro) which needs the import statements to be
@@ -55,4 +73,4 @@ sed -i 's/from tensorflow\.lite/from tflite_micro\.tensorflow\.lite/' ${PY_FILES
 # Since the TFLM code was deleted from the tensorflow repository, the
 # microfrontend is no longer sync'd from upstream and instead maintaned as a
 # fork.
-git checkout tensorflow/lite/experimental/microfrontend/lib/
+git checkout tensorflow/lite/experimental/

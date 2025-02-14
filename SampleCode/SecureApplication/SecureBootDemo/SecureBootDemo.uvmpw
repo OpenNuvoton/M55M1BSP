@@ -5,7 +5,7 @@
 
   <Header>### uVision Project, (C) Keil Software</Header>
 
-  <WorkspaceName>WorkSpace</WorkspaceName>
+  <WorkspaceName>SecureBootDemo.uvmpw</WorkspaceName>
 
   <project>
     <PathAndName>.\NuBL2\Keil\NuBL2.uvprojx</PathAndName>

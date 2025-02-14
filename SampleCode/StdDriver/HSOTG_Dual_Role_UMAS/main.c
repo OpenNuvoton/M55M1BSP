@@ -385,9 +385,9 @@ void get_line(char *buff, int len)
 /* the system does not support an RTC.                     */
 /* This function is not required in read-only cfg.         */
 
-unsigned long get_fattime(void)
+DWORD get_fattime(void)
 {
-    unsigned long tmr;
+    DWORD tmr;
 
     tmr = 0x00000;
 
@@ -411,8 +411,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Enable GPIOA module clock */
     CLK_EnableModuleClock(GPIOA_MODULE);
@@ -426,15 +426,16 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
 
+    /* Enable HSOTG module clock */
+    CLK_EnableModuleClock(HSOTG0_MODULE);
+    /* Select HSOTG PHY Reference clock frequency which is from HXT*/
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
     /* Enable HSUSBH module clock */
     CLK_EnableModuleClock(HSUSBH0_MODULE);
 
     /* Enable HSUSBD module clock */
     CLK_EnableModuleClock(HSUSBD0_MODULE);
-
-    /* Enable HSOTG module clock */
-    CLK_EnableModuleClock(HSOTG0_MODULE);
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -719,7 +720,7 @@ void USBH_Process()
                         put_rc(res);
 
                         if (res == FR_OK)
-                            printf("fptr=%d(0x%lX)\n", (INT)file1.fptr, file1.fptr);
+                            printf("fptr=%d(0x%X)\n", (INT)file1.fptr, file1.fptr);
 
                         break;
 

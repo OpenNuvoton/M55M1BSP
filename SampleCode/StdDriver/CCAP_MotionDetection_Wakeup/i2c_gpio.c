@@ -148,12 +148,11 @@ int SWI2C_WriteByte(
         _SWI2C_Delay(2);
     }
 
-    // No Ack
+    // No Ack needed
     if (u8AckType == DrvI2C_Ack_No)
         return 0;
 
-    // Have a Ack
-    // Wait Device Ack bit
+    // Need Ack => Wait Device Ack bit
     _SWI2C_SDA_SETLOW(s_sChannel.u32SDAPortIndex, s_sChannel.u32SDAPinMask);
     _SWI2C_SDA_SETIN(s_sChannel.u32SDAPortIndex, s_sChannel.u32SDAPinMask);
     _SWI2C_Delay(3);
@@ -192,12 +191,11 @@ uint32_t SWI2C_ReadByte(
         _SWI2C_Delay(2);
     }
 
-    // No write Ack
+    // No Ack needed
     if (u8AckType == DrvI2C_Ack_No)
         return u32Data;
 
-    // Have a Ack
-    // write a ACK bit to slave device
+    // Need Ack => Write ACK bit to slave
     _SWI2C_SDA_SETOUT(s_sChannel.u32SDAPortIndex, s_sChannel.u32SDAPinMask);
     _SWI2C_SDA_SETHIGH(s_sChannel.u32SDAPortIndex, s_sChannel.u32SDAPinMask);
     _SWI2C_Delay(3);
@@ -238,12 +236,11 @@ uint8_t SWI2C_Slave_ReadByte(
         }
     }
 
-    //  No Ack
+    //  No Ack needed
     if (u8AckType == DrvI2C_Ack_No)
         return u8Data;
 
-    // Assert ACK bit
-
+    // Need Ack => Write ACK bit to slave device
     _SWI2C_Delay(2);
     _SWI2C_SDA_SETOUT(s_sChannel.u32SDAPortIndex, s_sChannel.u32SDAPinMask);
     _SWI2C_SDA_SETHIGH(s_sChannel.u32SDAPortIndex, s_sChannel.u32SDAPinMask);
@@ -319,7 +316,6 @@ uint8_t SWI2C_Read_8bitSlaveAddr_16bitReg_8bitData(uint8_t uAddr, uint16_t uRegA
     SWI2C_WriteByte(uAddr, DrvI2C_Ack_Have, 8);      // Write ID address to sensor
     SWI2C_WriteByte(uRegAddr >> 8, DrvI2C_Ack_Have, 8);  // Write register addressH to sensor
     SWI2C_WriteByte(uRegAddr & 0xFF, DrvI2C_Ack_Have, 8); // Write register addressL to sensor
-    //DrvI2C_SendStop();
 
     // 2-Phase(ID-address, data(8bits)) read transmission
     SWI2C_SendStart();

@@ -104,11 +104,24 @@ label:
     goto label;  /* Endless loop */
 }
 #else
-void __exit(int x)
+void __exit(int return_code)
 {
-    while (1)
+    char exit_code_buffer[32] = {0};
+    const char *p             = exit_code_buffer;
+
+    // Print out the exit code on the uart so any reader know how we exit.
+    snprintf(exit_code_buffer,
+             sizeof(exit_code_buffer),
+             "Exit code: %d.\n"      // Let the readers know how we exit
+             "\04\n",                // end-of-transmission
+             return_code);
+
+    while (*p != '\0')
     {
+        SendChar(*p++);
     }
+
+    while (1) {}
 }
 #endif
 

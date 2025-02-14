@@ -1,0 +1,13 @@
+"C:\Program Files\IAR Systems\Embedded Workbench 9.2\arm\bin\armPROC.dll" 
+
+"C:\Program Files\IAR Systems\Embedded Workbench 9.2\arm\..\..\..\Nuvoton Tools\Nu-Link_IAR\Nu-Link_IAR.dll" 
+
+"C:\Users\CCWang20\Desktop\Workspaces\Git\TC8263_M55M1\bsp\SampleCode\StdDriver\SPIM_DMM_RUN_CODE\IAR\Release\Exe\SPIM_DMM_RUN_CODE.out" 
+
+--plugin="C:\Program Files\IAR Systems\Embedded Workbench 9.2\arm\bin\armbat.dll" 
+
+--flash_loader="C:\Program Files\IAR Systems\Embedded Workbench 9.2\arm/config/flashloader/Nuvoton/M55M1_APROM_2M.board" 
+
+
+
+

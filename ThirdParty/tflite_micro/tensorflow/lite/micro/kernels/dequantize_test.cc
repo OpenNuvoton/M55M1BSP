@@ -32,7 +32,7 @@ void ValidateDequantizeGoldens(TfLiteTensor* tensors, int tensors_size,
   int outputs_array_data[] = {1, 1};
   TfLiteIntArray* outputs_array = IntArrayFromInts(outputs_array_data);
 
-  const TfLiteRegistration registration = tflite::Register_DEQUANTIZE();
+  const TFLMRegistration registration = tflite::Register_DEQUANTIZE();
   micro::KernelRunner runner(registration, tensors, tensors_size, inputs_array,
                              outputs_array,
                              /*builtin_data=*/nullptr);
@@ -94,6 +94,19 @@ TF_LITE_MICRO_TEST(DequantizeOpTestInt16) {
   const float scale = 0.5;
   const int zero_point = -1;
   int16_t input_quantized[length];
+  float output[length];
+  tflite::testing::TestDequantizeToFloat(dims, values, input_quantized, scale,
+                                         zero_point, dims, values, output);
+}
+
+TF_LITE_MICRO_TEST(DequantizeOpTestUint8) {
+  const int length = 10;
+  int dims[] = {2, 5, 2};
+  const float values[] = {-63.5, -63,  -62.5, -62,  -61.5,
+                          62,    62.5, 63,    63.5, 64};
+  const float scale = 0.5;
+  const int zero_point = 127;
+  uint8_t input_quantized[length];
   float output[length];
   tflite::testing::TestDequantizeToFloat(dims, values, input_quantized, scale,
                                          zero_point, dims, values, output);

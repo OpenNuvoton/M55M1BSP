@@ -17,7 +17,7 @@ void NVT_ITCM TIMER0_IRQHandler(void)
 {
     uint32_t u32Status;
 
-    u32Jiffies += 10;
+    u32Jiffies++;
     TIMER_ClearIntFlag(TIMER0);
 
     /* CPU read interrupt flag register to wait write(clear) instruction completement */
@@ -26,9 +26,7 @@ void NVT_ITCM TIMER0_IRQHandler(void)
 
 u32_t sys_now(void)
 {
-
     return u32Jiffies;
-
 }
 
 uint32_t sys_arch_protect(void)

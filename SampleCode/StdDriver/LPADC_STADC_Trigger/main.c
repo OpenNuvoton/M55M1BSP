@@ -23,6 +23,7 @@ volatile uint32_t g_u32LpadcIntFlag, g_u32COVNUMFlag = 0;
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void LPADC0_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = 1000;
     LPADC_CLR_INT_FLAG(LPADC0, LPADC_ADF_INT); /* Clear the A/D interrupt flag */
 
     g_u32LpadcIntFlag = 1;
@@ -30,7 +31,11 @@ NVT_ITCM void LPADC0_IRQHandler(void)
     printf("[#%d] LPADC conversion done.\n", g_u32COVNUMFlag);
 
     /* Sync register of LPADC. */
-    M32(&LPADC0->ADSR0);
+    while (LPADC_GET_INT_FLAG(LPADC0, LPADC_ADF_INT) != 0)
+    {
+        if ((--u32TimeOutCnt) == 0)
+            break;
+    }
 }
 
 void SYS_Init(void)
@@ -39,25 +44,12 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
     SystemCoreClockUpdate();
-
 
     /* LPADC clock source is HIRC = 12MHz, set divider to 1, LPADC clock is 12 MHz */
     CLK_SetModuleClock(LPADC0_MODULE, CLK_LPADCSEL_LPADC0SEL_HIRC, CLK_LPADCDIV_LPADC0DIV(1));
@@ -106,9 +98,6 @@ void LPADC_FunctionTest()
 
     printf("\nIn this test, software will get 6 conversion result from the specified channel\n");
     printf("   that triggered by STADC pin (PC.13).\n");
-
-    /* LPADC Calibration */
-    LPADC_Calibration(LPADC0);
 
     while (1)
     {

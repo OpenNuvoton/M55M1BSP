@@ -74,7 +74,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -767,7 +767,7 @@
                 </option>
                 <option>
                     <name>IlinkIcfFile</name>
-                    <state>$PROJ_DIR$\xom.icf</state>
+                    <state>$PROJ_DIR$\XOMLib_Code.icf</state>
                 </option>
                 <option>
                     <name>IlinkIcfFileSlave</name>
@@ -1084,20 +1084,7 @@
         <settings>
             <name>BUILDACTION</name>
             <archiveVersion>2</archiveVersion>
-            <data>
-                <buildActions>
-                    <buildAction>
-                        <cmdline>"$PROJ_DIR$\..\XOMAddr.exe" "$PROJ_DIR$\Release\List\XOMLib_Code.map" "$PROJ_DIR$\xomlib.c" &amp;&amp; echo &gt; "$BUILD_FILES_DIR$/.postbuild"</cmdline>
-                        <workingDirectory>$PROJ_DIR$</workingDirectory>
-                        <buildSequence>postLink</buildSequence>
-                        <outputs>
-                            <file>
-                                <name>$BUILD_FILES_DIR$/.postbuild</name>
-                            </file>
-                        </outputs>
-                    </buildAction>
-                </buildActions>
-            </data>
+            <data />
         </settings>
     </configuration>
     <group>

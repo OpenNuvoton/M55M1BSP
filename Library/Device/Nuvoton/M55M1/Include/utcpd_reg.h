@@ -45,30 +45,30 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[15:0]  |PID       |UTCPD Product ID
-     * |        |          |USB Product ID is used to identify the product
+     * |        |          |USB Product ID is used to identify the product.
      * @var UTCPD_T::DID
      * Offset: 0x08  UTCPD Device ID Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[15:0]  |DID       |UTCPD Device ID
-     * |        |          |USB Device ID is used to identify the release version of the product
+     * |        |          |USB Device ID is used to identify the release version of the product.
      * @var UTCPD_T::TCREV
      * Offset: 0x0C  UTCPD USB Type C Revision Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[7:0]   |TCREV     |UTCPD USB Type C Revision
-     * |        |          |USB Type-C Cable and Connector Specification Revision 1.3
+     * |        |          |USB Type-C Cable and Connector Specification Revision 1.3.
      * @var UTCPD_T::PDREV
      * Offset: 0x10  UTCPD USB PD Revision Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[7:0]   |PDVER     |UTCPD USB PD Vision
-     * |        |          |USB Power Delivery Specification Version 1.1
+     * |        |          |USB Power Delivery Specification Revision 1.1
      * |[15:8]  |PDREV     |UTCPD USB PD Revision
-     * |        |          |USB Power Delivery Specification revision 3.1
+     * |        |          |USB Power Delivery Specification Revision 3.1.
      * @var UTCPD_T::IS
      * Offset: 0x14  UTCPD Interrupt Status Register
      * ---------------------------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ typedef struct
      * |        |          |Note: It is cleared by software writing 1 into this bit.
      * |[2]     |RXSOPIS   |Received SOP Message
      * |        |          |0 = No SOP message Received.
-     * |        |          |1 = Received SOP message (Set after sending GoodCRC??. =yes)
+     * |        |          |1 = Received SOP message (Set after sending GoodCRC.)
      * |        |          |UTCPD_RXBCNT being set to 0 does not set this bit.
      * |        |          |Note: It is cleared by software writing 1 into this bit.
      * |[3]     |RXHRSTIS  |Received Hard Reset
@@ -96,7 +96,7 @@ typedef struct
      * |        |          |1 = SOP* message transmission not successful, no GoodCRC response received on SOP* message transmission
      * |        |          |Transmit SOP* message buffer registers are empty.
      * |        |          |Note: It is cleared by software writing 1 into this bit.
-     * |[5]     |TXDCUTIS  |Transmit SOP* Message Discarded
+     * |[5]     |TXDCIS    |Transmit SOP* Message Discarded
      * |        |          |0 = No TX SOP discarded.
      * |        |          |1 = Reset or SOP* message transmission not sent due to incoming receive message
      * |        |          |Transmit SOP* message buffer registers are empty.
@@ -142,93 +142,93 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[0]     |CCSCHIE   |CC Status Changed Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = CC Status Changed Interrupt Disabled.
+     * |        |          |1 = CC Status Changed Interrupt Enabled.
      * |[1]     |PWRSCHIE  |Power Status Changed Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Power Status Changed Interrupt Disabled.
+     * |        |          |1 = Power Status Changed Interrupt Enabled.
      * |[2]     |RXSOPIE   |Received SOP Message Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Received SOP Message Interrupt Disabled.
+     * |        |          |1 = Received SOP Message Interrupt Enabled.
      * |[3]     |RXHRSTIE  |Received Hard Reset Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Received Hard Reset Interrupt Disabled.
+     * |        |          |1 = Received Hard Reset Interrupt Enabled.
      * |[4]     |TXFAILIE  |Transmit SOP Fail Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
-     * |[5]     |TXDCUTIE  |Transmit SOP* Message Discarded Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
-     * |[6]     |TXOKIE    |Transmit SOP* Message Successful Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Transmit SOP Fail Interrupt Disabled.
+     * |        |          |1 = Transmit SOP Fail Interrupt Enabled.
+     * |[5]     |TXDCIE    |Transmit SOP* Message Discarded Interrupt Enable
+     * |        |          |0 = Transmit SOP* Message Discarded Interrupt Disabled.
+     * |        |          |1 = Transmit SOP* Message Discarded Interrupt Enabled.
+     * |[6]     |TXSOKIE   |Transmit SOP* Message Successful Interrupt Enable
+     * |        |          |0 = Transmit SOP* Message Successful Interrupt Disabled.
+     * |        |          |1 = Transmit SOP* Message Successful Interrupt Enabled.
      * |[7]     |VBAMHIE   |VBUS Voltage Alarm High Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VBUS Voltage Alarm High Interrupt Disabled.
+     * |        |          |1 = VBUS Voltage Alarm High Interrupt Enabled.
      * |[8]     |VBAMLIE   |VBUS Voltage Alarm Low Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VBUS Voltage Alarm Low Interrupt Disabled.
+     * |        |          |1 = VBUS Voltage Alarm Low Interrupt Enabled.
      * |[9]     |FUTIE     |Fault Occur Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Fault Occur Interrupt Disabled.
+     * |        |          |1 = Fault Occur Interrupt Enabled.
      * |[10]    |RXOFIE    |Rx Buffer Overflow Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Rx Buffer Overflow Interrupt Disabled.
+     * |        |          |1 = Rx Buffer Overflow Interrupt Enabled.
      * |[11]    |SKDCDTIE  |VBUS Sink Disconnect Detected Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VBUS Sink Disconnect Detected Interrupt Disabled.
+     * |        |          |1 = VBUS Sink Disconnect Detected Interrupt Enabled.
      * |[15]    |VNDIE     |Vendor Define Event Detected Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Vendor Define Event Detected Interrupt Disabled.
+     * |        |          |1 = Vendor Define Event Detected Interrupt Enabled.
      * @var UTCPD_T::PWRSTSIE
      * Offset: 0x1C  UTCPD Power Status Interrupt Enable Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[0]     |SKVBIE    |Sinking VBUS Status Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Sinking VBUS Status Interrupt Disabled.
+     * |        |          |1 = Sinking VBUS Status Interrupt Enabled.
      * |[1]     |VCPSIE    |VCONN Present Status Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VCONN Present Status Interrupt Disabled.
+     * |        |          |1 = VCONN Present Status Interrupt Enabled.
      * |[2]     |VBPSIE    |VBUS Present Status Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VBUS Present Status Interrupt Disabled.
+     * |        |          |1 = VBUS Present Status Interrupt Enabled.
      * |[3]     |VBDTDGIE  |VBUS Detection Status Change Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VBUS Detection Status Change Interrupt Disabled.
+     * |        |          |1 = VBUS Detection Status Change Interrupt Enabled.
      * |[4]     |SRVBIE    |Sourcing VBUS Status Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Sourcing VBUS Status Interrupt Disabled.
+     * |        |          |1 = Sourcing VBUS Status Interrupt Enabled.
      * |[5]     |SRHVIE    |Sourcing High Voltage Status Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Sourcing High Voltage Status Interrupt Disabled.
+     * |        |          |1 = Sourcing High Voltage Status Interrupt Enabled.
      * |[7]     |DACONIE   |Debug Accessory Connected Status Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Debug Accessory Connected Status Interrupt Disabled.
+     * |        |          |1 = Debug Accessory Connected Status Interrupt Enabled.
      * @var UTCPD_T::FUTSTSIE
      * Offset: 0x20  UTCPD Fault Status Interrupt Enable Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[1]     |VCOCIE    |VCONN OCP Fault Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VCONN OCP Fault Interrupt Disabled.
+     * |        |          |1 = VCONN OCP Fault Interrupt Enabled.
      * |[2]     |VBOVIE    |Internal VBUS OVP Fault Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Internal VBUS OVP Fault Interrupt Disabled.
+     * |        |          |1 = Internal VBUS OVP Fault Interrupt Enabled.
      * |[3]     |VBOCIE    |External VBUS OCP Fault Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = External VBUS OCP Fault Interrupt Disabled.
+     * |        |          |1 = External VBUS OCP Fault Interrupt Enabled.
      * |[4]     |FDGFALIE  |Force Discharge Failed Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Force Discharge Failed Interrupt Disabled.
+     * |        |          |1 = Force Discharge Failed Interrupt Enabled.
      * |[5]     |ADGFALIE  |Auto Discharge Failed Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Auto Discharge Failed Interrupt Disabled.
+     * |        |          |1 = Auto Discharge Failed Interrupt Enabled.
      * |[6]     |FOFFVBIE  |Force Off VBUS Interrupt Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = Force Off VBUS Interrupt Disabled.
+     * |        |          |1 = Force Off VBUS Interrupt Enabled.
      * @var UTCPD_T::CTL
      * Offset: 0x24  UTCPD Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -256,7 +256,6 @@ typedef struct
      * |        |          |0 = Low active.
      * |        |          |1 = High active.
      * |[2]     |VBDGENPL  |VBUS Discharge Enable Polarity
-     * |        |          |It is for Bleed Discharge Enable Polarity.
      * |        |          |0 = Low active.
      * |        |          |1 = High active.
      * |[3]     |TXFRSPL   |Fast Role Swap TX Polarity
@@ -286,7 +285,7 @@ typedef struct
      * |        |          |00 = Reserved.
      * |        |          |01b = Rp (Use Rp definition in RPVALUE).
      * |        |          |10 = Rd.
-     * |        |          |11 = Open (Disconnect or dont care).
+     * |        |          |11 = Open (Disconnect or don't care).
      * |[3:2]   |CC2       |CC2
      * |        |          |00 = Reserved.
      * |        |          |01 = Rp (Use Rp definition in RPVALUE).
@@ -307,25 +306,25 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |VCOVDTDS  |External VCONN Overcurrent Fault Detect Disable
-     * |        |          |0 = External VCONN OCP circuit enabled.
-     * |        |          |1 = External VCONN OCP circuit disabled.
+     * |[0]     |VCOCDTDS  |External VCONN Overcurrent Fault Detect Disable
+     * |        |          |0 = External VCONN OCP circuit Enabled.
+     * |        |          |1 = External VCONN OCP circuit Disabled.
      * |[1]     |VBOVDTDS  |Internal VBUS Over Voltage Protection Fault Detect Disable
-     * |        |          |0 = Internal OVP circuit enabled.
-     * |        |          |1 = Internal OVP circuit disabled.
+     * |        |          |0 = Internal OVP circuit Enabled.
+     * |        |          |1 = Internal OVP circuit Disabled.
      * |        |          |Note: Internal VBUS over voltage protection means to use ADC to measure VBUS voltage.
      * |[2]     |VBOCDTDS  |External VBUS Overcurrent Protection Fault Detect Disable
-     * |        |          |0 = External OCP circuit enabled.
-     * |        |          |1 = External OCP circuit disabled.
+     * |        |          |0 = External OCP circuit Enabled.
+     * |        |          |1 = External OCP circuit Disabled.
      * |[3]     |VBDGTMDS  |VBUS Discharge Fault Detection Timer Disable
-     * |        |          |0 = VBUS Discharge Fault Detection Timer enabled.
-     * |        |          |1 = VBUS Discharge Fault Detection Timer disabled.
+     * |        |          |0 = VBUS Discharge Fault Detection Timer Enabled.
+     * |        |          |1 = VBUS Discharge Fault Detection Timer Disabled.
      * |        |          |This enables the timer for both force discharge and auto discharge
      * |        |          |No timer for bleed discharge
      * |        |          |Once time-out, UTCPD will compare VBUS voltage with VSAFE0V or SP_DGTH, depends on setting of ADGDC and FDGEN.
      * |[4]     |FOFFVBDS  |Force Off VBUS Disable
-     * |        |          |0 = Enabled.
-     * |        |          |1 = Disabled.
+     * |        |          |0 = Force off VBUS Enabled.
+     * |        |          |1 = Force off VBUS Disabled.
      * @var UTCPD_T::PWRCTL
      * Offset: 0x34  UTCPD Power Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -361,11 +360,11 @@ typedef struct
      * |        |          |UTCPD shall not re-apply discharge circuit if VBUS rises above vSafe0V.
      * |        |          |This bit will only be cleared by CPU.
      * |[5]     |DSVBAM    |Disable VBUS Voltage Alarms
-     * |        |          |0 = VBUS Voltage Alarms Power status reporting is enabled.
-     * |        |          |1 = VBUS Voltage Alarms Power status reporting is disabled (default).
+     * |        |          |0 = VBUS Voltage Alarms Power status reporting Enabled.
+     * |        |          |1 = VBUS Voltage Alarms Power status reporting Disabled (default).
      * |[6]     |VBMONI    |VBUS Voltage Monitor Enable
-     * |        |          |0 = VBUS Voltage Monitoring is enabled.
-     * |        |          |1 = VBUS Voltage Monitoring is disabled (default).
+     * |        |          |0 = VBUS Voltage Monitoring Enabled.
+     * |        |          |1 = VBUS Voltage Monitoring Disabled (default).
      * |        |          |Controls VBUS voltage Monitoring. UTCPD_VBVOL shall report all zeroes if disabled.
      * @var UTCPD_T::CCSTS
      * Offset: 0x38  UTCPD CC Status Register
@@ -402,7 +401,7 @@ typedef struct
      * |        |          |If CC2 (UTCPD_ROLCTL[3:2])=Open, this field is set to 00.
      * |        |          |This field always returns 00 if (LK4CONN=1) or (VCEN (UTCPD_PWRCTL[0])=1 and ORIENT (UTCPD_CTL[0])=0)
      * |        |          |Otherwise, the returned value depends upon CC2 (UTCPD_ROLCTL[3:2])
-     * |[4]     |CONRLT    |Connect Result (read only)
+     * |[4]     |CONRLT    |Connect Result (Read Only)
      * |        |          |0 = the UTCPD is presenting Rp.
      * |        |          |1 = the UTCPD is presenting Rd.
      * |[5]     |LK4CONN   |Looking for Connection
@@ -435,7 +434,7 @@ typedef struct
      * |        |          |This bit does not control the path, just provides a monitor of the status.
      * |[5]     |SRHV      |Sourcing High Voltage
      * |        |          |0 = VSAFE5V.
-     * |        |          |1 = Higher Voltage.
+     * |        |          |1 = Higher voltage.
      * |        |          |This bit does not control the power path, it just provides a monitor of the status
      * |        |          |This bit is asserted as long as the UTCPD is sourcing nondefault voltage over VBUS (i.e
      * |        |          |not VSAFE5V) as a response to CPU writing 0x88 to CMD (Source VBUS High Voltage)
@@ -468,6 +467,9 @@ typedef struct
      * |        |          |0 = No Fault Detected, no action (default and not supported).
      * |        |          |1 = VBUS Source/Sink has been forced off due to external fault.
      * |        |          |The UTCPD has disconnected VBUS due to external inputs (EINT0 ~ EINT5)
+     * |[7]     |INVHRST   |Invalid Hard Reset
+     * |        |          |0 = No invalid hard reset event.
+     * |        |          |1 = Invalid hard reset event active.
      * @var UTCPD_T::CMD
      * Offset: 0x44  UTCPD Command Register
      * ---------------------------------------------------------------------------------------------------
@@ -482,7 +484,7 @@ typedef struct
      * |        |          |0x77 = Enable Source VBUS 5V.
      * |        |          |0x88 = Source VBUS High Voltage.
      * |        |          |0x99h = Look4Connection.
-     * |        |          |0xAA = RxOneMore
+     * |        |          |0xAA = RxOneMore.
      * |        |          |Others: Reserved.
      * |        |          |The Command is issued by the CPU
      * |        |          |The Command is cleared by the UTCPD after being acted upon
@@ -505,7 +507,7 @@ typedef struct
      * |        |          |0 = UTCPD is not capable of switching VCONN.
      * |        |          |1 = UTCPD is capable of switching VCONN.
      * |[4]     |CPSDBG    |SOP'_DBG/SOPu201D_DBG Support
-     * |        |          |0 = All SOP* except SOP'_DBG/SOPu201D_DBG.
+     * |        |          |0 = All SOP* except SOP'_DBG/SOP'_DBG.
      * |        |          |1 = All SOP* messages are supported.
      * |[7:5]   |CPROL     |Roles Supported
      * |        |          |000 = USB Type-C Port Manager can configure the Port as Source only or Sink only (not DRP).
@@ -587,19 +589,19 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |SOPEN     |Enable SOP message
+     * |[0]     |SOPEN     |Enable SOP Message
      * |        |          |0 = UTCPD does not detect SOP message (default).
      * |        |          |1 = UTCPD detects SOP message.
-     * |[1]     |SOPPEN    |Enable SOP' message
+     * |[1]     |SOPPEN    |Enable SOP' Message
      * |        |          |0 = UTCPD does not detect SOP' message (default).
      * |        |          |1 = UTCPD detects SOP' message.
-     * |[2]     |SOPPPEN   |Enable SOP'' message
+     * |[2]     |SOPPPEN   |Enable SOP'' Message
      * |        |          |0 = UTCPD does not detect SOP'' message (default).
      * |        |          |1 = UTCPD detects SOP'' message.
-     * |[3]     |SDBGPEN   |Enable SOP_DBG' message
+     * |[3]     |SDBGPEN   |Enable SOP_DBG' Message
      * |        |          |0 = UTCPD does not detect SOP_DBG' message (default).
      * |        |          |1 = UTCPD detects SOP_DBG' message.
-     * |[4]     |SDBGPPEN  |Enable SOP_DBG'' message
+     * |[4]     |SDBGPPEN  |Enable SOP_DBG'' Message
      * |        |          |0 = UTCPD does not detect SOP_DBG'' message (default).
      * |        |          |1 = UTCPD detects SOP_DBG'' message.
      * |[5]     |HRSTEN    |Enable Hard Reset
@@ -706,7 +708,7 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[2:0]   |TXSTYPE   |Transmit SOP* message
+     * |[2:0]   |TXSTYPE   |Transmit SOP* Message
      * |        |          |000 = Transmit SOP.
      * |        |          |001 = Transmit SOP'.
      * |        |          |010 = Transmit SOP''.
@@ -728,7 +730,7 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[7:0]   |TXBCNT    |Transmit Byte Count
      * |        |          |This is the number of bytes in the UTCPD_TXDA plus two (for the TXHEAD)
-     * |        |          |If a previous transmit request has not yet completed when TX_CTL is written requesting a Hard Reset, the UTCPD shall assert the Transmission Discarded bit(TXDCUTIS (UTCPD_IS[5])).
+     * |        |          |If a previous transmit request has not yet completed when TX_CTL is written requesting a Hard Reset, the UTCPD shall assert the Transmission Discarded bit(TXDCIS (UTCPD_IS[5])).
      * |        |          |The UTCPD shall assert both TXOKIS (UTCPD_IS[6]) and TXFALIS (UTCPD_IS[4]) after it completes the sending of a Hard Reset
      * @var UTCPD_T::TXHEAD
      * Offset: 0x98  UTCPD TX Header Data Register
@@ -805,22 +807,24 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[9:0]   |VBVOL     |VBUS voltage measurement
-     * |        |          |10-bit measurement of (VBUS / Scale Factor)
+     * |[9:0]   |VBVOL     |VBUS Voltage Measurement
+     * |        |          |10-bit measurement of (VBUS / Scale Factor). It is read only.
      * |        |          |CPU multiplies this value by the scale factor to obtain the voltage measurement
      * |        |          |Voltages greater than or equal to 4V shall meet +/-2% absolute value or +/- 50mV, whichever is greater
      * |        |          |The LSB is 25mV
      * |[11:10] |VBSCALE   |VBUS Scale Factor
-     * |        |          |00 = VBUS measurement not scaled.
-     * |        |          |01 = VBUS measurement divided by 2.
-     * |        |          |10 = VBUS measurement divided by 4.
-     * |        |          |11 = reserved.
+     * |        |          |00 = External VBUS voltage divider circuit should be 1/20 for EPR application
+     * |        |          |The divided voltage compares with 200mV to set or clean VBUS Present bit.
+     * |        |          |01 = External VBUS voltage divider circuit should be 1/10 for SPR application
+     * |        |          |The divided voltage compares with 400mV to set or clean VBUS Present bit.
+     * |        |          |10 = Same as 00.
+     * |        |          |11 = Same as 01.
      * @var UTCPD_T::SKVBDCTH
      * Offset: 0xC4  UTCPD VBUS Sink disconnect threshold Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[9:0]   |SKVBDCTH  |Sink VBUS disconnect threshold
+     * |[9:0]   |SKVBDCTH  |Sink VBUS Disconnect Threshold
      * |        |          |10-bit for voltage threshold with 25mV LSB. (Default 3.5V)
      * |        |          |A value of zero disables this threshold.
      * @var UTCPD_T::SPDGTH
@@ -865,17 +869,17 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[0]     |RXFRSIE   |Fast Role Swap RX Interrupt Enable
-     * |        |          |0 = Disable.
-     * |        |          |1 = Enable.
+     * |        |          |0 = Fast role swap RX interrupt Disabled.
+     * |        |          |1 = Fast role swap RX interrupt Enabled.
      * |[1]     |TXFRSIE   |Fast Role Swap TX Interrupt Enable
-     * |        |          |0 = Disable.
-     * |        |          |1 = Enable.
+     * |        |          |0 = Fast role swap TX interrupt Disabled.
+     * |        |          |1 = Fast role swap TX interrupt Enabled.
      * |[3]     |CRCERRIE  |CRC Error Interrupt Enable
-     * |        |          |0 = Disable.
-     * |        |          |1 = Enable.
+     * |        |          |0 = CRC error interrupt Disabled.
+     * |        |          |1 = CRC error interrupt Enabled.
      * |[5]     |VCDGIE    |VCONN Discharge Interrupt Enable
-     * |        |          |0 = Disable.
-     * |        |          |1 = Enable.
+     * |        |          |0 = VCOON discharge interrupt Disabled.
+     * |        |          |1 = VCOON discharge interrupt Enabled.
      * @var UTCPD_T::MUXSEL
      * Offset: 0xDC  UTCPD Mux Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -890,8 +894,8 @@ typedef struct
      * |        |          |0101 = ACMP0.
      * |        |          |0110 = ACMP1.
      * |        |          |0111 = ACMP2.
-     * |        |          |1000 = ACMP3.
      * |        |          |Others = Reserved.
+     * |        |          |Note: For ACMP, the VBOCPL (PINPL[5]) shall be set as 1.
      * |[7:4]   |VCOCS     |VCONN Overcurrent Source Select
      * |        |          |0000 = EINT0.
      * |        |          |0001 = EINT1.
@@ -901,8 +905,8 @@ typedef struct
      * |        |          |0101 = ACMP0.
      * |        |          |0110 = ACMP1.
      * |        |          |0111 = ACMP2.
-     * |        |          |1000 = ACMP3.
      * |        |          |Others = Reserved.
+     * |        |          |Note: For ACMP, the VCOCPL (PINPL[10]) shall be set as 1.
      * |[10:8]  |FVBS      |Force off VBUS Select
      * |        |          |000 = ENIT0.
      * |        |          |001 = EINT1.
@@ -933,20 +937,20 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[0]     |VCDGDTEN  |VCONN Discharge Detect Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VCONN Discharge Detect Disabled.
+     * |        |          |1 = VCONN Discharge Detect Enabled.
      * |[1]     |VCDGEN    |VCONN Discharge Enable
-     * |        |          |0 = Disabled.
-     * |        |          |1 = Enabled.
+     * |        |          |0 = VCONN Discharge Disabled.
+     * |        |          |1 = VCONN Discharge Enabled.
      * @var UTCPD_T::PHYSLEW
      * Offset: 0xE4  UTCPD PHY Slew Rate Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[2:0]   |TXRTRIM   |TX Trim Rising slew rate
+     * |[2:0]   |TXRTRIM   |TX Trim Rising Slew Rate
      * |        |          |It is for BMC eye diagram.
      * |        |          |Trim PHY TX Rising slew rate (from ROMMAP)
-     * |[5:3]   |TXFTRIM   |TX Trim Falling slew rate
+     * |[6:4]   |TXFTRIM   |TX Trim Falling Slew Rate
      * |        |          |It is for BMC eye diagram.
      * |        |          |Trim PHY TX falling slew rate. (from ROMMAP)
      * @var UTCPD_T::ADGTM
@@ -954,7 +958,7 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[7:0]   |ADGTM     |Auto Discharge time
+     * |[7:0]   |ADGTM     |Auto Discharge Time
      * |        |          |Default Time = 31.25us x 16 x 100 (0x16) = 49.9ms.
      * @var UTCPD_T::VSAFE0V
      * Offset: 0xEC  UTCPD Auto Discharge VSAFE0V Register
@@ -967,7 +971,7 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[9:0]   |VSAFE5V   |Set the vSafe5V voltage level
+     * |[9:0]   |VSAFE5V   |Set the vSafe5V Voltage Level
      * |        |          |For fast role swap voltage comparison.
      * @var UTCPD_T::RATIO
      * Offset: 0xF4  UTCPD DRP Toggle Ratio Register
@@ -975,24 +979,24 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[2:0]   |DRPRATIO  |The percent of time that a DRP shall advertise source & sink during tDRP
-     * |        |          |000 = 50:50 (Sink : Source).
-     * |        |          |010 = 30:70 (Sink : Source).
-     * |        |          |001 = 40:60 (Sink : Source).
-     * |        |          |101 = 60:40 (Sink : Source).
+     * |        |          |000 = 50:50 (Sink: Source).
+     * |        |          |010 = 30:70 (Sink: Source).
+     * |        |          |001 = 40:60 (Sink: Source).
+     * |        |          |101 = 60:40 (Sink: Source).
      * |        |          |110 =70:30 (Sink: Source).
      * |        |          |111 = Reserved.
      * |[3]     |VBSEL     |VBUS_VOLTAGE_SEL
      * |        |          |Select comparing value (vbus_voltage_s) during vbus discharge determines to stop discharging or not.
-     * |        |          |1: vbus voltage value from adc
-     * |        |          |0: vbus voltage value from adc only when VBMONI (UTCPD_PWRCT[6]) is 1.
-     * |[6]     |ADCAVG    |ADC moving average enable
-     * |        |          |If enable this bit, average the ADC value for 4 times
+     * |        |          |0 = VBUS voltage value from adc only when VBMONI (UTCPD_PWRCT[6]) is 1.
+     * |        |          |1 = VBUS voltage value from ADC.
+     * |[6]     |ADCAVG    |ADC Moving Average Enable
+     * |        |          |If enabling this bit, average the ADC value for 4 times.
      * @var UTCPD_T::INTFRAME
      * Offset: 0xF8  UTCPD Inter-Frame Time Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[7:0]   |INTFRAME  |USB PD Inter frame gap
+     * |[7:0]   |INTFRAME  |USB PD Inter Frame Gap
      * |        |          |Each unit time: 83ns (12 MHz RC)
      * |        |          |Time = 83ns x 16 x Inter frame gap time.
      * |        |          |Example = 83ns x 16 x 25(8'b00011001) = 33.2us.
@@ -1017,7 +1021,7 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[7:0]   |BMCTXBP   |BMC Tx bit period
+     * |[7:0]   |BMCTXBP   |BMC Tx Bit Period
      * |        |          |It's for BMC eye diagram.
      * |        |          |Example 12 MHz = 83.33ns.
      * |        |          |83.33ns x (39 + 1) = 3.33us.
@@ -1026,14 +1030,14 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[6:0]   |DUOFFS2   |BMC Tx duty offset parameter 2
+     * |[6:0]   |DUOFFS2   |BMC Tx Duty Offset Parameter 2
      * |        |          |It's for BMC eye diagram.
      * |        |          |Offset count value.
      * |        |          |Example 12 MHz = 83.33ns.
-     * |[7]     |DUOFFS1   |BMC Tx duty offset parameter 1
+     * |[7]     |DUOFFS1   |BMC Tx Duty Offset Parameter 1
      * |        |          |It's for BMC eye diagram.
-     * |        |          |0: Increase duty offset? (+)
-     * |        |          |1: Decrease duty offset? (-)
+     * |        |          |0 = Increase duty offset.
+     * |        |          |1 = Decrease duty offset.
      * @var UTCPD_T::VCPSVOL
      * Offset: 0x10C  VCONN Present Voltage Register
      * ---------------------------------------------------------------------------------------------------
@@ -1055,78 +1059,282 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[1:0]   |SLICEL    |TX Slice Low Level Control
      * |        |          |Low level slice control (The LSB is 2mV.)
-     * |        |          |00: 0.18V
-     * |        |          |01: 0.2V
-     * |        |          |10: 0.22V
-     * |        |          |11: 0.24V (Default)
+     * |        |          |00 = 0.18V.
+     * |        |          |01 = 0.2V.
+     * |        |          |10 = 0.22V.
+     * |        |          |11 = 0.24V (Default).
+     * |        |          |Others = Reserved.
      * |[3:2]   |SLICEH    |TX Slice High Level Control
      * |        |          |High level slice control (The LSB is 2mV.)
-     * |        |          |00: 0.84V (Default)
-     * |        |          |01: 0.86V
-     * |        |          |10: 0.88V
-     * |        |          |11: 0.9V
+     * |        |          |00 = 0.84V (Default).
+     * |        |          |01 = 0.86V.
+     * |        |          |10 = 0.88V.
+     * |        |          |11 = 0.9V.
+     * |        |          |Others = Reserved.
      * |[6:4]   |SLICEM    |TX Slice Middle Level Control
      * |        |          |Middle level slice control (The LSB is 2mV.)
-     * |        |          |000: 0.48V
-     * |        |          |100: 0.56V (Default)
-     * |        |          |111: 0.62V
+     * |        |          |000 = 0.48V.
+     * |        |          |100 = 0.56V (Default).
+     * |        |          |111 = 0.62V.
+     * |        |          |Others = Reserved.
      * |[10:8]  |TRIMRD    |TRIMRD
      * |[15:12] |TRIMRP    |TRIMRP
      * |[18:16] |TRIMV1P1  |TRIMV1P1
-     * |[22:20] |TRIMVBUS  |TRIMVBUS
-     * |[27:24] |VTRIM     |VTRIM
+     * |[22:20] |TRIMVBUS10|TRIMVBUS10
+     * |        |          |Power good level trimming option of VBUS when the VBSCALE[1] in UTCPD_VBVOL[10] = 0.
+     * |[26:24] |TRIMVBUS20|TRIMVBUS20
+     * |        |          |Power good level trimming option of VBUS when the VBSCALE[1] in UTCPD_VBVOL[10] = 1.
+     * |[31:28] |VTRIM     |Reference Voltage TRIM setting for TCPD PHY macro
      * @var UTCPD_T::PHYCTL
      * Offset: 0x11C  UTCPD PHY Power Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[0]     |PHYPWR    |Analog PHY Power
-     * |        |          |0: Power down PHY
-     * |        |          |1: Enable PHY
+     * |        |          |0 = Power down PHY.
+     * |        |          |1 = Enable PHY.
      * |        |          |Analog PHY power default is off before UTCPD clock available
      * |        |          |Once UTCPD clock is on, the analog PHY power will be on as well.
-     * |        |          |Turning off PHY power whenu2026u2026
-     * |        |          |1.
-     * |        |          |2.
-     * |[1]     |DBCTL     |Dead Battery control
-     * |        |          |0: Dead Battery circuit control internal Rd/Rp.
-     * |        |          |1: Role Control Register control internal Rd/Rp.
+     * |[1]     |DBCTL     |Dead Battery Control
+     * |        |          |0 = Dead Battery circuit control internal Rd/Rp.
+     * |        |          |1 = Role Control Register control internal Rd/Rp.
      * @var UTCPD_T::FRSRXCTL
      * Offset: 0x120  UTCPD CC Fast Swap RX Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |FRSTX     |CC transmitter fast swap signal
-     * |        |          |Pulse width: 85us
+     * |[0]     |FRSTX     |CC Transmitter Fast Swap Signal
+     * |        |          |Pulse width is 85us.
      * |[2]     |FRSDVVB   |CC receive fast swap and auto drive Source VBUS
-     * |        |          |0: Disable
-     * |        |          |1: Enable
+     * |        |          |0 = CC receive fast swap and auto drive Source VBUS Disabled.
+     * |        |          |1 = CC receive fast swap and auto drive Source VBUS Enabled.
      * |[3]     |FRSRXEN   |CC receive fast swap Rx Enable
-     * |        |          |0: Disable
-     * |        |          |1: Enable
+     * |        |          |0 = CC receive fast swap Rx Disabled.
+     * |        |          |1 = CC receive fast swap Rx Enabled.
      * @var UTCPD_T::VCVOL
      * Offset: 0x124  UTCPD VCONN Voltage Measurement Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[9:0]   |VCVOL     |VCONN Voltage Measurement
-     * |        |          |The LSB is 25mV
+     * |        |          |The LSB is 25mV.
      * @var UTCPD_T::CLKINFO
      * Offset: 0x300  UTCPD Clock Information Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |ReadyFlag |RC32K domain ready flag Check if the register value is loaded to RC32K domain by reading this flag
-     * |        |          |0 : The RC32K signal is not ready
-     * |        |          |1 : The RC32K signal is ready
-     * |[4]     |WKEN      |Wakeup enable
-     * |        |          |0 : UTCPD wakeup function Disabled.
-     * |        |          |1 : UTCPD wakeup function Enabled.
+     * |[0]     |ReadyFlag |RC32K Domain Ready Flag Check if the Register Value is Loaded to RC32K Domain by Reading This Flag
+     * |        |          |0 = The RC32K signal is not ready.
+     * |        |          |1 = The RC32K signal is ready.
+     * |[4]     |WKEN      |Wakeup Enable
+     * |        |          |0 = UTCPD wakeup function Disabled.
+     * |        |          |1 = UTCPD wakeup function Enabled.
+     * @var UTCPD_T::PREDET
+     * Offset: 0x320  UTCPD Preamble Detect Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[3:0]   |RNICHK    |Round of Noise Immunity Check
+     * |        |          |0000 = Noise immunity optimize Disabled.
+     * |        |          |0001 = The detect is one round.
+     * |        |          |0010 = The detect is two rounds.
+     * |        |          |0011 = The detect is three rounds.
+     * |        |          |0100 = The detect is four rounds.
+     * |        |          |0101 = The detect is five rounds.
+     * |        |          |0110 = The detect is six rounds.
+     * |        |          |0111 = The detect is seven rounds.
+     * |        |          |1000 = The detect is eight round.
+     * |        |          |1001 = The detect is nini rounds.
+     * |        |          |1010 = The detect is ten rounds.
+     * |        |          |1011 = The detect is eleven rounds.
+     * |        |          |1100 = The detect is twelve rounds.
+     * |        |          |1101 = The detect is thirteen rounds.
+     * |        |          |1110 = The detect is fourteen rounds.
+     * |        |          |1111 = The detect is fifteen rounds.
+     * |        |          |Note: RPCHK = 3'b000, Use the original detection solution. (case path 0).
+     * |[6:4]   |BNICHK    |Bit Number for Noise Immunity Check each Round
+     * |        |          |000 = The detected bit number of one round equal to 3 bits.
+     * |        |          |001 = The detected bit number of one round equal to 4 bits.
+     * |        |          |010 = The detected bit number of one round equal to 5 bits.
+     * |        |          |011 = The detected bit number of one round equal to 6 bits.
+     * |        |          |100 = The detected bit number of one round equal to 7 bits.
+     * |        |          |101 = The detected bit number of one round equal to 8 bits.
+     * |        |          |Others = Reserved.
+     * |[9:8]   |BNW       |Bit Number Wait for next Round
+     * |        |          |00 = The wait bit number for next round is 1 bits.
+     * |        |          |01 = The wait bit number for next round is 2 bits.
+     * |        |          |10 = The wait bit number for next round is 3 bits.
+     * |        |          |11 = The wait bit number for next round is 4 bits.
+     * |[12]    |DGEN      |Analog Macro Deglitch circuit Enable
+     * |        |          |0 = Analog macro deglitch circuit Disabled.
+     * |        |          |1 = Analog macro 3 slices comparator deglitch circuit Enabled.
+     * |[13]    |DGACT     |Analog Macro Activity Signal Source from Deglitch Circuit
+     * |        |          |0 = Analog macro activity signal source from deglitch circuit Disabled.
+     * |        |          |1 = Analog macro activity signal source from deglitch circuit Enabled.
+     * |[15:14] |PSDB      |Preamble Start Detect Bit
+     * |        |          |00 = Round start after first 3 bits be detected.
+     * |        |          |01 = Round start after first 5 bits be detected.
+     * |        |          |10 = Round start after first 6 bits be detected.
+     * |        |          |11 = Round start after first 7 bits be detected.
+     * |[21:16] |MINWBCN   |Minimum Width Bit Counter Number
+     * |        |          |Define the minuimun width of one bit counter number among preamble period
+     * |        |          |If the counter of one bit width is less than this value, this case path will be ignore to juge the bit counter number.
+     * |        |          |Note: The default value is the bit clock counter of maxmun bit rate frequency (330K) plus 10%.
+     * |[29:24] |MAXWBCN   |Maximun Width Bit Counter Number
+     * |        |          |Define the maximun width of one bit counter number among preamble period
+     * |        |          |If the counter of one bit width is over this value, this case path will be ignore to juge the bit counter number.
+     * |        |          |Note: The default value is the bit clock counter of minimun bit rate frequency (270K) minus 10%.
+     * @var UTCPD_T::NIRR
+     * Offset: 0x324  UTCPD Noise Immunity Record Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[5:0]   |WBW       |Wide Bit Width (Read Only)
+     * |        |          |The field indicates the wide bit width (based on 12M).
+     * |[13:8]  |NBW       |Narrow Bit Width (Read Only)
+     * |        |          |The field indicates the narrow bit width (based on 12M).
+     * |[15:14] |CSEL      |Case Selection (Read Only)
+     * |        |          |The field indicates the selected case condition.
+     * |        |          |00 = The case 0.
+     * |        |          |01 = The case 1.
+     * |        |          |10 = The case 2.
+     * |        |          |11 = Reserved.
+     * @var UTCPD_T::C0PRR
+     * Offset: 0x328  UTCPD Case 0 Path Record Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[5:0]   |C0PWBPN   |Case 0 Path Wide Bit Period Number (Read Only)
+     * |        |          |The field indicates the final width bit clock number based 12M clock.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[13:8]  |C0PNBPN   |Case 0 Path Narrow Bit Period Number (Read Only)
+     * |        |          |The field indicates the final narrow bit clcok number based 12M
+     * |        |          |If the RNICHK (UTCPD_PREDET[2:0]) is 3'b000, the default value is 0x3F.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[15]    |C0PORF    |Case 0 Path Out of Range Flag
+     * |        |          |0 = Case 0 isn't out of range.
+     * |        |          |1 = Case 0 is out of range.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[18:16] |C0BRT     |Case 0 Path Best Round Times
+     * |        |          |The field indicates the best round times of bit width detection.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * @var UTCPD_T::C1PRR
+     * Offset: 0x32C  UTCPD Case 1 Path Record Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[5:0]   |C1PWBPN   |Case 1 Path Wide Bit Period Number (Read Only)
+     * |        |          |The field indicates the final width bit clock number based 12M clock.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[13:8]  |C1PNBPN   |Case 1 Path Narrow Bit Period Number (Read Only)
+     * |        |          |The field indicates the final narrow bit clcok number based 12M.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[15]    |C1PORF    |Case 1 Path Out of Range Flag
+     * |        |          |0 = Case 1 isn't out of range.
+     * |        |          |1 = Case 1 is out of range.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[18:16] |C1BRT     |Case 1 Path Best Round bnTimes
+     * |        |          |The field indicates the best round times of bit width detection.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * @var UTCPD_T::C2PRR
+     * Offset: 0x330  UTCPD Case 2 Path Record Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[5:0]   |C2PWBPN   |Case 2 Path Wide Bit Period Number (Read Only)
+     * |        |          |The field indicates the final width bit clock number based 12M clock.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[13:8]  |C2PNBPN   |Case 2 Path Narrow Bit Period Number (Read Only)
+     * |        |          |The field indicates the final narrow bit clcok number based 12M.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[15]    |C2PORF    |Case 2 Path Out of Range Flag
+     * |        |          |0 = Case 2 isn't out of range.
+     * |        |          |1 = Case 2 is out of range.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * |[18:16] |C2BRT     |Case 2 Path Best Round Times
+     * |        |          |The field indicates the best round times of bit width detection.
+     * |        |          |Note: It is cleared in next preamble start or write 1.
+     * @var UTCPD_T::NBMCSLICE
+     * Offset: 0x334  UTCPD New BMC SLICE Control Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[2:0]   |NSLICEL   |New TX Slice Low Level Control
+     * |        |          |Low level slice control (The LSB is 20mV.)
+     * |        |          |000 = 0.14V.
+     * |        |          |001 = 0.16V.
+     * |        |          |010 = 0.18V (Default).
+     * |        |          |011 = 0.20V.
+     * |        |          |100 = 0.22V.
+     * |        |          |101 = 0.24V.
+     * |        |          |110 = 0.26V.
+     * |        |          |111 = 0.28V.
+     * |[6:4]   |NSLICEH   |New TX Slice High Level Control
+     * |        |          |High level slice control (The LSB is 20mV.)
+     * |        |          |000 = 0.80V.
+     * |        |          |001 = 0.82V.
+     * |        |          |010 = 0.84V (Default).
+     * |        |          |011 = 0.86V.
+     * |        |          |100 = 0.88V.
+     * |        |          |101 = 0.90V.
+     * |        |          |110 = 0.92V.
+     * |        |          |111 = 0.94V.
+     * |[10:8]  |NSLICEM   |New TX Slice Middle Level Control
+     * |        |          |Middle level slice control (The LSB is 20mV.)
+     * |        |          |000 = 0.48V.
+     * |        |          |001 = 0.50V.
+     * |        |          |010 = 0.52V.
+     * |        |          |011 = 0.54V.
+     * |        |          |100 = 0.56V (Default).
+     * |        |          |101 = 0.58V.
+     * |        |          |110 = 0.60V.
+     * |        |          |111 = 0.62V.
+     * |[15]    |NBCMEN    |New BMC Trim Value Control Enable
+     * |        |          |0 = The trim value of BMC is compatiable with UTCPD_BMCSLICE.
+     * |        |          |1 = New BMC trim value in this regsiter bit field.
+     * @var UTCPD_T::BMCDBGR
+     * Offset: 0x338  UTCPD BMC SLICE Value Debug Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[2:0]   |SLICEL    |TX Slice Low Level Control (Read Only)
+     * |        |          |Low level slice control (The LSB is 20mV.)
+     * |        |          |000 = 0.14V.
+     * |        |          |001 = 0.16V.
+     * |        |          |010 = 0.18V (Default).
+     * |        |          |011 = 0.20V.
+     * |        |          |100 = 0.22V.
+     * |        |          |101 = 0.24V.
+     * |        |          |110 = 0.26V.
+     * |        |          |111 = 0.28V.
+     * |        |          |Note: For FPGA Debug and Read Only.
+     * |[6:4]   |SLICEH    |TX Slice High Level Control (Read Only)
+     * |        |          |High level slice control (The LSB is 20mV.)
+     * |        |          |000 = 0.80V.
+     * |        |          |001 = 0.82V.
+     * |        |          |010 = 0.84V (Default).
+     * |        |          |011 = 0.86V.
+     * |        |          |100 = 0.88V.
+     * |        |          |101 = 0.90V.
+     * |        |          |110 = 0.92V.
+     * |        |          |111 = 0.94V.
+     * |        |          |Note: For FPGA Debug and Read Only.
+     * |[10:8]  |SLICEM    |TX Slice Middle Level Control (Read Only)
+     * |        |          |Middle level slice control (The LSB is 20mV.)
+     * |        |          |000 = 0.48V.
+     * |        |          |001 = 0.50V.
+     * |        |          |010 = 0.52V.
+     * |        |          |011 = 0.54V.
+     * |        |          |100 = 0.56V (Default).
+     * |        |          |101 = 0.58V.
+     * |        |          |110 = 0.60V.
+     * |        |          |111 = 0.62V.
+     * |        |          |Note: For FPGA Debug and Read Only.
      */
-    __IO uint32_t VID;                   /*!< [0x0000] UTCPD Vendor ID Register                                         */
+    __I  uint32_t VID;                   /*!< [0x0000] UTCPD Vendor ID Register                                         */
     __IO uint32_t PID;                   /*!< [0x0004] UTCPD Product ID Register                                        */
-    __IO uint32_t DID;                   /*!< [0x0008] UTCPD Device ID Register                                         */
-    __IO uint32_t TCREV;                 /*!< [0x000c] UTCPD USB Type C Revision Register                               */
+    __I  uint32_t DID;                   /*!< [0x0008] UTCPD Device ID Register                                         */
+    __I  uint32_t TCREV;                 /*!< [0x000c] UTCPD USB Type C Revision Register                               */
     __IO uint32_t PDREV;                 /*!< [0x0010] UTCPD USB PD Revision Register                                   */
     __IO uint32_t IS;                    /*!< [0x0014] UTCPD Interrupt Status Register                                  */
     __IO uint32_t IE;                    /*!< [0x0018] UTCPD Interrupt Enable Register                                  */
@@ -1139,7 +1347,7 @@ typedef struct
     __IO uint32_t PWRCTL;                /*!< [0x0034] UTCPD Power Control Register                                     */
     __I  uint32_t CCSTS;                 /*!< [0x0038] UTCPD CC Status Register                                         */
     __I  uint32_t PWRSTS;                /*!< [0x003c] UTCPD Power Status Register                                      */
-    __I  uint32_t FUTSTS;                /*!< [0x0040] UTCPD Fault Status Register                                      */
+    __IO uint32_t FUTSTS;                /*!< [0x0040] UTCPD Fault Status Register                                      */
     __IO uint32_t CMD;                   /*!< [0x0044] UTCPD Command Register                                           */
     __IO uint32_t DVCAP1;                /*!< [0x0048] UTCPD Device Capabilities 1 Register                             */
     __IO uint32_t DVCAP2;                /*!< [0x004c] UTCPD Device Capabilities 2 Register                             */
@@ -1197,6 +1405,14 @@ typedef struct
     __I  uint32_t VCVOL;                 /*!< [0x0124] UTCPD VCONN Voltage Measurement Register                         */
     __I  uint32_t RESERVE5[118];
     __IO uint32_t CLKINFO;               /*!< [0x0300] UTCPD Clock Information Register                                 */
+    __I  uint32_t RESERVE8[7];
+    __IO uint32_t PREDET;                /*!< [0x0320] UTCPD Preamble Detect Register                                   */
+    __I  uint32_t NIRR;                  /*!< [0x0324] UTCPD Noise Immunity Record Register                             */
+    __I  uint32_t C0PRR;                 /*!< [0x0328] UTCPD Case 0 Path Record Register                                */
+    __I  uint32_t C1PRR;                 /*!< [0x032c] UTCPD Case 1 Path Record Register                                */
+    __I  uint32_t C2PRR;                 /*!< [0x0330] UTCPD Case 2 Path Record Register                                */
+    __IO uint32_t NBMCSLICE;             /*!< [0x0334] UTCPD New BMC SLICE Control Register                             */
+    __I  uint32_t BMCDBGR;               /*!< [0x0338] UTCPD BMC SLICE Value Debug Register                             */
 
 } UTCPD_T;
 
@@ -1238,8 +1454,8 @@ typedef struct
 #define UTCPD_IS_TXFALIS_Pos             (4)                                               /*!< UTCPD_T::IS: TXFALIS Position          */
 #define UTCPD_IS_TXFALIS_Msk             (0x1ul << UTCPD_IS_TXFALIS_Pos)                   /*!< UTCPD_T::IS: TXFALIS Mask              */
 
-#define UTCPD_IS_TXDCUTIS_Pos            (5)                                               /*!< UTCPD_T::IS: TXDCUTIS Position         */
-#define UTCPD_IS_TXDCUTIS_Msk            (0x1ul << UTCPD_IS_TXDCUTIS_Pos)                  /*!< UTCPD_T::IS: TXDCUTIS Mask             */
+#define UTCPD_IS_TXDCIS_Pos              (5)                                               /*!< UTCPD_T::IS: TXDCIS Position           */
+#define UTCPD_IS_TXDCIS_Msk              (0x1ul << UTCPD_IS_TXDCIS_Pos)                    /*!< UTCPD_T::IS: TXDCIS Mask               */
 
 #define UTCPD_IS_TXOKIS_Pos              (6)                                               /*!< UTCPD_T::IS: TXOKIS Position           */
 #define UTCPD_IS_TXOKIS_Msk              (0x1ul << UTCPD_IS_TXOKIS_Pos)                    /*!< UTCPD_T::IS: TXOKIS Mask               */
@@ -1277,11 +1493,11 @@ typedef struct
 #define UTCPD_IE_TXFAILIE_Pos            (4)                                               /*!< UTCPD_T::IE: TXFAILIE Position         */
 #define UTCPD_IE_TXFAILIE_Msk            (0x1ul << UTCPD_IE_TXFAILIE_Pos)                  /*!< UTCPD_T::IE: TXFAILIE Mask             */
 
-#define UTCPD_IE_TXDCUTIE_Pos            (5)                                               /*!< UTCPD_T::IE: TXDCUTIE Position         */
-#define UTCPD_IE_TXDCUTIE_Msk            (0x1ul << UTCPD_IE_TXDCUTIE_Pos)                  /*!< UTCPD_T::IE: TXDCUTIE Mask             */
+#define UTCPD_IE_TXDCIE_Pos              (5)                                               /*!< UTCPD_T::IE: TXDCIE Position           */
+#define UTCPD_IE_TXDCIE_Msk              (0x1ul << UTCPD_IE_TXDCIE_Pos)                    /*!< UTCPD_T::IE: TXDCIE Mask               */
 
-#define UTCPD_IE_TXOKIE_Pos              (6)                                               /*!< UTCPD_T::IE: TXOKIE Position           */
-#define UTCPD_IE_TXOKIE_Msk              (0x1ul << UTCPD_IE_TXOKIE_Pos)                    /*!< UTCPD_T::IE: TXOKIE Mask               */
+#define UTCPD_IE_TXSOKIE_Pos             (6)                                               /*!< UTCPD_T::IE: TXSOKIE Position          */
+#define UTCPD_IE_TXSOKIE_Msk             (0x1ul << UTCPD_IE_TXSOKIE_Pos)                   /*!< UTCPD_T::IE: TXSOKIE Mask              */
 
 #define UTCPD_IE_VBAMHIE_Pos             (7)                                               /*!< UTCPD_T::IE: VBAMHIE Position          */
 #define UTCPD_IE_VBAMHIE_Msk             (0x1ul << UTCPD_IE_VBAMHIE_Pos)                   /*!< UTCPD_T::IE: VBAMHIE Mask              */
@@ -1385,8 +1601,8 @@ typedef struct
 #define UTCPD_ROLCTL_DRP_Pos             (6)                                               /*!< UTCPD_T::ROLCTL: DRP Position          */
 #define UTCPD_ROLCTL_DRP_Msk             (0x1ul << UTCPD_ROLCTL_DRP_Pos)                   /*!< UTCPD_T::ROLCTL: DRP Mask              */
 
-#define UTCPD_FUTCTL_VCOVDTDS_Pos        (0)                                               /*!< UTCPD_T::FUTCTL: VCOVDTDS Position     */
-#define UTCPD_FUTCTL_VCOVDTDS_Msk        (0x1ul << UTCPD_FUTCTL_VCOVDTDS_Pos)              /*!< UTCPD_T::FUTCTL: VCOVDTDS Mask         */
+#define UTCPD_FUTCTL_VCOCDTDS_Pos        (0)                                               /*!< UTCPD_T::FUTCTL: VCOCDTDS Position     */
+#define UTCPD_FUTCTL_VCOCDTDS_Msk        (0x1ul << UTCPD_FUTCTL_VCOCDTDS_Pos)              /*!< UTCPD_T::FUTCTL: VCOCDTDS Mask         */
 
 #define UTCPD_FUTCTL_VBOVDTDS_Pos        (1)                                               /*!< UTCPD_T::FUTCTL: VBOVDTDS Position     */
 #define UTCPD_FUTCTL_VBOVDTDS_Msk        (0x1ul << UTCPD_FUTCTL_VBOVDTDS_Pos)              /*!< UTCPD_T::FUTCTL: VBOVDTDS Mask         */
@@ -1471,6 +1687,9 @@ typedef struct
 
 #define UTCPD_FUTSTS_FOFFVB_Pos          (6)                                               /*!< UTCPD_T::FUTSTS: FOFFVB Position       */
 #define UTCPD_FUTSTS_FOFFVB_Msk          (0x1ul << UTCPD_FUTSTS_FOFFVB_Pos)                /*!< UTCPD_T::FUTSTS: FOFFVB Mask           */
+
+#define UTCPD_FUTSTS_INVHRST_Pos         (7)                                               /*!< UTCPD_T::FUTSTS: INVHRST Position      */
+#define UTCPD_FUTSTS_INVHRST_Msk         (0x1ul << UTCPD_FUTSTS_INVHRST_Pos)               /*!< UTCPD_T::FUTSTS: INVHRST Mask          */
 
 #define UTCPD_CMD_CMD_Pos                (0)                                               /*!< UTCPD_T::CMD: CMD Position             */
 #define UTCPD_CMD_CMD_Msk                (0xfful << UTCPD_CMD_CMD_Pos)                     /*!< UTCPD_T::CMD: CMD Mask                 */
@@ -1829,20 +2048,11 @@ typedef struct
 #define UTCPD_VCDGCTL_VCDGEN_Pos         (1)                                               /*!< UTCPD_T::VCDGCTL: VCDGEN Position      */
 #define UTCPD_VCDGCTL_VCDGEN_Msk         (0x1ul << UTCPD_VCDGCTL_VCDGEN_Pos)               /*!< UTCPD_T::VCDGCTL: VCDGEN Mask          */
 
-#define UTCPD_VCDGCTL_VB_ST_DB_Pos       (2)                                               /*!< UTCPD_T::VCDGCTL: VB_ST_DB Position    */
-#define UTCPD_VCDGCTL_VB_ST_DB_Msk       (0x7ul << UTCPD_VCDGCTL_VB_ST_DB_Pos)             /*!< UTCPD_T::VCDGCTL: VB_ST_DB Mask        */
-
-#define UTCPD_VCDGCTL_VB_OP_DB_Pos       (5)                                               /*!< UTCPD_T::VCDGCTL: VB_OP_DB Position    */
-#define UTCPD_VCDGCTL_VB_OP_DB_Msk       (0x3ul << UTCPD_VCDGCTL_VB_OP_DB_Pos)             /*!< UTCPD_T::VCDGCTL: VB_OP_DB Mask        */
-
 #define UTCPD_PHYSLEW_TXRTRIM_Pos        (0)                                               /*!< UTCPD_T::PHYSLEW: TXRTRIM Position     */
 #define UTCPD_PHYSLEW_TXRTRIM_Msk        (0x7ul << UTCPD_PHYSLEW_TXRTRIM_Pos)              /*!< UTCPD_T::PHYSLEW: TXRTRIM Mask         */
 
-#define UTCPD_PHYSLEW_TXFTRIM_Pos        (3)                                               /*!< UTCPD_T::PHYSLEW: TXFTRIM Position     */
+#define UTCPD_PHYSLEW_TXFTRIM_Pos        (4)                                               /*!< UTCPD_T::PHYSLEW: TXFTRIM Position     */
 #define UTCPD_PHYSLEW_TXFTRIM_Msk        (0x7ul << UTCPD_PHYSLEW_TXFTRIM_Pos)              /*!< UTCPD_T::PHYSLEW: TXFTRIM Mask         */
-
-#define UTCPD_PHYSLEW_IDLESEL_Pos        (6)                                               /*!< UTCPD_T::PHYSLEW: IDLESEL Position     */
-#define UTCPD_PHYSLEW_IDLESEL_Msk        (0x3ul << UTCPD_PHYSLEW_IDLESEL_Pos)              /*!< UTCPD_T::PHYSLEW: IDLESEL Mask         */
 
 #define UTCPD_ADGTM_ADGTM_Pos            (0)                                               /*!< UTCPD_T::ADGTM: ADGTM Position         */
 #define UTCPD_ADGTM_ADGTM_Msk            (0xfful << UTCPD_ADGTM_ADGTM_Pos)                 /*!< UTCPD_T::ADGTM: ADGTM Mask             */
@@ -1859,14 +2069,8 @@ typedef struct
 #define UTCPD_RATIO_VBSEL_Pos            (3)                                               /*!< UTCPD_T::RATIO: VBSEL Position         */
 #define UTCPD_RATIO_VBSEL_Msk            (0x1ul << UTCPD_RATIO_VBSEL_Pos)                  /*!< UTCPD_T::RATIO: VBSEL Mask             */
 
-#define UTCPD_RATIO_SPVBUS_Pos           (5)                                               /*!< UTCPD_T::RATIO: SPVBUS Position        */
-#define UTCPD_RATIO_SPVBUS_Msk           (0x1ul << UTCPD_RATIO_SPVBUS_Pos)                 /*!< UTCPD_T::RATIO: SPVBUS Mask            */
-
 #define UTCPD_RATIO_ADCAVG_Pos           (6)                                               /*!< UTCPD_T::RATIO: ADCAVG Position        */
 #define UTCPD_RATIO_ADCAVG_Msk           (0x1ul << UTCPD_RATIO_ADCAVG_Pos)                 /*!< UTCPD_T::RATIO: ADCAVG Mask            */
-
-#define UTCPD_RATIO_SIMSHORT_Pos         (7)                                               /*!< UTCPD_T::RATIO: SIMSHORT Position      */
-#define UTCPD_RATIO_SIMSHORT_Msk         (0x1ul << UTCPD_RATIO_SIMSHORT_Pos)               /*!< UTCPD_T::RATIO: SIMSHORT Mask          */
 
 #define UTCPD_INTFRAME_INTFRAME_Pos      (0)                                               /*!< UTCPD_T::INTFRAME: INTFRAME Position   */
 #define UTCPD_INTFRAME_INTFRAME_Msk      (0xfful << UTCPD_INTFRAME_INTFRAME_Pos)           /*!< UTCPD_T::INTFRAME: INTFRAME Mask       */
@@ -1910,10 +2114,13 @@ typedef struct
 #define UTCPD_BMCSLICE_TRIMV1P1_Pos      (16)                                              /*!< UTCPD_T::BMCSLICE: TRIMV1P1 Position   */
 #define UTCPD_BMCSLICE_TRIMV1P1_Msk      (0x7ul << UTCPD_BMCSLICE_TRIMV1P1_Pos)            /*!< UTCPD_T::BMCSLICE: TRIMV1P1 Mask       */
 
-#define UTCPD_BMCSLICE_TRIMVBUS_Pos      (20)                                              /*!< UTCPD_T::BMCSLICE: TRIMVBUS Position   */
-#define UTCPD_BMCSLICE_TRIMVBUS_Msk      (0x7ul << UTCPD_BMCSLICE_TRIMVBUS_Pos)            /*!< UTCPD_T::BMCSLICE: TRIMVBUS Mask       */
+#define UTCPD_BMCSLICE_TRIMVBUS10_Pos    (20)                                              /*!< UTCPD_T::BMCSLICE: TRIMVBUS10 Position */
+#define UTCPD_BMCSLICE_TRIMVBUS10_Msk    (0x7ul << UTCPD_BMCSLICE_TRIMVBUS10_Pos)          /*!< UTCPD_T::BMCSLICE: TRIMVBUS10 Mask     */
 
-#define UTCPD_BMCSLICE_VTRIM_Pos         (24)                                              /*!< UTCPD_T::BMCSLICE: VTRIM Position      */
+#define UTCPD_BMCSLICE_TRIMVBUS20_Pos    (24)                                              /*!< UTCPD_T::BMCSLICE: TRIMVBUS20 Position */
+#define UTCPD_BMCSLICE_TRIMVBUS20_Msk    (0x7ul << UTCPD_BMCSLICE_TRIMVBUS20_Pos)          /*!< UTCPD_T::BMCSLICE: TRIMVBUS20 Mask     */
+
+#define UTCPD_BMCSLICE_VTRIM_Pos         (28)                                              /*!< UTCPD_T::BMCSLICE: VTRIM Position      */
 #define UTCPD_BMCSLICE_VTRIM_Msk         (0xful << UTCPD_BMCSLICE_VTRIM_Pos)               /*!< UTCPD_T::BMCSLICE: VTRIM Mask          */
 
 #define UTCPD_PHYCTL_PHYPWR_Pos          (0)                                               /*!< UTCPD_T::PHYCTL: PHYPWR Position       */
@@ -1925,8 +2132,6 @@ typedef struct
 #define UTCPD_FRSRXCTL_FRSTX_Pos         (0)                                               /*!< UTCPD_T::FRSRXCTL: FRSTX Position      */
 #define UTCPD_FRSRXCTL_FRSTX_Msk         (0x1ul << UTCPD_FRSRXCTL_FRSTX_Pos)               /*!< UTCPD_T::FRSRXCTL: FRSTX Mask          */
 
-#define UTCPD_FRSRXCTL_DSFRSTX_Pos       (1)                                               /*!< UTCPD_T::FRSRXCTL: DSFRSTX Position    */
-#define UTCPD_FRSRXCTL_DSFRSTX_Msk       (0x1ul << UTCPD_FRSRXCTL_DSFRSTX_Pos)             /*!< UTCPD_T::FRSRXCTL: DSFRSTX Mask        */
 
 #define UTCPD_FRSRXCTL_FRSDVVB_Pos       (2)                                               /*!< UTCPD_T::FRSRXCTL: FRSDVVB Position    */
 #define UTCPD_FRSRXCTL_FRSDVVB_Msk       (0x1ul << UTCPD_FRSRXCTL_FRSDVVB_Pos)             /*!< UTCPD_T::FRSRXCTL: FRSDVVB Mask        */
@@ -1934,27 +2139,104 @@ typedef struct
 #define UTCPD_FRSRXCTL_FRSRXEN_Pos       (3)                                               /*!< UTCPD_T::FRSRXCTL: FRSRXEN Position    */
 #define UTCPD_FRSRXCTL_FRSRXEN_Msk       (0x1ul << UTCPD_FRSRXCTL_FRSRXEN_Pos)             /*!< UTCPD_T::FRSRXCTL: FRSRXEN Mask        */
 
-#define UTCPD_FRSRXCTL_CC1VCOV_Pos       (4)                                               /*!< UTCPD_T::FRSRXCTL: CC1VCOV Position    */
-#define UTCPD_FRSRXCTL_CC1VCOV_Msk       (0x1ul << UTCPD_FRSRXCTL_CC1VCOV_Pos)             /*!< UTCPD_T::FRSRXCTL: CC1VCOV Mask        */
-
-#define UTCPD_FRSRXCTL_CC2VCPS_Pos       (5)                                               /*!< UTCPD_T::FRSRXCTL: CC2VCPS Position    */
-#define UTCPD_FRSRXCTL_CC2VCPS_Msk       (0x1ul << UTCPD_FRSRXCTL_CC2VCPS_Pos)             /*!< UTCPD_T::FRSRXCTL: CC2VCPS Mask        */
-
-#define UTCPD_FRSRXCTL_CC1VCDG_Pos       (6)                                               /*!< UTCPD_T::FRSRXCTL: CC1VCDG Position    */
-#define UTCPD_FRSRXCTL_CC1VCDG_Msk       (0x1ul << UTCPD_FRSRXCTL_CC1VCDG_Pos)             /*!< UTCPD_T::FRSRXCTL: CC1VCDG Mask        */
-
-#define UTCPD_FRSRXCTL_CC2VCDG_Pos       (7)                                               /*!< UTCPD_T::FRSRXCTL: CC2VCDG Position    */
-#define UTCPD_FRSRXCTL_CC2VCDG_Msk       (0x1ul << UTCPD_FRSRXCTL_CC2VCDG_Pos)             /*!< UTCPD_T::FRSRXCTL: CC2VCDG Mask        */
-
 #define UTCPD_VCVOL_VCVOL_Pos            (0)                                               /*!< UTCPD_T::VCVOL: VCVOL Position         */
 #define UTCPD_VCVOL_VCVOL_Msk            (0x3fful << UTCPD_VCVOL_VCVOL_Pos)                /*!< UTCPD_T::VCVOL: VCVOL Mask             */
-
 
 #define UTCPD_CLKINFO_ReadyFlag_Pos      (0)                                               /*!< UTCPD_T::CLKINFO: ReadyFlag Position   */
 #define UTCPD_CLKINFO_ReadyFlag_Msk      (0x1ul << UTCPD_CLKINFO_ReadyFlag_Pos)            /*!< UTCPD_T::CLKINFO: ReadyFlag Mask       */
 
 #define UTCPD_CLKINFO_WKEN_Pos           (4)                                               /*!< UTCPD_T::CLKINFO: WKEN Position        */
 #define UTCPD_CLKINFO_WKEN_Msk           (0x1ul << UTCPD_CLKINFO_WKEN_Pos)                 /*!< UTCPD_T::CLKINFO: WKEN Mask            */
+
+#define UTCPD_PREDET_RNICHK_Pos          (0)                                               /*!< UTCPD_T::PREDET: RNICHK Position       */
+#define UTCPD_PREDET_RNICHK_Msk          (0xful << UTCPD_PREDET_RNICHK_Pos)                /*!< UTCPD_T::PREDET: RNICHK Mask           */
+
+#define UTCPD_PREDET_BNICHK_Pos          (4)                                               /*!< UTCPD_T::PREDET: BNICHK Position       */
+#define UTCPD_PREDET_BNICHK_Msk          (0x7ul << UTCPD_PREDET_BNICHK_Pos)                /*!< UTCPD_T::PREDET: BNICHK Mask           */
+
+#define UTCPD_PREDET_BNW_Pos             (8)                                               /*!< UTCPD_T::PREDET: BNW Position          */
+#define UTCPD_PREDET_BNW_Msk             (0x3ul << UTCPD_PREDET_BNW_Pos)                   /*!< UTCPD_T::PREDET: BNW Mask              */
+
+#define UTCPD_PREDET_DGEN_Pos            (12)                                              /*!< UTCPD_T::PREDET: DGEN Position         */
+#define UTCPD_PREDET_DGEN_Msk            (0x1ul << UTCPD_PREDET_DGEN_Pos)                  /*!< UTCPD_T::PREDET: DGEN Mask             */
+
+#define UTCPD_PREDET_DGACT_Pos           (13)                                              /*!< UTCPD_T::PREDET: DGACT Position        */
+#define UTCPD_PREDET_DGACT_Msk           (0x1ul << UTCPD_PREDET_DGACT_Pos)                 /*!< UTCPD_T::PREDET: DGACT Mask            */
+
+#define UTCPD_PREDET_PSDB_Pos            (14)                                              /*!< UTCPD_T::PREDET: PSDB Position         */
+#define UTCPD_PREDET_PSDB_Msk            (0x3ul << UTCPD_PREDET_PSDB_Pos)                  /*!< UTCPD_T::PREDET: PSDB Mask             */
+
+#define UTCPD_PREDET_MINWBCN_Pos         (16)                                              /*!< UTCPD_T::PREDET: MINWBCN Position      */
+#define UTCPD_PREDET_MINWBCN_Msk         (0x3ful << UTCPD_PREDET_MINWBCN_Pos)              /*!< UTCPD_T::PREDET: MINWBCN Mask          */
+
+#define UTCPD_PREDET_MAXWBCN_Pos         (24)                                              /*!< UTCPD_T::PREDET: MAXWBCN Position      */
+#define UTCPD_PREDET_MAXWBCN_Msk         (0x3ful << UTCPD_PREDET_MAXWBCN_Pos)              /*!< UTCPD_T::PREDET: MAXWBCN Mask          */
+
+#define UTCPD_NIRR_WBW_Pos               (0)                                               /*!< UTCPD_T::NIRR: WBW Position            */
+#define UTCPD_NIRR_WBW_Msk               (0x3ful << UTCPD_NIRR_WBW_Pos)                    /*!< UTCPD_T::NIRR: WBW Mask                */
+
+#define UTCPD_NIRR_NBW_Pos               (8)                                               /*!< UTCPD_T::NIRR: NBW Position            */
+#define UTCPD_NIRR_NBW_Msk               (0x3ful << UTCPD_NIRR_NBW_Pos)                    /*!< UTCPD_T::NIRR: NBW Mask                */
+
+#define UTCPD_NIRR_CSEL_Pos              (14)                                              /*!< UTCPD_T::NIRR: CSEL Position           */
+#define UTCPD_NIRR_CSEL_Msk              (0x3ul << UTCPD_NIRR_CSEL_Pos)                    /*!< UTCPD_T::NIRR: CSEL Mask               */
+
+#define UTCPD_C0PRR_C0PWBPN_Pos          (0)                                               /*!< UTCPD_T::C0PRR: C0PWBPN Position       */
+#define UTCPD_C0PRR_C0PWBPN_Msk          (0x3ful << UTCPD_C0PRR_C0PWBPN_Pos)               /*!< UTCPD_T::C0PRR: C0PWBPN Mask           */
+
+#define UTCPD_C0PRR_C0PNBPN_Pos          (8)                                               /*!< UTCPD_T::C0PRR: C0PNBPN Position       */
+#define UTCPD_C0PRR_C0PNBPN_Msk          (0x3ful << UTCPD_C0PRR_C0PNBPN_Pos)               /*!< UTCPD_T::C0PRR: C0PNBPN Mask           */
+
+#define UTCPD_C0PRR_C0PORF_Pos           (15)                                              /*!< UTCPD_T::C0PRR: C0PORF Position        */
+#define UTCPD_C0PRR_C0PORF_Msk           (0x1ul << UTCPD_C0PRR_C0PORF_Pos)                 /*!< UTCPD_T::C0PRR: C0PORF Mask            */
+
+#define UTCPD_C0PRR_C0BRT_Pos            (16)                                              /*!< UTCPD_T::C0PRR: C0BRT Position         */
+#define UTCPD_C0PRR_C0BRT_Msk            (0x7ul << UTCPD_C0PRR_C0BRT_Pos)                  /*!< UTCPD_T::C0PRR: C0BRT Mask             */
+
+#define UTCPD_C1PRR_C1PWBPN_Pos          (0)                                               /*!< UTCPD_T::C1PRR: C1PWBPN Position       */
+#define UTCPD_C1PRR_C1PWBPN_Msk          (0x3ful << UTCPD_C1PRR_C1PWBPN_Pos)               /*!< UTCPD_T::C1PRR: C1PWBPN Mask           */
+
+#define UTCPD_C1PRR_C1PNBPN_Pos          (8)                                               /*!< UTCPD_T::C1PRR: C1PNBPN Position       */
+#define UTCPD_C1PRR_C1PNBPN_Msk          (0x3ful << UTCPD_C1PRR_C1PNBPN_Pos)               /*!< UTCPD_T::C1PRR: C1PNBPN Mask           */
+
+#define UTCPD_C1PRR_C1PORF_Pos           (15)                                              /*!< UTCPD_T::C1PRR: C1PORF Position        */
+#define UTCPD_C1PRR_C1PORF_Msk           (0x1ul << UTCPD_C1PRR_C1PORF_Pos)                 /*!< UTCPD_T::C1PRR: C1PORF Mask            */
+
+#define UTCPD_C1PRR_C1BRT_Pos            (16)                                              /*!< UTCPD_T::C1PRR: C1BRT Position         */
+#define UTCPD_C1PRR_C1BRT_Msk            (0x7ul << UTCPD_C1PRR_C1BRT_Pos)                  /*!< UTCPD_T::C1PRR: C1BRT Mask             */
+
+#define UTCPD_C2PRR_C2PWBPN_Pos          (0)                                               /*!< UTCPD_T::C2PRR: C2PWBPN Position       */
+#define UTCPD_C2PRR_C2PWBPN_Msk          (0x3ful << UTCPD_C2PRR_C2PWBPN_Pos)               /*!< UTCPD_T::C2PRR: C2PWBPN Mask           */
+
+#define UTCPD_C2PRR_C2PNBPN_Pos          (8)                                               /*!< UTCPD_T::C2PRR: C2PNBPN Position       */
+#define UTCPD_C2PRR_C2PNBPN_Msk          (0x3ful << UTCPD_C2PRR_C2PNBPN_Pos)               /*!< UTCPD_T::C2PRR: C2PNBPN Mask           */
+
+#define UTCPD_C2PRR_C2PORF_Pos           (15)                                              /*!< UTCPD_T::C2PRR: C2PORF Position        */
+#define UTCPD_C2PRR_C2PORF_Msk           (0x1ul << UTCPD_C2PRR_C2PORF_Pos)                 /*!< UTCPD_T::C2PRR: C2PORF Mask            */
+
+#define UTCPD_C2PRR_C2BRT_Pos            (16)                                              /*!< UTCPD_T::C2PRR: C2BRT Position         */
+#define UTCPD_C2PRR_C2BRT_Msk            (0x7ul << UTCPD_C2PRR_C2BRT_Pos)                  /*!< UTCPD_T::C2PRR: C2BRT Mask             */
+
+#define UTCPD_NBMCSLICE_NSLICEL_Pos      (0)                                               /*!< UTCPD_T::NBMCSLICE: NSLICEL Position   */
+#define UTCPD_NBMCSLICE_NSLICEL_Msk      (0x7ul << UTCPD_NBMCSLICE_NSLICEL_Pos)            /*!< UTCPD_T::NBMCSLICE: NSLICEL Mask       */
+
+#define UTCPD_NBMCSLICE_NSLICEH_Pos      (4)                                               /*!< UTCPD_T::NBMCSLICE: NSLICEH Position   */
+#define UTCPD_NBMCSLICE_NSLICEH_Msk      (0x7ul << UTCPD_NBMCSLICE_NSLICEH_Pos)            /*!< UTCPD_T::NBMCSLICE: NSLICEH Mask       */
+
+#define UTCPD_NBMCSLICE_NSLICEM_Pos      (8)                                               /*!< UTCPD_T::NBMCSLICE: NSLICEM Position   */
+#define UTCPD_NBMCSLICE_NSLICEM_Msk      (0x7ul << UTCPD_NBMCSLICE_NSLICEM_Pos)            /*!< UTCPD_T::NBMCSLICE: NSLICEM Mask       */
+
+#define UTCPD_NBMCSLICE_NBCMEN_Pos       (15)                                              /*!< UTCPD_T::NBMCSLICE: NBCMEN Position    */
+#define UTCPD_NBMCSLICE_NBCMEN_Msk       (0x1ul << UTCPD_NBMCSLICE_NBCMEN_Pos)             /*!< UTCPD_T::NBMCSLICE: NBCMEN Mask        */
+
+#define UTCPD_BMCDBGR_SLICEL_Pos         (0)                                               /*!< UTCPD_T::BMCDBGR: SLICEL Position      */
+#define UTCPD_BMCDBGR_SLICEL_Msk         (0x7ul << UTCPD_BMCDBGR_SLICEL_Pos)               /*!< UTCPD_T::BMCDBGR: SLICEL Mask          */
+
+#define UTCPD_BMCDBGR_SLICEH_Pos         (4)                                               /*!< UTCPD_T::BMCDBGR: SLICEH Position      */
+#define UTCPD_BMCDBGR_SLICEH_Msk         (0x7ul << UTCPD_BMCDBGR_SLICEH_Pos)               /*!< UTCPD_T::BMCDBGR: SLICEH Mask          */
+
+#define UTCPD_BMCDBGR_SLICEM_Pos         (8)                                               /*!< UTCPD_T::BMCDBGR: SLICEM Position      */
+#define UTCPD_BMCDBGR_SLICEM_Msk         (0x7ul << UTCPD_BMCDBGR_SLICEM_Pos)               /*!< UTCPD_T::BMCDBGR: SLICEM Mask          */
 
 
 /** @} UTCPD_CONST */

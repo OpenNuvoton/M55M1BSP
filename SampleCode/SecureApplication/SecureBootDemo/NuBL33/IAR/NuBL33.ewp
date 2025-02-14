@@ -70,11 +70,11 @@
                 </option>
                 <option>
                     <name>OGLastSavedByProductVersion</name>
-                    <state>9.40.1.63870</state>
+                    <state>9.50.2.71646</state>
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -228,7 +228,8 @@
                 <option>
                     <name>CCDefines</name>
                     <state>NDEBUG</state>
-                    <state>DEBUG_PORT=UART6_NS</state>
+                    <state>NVT_CMSE_NON_SECURE</state>
+                    <state>DEBUG_PORT=UART0_NS</state>
                     <state>NVT_DBG_UART_OFF</state>
                     <state>NVT_VECTOR_ON_FLASH</state>
                 </option>
@@ -739,7 +740,7 @@
                 </option>
                 <option>
                     <name>IlinkConfigDefines</name>
-                    <state></state>
+                    <state>SIGNED_HDR_SIZE=0x400</state>
                 </option>
                 <option>
                     <name>IlinkMapFile</name>

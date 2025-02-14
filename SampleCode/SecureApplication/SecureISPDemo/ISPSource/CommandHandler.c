@@ -26,14 +26,6 @@ uint32_t CMDLIB_VERSION(void)
 #define ECC_KEY_SIZE        256             /* 256-bits */
 #define ALL_ONE_2PAGE_CHKS  0xB4293435      /* 2 page all 0xFF CRC32 checksum value */
 
-
-//volatile ISP_INFO_T     g_ISPInfo = {0};
-
-///* Declare Client's ECC Key pair */
-//const char gacPrivKey[] = "d0ab2cb9eb88976e82f107598077ce50d8c7b67def7039ee5ba39ee0dd3be411";
-//const char gacPubKey0[] = "d32438a1b4428541c564eeed79669b4bd3bf601c758469545e013c8fe8af7ef6";
-//const char gacPubKey1[] = "476de8f3c6e6c48a8bacf1e1827cfb82501833c2bb816344f996533b1b031706";
-
 void Hex2Reg(char input[], uint32_t volatile reg[]);
 void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
 
@@ -1084,27 +1076,6 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
     DBG("Repone.\n\n");
     return ret;
 }
-
-// [Begin] TESTCHIP_ONLY - This function should be removed in M55M1.
-uint32_t FMC_GetChkSum(uint32_t u32StartAddr, uint32_t u32ByteSize)
-{
-    uint32_t u32CRC32Checksum = 0xFFFFFFFF;
-
-    /* Configure CRC controller for CRC-CRC32 mode */
-    CRC_Open(CRC_32, (CRC_WDATA_RVS | CRC_CHECKSUM_RVS | CRC_CHECKSUM_COM), 0xFFFFFFFFul, CRC_CPU_WDATA_32);
-    CRC_SET_DMA_SADDR(CRC, u32StartAddr);
-    CRC_SET_DMACNT_WORD(CRC, u32ByteSize / 4);
-    CRC_DMA_START(CRC);
-
-    while ((CRC_GET_STATUS(CRC) & CRC_DMASTS_FINISH_Msk) == 0)
-        ;
-
-    CRC->DMASTS = CRC_DMASTS_FINISH_Msk;
-    u32CRC32Checksum = CRC_GetChecksum();
-
-    return u32CRC32Checksum;
-}
-// [End] TESTCHIP_ONLY
 
 int32_t _PageErase(uint32_t addr, uint32_t count, uint32_t u32CmdMask)
 {

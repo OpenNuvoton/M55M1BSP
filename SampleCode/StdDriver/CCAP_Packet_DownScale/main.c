@@ -11,9 +11,9 @@
 #include "NuMicro.h"
 #include "sensor.h"
 
-#define CCAP_OUTPUT_WIDTH       160
-#define CCAP_OUTPUT_HEIGHT      120
-uint8_t g_au8FrameBuffer[DCACHE_ALIGN_LINE_SIZE(CCAP_OUTPUT_WIDTH * CCAP_OUTPUT_HEIGHT * 2)] __ALIGNED(DCACHE_LINE_SIZE);
+#define CCAP_OUTPUT_WIDTH       320
+#define CCAP_OUTPUT_HEIGHT      240
+NVT_NOINIT uint8_t g_au8FrameBuffer[DCACHE_ALIGN_LINE_SIZE(CCAP_OUTPUT_WIDTH * CCAP_OUTPUT_HEIGHT * 2)] __ALIGNED(DCACHE_LINE_SIZE);
 
 /*------------------------------------------------------------------------------------------*/
 /* To run CCAPInterruptHandler, when CCAP frame end interrupt                               */
@@ -25,14 +25,15 @@ volatile uint32_t g_u32FramePass = 0;
 /*------------------------------------------------------------------------------------------*/
 NVT_ITCM void CCAP_IRQHandler(void)
 {
+    int32_t  i32TimeoutCnt;
     uint32_t u32IntStatus = CCAP_GET_INT_STS();
 
     if (CCAP_IsIntEnabled(CCAP_INT_VIEN_ENABLE) && (u32IntStatus & CCAP_INTSTS_VINTF_Msk) == CCAP_INTSTS_VINTF_Msk)
     {
-#ifdef NVT_DCACHE_ON
-        /* Invalidate data cache of received frame buffer.  */
+#if (NVT_DCACHE_ON == 1)
+        /* Invalidate the data cache for the received frame buffer to ensure data coherency if D-Cache is enabled. */
         SCB_InvalidateDCache_by_Addr(g_au8FrameBuffer, sizeof(g_au8FrameBuffer));
-#endif
+#endif  // (NVT_DCACHE_ON == 1)
         g_u32FramePass++;
         CCAP_CLR_INT_FLAG(CCAP_INTSTS_VINTF_Msk);   /* Clear Frame end interrupt */
     }
@@ -48,36 +49,73 @@ NVT_ITCM void CCAP_IRQHandler(void)
     }
 
     CCAP_EnableUpdate();
-    // CPU read interrupt flag register to wait write(clear) instruction completement.
-    u32IntStatus = CCAP_GET_INT_STS();
+
+    // Loop until either the flag is cleared or timeout occurs
+    i32TimeoutCnt = 1000;
+
+    while (1)
+    {
+        // Check flag is cleared
+        if (CCAP_GET_INT_STS() == 0)
+        {
+            break;
+        }
+
+        // Check timeout
+        if (i32TimeoutCnt-- == 0)
+        {
+            printf("Clear interrupt flag timeout !\n");
+            break;
+        }
+    }
 }
 
-void CCAP_SetFreq(uint32_t u32ModFreqKHz, uint32_t u32SensorFreq)
+void CCAP_SetFreq(uint32_t u32CCAP_ClkSrc, uint32_t u32SensorFreq)
 {
-    int32_t i32Div;
-
-    NVT_UNUSED(i32Div);
+    int32_t  i32Div;
+    uint32_t u32CCAP_Clk;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
 
-    /* Enable CCAP Clock */
-    CLK_EnableModuleClock(CCAP0_MODULE);
+    if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_HIRC)
+        u32CCAP_Clk = __HIRC;
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_MIRC)
+        u32CCAP_Clk = CLK_GetMIRCFreq();
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_HCLK2)
+        u32CCAP_Clk = CLK_GetHCLK2Freq();
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_APLL0_DIV2)
+        u32CCAP_Clk = CLK_GetAPLL0ClockFreq() / 2;
+    else if (u32CCAP_ClkSrc == CLK_CCAPSEL_CCAP0SEL_HXT)
+        u32CCAP_Clk = CLK_GetHXTFreq();
+    else
+    {
+        printf("Invalid CCAP clock source !\n");
+        return ;
+    }
 
-    /* Reset IP */
-    SYS_ResetModule(SYS_CCAP0RST);
+    CLK_SetModuleClock(CCAP0_MODULE, u32CCAP_ClkSrc, 0);
 
-    /* Specified sensor clock */
-    CLK_SetModuleClock(CCAP0_MODULE, CLK_CCAPSEL_CCAP0SEL_HIRC, 0);
-    /* Not support in TESTCHIP_ONLY
-        i32Div= (CLK_GetHCLK2Freq() / u32SensorFreq) - 1;
-        if(i32Div < 0)
+    if (u32SensorFreq <= u32CCAP_Clk)
+    {
+        i32Div = (u32CCAP_Clk / u32SensorFreq) - 1;
+
+        if (i32Div < 0)
             i32Div = 0;
-        CLK->VSENSEDIV = (CLK->VSENSEDIV & ~CLK_VSENSEDIV_VSENSEDIV_Msk) | (i32Div << CLK_VSENSEDIV_VSENSEDIV_Pos);
-     * Not support in TESTCHIP_ONLY */
+    }
+    else
+    {
+        i32Div = 0;
+    }
+
+    CLK->VSENSEDIV = (CLK->VSENSEDIV & ~CLK_VSENSEDIV_VSENSEDIV_Msk) | (i32Div << CLK_VSENSEDIV_VSENSEDIV_Pos);
 
     /* Lock protected registers */
     SYS_LockReg();
+
+    printf("CCAP   engine clock: %d Hz\n", u32CCAP_Clk);
+    printf("Target sensor clock: %d Hz.\n", u32SensorFreq);
+    printf("Actual sensor clock: %d Hz. Divider=%d+1\n", u32CCAP_Clk / (i32Div + 1), i32Div);
 }
 
 int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
@@ -85,7 +123,7 @@ int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
     uint32_t u32Frame;
 
     /* Initialize sensor and set output format as YUV422 */
-    if (psSensorInfo->pfnInitSensor(0) == FALSE)
+    if (psSensorInfo->pfnInitSensor((uint32_t)psSensorInfo) == FALSE)
     {
         printf("Init sensor failed !\n");
         return -1;
@@ -98,7 +136,7 @@ int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
     CCAP_EnableInt(CCAP_INT_VIEN_ENABLE);
 
     /* Set Vsync polarity, Hsync polarity, pixel clock polarity, Sensor Format and Order */
-    CCAP_Open(psSensorInfo->m_u32Polarity, psSensorInfo->m_u32InputFormat, CCAP_PAR_OUTFMT_YUV422);
+    CCAP_Open((psSensorInfo->m_u32Polarity | psSensorInfo->m_u32InputFormat | CCAP_PAR_OUTFMT_YUV422), CCAP_CTL_PKTEN);
 
     /* Set Cropping Window Vertical/Horizontal Starting Address and Cropping Window Size */
     CCAP_SetCroppingWindow(0, 0, psSensorInfo->m_u16Height, psSensorInfo->m_u16Width);
@@ -115,6 +153,7 @@ int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
     /* Start Image Capture Interface */
     CCAP_Start();
 
+    g_u32FramePass = 0;
     u32Frame = g_u32FramePass;
 
     while (1)
@@ -135,8 +174,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -149,6 +188,9 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOD_MODULE);
     CLK_EnableModuleClock(GPIOG_MODULE);
     CLK_EnableModuleClock(GPIOH_MODULE);
+    CLK_EnableModuleClock(CCAP0_MODULE);
+    /* Reset IP */
+    SYS_ResetModule(SYS_CCAP0RST);
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
@@ -167,7 +209,7 @@ void SYS_Init(void)
     SET_CCAP_PIXCLK_PG9();
     SET_CCAP_SCLK_PG10();
     SET_CCAP_VSYNC_PG12();
-    SET_CCAP_HSYNC_PG13();
+    SET_CCAP_HSYNC_PD7();
 
     /* Lock protected registers */
     SYS_LockReg();
@@ -188,7 +230,7 @@ int32_t main(void)
     printf("+--------------------------------------------+\n");
 
     /* Init CCAP clock and Sensor clock */
-    CCAP_SetFreq(12000000, 12000000);
+    CCAP_SetFreq(CLK_CCAPSEL_CCAP0SEL_HCLK2, 24000000);
 
     /* Using Packet format to Image down scale */
     if (PacketFormatDownScale(&g_sSensorHM1055) != 0)

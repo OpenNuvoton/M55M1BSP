@@ -188,6 +188,7 @@ void SYS_Init(void)
 
     /* Select CAN FD0 clock source is APPL0/2 */
     CLK_SetModuleClock(CANFD0_MODULE, CLK_CANFDSEL_CANFD0SEL_APLL0_DIV2, CLK_CANFDDIV_CANFD0DIV(1));
+
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
@@ -199,9 +200,9 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* Set PJ multi-function pins for CAN RXD and TXD */
-    SET_CAN0_RXD_PJ11();
-    SET_CAN0_TXD_PJ10();
+    /* Set PJ multi-function pins for CANFD RXD and TXD */
+    SET_CANFD0_RXD_PJ11();
+    SET_CANFD0_TXD_PJ10();
 }
 
 
@@ -233,8 +234,6 @@ void CANFD_MonitorMode_Init(uint32_t u32NormBitRate, uint32_t u32DataBitRate)
 }
 
 
-
-
 /*---------------------------------------------------------------------------------------------------------*/
 /*                                         Main Function                                                   */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -252,6 +251,7 @@ int32_t main(void)
 #endif
     /* Init Debug UART for printf */
     InitDebugUart();
+
     /* Lock protected registers */
     SYS_LockReg();
 
@@ -296,7 +296,7 @@ int32_t main(void)
     printf("|                                                                             |\n");
     printf("+-----------------------------------------------------------------------------+\n\n");
 
-    /* CANFD interface initialization*/
+    /* CANFD interface initialization */
     CANFD_MonitorMode_Init(1000000, 2000000);
 
     while (1)
@@ -306,7 +306,7 @@ int32_t main(void)
             if (g_u8RxFifo0MsgIndex > 2)
                 g_u8RxFifo0MsgIndex = 0;
 
-            /*Receive the Rx Fifo0 message(Standard ID) */
+            /* Receive the Rx Fifo0 message(Standard ID) */
             CANFD_ReadRxFifoMsg(CANFD0, 0, &g_sRxFifo0MsgFrame[g_u8RxFifo0MsgIndex]);
             g_u8RxFifo0MsgIndex++;
             g_u8RxFifo0RcvOk = 0;
@@ -323,7 +323,7 @@ int32_t main(void)
             if (g_u8RxFifo1MsgIndex > 2)
                 g_u8RxFifo1MsgIndex = 0;
 
-            /*Receive the Rx Fifo0 message(Extended ID) */
+            /* Receive the Rx Fifo0 message(Extended ID) */
             CANFD_ReadRxFifoMsg(CANFD0, 1, &g_sRxFifo1MsgFrame[g_u8RxFifo1MsgIndex]);
             g_u8RxFifo1MsgIndex++;
             g_u8RxFifo1RcvOk = 0;

@@ -11,16 +11,26 @@
 #include <string.h>
 #include "NuMicro.h"
 
-static volatile int32_t g_ICE_Connected = 1;
-
 #ifndef STDIN_ECHO
-    #define STDIN_ECHO      0       // STDIN: echo to STDOUT
+    #define STDIN_ECHO         0    // STDIN: echo to STDOUT
+#endif
+
+#ifndef TRACK_HARDFAULT
+    #define TRACK_HARDFAULT    0    // Set to 1 to enable hardfault status tracking; set to 0 to disable.
 #endif
 
 #if defined(DEBUG_ENABLE_SEMIHOST)
-/* The static buffer is used to speed up the semihost */
-static char g_buf[16];
+
+static volatile int32_t g_ICE_Connected = 1;
 static uint8_t g_buf_len = 0;
+
+/* The static buffer is used to speed up the semihost */
+#if (NVT_DCACHE_ON == 1)
+    /* This buffer could be accessed by CPU and ICE therefore place in Non-Cacheable region to prevent cache coherence issues. */
+    NVT_NONCACHEABLE_INIT static char g_buf[16];
+#else
+    static char g_buf[16];
+#endif
 
 /**
  * @brief      The function to process semihosted command
@@ -69,12 +79,11 @@ int32_t SH_DoCommand(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0)
 #endif
 
 /**
- * @brief     Routine to send a char
+ * @brief     Send a character data to UART debug port.
  *
- * @param[in] ch  A character data writes to debug port
- * @returns   Send value from UART debug port
+ * @param[in] ch: A character data writes to debug port
  *
- * @details   Send a target char to UART debug port .
+ * @returns   None
  */
 #ifndef NONBLOCK_PRINTF
 static void SendChar_ToUART(int ch)
@@ -153,12 +162,11 @@ static void SendChar_ToUART(int ch)
 #endif
 
 /**
- * @brief     Routine to send a char
+ * @brief     Send a character data to UART debug port or semihost.
  *
- * @param[in] ch A character data writes to debug port
- * @returns   Send value from UART debug port or semihost
+ * @param[in] ch: A character data writes to debug port
  *
- * @details   Send a target char to UART debug port or semihost.
+ * @returns   None
  */
 static void SendChar(int ch)
 {
@@ -197,13 +205,11 @@ static void SendChar(int ch)
 }
 
 /**
- * @brief    Routine to get a char
+ * @brief    Wait UART debug port or semihost to input a char.
  *
  * @param    None
  *
- * @returns  Get value from UART debug port or semihost
- *
- * @details  Wait UART debug port or semihost to input a char.
+ * @returns  Get character data from UART debug port or semihost
  */
 static char GetChar(void)
 {
@@ -265,6 +271,156 @@ static char GetChar(void)
 #endif
 }
 
+#if defined(TRACK_HARDFAULT) && (TRACK_HARDFAULT==1)
+static void usage_fault_track(uint32_t u32CFSR)
+{
+    /* Usage Fault Status Register */
+    printf("usage fault: ");
+
+    if (u32CFSR & SCB_CFSR_UNDEFINSTR_Msk)
+    {
+        printf("UNDEFINSTR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_INVSTATE_Msk)
+    {
+        printf("INVSTATE ");
+    }
+
+    if (u32CFSR & SCB_CFSR_INVPC_Msk)
+    {
+        printf("INVPC ");
+    }
+
+    if (u32CFSR & SCB_CFSR_NOCP_Msk)
+    {
+        printf("NOCP ");
+    }
+
+    if (u32CFSR & SCB_CFSR_UNALIGNED_Msk)
+    {
+        printf("UNALIGNED ");
+    }
+
+    if (u32CFSR & SCB_CFSR_DIVBYZERO_Msk)
+    {
+        printf("DIVBYZERO ");
+    }
+
+    printf("\n");
+}
+
+static void bus_fault_track(uint32_t u32CFSR)
+{
+    /* Bus Fault Status Register */
+    printf("usage fault: ");
+
+    if (u32CFSR & SCB_CFSR_IBUSERR_Msk)
+    {
+        printf("IBUSERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_PRECISERR_Msk)
+    {
+        printf("PRECISERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_IMPRECISERR_Msk)
+    {
+        printf("IMPRECISERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_UNSTKERR_Msk)
+    {
+        printf("UNSTKERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_STKERR_Msk)
+    {
+        printf("STKERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_BFARVALID_Msk)
+    {
+        printf("SCB->BFAR:%08X ", SCB->BFAR);
+    }
+
+    printf("\n");
+}
+
+static void mem_manage_fault_track(uint32_t u32CFSR)
+{
+    /* Memory Fault Status Register */
+    printf("mem manage fault: ");
+
+    if (u32CFSR & SCB_CFSR_IACCVIOL_Msk)
+    {
+        printf("IACCVIOL ");
+    }
+
+    if (u32CFSR & SCB_CFSR_DACCVIOL_Msk)
+    {
+        printf("DACCVIOL ");
+    }
+
+    if (u32CFSR & SCB_CFSR_MUNSTKERR_Msk)
+    {
+        printf("MUNSTKERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_MSTKERR_Msk)
+    {
+        printf("MSTKERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_MLSPERR_Msk)
+    {
+        printf("MLSPERR ");
+    }
+
+    if (u32CFSR & SCB_CFSR_MMARVALID_Msk)
+    {
+        printf("SCB->MMFAR:%08X ", SCB->MMFAR);
+    }
+
+    printf("\n");
+
+}
+
+static void TrackHardFault(void)
+{
+    if (SCB->HFSR & SCB_HFSR_VECTTBL_Msk)
+    {
+        printf("failed vector fetch\n");
+    }
+
+    if (SCB->HFSR & SCB_HFSR_FORCED_Msk)
+    {
+        uint32_t u32SCB_CFSR = SCB->CFSR;
+
+        if (u32SCB_CFSR & SCB_CFSR_BUSFAULTSR_Msk)
+        {
+            bus_fault_track(u32SCB_CFSR);
+        }
+
+        if (u32SCB_CFSR & SCB_CFSR_MEMFAULTSR_Msk)
+        {
+            mem_manage_fault_track(u32SCB_CFSR);
+        }
+
+        if (u32SCB_CFSR & SCB_CFSR_USGFAULTSR_Msk)
+        {
+            usage_fault_track(u32SCB_CFSR);
+        }
+    }
+
+    if (SCB->HFSR & SCB_HFSR_DEBUGEVT_Msk)
+    {
+        printf("debug event\n");
+    }
+}
+#endif
+
 __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 {
     uint32_t inst, addr, taddr, tdata;
@@ -301,16 +457,18 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
             If the instruction is 0xBEAB, it means it is caused by BKPT without ICE connected.
             We still return for output/input message to UART.
         */
+#if defined(DEBUG_ENABLE_SEMIHOST)
         g_ICE_Connected = 0;        // Set a flag for ICE offline
+#endif
         pu32StackFrame[6] += 2;     // Return to next instruction
         return pu32StackFrame[5];   // Keep lr in R0
     }
 
     /* It is casued by hardfault (Not semihost). Just process the hard fault here. */
-    printf("HardFault Analysis:\n");
-    printf("Hard fault. pc=0x%08X, lr=0x%08X, xpsr=0x%08X\n",
+    printf("\nHardFault Analysis:\n");
+    printf("    PC  : 0x%08X, LR  : 0x%08X, XPSR : 0x%08X\n",
            pu32StackFrame[5], pu32StackFrame[6], pu32StackFrame[7]);
-    printf("%11s cfsr=0x%08X, bfar=0x%08X, mmfar=0x%08X\n", "", u32CFSR, u32BFAR, SCB->MMFAR);
+    printf("    CFSR: 0x%08X, BFAR: 0x%08X, MMFAR: 0x%08X\n", u32CFSR, u32BFAR, SCB->MMFAR);
     printf("Instruction code = %x\n", inst);
 
     if ((inst >> 12) == 5)
@@ -369,8 +527,20 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
         printf("Unexpected instruction\n");
     }
 
+    /* Enable hardfault tracking when TRACK_HARDFAULT is set to 1. */
+#if defined(TRACK_HARDFAULT) && (TRACK_HARDFAULT==1)
+    TrackHardFault();
+#endif
+
+#if (CHECK_SCU_VIOLATION == 1)
+    // If CHECK_SCU_VIOLATION is enabled, the code continues execution to check the SCU violation status.
+    return 0;
+#else
+
     // Halt here
     while (1);
+
+#endif
 }
 
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION)

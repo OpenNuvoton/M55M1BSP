@@ -71,9 +71,10 @@ assert i==-10
 
 print("Barycenter")
 
-a=[0] * 12
-w=np.array([[2] * 12])
-w[0,11]=3
+a=np.zeros((12,3))
+w=np.array([[2.0] * 12])[0]
+w[0]=3
+w[11]=3
 a[0] =[0., 0., -0.951057]
 a[1] =[0., 0., 0.951057]
 a[2] =[-0.850651, 0., -0.425325]
@@ -87,14 +88,22 @@ a[9] =[-0.262866, 0.809017, -0.425325]
 a[10]=[0.262866, -0.809017, 0.425325]
 a[11]=[0.262866, 0.809017, 0.425325]
 
-scaled=a * w.T
-ref=np.sum(scaled,axis=0)/np.sum(w)
-print(ref)
 
-result=dsp.arm_barycenter_f32(np.array(a).reshape(12*3),w.reshape(12),12,3)
-print(result)
+scaled= np.dot(a.T , w)
+print(scaled)
+ref=scaled/np.sum(w)
+#print(ref)
 
-assert_allclose(ref,result,1e-6)
+points = np.array(a).reshape(12*3)
+weights = w.reshape(12)
+
+#print(points)
+#print(weights)
+
+result=dsp.arm_barycenter_f32(points,weights,12,3)
+
+
+assert_allclose(ref,result,rtol=1e-6,atol=1e-6)
 
 print("Weighted sum")
 
@@ -431,12 +440,12 @@ ref = sa
 res = dsp.arm_copy_f64(sa)
 assert_allclose(ref,res,1e-10,1e-10)
 
-print("arm_div_q63_to_q31")
+print("arm_div_int64_to_int32")
 den=0x7FFF00000000 
 num=0x10000
 ref=den//num
 
-res=dsp.arm_div_q63_to_q31(den,num)
+res=dsp.arm_div_int64_to_int32(den,num)
 print(ref)
 print(res)
 

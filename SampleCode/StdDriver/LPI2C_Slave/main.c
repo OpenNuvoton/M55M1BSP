@@ -18,6 +18,8 @@ volatile uint8_t g_u8SlvDataLen;
 volatile uint32_t slave_buff_addr;
 volatile uint8_t g_au8SlvData[256];
 volatile uint8_t g_au8SlvRxData[3];
+volatile uint8_t g_u8SlvTRxAbortFlag = 0;
+volatile uint8_t g_u8TimeoutFlag = 0;
 
 typedef void (*LPI2C_FUNC)(uint32_t u32Status);
 
@@ -35,6 +37,7 @@ NVT_ITCM void LPI2C0_IRQHandler(void)
     {
         /* Clear LPI2C0 Timeout Flag */
         LPI2C_ClearTimeoutFlag(LPI2C0);
+        g_u8TimeoutFlag = 1;
     }
     else
     {
@@ -88,12 +91,12 @@ void LPI2C_SlaveTRx(uint32_t u32Status)
         slave_buff_addr++;
         LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI_AA);
     }
-    else if (u32Status == 0xB8)                 /* Data byte in I2CDAT has been transmitted ACK has been received */
+    else if (u32Status == 0xB8)                 /* Data byte in LPI2CDAT has been transmitted ACK has been received */
     {
         LPI2C_SET_DATA(LPI2C0, g_au8SlvData[slave_buff_addr++]);
         LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI_AA);
     }
-    else if (u32Status == 0xC0)                 /* Data byte or last data in I2CDAT has been transmitted
+    else if (u32Status == 0xC0)                 /* Data byte or last data in LPI2CDAT has been transmitted
                                                    Not ACK has been received */
     {
         LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI_AA);
@@ -115,8 +118,23 @@ void LPI2C_SlaveTRx(uint32_t u32Status)
     }
     else
     {
-        /* TO DO */
-        printf("Status 0x%x is NOT processed\n", u32Status);
+        printf("[SlaveTRx] Status [0x%x] Unexpected abort!!\n", u32Status);
+
+        if (u32Status == 0x68)              /* Slave receive arbitration lost, clear SI */
+        {
+            LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI_AA);
+        }
+        else if (u32Status == 0xB0)         /* Address transmit arbitration lost, clear SI  */
+        {
+            LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI_AA);
+        }
+        else                                /* Slave bus error, stop LPI2C and clear SI */
+        {
+            LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_STO_SI);
+            LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI);
+        }
+
+        g_u8SlvTRxAbortFlag = 1;
     }
 }
 
@@ -127,24 +145,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -188,7 +191,7 @@ void LPI2C0_Init(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
-    uint32_t i;
+    uint32_t i, u32TimeOutCnt;
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();
     /* Init Debug UART to 115200-8N1 for print message */
@@ -206,7 +209,7 @@ int32_t main(void)
     /* Init LPI2C0 */
     LPI2C0_Init();
     /* LPI2C enter no address SLV mode */
-    LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI | LPI2C_CTL_AA);
+    LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI_AA);
 
     for (i = 0; i < 0x100; i++)
     {
@@ -217,8 +220,38 @@ int32_t main(void)
     s_LPI2C0HandlerFn = LPI2C_SlaveTRx;
     printf("\n");
     printf("LPI2C Slave Mode is Running.\n");
+    g_u8TimeoutFlag = 0;
 
-    while (1);
+    while (1)
+    {
+        /* Handle Slave timeout condition */
+        if (g_u8TimeoutFlag)
+        {
+            printf(" SlaveTRx time out, press any key to reset IP\n");
+            getchar();
+            SYS_UnlockReg();
+            SYS_ResetModule(SYS_LPI2C0RST);
+            SYS_LockReg();
+            LPI2C0_Init();
+            g_u8TimeoutFlag = 0;
+            g_u8SlvTRxAbortFlag = 1;
+        }
+
+        /* When LPI2C abort, clear SI to enter non-addressed SLV mode*/
+        if (g_u8SlvTRxAbortFlag)
+        {
+            g_u8SlvTRxAbortFlag = 0;
+            u32TimeOutCnt = SystemCoreClock;
+
+            while (LPI2C0->CTL0 & LPI2C_CTL0_SI_Msk)
+                if (--u32TimeOutCnt == 0)
+                {
+                    break;
+                }
+
+            printf("LPI2C Slave re-start. status[0x%x]\n", LPI2C0->STATUS0);
+            LPI2C_SET_CONTROL_REG(LPI2C0, LPI2C_CTL_SI_AA);
+        }
+    }
 }
-
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

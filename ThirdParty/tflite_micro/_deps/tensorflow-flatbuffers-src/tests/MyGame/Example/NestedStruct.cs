@@ -7,7 +7,7 @@ namespace MyGame.Example
 
 using global::System;
 using global::System.Collections.Generic;
-using global::FlatBuffers;
+using global::Google.FlatBuffers;
 
 public struct NestedStruct : IFlatbufferObject
 {
@@ -66,7 +66,7 @@ public struct NestedStruct : IFlatbufferObject
       _c,
       _d);
   }
-};
+}
 
 public class NestedStructT
 {

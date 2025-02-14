@@ -14,19 +14,25 @@
 #include "ff.h"
 
 //------------------------------------------------------------------------------
-uint32_t volatile u32BuffPos = 0;
-FATFS FatFs[FF_VOLUMES];               /* File system object for logical drive */
-
 #ifdef __ICCARM__
     #pragma data_alignment=32
-    BYTE Buff[16] ;                   /* Working buffer */
-    DMA_DESC_T DMA_DESC[2];
+    #if (NVT_DCACHE_ON == 1)
+        /* DMA descriptor table, must be aligned to 32 bytes and placed in DTCM */
+        NVT_NONCACHEABLE __ALIGNED(32) DMA_DESC_T DMA_DESC[2];
+    #else
+        /* DMA descriptor table, must be aligned to 32 bytes */
+        DMA_DESC_T DMA_DESC[2];
+    #endif
 #else
-    BYTE Buff[16] __attribute__((aligned(32)));       /* Working buffer */
-    DMA_DESC_T DMA_DESC[2] __attribute__((aligned(32)));
+    #if (NVT_DCACHE_ON == 1)
+        /* DMA descriptor table, must be aligned to 32 bytes and placed in DTCM */
+        NVT_NONCACHEABLE __ALIGNED(32) DMA_DESC_T DMA_DESC[2];
+    #else
+        /* DMA descriptor table, must be aligned to 32 bytes */
+        DMA_DESC_T DMA_DESC[2] __attribute__((aligned(32)));
+    #endif
 #endif
 
-uint8_t bAudioPlaying = 0;
 extern signed int aPCMBuffer[2][PCM_BUFFER_SIZE];
 extern uint32_t volatile sd_init_ok;
 extern int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc);
@@ -39,9 +45,9 @@ extern int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc);
 /* the system does not support an RTC.                     */
 /* This function is not required in read-only cfg.         */
 
-unsigned long get_fattime(void)
+DWORD get_fattime(void)
 {
-    unsigned long tmr;
+    DWORD tmr;
 
     tmr = 0x00000;
 
@@ -160,22 +166,17 @@ void SD_Inits(void)
 
 void SYS_Init(void)
 {
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Enable APLL1 clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ, CLK_APLL1_SELECT);
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ, CLK_APLL1_SELECT);
 
     /* Enable I2S0 module clock */
     CLK_EnableModuleClock(I2S0_MODULE);
 
-#if defined(ALIGN_AF_PINS)
     /* Enable I2C3 module clock */
     CLK_EnableModuleClock(I2C3_MODULE);
-#else
-    /* Enable I2C2 module clock */
-    CLK_EnableModuleClock(I2C2_MODULE);
-#endif
 
     /* Enable PDMA0 module clock */
     CLK_EnableModuleClock(PDMA0_MODULE);
@@ -210,21 +211,12 @@ void SYS_Init(void)
     /* Enable I2S0 clock pin (PI6) schmitt trigger */
     PI->SMTEN |= GPIO_SMTEN_SMTEN6_Msk;
 
-#if defined(ALIGN_AF_PINS)
     /* Set I2C3 multi-function pins */
     SET_I2C3_SDA_PG1();
     SET_I2C3_SCL_PG0();
 
     /* Enable I2C3 clock pin (PG0) schmitt trigger */
     PG->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
-#else
-    /* Set I2C3 multi-function pins */
-    SET_I2C2_SDA_PD0();
-    SET_I2C2_SCL_PD1();
-
-    /* Enable I2C2 clock pin (PD1) schmitt trigger */
-    PD->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
-#endif
 }
 
 void I2C_Init(void)

@@ -1528,12 +1528,8 @@ bool synopGMAC_is_last_tx_desc(synopGMACdevice *gmacdev, DmaDesc *desc)
 s32 synopGMAC_get_tx_qptr(synopGMACdevice *gmacdev, u32 *Status, u32 *Buffer1, u32 *Length1, u32 *Data1, u32 *Ext_Status, u32 *Time_Stamp_High, u32 *Time_Stamp_Low)
 {
     u32  txover      = gmacdev->TxBusy;
-#ifdef NVT_DCACHE_ON
-    //DmaDesc *txdesc = (DmaDesc *)((u32)(gmacdev->TxBusyDesc) | UNCACHEABLE);
+
     DmaDesc *txdesc = gmacdev->TxBusyDesc;
-#else
-    DmaDesc *txdesc = gmacdev->TxBusyDesc;
-#endif
 
     if (synopGMAC_is_desc_owned_by_dma(txdesc))
         return -1;
@@ -1581,12 +1577,8 @@ s32 synopGMAC_get_tx_qptr(synopGMACdevice *gmacdev, u32 *Status, u32 *Buffer1, u
 DmaDesc *prevtx;
 void synopGMAC_set_crc_replacement(synopGMACdevice *gmacdev)
 {
-#ifdef NVT_DCACHE_ON
-    //DmaDesc *txdesc = (DmaDesc *)((u32)(gmacdev->TxNextDesc) | UNCACHEABLE);
     DmaDesc *txdesc = gmacdev->TxNextDesc;
-#else
-    DmaDesc *txdesc = gmacdev->TxNextDesc;
-#endif
+
     txdesc->status |= DescTxDisableCrc | DescTxCrcReplacement;
 
     prevtx = txdesc;
@@ -1617,12 +1609,8 @@ void synopGMAC_clr_crc_replacement(synopGMACdevice *gmacdev)
 s32 synopGMAC_set_tx_qptr(synopGMACdevice *gmacdev, u32 Buffer1, u32 Length1, u32 Data1, u32 offload_needed, u32 ts)
 {
     u32  txnext      = gmacdev->TxNext;
-#ifdef NVT_DCACHE_ON
-    //DmaDesc *txdesc = (DmaDesc *)((u32)(gmacdev->TxNextDesc) | UNCACHEABLE);
+
     DmaDesc *txdesc = gmacdev->TxNextDesc;
-#else
-    DmaDesc *txdesc = gmacdev->TxNextDesc;
-#endif
 
     if (!synopGMAC_is_desc_empty(txdesc))
         return -1;
@@ -1680,12 +1668,8 @@ s32 synopGMAC_set_tx_qptr(synopGMACdevice *gmacdev, u32 Buffer1, u32 Length1, u3
 s32 synopGMAC_set_rx_qptr(synopGMACdevice *gmacdev, u32 Buffer1, u32 Length1, u32 Data1)
 {
     u32  rxnext      = gmacdev->RxNext;
-#ifdef NVT_DCACHE_ON
-    //DmaDesc *rxdesc = (DmaDesc *)((u32)(gmacdev->RxNextDesc) | UNCACHEABLE);
+
     DmaDesc *rxdesc = gmacdev->RxNextDesc;
-#else
-    DmaDesc *rxdesc = gmacdev->RxNextDesc;
-#endif
 
     if (!synopGMAC_is_desc_empty(rxdesc))
     {
@@ -1740,12 +1724,7 @@ s32 synopGMAC_get_rx_qptr(synopGMACdevice *gmacdev, u32 *Status, u32 *Buffer1, u
 {
     u32 rxnext       = gmacdev->RxBusy; // index of descriptor the DMA just completed. May be useful when data
     //is spread over multiple buffers/descriptors
-#ifdef NVT_DCACHE_ON
-    //DmaDesc *rxdesc = (DmaDesc *)((u32)(gmacdev->RxBusyDesc) | UNCACHEABLE);
     DmaDesc *rxdesc = gmacdev->RxBusyDesc;
-#else
-    DmaDesc *rxdesc = gmacdev->RxBusyDesc;
-#endif
 
     if (synopGMAC_is_desc_owned_by_dma(rxdesc))
         return -1;
@@ -2210,7 +2189,7 @@ bool synopGMAC_is_wakeup_frame_received(synopGMACdevice *gmacdev)
   * @param[in] pointer to frame filter contents array.
   * \return returns void.
   */
-#if 0
+#if 0 //Not support
 void synopGMAC_write_wakeup_frame_register(synopGMACdevice *gmacdev, u32 *filter_contents)
 {
     s32 i;
@@ -2221,7 +2200,6 @@ void synopGMAC_write_wakeup_frame_register(synopGMACdevice *gmacdev, u32 *filter
         synopGMACWriteReg(gmacdev->MacBase, GmacWakeupAddr,  *(filter_contents + i));
 
     return;
-
 }
 #endif
 /*******************PMT APIs***************************************/

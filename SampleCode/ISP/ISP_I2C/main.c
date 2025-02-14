@@ -12,17 +12,16 @@
 #include <stdio.h>
 #include <string.h>
 #include "targetdev.h"
+#include "isp_user.h"
 #include "i2c_transfer.h"
 
 int32_t SYS_Init(void)
 {
-    uint32_t u32TimeOutCnt;
-
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -42,22 +41,10 @@ int32_t SYS_Init(void)
     SystemCoreClock = PllClock;
     CyclesPerUs     = SystemCoreClock / 1000000UL;
 
-    /* Debug UART clock setting*/
-    SetDebugUartCLK();
-
-    /* Check clock stable */
-    u32TimeOutCnt = SystemCoreClock >> 1;
-
-    while ((CLK->UARTCTL & BIT31) == 0UL)
-    {
-        if (--u32TimeOutCnt == 0)
-        {
-            return -1;
-        }
-    }
-
+    /* Enable module clock */
+    CLK_EnableModuleClock(ISP0_MODULE);
     /* Enable I2C1 clock */
-    CLK->I2CCTL |= CLK_I2CCTL_I2C1CKEN_Msk;
+    CLK_EnableModuleClock(I2C1_MODULE);
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */

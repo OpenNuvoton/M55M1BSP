@@ -18,6 +18,14 @@
 
 static int __tag = 0x10e24388;
 
+#if (NVT_DCACHE_ON == 1)
+    //Please refer to the sector size definition values in ff.c and reduce them accordingly. Currently, the largest sector size in ff.c is being used as the standard.
+    #define BUFF_SIZE (16*1024)
+    /* Declare a DCache-line aligned variable for the USB Host block qTD buffer.  */
+    static uint8_t Tmp_Buffer[DCACHE_ALIGN_LINE_SIZE(BUFF_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    #define DEF_ALIGNED_VALUE      DCACHE_LINE_SIZE
+#endif
+
 static void bulk_xfer_done(UTR_T *utr)
 {
     // msc_debug_msg("BULK XFER done - %d\n", utr->status);
@@ -87,11 +95,28 @@ static int  do_scsi_command(MSC_T *msc, uint8_t *buff, uint32_t data_len, int bI
     {
         if (bIsDataIn)
         {
+#if (NVT_DCACHE_ON == 1)
+            ret = msc_bulk_transfer(msc, msc->ep_bulk_in, Tmp_Buffer, data_len, 500);
+
+            SCB_InvalidateDCache_by_Addr((void *)Tmp_Buffer, data_len);
+
+            memcpy(buff, Tmp_Buffer, data_len);
+
+#else
             ret = msc_bulk_transfer(msc, msc->ep_bulk_in, buff, data_len, 500);
+#endif
         }
         else
         {
+#if (NVT_DCACHE_ON == 1)
+            memcpy(Tmp_Buffer, buff, data_len);
+
+            SCB_CleanDCache_by_Addr(Tmp_Buffer, data_len);
+
+            ret = msc_bulk_transfer(msc, msc->ep_bulk_out, Tmp_Buffer, data_len, 500);
+#else
             ret = msc_bulk_transfer(msc, msc->ep_bulk_out, buff, data_len, 500);
+#endif
         }
 
         if (ret < 0)

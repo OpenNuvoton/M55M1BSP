@@ -1081,19 +1081,14 @@ uint32_t RTC_SetClockSource(uint32_t u32ClkSrc)
         RTC->LXTCTL &= ~RTC_LXTCTL_RTCCKSEL_Msk;
         RTC->LXTCTL &= ~RTC_LXTCTL_C32KSEL_Msk;
 
-        // TESTCHIP_ONLY
-        RTC->LXTCTL = (RTC->LXTCTL & ~RTC_LXTCTL_GAIN_Msk) | (0x7 << RTC_LXTCTL_GAIN_Pos);
-
         return RTC_CLOCK_SOURCE_LXT;
     }
     else if (u32ClkSrc == RTC_CLOCK_SOURCE_LIRC32K)
     {
-        // TESTCHIP_ONLY not support
-        //uint32_t u32TrimDefault = inpw((uint32_t)SYS + 0xF94ul);
-        // TESTCHIP_ONLY not support
+        uint32_t u32TrimDefault;
+        u32TrimDefault = inpw((uint32_t)SYS + 0xF94ul);
         /* Load LIRC32 trim setting */
-        //outpw(((uint32_t)RTC + 0x1F0ul), ((inpw((uint32_t)RTC + 0x1F0ul) & ~(0x1FFul << 8)) | ((u32TrimDefault & 0x1FFul) << 8)));
-
+        outpw(((uint32_t)RTC + 0x1F0ul), ((inpw((uint32_t)RTC + 0x1F0ul) & ~(0x1FFul << 8)) | ((u32TrimDefault & 0x1FFul) << 8)));
         /* RTC clock source is LIRC32K */
         RTC->LXTCTL |= RTC_LXTCTL_LIRC32KEN_Msk;
         RTC->LXTCTL &= ~RTC_LXTCTL_RTCCKSEL_Msk;

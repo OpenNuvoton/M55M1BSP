@@ -105,7 +105,7 @@ DESC_HUB_T;
 /*   Port reset retry and time-out settings                                 */
 /*--------------------------------------------------------------------------*/
 #define HUB_DEBOUNCE_TIME              500      /* Hub connect/disconnect de-bounce time in ms     */
-#define PORT_RESET_RETRY               1        /* port reset retry times                          */
+#define PORT_RESET_RETRY               3        /* port reset retry times                          */
 #define PORT_RESET_TIME_MS             50       /* port reset time (ms)                            */
 #define PORT_RESET_RETRY_INC_MS        250      /* increased reset time (ms) after reset failed    */
 

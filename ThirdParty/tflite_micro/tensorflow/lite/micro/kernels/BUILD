@@ -1,15 +1,20 @@
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("//tensorflow/lite/micro:build_def.bzl", "micro_copts", "tflm_kernel_cc_library")
 load(
     "//tensorflow:extra_rules.bzl",
     "tflm_kernel_friends",
     "xtensa_fusion_f1_config",
+    "xtensa_hifi_3_config",
     "xtensa_hifi_3z_config",
     "xtensa_hifi_5_config",
+    "xtensa_vision_p6_config",
 )
 
 package(
-    # Disabling layering_check because of http://b/177257332
-    features = ["-layering_check"],
+    features = [
+        "-layering_check",  # buildozer: disable=no-layering-check, TODO(b/177257333): consider enabling layering check
+        "-parse_headers",  # buildozer: disable=no-parse-headers, paser_headers is unavailable with bazel (http://b/175817117#comment4)
+    ],
     licenses = ["notice"],
 )
 
@@ -35,6 +40,7 @@ package_group(
 cc_library(
     name = "activation_utils",
     hdrs = ["activation_utils.h"],
+    copts = micro_copts(),
     deps = [
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/kernels/internal:cppmath",
@@ -49,6 +55,7 @@ cc_library(
     hdrs = [
         "circular_buffer_flexbuffers_generated_data.h",
     ],
+    copts = micro_copts(),
 )
 
 cc_library(
@@ -59,6 +66,7 @@ cc_library(
     hdrs = [
         "conv_test.h",
     ],
+    copts = micro_copts(),
     deps = [
         ":kernel_runner",
         ":micro_ops",
@@ -76,6 +84,7 @@ cc_library(
     hdrs = [
         "detection_postprocess_flexbuffers_generated_data.h",
     ],
+    copts = micro_copts(),
 )
 
 cc_library(
@@ -84,6 +93,7 @@ cc_library(
         "kernel_runner.cc",
     ],
     hdrs = ["kernel_runner.h"],
+    copts = micro_copts(),
     visibility = [
         "//visibility:public",
     ],
@@ -93,7 +103,6 @@ cc_library(
         "//tensorflow/lite/micro:fake_micro_context",
         "//tensorflow/lite/micro:micro_allocator",
         "//tensorflow/lite/micro:micro_arena_constants",
-        "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:mock_micro_graph",
         "//tensorflow/lite/micro:test_helpers",
     ],
@@ -105,6 +114,7 @@ cc_library(
         "kernel_util.cc",
     ],
     hdrs = ["kernel_util.h"],
+    copts = micro_copts(),
     visibility = [
         ":kernel_friends",
         ":tflite_micro",
@@ -112,20 +122,73 @@ cc_library(
     deps = [
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/kernels/internal:compatibility",
+        "//tensorflow/lite/kernels/internal:tensor_utils_no_eigen",
         "//tensorflow/lite/kernels/internal:types",
         "//tensorflow/lite/micro:debug_log",
         "//tensorflow/lite/micro:micro_context",
     ],
 )
 
+cc_library(
+    name = "lstm_shared",
+    hdrs = [
+        "lstm_shared.h",
+    ],
+    copts = micro_copts(),
+    visibility = ["//tensorflow/lite/micro/kernels/testdata:__pkg__"],
+)
+
+cc_library(
+    name = "lstm_eval_test_lib",
+    hdrs = [
+        "lstm_eval_test.h",
+    ],
+    copts = micro_copts(),
+    deps = [
+        ":kernel_util",
+        ":micro_ops",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/kernels/testdata:lstm_test_data",
+    ],
+)
+
+cc_library(
+    name = "micro_tensor_utils",
+    srcs = [
+        "micro_tensor_utils.cc",
+    ],
+    hdrs = ["micro_tensor_utils.h"],
+    copts = micro_copts(),
+    deps = [
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/core:macros",
+        "//tensorflow/lite/kernels:op_macros",
+        "//tensorflow/lite/kernels/internal:common",
+        "//tensorflow/lite/kernels/internal:compatibility",
+        "//tensorflow/lite/kernels/internal:cppmath",
+        "//tensorflow/lite/kernels/internal:tensor_utils_no_eigen",
+    ],
+)
+
+HIFI3_COPTS = [
+    "-DXTENSA=1",
+    "-DHIFI3=1",
+]
+
 HIFI4_COPTS = [
     "-DXTENSA=1",
-    "-DHIFI4_INTERNAL=1",
+    "-DHIFI4=1",
 ]
 
 HIFI5_COPTS = [
     "-DXTENSA=1",
     "-DHIFI5=1",
+]
+
+VP6_COPTS = [
+    "-DXTENSA=1",
+    "-DVISION_P6=1",
 ]
 
 tflm_kernel_cc_library(
@@ -138,7 +201,10 @@ tflm_kernel_cc_library(
         "add_n.cc",
         "arg_min_max.cc",
         "assign_variable.cc",
+        "batch_matmul.cc",
         "batch_to_space_nd.cc",
+        "broadcast_args.cc",
+        "broadcast_to.cc",
         "call_once.cc",
         "cast.cc",
         "ceil.cc",
@@ -155,8 +221,10 @@ tflm_kernel_cc_library(
         "dequantize.cc",
         "dequantize_common.cc",
         "detection_postprocess.cc",
+        "div.cc",
         "elementwise.cc",
         "elu.cc",
+        "embedding_lookup.cc",
         "ethosu.cc",
         "exp.cc",
         "expand_dims.cc",
@@ -180,6 +248,8 @@ tflm_kernel_cc_library(
         "logical_common.cc",
         "logistic.cc",
         "logistic_common.cc",
+        "lstm_eval.cc",
+        "lstm_eval_common.cc",
         "maximum_minimum.cc",
         "mirror_pad.cc",
         "mul.cc",
@@ -195,10 +265,13 @@ tflm_kernel_cc_library(
         "quantize_common.cc",
         "read_variable.cc",
         "reduce.cc",
+        "reduce_common.cc",
         "reshape.cc",
+        "reshape_common.cc",
         "resize_bilinear.cc",
         "resize_nearest_neighbor.cc",
         "round.cc",
+        "select.cc",
         "shape.cc",
         "slice.cc",
         "softmax.cc",
@@ -207,8 +280,10 @@ tflm_kernel_cc_library(
         "space_to_depth.cc",
         "split.cc",
         "split_v.cc",
+        "squared_difference.cc",
         "squeeze.cc",
         "strided_slice.cc",
+        "strided_slice_common.cc",
         "sub.cc",
         "sub_common.cc",
         "svdf.cc",
@@ -216,8 +291,10 @@ tflm_kernel_cc_library(
         "tanh.cc",
         "transpose.cc",
         "transpose_conv.cc",
+        "unidirectional_sequence_lstm.cc",
         "unpack.cc",
         "var_handle.cc",
+        "while.cc",
         "zeros_like.cc",
     ],
     hdrs = [
@@ -233,29 +310,42 @@ tflm_kernel_cc_library(
         "leaky_relu.h",
         "logical.h",
         "logistic.h",
+        "lstm_eval.h",
+        "lstm_shared.h",
         "micro_ops.h",
         "mul.h",
+        "pad.h",
         "pooling.h",
         "prelu.h",
         "quantize.h",
+        "reduce.h",
+        "reshape.h",
         "softmax.h",
+        "strided_slice.h",
         "sub.h",
         "svdf.h",
+        "transpose_conv.h",
     ] + select({
         xtensa_fusion_f1_config(): glob(["xtensa/**/*.h"]),
+        xtensa_hifi_3_config(): glob(["xtensa/**/*.h"]),
         xtensa_hifi_3z_config(): glob(["xtensa/**/*.h"]),
         xtensa_hifi_5_config(): glob(["xtensa/**/*.h"]),
+        xtensa_vision_p6_config(): glob(["xtensa/**/*.h"]),
         "//conditions:default": [],
     }),
     accelerated_srcs = {
         xtensa_fusion_f1_config(): glob(["xtensa/**/*.cc"]),
+        xtensa_hifi_3_config(): glob(["xtensa/**/*.cc"]),
         xtensa_hifi_3z_config(): glob(["xtensa/**/*.cc"]),
         xtensa_hifi_5_config(): glob(["xtensa/**/*.cc"]),
+        xtensa_vision_p6_config(): glob(["xtensa/**/*.cc"]),
     },
     copts = micro_copts() + select({
         xtensa_fusion_f1_config(): HIFI4_COPTS,
+        xtensa_hifi_3_config(): HIFI3_COPTS,
         xtensa_hifi_3z_config(): HIFI4_COPTS,
         xtensa_hifi_5_config(): HIFI5_COPTS,
+        xtensa_vision_p6_config(): VP6_COPTS,
         "//conditions:default": [],
     }),
     visibility = [
@@ -265,7 +355,8 @@ tflm_kernel_cc_library(
     deps = [
         ":activation_utils",
         ":kernel_util",
-        ":micro_utils",
+        ":micro_tensor_utils",
+        "//signal/micro/kernels:register_signal_ops",
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/kernels:kernel_util",
         "//tensorflow/lite/kernels:op_macros",
@@ -276,24 +367,23 @@ tflm_kernel_cc_library(
         "//tensorflow/lite/kernels/internal:quantization_util",
         "//tensorflow/lite/kernels/internal:reference_base",
         "//tensorflow/lite/kernels/internal:tensor",
+        "//tensorflow/lite/kernels/internal:tensor_utils_no_eigen",
         "//tensorflow/lite/kernels/internal:types",
         "//tensorflow/lite/micro:flatbuffer_utils",
         "//tensorflow/lite/micro:memory_helpers",
         "//tensorflow/lite/micro:micro_graph",
+        "//tensorflow/lite/micro:micro_log",
         "//tensorflow/lite/micro:micro_utils",
         "//tensorflow/lite/schema:schema_fbs",
         "@flatbuffers//:runtime_cc",
     ] + select({
         xtensa_fusion_f1_config(): ["//third_party/xtensa/nnlib_hifi4:nnlib_hifi4_lib"],
+        xtensa_hifi_3_config(): ["//third_party/xtensa/nnlib_hifi4:nnlib_hifi4_lib"],
         xtensa_hifi_3z_config(): ["//third_party/xtensa/nnlib_hifi4:nnlib_hifi4_lib"],
         xtensa_hifi_5_config(): ["//third_party/xtensa/nnlib_hifi5:nnlib_hifi5_lib"],
+        xtensa_vision_p6_config(): ["//third_party/xtensa/xi_tflmlib_vision_p6:xi_tflmlib_vision_p6_lib"],
         "//conditions:default": [],
     }),
-)
-
-cc_library(
-    name = "micro_utils",
-    hdrs = ["micro_utils.h"],
 )
 
 ####################################
@@ -358,9 +448,51 @@ cc_test(
 )
 
 cc_test(
+    name = "batch_matmul_test",
+    srcs = [
+        "batch_matmul_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:op_resolvers",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
     name = "batch_to_space_nd_test",
     srcs = [
         "batch_to_space_nd_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:op_resolvers",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
+    name = "broadcast_args_test",
+    srcs = [
+        "broadcast_args_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:op_resolvers",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
+    name = "broadcast_to_test",
+    srcs = [
+        "broadcast_to_test.cc",
     ],
     deps = [
         ":kernel_runner",
@@ -542,6 +674,19 @@ cc_test(
 )
 
 cc_test(
+    name = "div_test",
+    srcs = [
+        "div_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
     name = "elementwise_test",
     srcs = ["elementwise_test.cc"],
     deps = [
@@ -558,6 +703,21 @@ cc_test(
     name = "elu_test",
     srcs = [
         "elu_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:debug_log",
+        "//tensorflow/lite/micro:op_resolvers",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
+    name = "embedding_lookup_test",
+    srcs = [
+        "embedding_lookup_test.cc",
     ],
     deps = [
         ":kernel_runner",
@@ -808,6 +968,18 @@ cc_test(
 )
 
 cc_test(
+    name = "lstm_eval_test",
+    srcs = [
+        "lstm_eval_test.cc",
+    ],
+    deps = [
+        ":lstm_eval_test_lib",
+        "//tensorflow/lite/micro:debug_log",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
     name = "maximum_minimum_test",
     srcs = [
         "maximum_minimum_test.cc",
@@ -1017,6 +1189,20 @@ cc_test(
 )
 
 cc_test(
+    name = "select_test",
+    srcs = [
+        "select_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:op_resolvers",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
     name = "shape_test",
     srcs = ["shape_test.cc"],
     deps = [
@@ -1114,6 +1300,19 @@ cc_test(
 )
 
 cc_test(
+    name = "squared_difference_test",
+    srcs = [
+        "squared_difference_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
     name = "squeeze_test",
     srcs = ["squeeze_test.cc"],
     deps = [
@@ -1204,9 +1403,40 @@ cc_test(
 )
 
 cc_test(
+    name = "unidirectional_sequence_lstm_test",
+    srcs = [
+        "unidirectional_sequence_lstm_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        ":lstm_eval_test_lib",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:debug_log",
+        "//tensorflow/lite/micro:micro_utils",
+        "//tensorflow/lite/micro:op_resolvers",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
     name = "unpack_test",
     srcs = [
         "unpack_test.cc",
+    ],
+    deps = [
+        ":kernel_runner",
+        "//tensorflow/lite/c:common",
+        "//tensorflow/lite/micro:debug_log",
+        "//tensorflow/lite/micro:test_helpers",
+        "//tensorflow/lite/micro/testing:micro_test",
+    ],
+)
+
+cc_test(
+    name = "while_test",
+    srcs = [
+        "while_test.cc",
     ],
     deps = [
         ":kernel_runner",
@@ -1234,23 +1464,54 @@ cc_test(
 # Bazel config settings.
 ####################################
 
+# Command line flag to select which set of optimized kernels to use.
+# Each value should have a `config_setting` which is selected on in the
+# `micro_ops` target to pickup optimized kernel sources. An empty value
+# indicates only reference kernels should be used.
+string_flag(
+    name = "optimized_kernels",
+    build_setting_default = "",
+    values = [
+        "",
+        "xtensa_fusion_f1",
+        "xtensa_hifi_3",
+        "xtensa_hifi_3z",
+        "xtensa_hifi_5",
+        "xtensa_vision_p6",
+    ],
+)
+
 config_setting(
     name = "xtensa_fusion_f1_default",
-    values = {
-        "cpu": "F1_190305_swupgrade",
+    flag_values = {
+        ":optimized_kernels": "xtensa_fusion_f1",
+    },
+)
+
+config_setting(
+    name = "xtensa_hifi_3_default",
+    flag_values = {
+        ":optimized_kernels": "xtensa_hifi_3",
     },
 )
 
 config_setting(
     name = "xtensa_hifi_3z_default",
-    values = {
-        "cpu": "HIFI_190304_swupgrade",
+    flag_values = {
+        ":optimized_kernels": "xtensa_hifi_3z",
     },
 )
 
 config_setting(
     name = "xtensa_hifi_5_default",
-    values = {
-        "cpu": "AE_HiFi5_LE5_AO_FP_XC",
+    flag_values = {
+        ":optimized_kernels": "xtensa_hifi_5",
+    },
+)
+
+config_setting(
+    name = "xtensa_vision_p6_default",
+    flag_values = {
+        ":optimized_kernels": "xtensa_vision_p6",
     },
 )

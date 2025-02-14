@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2024 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@
 #
 # Called with four arguments:
 # 1 - Path to the downloads folder which is typically
-#     tensorflow/lite/micro/tools/make/downloads
+#     ${TENSORFLOW_ROOT}/tensorflow/lite/micro/tools/make/downloads
 # 2 - Xtensa variant to download for (e.g. hifi4)
+# 3 - (optional) TENSORFLOW_ROOT: path to root of the TFLM tree (relative to directory from where the script is called).
 #
 # This script is called from the Makefile and uses the following convention to
 # enable determination of sucess/failure:
@@ -34,26 +35,22 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR=${SCRIPT_DIR}/../../../../../..
-cd "${ROOT_DIR}"
-
-source tensorflow/lite/micro/tools/make/bash_helpers.sh
+source ${3}tensorflow/lite/micro/tools/make/bash_helpers.sh
 
 DOWNLOADS_DIR=${1}
-if [ ! -d ${DOWNLOADS_DIR} ]; then
-  echo "The top-level downloads directory: ${DOWNLOADS_DIR} does not exist."
-  exit 1
-fi
 
-if [[ ${2} == "hifi4" ]]; then
-  LIBRARY_URL="http://github.com/foss-xtensa/nnlib-hifi4/raw/master/archive/xa_nnlib_hifi4_11_09_2021.zip"
+if [[ ${2} == "hifi4" || ${2} == "hifi3" ]]; then
+  LIBRARY_URL="http://github.com/foss-xtensa/nnlib-hifi4/raw/master/archive/xa_nnlib_hifi4_09_05_2023.zip"
   LIBRARY_DIRNAME="xa_nnlib_hifi4"
-  LIBRARY_MD5="fd6445b3d281220e2f584e2adc10165d"
+  LIBRARY_MD5="2a54e056aef73a4fcffde4643998501a"
 elif [[ ${2} == "hifi5" ]]; then
-  LIBRARY_URL="http://github.com/foss-xtensa/nnlib-hifi5/raw/master/archive/xa_nnlib_hifi5_06_30.zip"
+  LIBRARY_URL="http://github.com/foss-xtensa/nnlib-hifi5/raw/master/archive/xa_nnlib_hifi5_09_05_2023.zip"
   LIBRARY_DIRNAME="xa_nnlib_hifi5"
-  LIBRARY_MD5="0c832b15d27ac557fa5453c902c5662a"
+  LIBRARY_MD5="1deb55ef200bf5dbedc70b99b02140c0"
+elif [[ ${2} == "vision_p6" ]]; then
+  LIBRARY_URL="https://github.com/foss-xtensa/tflmlib_vision/raw/main/archive/xi_tflmlib_vision_p6_22_06_29.zip"
+  LIBRARY_DIRNAME="xi_tflmlib_vision_p6"
+  LIBRARY_MD5="fea3720d76fdb3a5a337ace7b6081b56"
 else
   echo "Attempting to download an unsupported xtensa variant: ${2}"
   exit 1
@@ -61,19 +58,20 @@ fi
 
 LIBRARY_INSTALL_PATH=${DOWNLOADS_DIR}/${LIBRARY_DIRNAME}
 
-if [ -d ${LIBRARY_INSTALL_PATH} ]; then
+should_download=$(check_should_download ${DOWNLOADS_DIR})
+
+if [[ ${should_download} == "no" ]]; then
+  show_download_url_md5 ${LIBRARY_URL} ${LIBRARY_MD5}
+elif [ ! -d ${DOWNLOADS_DIR} ]; then
+  echo "The top-level downloads directory: ${DOWNLOADS_DIR} does not exist."
+  exit 1
+elif [ -d ${LIBRARY_INSTALL_PATH} ]; then
   echo >&2 "${LIBRARY_INSTALL_PATH} already exists, skipping the download."
 else
   TEMPDIR="$(mktemp -d)"
   TEMPFILE="${TEMPDIR}/${LIBRARY_DIRNAME}.zip"
   wget ${LIBRARY_URL} -O "$TEMPFILE" >&2
-  MD5=`md5sum "$TEMPFILE" | awk '{print $1}'`
-
-  if [[ ${MD5} != ${LIBRARY_MD5} ]]
-  then
-    echo "Bad checksum. Expected: ${LIBRARY_MD5}, Got: ${MD5}"
-    exit 1
-  fi
+  check_md5 "${TEMPFILE}" ${LIBRARY_MD5}
 
   unzip -qo "$TEMPFILE" -d ${DOWNLOADS_DIR} >&2
 
@@ -81,9 +79,10 @@ else
 
   pushd "${LIBRARY_INSTALL_PATH}" > /dev/null
   chmod -R +w ./
-  create_git_repo ./
-  apply_patch_to_folder ./ "../../ext_libs/xa_nnlib_${2}.patch" "TFLM patch"
+  if [[ -f "../../ext_libs/xa_nnlib_${2}.patch" ]]; then
+    create_git_repo ./
+    apply_patch_to_folder ./ "../../ext_libs/xa_nnlib_${2}.patch" "TFLM patch"
+  fi
 fi
-
 
 echo "SUCCESS"

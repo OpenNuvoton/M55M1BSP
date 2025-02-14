@@ -20,7 +20,9 @@
 /* See if ARM DSP functions can be used. */
 #if (defined(__ARM_FEATURE_DSP) && (__ARM_FEATURE_DSP == 1))
 #include "arm_math.h"
+#ifndef M_PI
 #define M_PI (PI)
+#endif
 #else /* (defined (__ARM_FEATURE_DSP) && (__ARM_FEATURE_DSP == 1)) */
 #include <cmath>
 #endif /* (defined (__ARM_FEATURE_DSP) && (__ARM_FEATURE_DSP == 1)) */

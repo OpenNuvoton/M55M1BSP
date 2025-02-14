@@ -113,25 +113,12 @@ NVT_ITCM void SDH0_IRQHandler(void)
 
 void SYS_Init(void)
 {
-    uint32_t volatile i;
-
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -152,18 +139,21 @@ void SYS_Init(void)
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 
-    /* Select HSUSBD */
-    SYS->USBPHY &= ~SYS_USBPHY_HSUSBROLE_Msk;
+    /* Enable HSOTG module clock */
+    CLK_EnableModuleClock(HSOTG0_MODULE);
 
-    /* Enable USB PHY */
-    SYS->USBPHY = (SYS->USBPHY & ~(SYS_USBPHY_HSUSBROLE_Msk | SYS_USBPHY_HSUSBACT_Msk)) | SYS_USBPHY_HSOTGPHYEN_Msk;
+    /* Select HSOTG PHY Reference clock frequency which is from HXT */
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
-    for (i = 0; i < 0x1000; i++);  // delay > 10 us
+    /* Set HSUSB role to HSUSBD */
+    SET_HSUSBDROLE();
 
-    SYS->USBPHY |= SYS_USBPHY_HSUSBACT_Msk;
+    /* Enable HSUSB PHY */
+    SYS_Enable_HSUSB_PHY();
 
-    /* Enable HSUSBD module clock */
+    /* Enable HSUSBD peripheral clock */
     CLK_EnableModuleClock(HSUSBD0_MODULE);
+
     /* Enable SDH0 module clock */
     CLK_EnableModuleClock(SDH0_MODULE);
 
@@ -185,7 +175,6 @@ void SYS_Init(void)
     SET_SD0_CLK_PE6();
     SET_SD0_CMD_PE7();
     SET_SD0_nCD_PD13();
-
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -193,7 +182,6 @@ void SYS_Init(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
-
     /* Unlock protected registers */
     SYS_UnlockReg();
     /* Init System, peripheral clock and multi-function I/O */

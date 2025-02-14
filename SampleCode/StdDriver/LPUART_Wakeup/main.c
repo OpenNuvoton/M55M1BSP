@@ -55,14 +55,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -114,6 +108,9 @@ int32_t main(void)
     /* Init System, IP clock and multi-function I/O. */
     SYS_Init();
 
+    /* Releases GPIO hold status from power-down wake-up */
+    PMC_RELEASE_GPIO();
+
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
     initialise_monitor_handles();
 #endif
@@ -153,10 +150,6 @@ int32_t main(void)
 NVT_ITCM void LPUART0_IRQHandler(void)
 {
     uint32_t u32Data;
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(LPUART0_MODULE);
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);
 
     if (LPUART_GET_INT_FLAG(LPUART0, LPUART_INTSTS_WKINT_Msk))    /* LPUART wake-up interrupt flag */
     {
@@ -216,7 +209,7 @@ void LPUART_DataWakeUp(void)
 /*---------------------------------------------------------------------------------------------------------*/
 void LPUART_RxThresholdWakeUp(void)
 {
-    /* Wait data transmission is finished and select LPUART clock source as LXT */
+    /* Wait data transmission is finished */
     while ((LPUART0->FIFOSTS & LPUART_FIFOSTS_TXEMPTYF_Msk) == 0);
 
     while ((LPUART0->FIFOSTS & LPUART_FIFOSTS_RXIDLE_Msk) == 0);

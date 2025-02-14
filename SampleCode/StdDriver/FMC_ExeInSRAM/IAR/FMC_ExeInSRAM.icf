@@ -17,7 +17,7 @@ define symbol __ICFEDIT_size_cstack__ = 0x00000800;
 define symbol __ICFEDIT_size_heap__   = 0x00000800;
 /**** End of ICF editor section. ###ICF###*/
 
-define symbol ITCM_start = 0x00000010;
+define symbol ITCM_start = 0x00000000;
 define symbol ITCM_end   = 0x0000FFFF;
 define symbol DTCM_start = 0x20000000;
 define symbol DTCM_end   = 0x2001FFFF;
@@ -32,7 +32,7 @@ define region DTCM_region = mem:[from DTCM_start to DTCM_end];
 define block CSTACK with alignment = 8, size = __ICFEDIT_size_cstack__ { };
 define block HEAP   with alignment = 8, size = __ICFEDIT_size_heap__   { };
 
-initialize by copy { readwrite, section DTCM.VTOR, section ITCM, section DTCM.Init, readonly };
+initialize by copy { readwrite, section DTCM.VTOR, section ITCM, section DTCM.Init, readonly object exeinsram.o };
 
 do not initialize  { section .noinit, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
 

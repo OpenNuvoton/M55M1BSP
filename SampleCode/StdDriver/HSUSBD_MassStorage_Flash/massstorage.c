@@ -101,6 +101,7 @@ static uint8_t g_au8ModePage[24] =
 NVT_ITCM void HSUSBD_IRQHandler(void)
 {
     __IO uint32_t IrqStL, IrqSt;
+    uint32_t u32TimeOutCnt;
 
     IrqStL = HSUSBD->GINTSTS & HSUSBD->GINTEN;    /* get interrupt status */
 
@@ -181,11 +182,18 @@ NVT_ITCM void HSUSBD_IRQHandler(void)
             {
                 /* USB Plug In */
                 HSUSBD_ENABLE_USB();
+                u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
+                while (!(HSUSBD->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
+                    if (--u32TimeOutCnt == 0) break;
+
+                HSUSBD->OPER |= (HSUSBD_OPER_HISHSEN_Msk | HSUSBD_OPER_HISPDEN_Msk);
             }
             else
             {
                 /* USB Un-plug */
                 HSUSBD_DISABLE_USB();
+                HSUSBD->OPER &= ~HSUSBD_OPER_HISHSEN_Msk;
             }
 
             HSUSBD_CLR_BUS_INT_FLAG(HSUSBD_BUSINTSTS_VBUSDETIF_Msk);
@@ -448,8 +456,8 @@ void MSC_Init(void)
 
     g_sCSW.dCSWSignature = CSW_SIGNATURE;
     g_TotalSectors = 128;
-    g_u32MassBase = 0x20106000;
-    g_u32StorageBase = 0x20107000;
+    g_u32MassBase = 0x20105000;
+    g_u32StorageBase = 0x20106000;
 }
 
 void MSC_ClassRequest(void)
@@ -702,6 +710,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     for (i = 0; i < u32Loop; i++)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
+#if (NVT_DCACHE_ON == 1)
+        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
     }
 
     u32Loop = u32Len % USBD_MAX_DMA_LEN;
@@ -709,6 +721,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     if (u32Loop)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, u32Loop);
+#if (NVT_DCACHE_ON == 1)
+        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), DCACHE_ALIGN_LINE_SIZE(u32Loop));
+#endif
     }
 }
 
@@ -731,6 +747,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
         {
             if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
             {
+#if (NVT_DCACHE_ON == 1)
+                /* Device to host, so need clean data to sram. */
+                SCB_CleanDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
                 MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
                 break;
             }
@@ -753,6 +773,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    /* Device to host, so need clean data to sram. */
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), (count * g_u32EpMaxPacketSize));
+#endif
                     MSC_ActiveDMA(addr, count * g_u32EpMaxPacketSize);
                     break;
                 }
@@ -772,6 +796,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    /* Device to host, so need clean data to sram. */
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), DCACHE_ALIGN_LINE_SIZE(count));
+#endif
                     MSC_ActiveDMA(addr, count);
                     break;
                 }
@@ -803,6 +831,11 @@ void MSC_ReceiveCBW(uint32_t u32Buf, uint32_t u32Len)
         if (!HSUSBD_IS_ATTACHED())
             break;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Buf), DCACHE_ALIGN_LINE_SIZE(32));
+#endif
 }
 
 void MSC_ProcessCmd(void)
@@ -1225,4 +1258,8 @@ void MSC_ReadMedia(uint32_t addr, uint32_t size, uint8_t *buffer)
 void MSC_WriteMedia(uint32_t addr, uint32_t size, uint8_t *buffer)
 {
     DataFlashWrite(addr, size, (uint32_t)buffer);
+#if (NVT_DCACHE_ON == 1)
+    // Invalidate the D-Cache for the programmed region to ensure data consistency when D-Cache is enabled
+    SCB_InvalidateDCache_by_Addr((uint8_t *)(addr + MASS_STORAGE_OFFSET), size);
+#endif
 }

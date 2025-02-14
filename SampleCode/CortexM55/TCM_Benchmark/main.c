@@ -47,9 +47,13 @@ __STATIC_INLINE uint32_t crc32(const char *s, size_t n)
 
         for (j = 0; j < 8; j++)
             if (crc & 1)
+            {
                 crc = (crc >> 1) ^ CRC32_POLYNOMIAL;
+            }
             else
+            {
                 crc =  crc >> 1;
+            }
     }
 
     return ~crc;
@@ -72,24 +76,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -121,8 +110,6 @@ int32_t main(void)
     printf("|    CRC32 on I/D-TCM vs Flash/SRAM    |\n");
     printf("+--------------------------------------+\n\n");
 
-
-    /* Init Vector Table to SRAM */
     for (i = 0; i < CRC32_BUF_SIZE; i++)
     {
         g_au32DTCMBuf[i] = i;
@@ -136,19 +123,16 @@ int32_t main(void)
     SysTickStart();
     crc32_0 = CRC32_OnITCM((char *)g_au32DTCMBuf, CRC32_BUF_SIZE * 4);
     ticks_0 = GetSysTick();
-
     /*
         CRC32_OnFlash & g_au32SRAMBuf are place in default RO & RW region according to link script setting.
     */
     SysTickStart();
     crc32_1 = CRC32_OnFlash((char *)g_au32SRAMBuf, CRC32_BUF_SIZE * 4);
     ticks_1 = GetSysTick();
-
     printf("CRC32_OnITCM  @0x%08X , g_au32DTCMBuf @0x%08X , SysTicks = %d, CRC32 = 0x%08X\n"
            , (uint32_t)CRC32_OnITCM, (uint32_t)g_au32DTCMBuf
            , ticks_0, crc32_0
           );
-
     printf("CRC32_OnFlash @0x%08X , g_au32SRAMBuf @0x%08X , SysTicks = %d, CRC32 = 0x%08X\n"
            , (uint32_t)CRC32_OnFlash, (uint32_t)g_au32SRAMBuf
            , ticks_1, crc32_1

@@ -1,0 +1,20 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "CSSD_LED_NonSecure.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "CSSD_LED_NonSecure.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        }
+    ]
+}

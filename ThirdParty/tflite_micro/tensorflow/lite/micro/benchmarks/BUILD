@@ -20,8 +20,8 @@ cc_library(
         "//visibility:public",
     ],
     deps = [
-        "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:micro_framework",
+        "//tensorflow/lite/micro:micro_log",
         "//tensorflow/lite/micro:micro_resource_variable",
         "//tensorflow/lite/micro:micro_time",
         "//tensorflow/lite/micro:op_resolvers",
@@ -49,8 +49,9 @@ cc_binary(
         ":keyword_scrambled_model_data",
         ":micro_benchmark",
         "//tensorflow/lite/c:common",
-        "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:micro_framework",
+        "//tensorflow/lite/micro:micro_log",
+        "//tensorflow/lite/micro:micro_profiler",
         "//tensorflow/lite/micro:op_resolvers",
         "//tensorflow/lite/micro:system_setup",
     ],
@@ -64,9 +65,7 @@ cc_library(
     hdrs = [
         "//tensorflow/lite/micro/models:generated_keyword_scrambled_8bit_model_hdr",
     ],
-    visibility = [
-        ":micro_top_level",
-    ],
+    visibility = ["//visibility:private"],
 )
 
 cc_binary(
@@ -76,8 +75,8 @@ cc_binary(
         ":keyword_scrambled_8bit_model_data",
         ":micro_benchmark",
         "//tensorflow/lite/c:common",
-        "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:micro_framework",
+        "//tensorflow/lite/micro:micro_log",
         "//tensorflow/lite/micro:op_resolvers",
         "//tensorflow/lite/micro:system_setup",
     ],
@@ -89,8 +88,8 @@ cc_binary(
     deps = [
         ":micro_benchmark",
         "//tensorflow/lite/c:common",
-        "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:micro_framework",
+        "//tensorflow/lite/micro:micro_log",
         "//tensorflow/lite/micro:micro_utils",
         "//tensorflow/lite/micro:op_resolvers",
         "//tensorflow/lite/micro:system_setup",

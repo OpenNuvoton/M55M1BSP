@@ -36,6 +36,10 @@ impl FlexbufferSerializer {
     pub fn take_buffer(&mut self) -> Vec<u8> {
         self.builder.take_buffer()
     }
+    pub fn reset(&mut self) {
+        self.builder.reset();
+        self.nesting.clear();
+    }
     fn finish_if_not_nested(&mut self) -> Result<(), Error> {
         if self.nesting.is_empty() {
             assert_eq!(self.builder.values.len(), 1);
@@ -94,7 +98,7 @@ impl ser::Error for Error {
         Self::Serde(format!("{}", msg))
     }
 }
-impl<'a> ser::SerializeSeq for &mut FlexbufferSerializer {
+impl ser::SerializeSeq for &mut FlexbufferSerializer {
     type Ok = ();
     type Error = Error;
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
@@ -109,14 +113,14 @@ impl<'a> ser::SerializeSeq for &mut FlexbufferSerializer {
 }
 // This is unlike a flexbuffers map which requires CString like keys.
 // Its implemented as alternating keys and values (hopefully).
-impl<'a> ser::SerializeMap for &'a mut FlexbufferSerializer {
+impl ser::SerializeMap for &mut FlexbufferSerializer {
     type Ok = ();
     type Error = Error;
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        key.serialize(MapKeySerializer(&mut **self))
+        key.serialize(MapKeySerializer(self))
     }
     fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
@@ -128,7 +132,7 @@ impl<'a> ser::SerializeMap for &'a mut FlexbufferSerializer {
         self.end_map()
     }
 }
-impl<'a> ser::SerializeTuple for &mut FlexbufferSerializer {
+impl ser::SerializeTuple for &mut FlexbufferSerializer {
     type Ok = ();
     type Error = Error;
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
@@ -141,7 +145,7 @@ impl<'a> ser::SerializeTuple for &mut FlexbufferSerializer {
         self.end_vector()
     }
 }
-impl<'a> ser::SerializeTupleStruct for &mut FlexbufferSerializer {
+impl ser::SerializeTupleStruct for &mut FlexbufferSerializer {
     type Ok = ();
     type Error = Error;
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
@@ -154,7 +158,7 @@ impl<'a> ser::SerializeTupleStruct for &mut FlexbufferSerializer {
         self.end_vector()
     }
 }
-impl<'a> ser::SerializeStruct for &mut FlexbufferSerializer {
+impl ser::SerializeStruct for &mut FlexbufferSerializer {
     type Ok = ();
     type Error = Error;
     fn serialize_field<T: ?Sized>(
@@ -172,7 +176,7 @@ impl<'a> ser::SerializeStruct for &mut FlexbufferSerializer {
         self.end_map()
     }
 }
-impl<'a> ser::SerializeTupleVariant for &mut FlexbufferSerializer {
+impl ser::SerializeTupleVariant for &mut FlexbufferSerializer {
     type Ok = ();
     type Error = Error;
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
@@ -186,7 +190,7 @@ impl<'a> ser::SerializeTupleVariant for &mut FlexbufferSerializer {
         self.end_map()
     }
 }
-impl<'a> ser::SerializeStructVariant for &mut FlexbufferSerializer {
+impl ser::SerializeStructVariant for &mut FlexbufferSerializer {
     type Ok = ();
     type Error = Error;
     fn serialize_field<T: ?Sized>(
@@ -217,6 +221,9 @@ impl<'a> ser::Serializer for &'a mut FlexbufferSerializer {
     type SerializeStructVariant = &'a mut FlexbufferSerializer;
     type Ok = ();
     type Error = Error;
+    fn is_human_readable(&self) -> bool {
+        cfg!(serialize_human_readable)
+    }
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         self.builder.push(v);
         self.finish_if_not_nested()

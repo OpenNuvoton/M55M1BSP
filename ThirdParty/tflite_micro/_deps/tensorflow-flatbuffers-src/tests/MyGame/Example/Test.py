@@ -9,6 +9,10 @@ np = import_numpy()
 class Test(object):
     __slots__ = ['_tab']
 
+    @classmethod
+    def SizeOf(cls):
+        return 4
+
     # Test
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -38,6 +42,11 @@ class TestT(object):
         test = Test()
         test.Init(buf, pos)
         return cls.InitFromObj(test)
+
+    @classmethod
+    def InitFromPackedBuf(cls, buf, pos=0):
+        n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, pos)
+        return cls.InitFromBuf(buf, pos+n)
 
     @classmethod
     def InitFromObj(cls, test):

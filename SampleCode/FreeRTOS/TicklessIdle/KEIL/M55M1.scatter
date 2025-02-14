@@ -8,29 +8,6 @@
 /* https://github.com/ARM-software/CMSIS_5/tree/develop/Device/ARM/ARMCM55/Source/ARM */
 
 /*
- * This is a simplified picture of the NuMicro M55M1 memory system.
- * Please refer to the NuMicro M55M1 Technical Reference Manual for
- * further information.
- *
- * +---------------+   +---------------+  +---------------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM (64 KB)  |
- * |               |   |               |  +---------------+
- * |               |   |               |
- * |               |   |               |  +---------------+
- * |  M1      M0   |   |               +--+ DTCM (128 KB) |
- * +---+-------+---+   +-------+-------+  +---------------+
- *     |       |               |
- *     |   +---+---------------+-------+
- *     |   |   AMBA AXI NIC-400-Lite   |
- *     |   +---+--------+---------+----+
- *     |       |        |         |
- * +---+-------+--+ +---+---+ +---+---+
- * | AMBA AHB     | | SRAM0 | | SRAM2 |
- * +---+----------+ | SRAM1 | +-------+
- *     |            +-------+
- * +---+---+
- * | FLASH |
- * +-------+
  *
  * +-----------------------+-------------+-------------+----+------------------------------------------------+
  * |  Memory region name   | Base addr   |    Size     |IDAU| Description                                    |
@@ -49,8 +26,8 @@
  * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash                     |
  * | EBI                   | 0x6000_0000 | 0x0030_0000 | S  | 3 MiB                                          |
  * | EBI                   | 0x7000_0000 | 0x0030_0000 | NS | Non-Secure alias for EBI                       |
- * | SPIM0                 | 0x8000_0000 | 0x0200_0000 | S  | 32 MiB                                         |
- * | SPIM0                 | 0x9000_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0                     |
+ * | SPIM0                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                                         |
+ * | SPIM0                 | 0x9200_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0                     |
  * +-----------------------+-------------+-------------+----+------------------------------------------------+
  *
  *  Note: Ethos-U55 can access Flash, internal SRAM 0,1 => activation buffers and
@@ -59,9 +36,6 @@
  *  Note: Alias regions means that secure and non-secure addresses are mapped to the same physical
  *        memory banks.
  */
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#include "partition_M55M1.h"
-#endif
 
 /*
 ;-------- <<< Use Configuration Wizard in Context Menu >>> -------------------
@@ -119,22 +93,13 @@
 /* ----------------------------------------------------------------------------
   Stack seal size definition
  *----------------------------------------------------------------------------*/
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define __STACKSEAL_SIZE   ( 8 )
-#else
 #define __STACKSEAL_SIZE   ( 0 )
-#endif
 
 
 /*----------------------------------------------------------------------------
   Region base & size definition
  *----------------------------------------------------------------------------*/
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define TZ_NSC_START        ( FLASH_START + FLASH_SIZE - __CMSEVENEER_SIZE )
-#define TZ_NSC_SIZE         ( __CMSEVENEER_SIZE )
-#else
 #define TZ_NSC_SIZE         ( 0 )
-#endif
 
 #define __RO_BASE           ( FLASH_START )
 #define __RO_SIZE           ( FLASH_SIZE - TZ_NSC_SIZE )
@@ -155,16 +120,10 @@ LR_ROM __RO_BASE __RO_SIZE  {                       ; load region size_region
         .ANY (+RO)
     }
 
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-    NSC_ROM TZ_NSC_START TZ_NSC_SIZE
-    {
-        .ANY (Veneer$$CMSE)
-    }
-#endif
 
     ITCM ITCM_START ITCM_SIZE
     {
-        .ANY (itcm)
+        .ANY (ITCM)
     }
 
     ; Size of DTCM is 128 KB and only accessible from the Cortex-M55
@@ -182,10 +141,4 @@ LR_ROM __RO_BASE __RO_SIZE  {                       ; load region size_region
 
     ARM_LIB_HEAP  (STACK_HEAP - STACK_SIZE - HEAP_SIZE) EMPTY ALIGN 8 HEAP_SIZE  {}
     ARM_LIB_STACK (STACK_HEAP - STACK_SIZE            ) EMPTY ALIGN 8 STACK_SIZE {}
-
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-STACKSEAL +0 EMPTY __STACKSEAL_SIZE {
-        ; Reserve empty region for stack seal immediately after stack
-    }
-#endif
 }

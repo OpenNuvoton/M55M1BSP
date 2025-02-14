@@ -74,7 +74,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -351,6 +351,7 @@
                     <state>$PROJ_DIR$\..\..\..\..\Library\CMSIS\Core\Include</state>
                     <state>$PROJ_DIR$\..\..\..\..\Library\Device\Nuvoton\M55M1\Include</state>
                     <state>$PROJ_DIR$\..\..\..\..\Library\StdDriver\inc</state>
+                    <state>$PROJ_DIR$\..\..\..\..\Library\Storage</state>
                     <state>$PROJ_DIR$\..\..\..\..\ThirdParty\FatFs\source</state>
                 </option>
                 <option>
@@ -1130,7 +1131,7 @@
     <group>
         <name>User</name>
         <file>
-            <name>$PROJ_DIR$\..\diskio.c</name>
+            <name>$PROJ_DIR$\..\..\..\..\Library\Storage\diskio_SDH.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\main.c</name>

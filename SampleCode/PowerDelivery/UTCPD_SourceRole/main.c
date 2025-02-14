@@ -56,8 +56,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
     /* Switch HCLK clock source to Internal RC and HCLK source divide 1 */
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 72MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_72MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Enable GPA ~ GPJ peripheral clock */
     CLK_EnableModuleClock(GPIOA_MODULE);
@@ -88,7 +88,7 @@ void SYS_Init(void)
     CLK_EnableModuleClock(TMR1_MODULE);
     /* Enable EADC peripheral clock */
 
-    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_PCLK0, CLK_EADCDIV_EADC0DIV(1));
+    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_PCLK0, CLK_EADCDIV_EADC0DIV(15));
     CLK_EnableModuleClock(EADC0_MODULE);
 
     /* Update System Core Clock */
@@ -161,7 +161,7 @@ void SYS_Init(void)
 /* The timer is used to maintain the PD protocol stack.                                                    */
 /* The tick unit is 1 millisecond.                                                                         */
 /*---------------------------------------------------------------------------------------------------------*/
-void TIMER0_Init(boid)
+void TIMER0_Init(void)
 {
     TIMER_Open(TIMER0, TIMER_PERIODIC_MODE, 1000);
     /* Enable timer interrupt */
@@ -267,7 +267,7 @@ void pd_task(void)
         return;
 
     /* Install UUTCPD Callback Function */
-    UTCPD_InstallCallback(port, UTCPD_Callback);
+    UTCPD_InstallCallback(port, (utcpd_pvFunPtr *)UTCPD_Callback);
 
     while (1)
     {
@@ -341,7 +341,7 @@ int main()
 #endif
 
 
-    printf("DRP: UART Init\n");
+    printf("Source: UART Init\n");
 
     /* Set timer frequency to 1000HZ for system time base */
     TIMER0_Init();

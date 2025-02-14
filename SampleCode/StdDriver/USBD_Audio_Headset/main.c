@@ -22,12 +22,12 @@ void SetDebugUartCLK(void)
 #if (CRYSTAL_LESS)
 
     /* Select UART clock source from HIRC */
-    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART6SEL_HIRC, CLK_UARTDIV0_UART6DIV(1));
+    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART0SEL_HIRC, CLK_UARTDIV0_UART0DIV(1));
 
 #else
 
     /* Select UART clock source from HXT */
-    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART6SEL_HXT, CLK_UARTDIV0_UART6DIV(1));
+    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART0SEL_HXT, CLK_UARTDIV0_UART0DIV(1));
 
 #endif
 
@@ -48,19 +48,19 @@ void SYS_Init(void)
 
 #if (!CRYSTAL_LESS)
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
-    /* Enable APLL1 96MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, 96000000, CLK_APLL1_SELECT);
+    /* Enable APLL1 192MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_192MHZ, CLK_APLL1_SELECT);
 
     /* Select USB clock source as APLL1/2 and USB clock divider as 2 */
-    CLK_SetModuleClock(USBD0_MODULE, CLK_USBSEL_USBSEL_APLL1_DIV2, CLK_USBDIV_USBDIV(1));
+    CLK_SetModuleClock(USBD0_MODULE, CLK_USBSEL_USBSEL_APLL1_DIV2, CLK_USBDIV_USBDIV(2));
 
 #else
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Enable HIRC48M clock */
     CLK_EnableXtalRC(CLK_SRCCTL_HIRC48MEN_Msk);
@@ -88,7 +88,7 @@ void SYS_Init(void)
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 
-    /* Enable OTG0_ module clock */
+    /* Enable OTG0 module clock */
     CLK_EnableModuleClock(OTG0_MODULE);
 
     /* Select USBD */
@@ -109,13 +109,8 @@ void SYS_Init(void)
     /* Enable I2S0 module clock */
     CLK_EnableModuleClock(I2S0_MODULE);
 
-#if defined(ALIGN_AF_PINS)
     /* Enable I2C3 module clock */
     CLK_EnableModuleClock(I2C3_MODULE);
-#else
-    /* Enable I2C2 module clock */
-    CLK_EnableModuleClock(I2C2_MODULE);
-#endif
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
@@ -140,21 +135,12 @@ void SYS_Init(void)
     /* Enable I2S0 clock pin (PI6) schmitt trigger */
     PI->SMTEN |= GPIO_SMTEN_SMTEN6_Msk;
 
-#if defined(ALIGN_AF_PINS)
     /* Set I2C3 multi-function pins */
     SET_I2C3_SDA_PG1();
     SET_I2C3_SCL_PG0();
 
     /* Enable I2C3 clock pin (PG0) schmitt trigger */
     PG->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
-#else
-    /* Set I2C3 multi-function pins */
-    SET_I2C2_SDA_PD0();
-    SET_I2C2_SCL_PD1();
-
-    /* Enable I2C2 clock pin (PD1) schmitt trigger */
-    PD->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
-#endif
 
 }
 
@@ -211,15 +197,10 @@ int32_t main(void)
     SYS_LockReg();
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-#if defined(ALIGN_AF_PINS)
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
-#else
-    SET_GPIO_PD4();
-    GPIO_SetMode(PD, BIT4, GPIO_MODE_OUTPUT);
-    PD4 = 0;
-#endif
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
+
 
 #if NAU8822
     NAU8822_Setup();

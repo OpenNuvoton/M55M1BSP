@@ -1,0 +1,20 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "OTG_Dual_Role_UMAS.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "OTG_Dual_Role_UMAS.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        }
+    ]
+}

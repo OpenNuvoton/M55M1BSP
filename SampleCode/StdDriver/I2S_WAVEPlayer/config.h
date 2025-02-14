@@ -10,6 +10,7 @@
 #define CONFIG_H
 
 #include "ff.h"
+#include "NuMicro.h"
 
 #define NAU8822     1
 
@@ -31,7 +32,13 @@ typedef struct dma_desc_t
 
 extern FATFS FatFs[];      /* File system object for logical drive */
 extern uint8_t u8AudioPlaying;
-extern signed int aiPCMBuffer[2][PCM_BUFFER_SIZE];
+#if (NVT_DCACHE_ON == 1)
+    /* Declare a DCache-line aligned variable for the I2S PCM DMA buffer.  */
+    extern signed int aiPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)];
+#else
+    /* Declare a non-aligned variable for the I2S PCM DMA buffer.  */
+    extern signed int aiPCMBuffer[2][PCM_BUFFER_SIZE];
+#endif
 extern volatile uint8_t g_u8PCMBufferFull[2];
 extern volatile uint8_t g_u8PCMBufferPlaying;
 

@@ -12,26 +12,29 @@
 #ifndef __UTCPDLIB_H__
 #define __UTCPDLIB_H__
 
+#include <string.h>
 #include "NuMicro.h"
 #include "utcpd_config.h"
-
-#include "Inc/atomic.h"
-#include "Inc/usb_pd.h"
-#include "Inc/tcpci.h"
-#include "Inc/usb_common.h"
-#include "Inc/ec_timer.h"
-#include "Inc/usb_sm.h"
-#include "Inc/usb_pd_flags.h"
-#include "Inc/nct38xx.h"
-#include "Inc/usb_pe_sm.h"
-#include "Inc/usb_emsg.h"
-#include "Inc/usb_pd_timer.h"
-#include "Inc/usb_tc_sm.h"
-#include "Inc/usbc_ppc.h"
-#include "Inc/usb_pd_tcpm.h"
-#include "Inc/usb_prl_sm.h"
-#include "Inc/usb_pd_dpm.h"
-//#include "Inc/usb_pd_tcpm.h"
+#include "atomic.h"
+#include "usb_pd.h"
+#include "tcpci.h"
+#include "usb_common.h"
+#include "ec_timer.h"
+#include "usb_sm.h"
+#include "usb_pd_flags.h"
+#include "nct38xx.h"
+#include "usb_pe_sm.h"
+#include "usb_emsg.h"
+#include "usb_pd_timer.h"
+#include "usb_tc_sm.h"
+#include "usbc_ppc.h"
+#include "usb_pd_tcpm.h"
+#include "usb_prl_sm.h"
+#include "usb_pd_dpm.h"
+//New Add by cyhsu11
+#include "usb_dp_alt_mode.h"
+#include "task_event.h"
+#include "usb_pd_policy.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -76,9 +79,10 @@ typedef void (*utcpd_pvFunPtr)(int port, E_UTCPD_PD_EVENT event, uint32_t op);  
   @{
 */
 void UTCPD_InstallCallback(int port, utcpd_pvFunPtr *pfn);
+void UTCPD_NotifyEvent(int port, uint32_t event, uint32_t op);
 
 enum pd_cc_states UTCPD_TC_get_cc_state(int port);
-enum pd_cc_states UTCPD_TC_get_polarity(int port);
+enum tcpc_cc_polarity UTCPD_TC_get_polarity(int port);
 void UTCPD_PE_get_src_caps(int port, int32_t *pu32SrcArray, int32_t *pi32SrcCnt);
 void UTCPD_PE_get_snk_caps(int port, int32_t *pu32SnkArray, int32_t *pi32SnkCnt);
 
@@ -88,7 +92,6 @@ extern void EADC_Init(void);
 extern void pd_task_reinit(int port);
 extern bool pd_task_loop(int port);
 extern void vconn_polarity_active_low();
-extern void VBUS_Sink_Enable(int32_t port, bool bIsEnable);
 extern void UART_Commandshell(int port);
 extern void cpu_dump(uint32_t start_addr, uint32_t end_addr);
 extern void VBUS_Source_Level(int port, char i8Level);

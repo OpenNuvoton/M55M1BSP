@@ -33,9 +33,6 @@ NVT_ITCM void WDT0_IRQHandler(void)
 {
     uint32_t intflag;
 
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(WDT0_MODULE);
-
     if (g_u32WDTINTCounts < 10)
         WDT_RESET_COUNTER(WDT0);
 
@@ -76,8 +73,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
 
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -142,7 +139,7 @@ int main(void)
     printf("    - Interrupt enable                      \n");
     printf("    - Wake-up function enable               \n");
     printf("    - Reset function enable                 \n");
-    printf("    - Reset delay period is 18 * WDT clock  \n");
+    printf("    - Reset delay period is 130 * WDT clock \n");
     printf("# System will generate a WDT time-out interrupt event after 0.512 ~ 0.515 s, \n");
     printf("    and will be wake up from power-down mode also.\n");
     printf("    (Use PA.0 high/low period time to check WDT time-out interval)\n");
@@ -164,7 +161,7 @@ int main(void)
     /* Configure WDT settings and start WDT counting */
     g_u32WDTINTCounts = g_u8IsWDTWakeupINT = 0;
 
-    WDT_Open(WDT0, WDT_TIMEOUT_2POW14, WDT_RESET_DELAY_18CLK, TRUE, TRUE);
+    WDT_Open(WDT0, WDT_TIMEOUT_2POW14, WDT_RESET_DELAY_130CLK, TRUE, TRUE);
 
     /* Enable WDT interrupt function */
     WDT_EnableInt(WDT0);

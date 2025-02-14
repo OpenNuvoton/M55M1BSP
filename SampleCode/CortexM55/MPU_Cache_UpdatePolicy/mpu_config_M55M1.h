@@ -101,7 +101,7 @@
 /*
 //     <o>Base Address <0-0xFFFFFFE0>
 */
-#define MPU_INIT_BASE1     0x80000000       /* Base address of MPU region 0 */
+#define MPU_INIT_BASE1     0x80000000       /* Base address of MPU region 1 */
 /*
 //     <o>Region Size <0x20-0xFFFFFFFF:0x20>
 */

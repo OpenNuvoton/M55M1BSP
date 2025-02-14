@@ -108,7 +108,21 @@ uint32_t USPI_Open(USPI_T *uspi, uint32_t u32MasterSlave, uint32_t u32SPIMode,  
   */
 void USPI_Close(USPI_T *uspi)
 {
+    uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    if (u32RegLockLevel)
+    {
+        /* Unlock protected registers */
+        SYS_UnlockReg();
+    }
+
     uspi->CTL &= ~(USPI_CTL_FUNMODE_Msk);
+
+    if (u32RegLockLevel)
+    {
+        /* Lock protected registers */
+        SYS_LockReg();
+    }
 }
 
 /**

@@ -19,10 +19,18 @@ uint8_t HID_DeviceReportDescriptor[] =
     0x15, 0x00,             /* LOGICAL_MINIMUM (0)*/
     0x26, 0xFF, 0x00,       /* LOGICAL_MAXIMUM (255)*/
     0x75, 0x08,             /* REPORT_SIZE (8)*/
+#if (EP_MAX_PKT_SIZE == 1024)
+    0x96, 0x00, 0x04,       /* REPORT_COUNT*/
+#else
     0x96, 0x00, 0x02,       /* REPORT_COUNT*/
+#endif
     0x09, 0x01,
     0x81, 0x02,             /* INPUT (Data,Var,Abs)*/
+#if (EP_MAX_PKT_SIZE == 1024)
+    0x96, 0x00, 0x04,       /* REPORT_COUNT*/
+#else
     0x96, 0x00, 0x02,       /* REPORT_COUNT*/
+#endif
     0x09, 0x01,
     0x91, 0x02,             /* OUTPUT (Data,Var,Abs)*/
     0x95, 0x08,             /* REPORT_COUNT (8) */

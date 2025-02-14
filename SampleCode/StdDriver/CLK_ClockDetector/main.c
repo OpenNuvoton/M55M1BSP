@@ -108,8 +108,8 @@ static void SYS_Init(void)
     /* Waiting for external low speed clock ready */
     CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -175,7 +175,7 @@ int main(void)
 
 #else
 
-#error "__HIRC48M > __HIRC48M is over spec."
+#error "__HXT > __HIRC48M is over spec."
 
 #endif
 

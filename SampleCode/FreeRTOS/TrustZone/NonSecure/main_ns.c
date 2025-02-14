@@ -28,7 +28,7 @@ static void prvCreateTasks(void);
 int main(void)
 {
     printf("+-----------------------------------------+\n");
-    printf("|       Non-secure code is running ffff       |\n");
+    printf("|       Non-secure code is running        |\n");
     printf("+-----------------------------------------+\n");
 
     /* Init GPIO Port C Pin 0 for Non-secure LED control */

@@ -26,8 +26,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -59,7 +59,6 @@ int main()
     printf("+------------------------------------------+\n");
     printf("|        M55M1 FMC OTP Sample Code         |\n");
     printf("+------------------------------------------+\n");
-    printf("FMC->ISPCTL: 0x%08X\n", FMC->ISPCTL);
     SYS_UnlockReg();    /* Unlock protected registers */
     FMC_Open();         /* Enable FMC ISP function */
 

@@ -74,7 +74,7 @@
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -267,7 +267,7 @@
                 </option>
                 <option>
                     <name>CCDiagSuppress</name>
-                    <state>Pa082,Pe550,Pe177,Pe549</state>
+                    <state>Pa082,Pe550,Pe177,Pe549,Pa039</state>
                 </option>
                 <option>
                     <name>CCDiagRemark</name>
@@ -685,7 +685,7 @@
             <data>
                 <extensions></extensions>
                 <cmdline></cmdline>
-                <hasPrio>232</hasPrio>
+                <hasPrio>1</hasPrio>
                 <buildSequence>inputOutputBased</buildSequence>
             </data>
         </settings>
@@ -1141,6 +1141,9 @@
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv4\dhcp.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\dhcp6.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\dns.c</name>
         </file>
         <file>
@@ -1150,10 +1153,19 @@
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\netif\ethernet.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\ethip6.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv4\icmp.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\icmp6.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv4\igmp.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\inet6.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\inet_chksum.c</name>
@@ -1174,6 +1186,15 @@
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv4\ip4_frag.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\ip6.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\ip6_addr.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\ip6_frag.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\apps\lwiperf\lwiperf.c</name>
         </file>
         <file>
@@ -1181,6 +1202,12 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\memp.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\mld6.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\ipv6\nd6.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\..\ThirdParty\lwIP\src\core\netif.c</name>

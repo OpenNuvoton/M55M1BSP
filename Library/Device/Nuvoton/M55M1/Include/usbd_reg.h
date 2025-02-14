@@ -145,59 +145,72 @@ typedef struct
      * |[0]     |BUSIF     |BUS Interrupt Status
      * |        |          |The BUS event means that there is one of the suspense or the resume function in the bus.
      * |        |          |0 = No BUS event occurred.
-     * |        |          |1 = Bus event occurred; check USBD_ATTR[3:0] to know which kind of bus event was occurred, cleared by write 1 to USBD_INTSTS[0].
+     * |        |          |1 = Bus event occurred; check USBD_ATTR[3:0] to know which kind of bus event was occurred, cleared by writing 1 to USBD_INTSTS[0].
      * |[1]     |USBIF     |USB Event Interrupt Status
      * |        |          |The USB event includes the SETUP Token, IN Token, OUT ACK, ISO IN, or ISO OUT events in the bus.
      * |        |          |0 = No USB event occurred.
-     * |        |          |1 = USB event occurred, check EPSTS0~5[2:0] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[1] or EPSTS0~11 and SETUP (USBD_INTSTS[31]).
+     * |        |          |1 = USB event occurred
+     * |        |          |Check EPSTS0~25 in USBD_EPSTS0~3 to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[1] or USBD_INTSTS[27:16] or USBD_EPINTSTS[24:0] and SETUP (USBD_INTSTS[31]).
      * |[2]     |VBDETIF   |VBUS Detection Interrupt Status
      * |        |          |0 = There is not attached/detached event in the USB.
-     * |        |          |1 = There is attached/detached event in the USB bus and it is cleared by write 1 to USBD_INTSTS[2].
+     * |        |          |1 = There is attached/detached event in the USB bus and it is cleared by writing 1 to USBD_INTSTS[2].
      * |[3]     |NEVWKIF   |No-event-wake-up Interrupt Status
-     * |        |          |0 = NEVWK event does not occur.
-     * |        |          |1 = No-event-wake-up event occurred, cleared by write 1 to USBD_INTSTS[3].
+     * |        |          |0 = NEVWK event did not occur.
+     * |        |          |1 = No-event-wake-up event occurred, cleared by writing 1 to USBD_INTSTS[3].
      * |[4]     |SOFIF     |Start of Frame Interrupt Status
-     * |        |          |0 = SOF event does not occur.
-     * |        |          |1 = SOF event occurred, cleared by write 1 to USBD_INTSTS[4].
+     * |        |          |0 = SOF event did not occur.
+     * |        |          |1 = SOF event occurred, cleared by writing 1 to USBD_INTSTS[4].
      * |[16]    |EPEVT0    |Endpoint 0's USB Event Status
      * |        |          |0 = No event occurred in endpoint 0.
-     * |        |          |1 = USB event occurred on Endpoint 0, check USBD_EPSTS0[3:0] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[16] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 0
+     * |        |          |Check USBD_EPSTS0[3:0] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[16] or USBD_EPINTSTS[0] or USBD_INTSTS[1].
      * |[17]    |EPEVT1    |Endpoint 1's USB Event Status
      * |        |          |0 = No event occurred in endpoint 1.
-     * |        |          |1 = USB event occurred on Endpoint 1, check USBD_EPSTS0[7:4] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[17] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 1
+     * |        |          |Check USBD_EPSTS0[7:4] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[17] or USBD_EPINTSTS[1] or USBD_INTSTS[1].
      * |[18]    |EPEVT2    |Endpoint 2's USB Event Status
      * |        |          |0 = No event occurred in endpoint 2.
-     * |        |          |1 = USB event occurred on Endpoint 2, check USBD_EPSTS0[11:8] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[18] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 2
+     * |        |          |Check USBD_EPSTS0[11:8] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[18] or USBD_EPINTSTS[2] or USBD_INTSTS[1].
      * |[19]    |EPEVT3    |Endpoint 3's USB Event Status
      * |        |          |0 = No event occurred in endpoint 3.
-     * |        |          |1 = USB event occurred on Endpoint 3, check USBD_EPSTS0[15:12] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[19] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 3
+     * |        |          |Check USBD_EPSTS0[15:12] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[19] or USBD_EPINTSTS[3] or USBD_INTSTS[1].
      * |[20]    |EPEVT4    |Endpoint 4's USB Event Status
      * |        |          |0 = No event occurred in endpoint 4.
-     * |        |          |1 = USB event occurred on Endpoint 4, check USBD_EPSTS0[19:16] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[20] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 4
+     * |        |          |Check USBD_EPSTS0[19:16] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[20] or USBD_EPINTSTS[4] or USBD_INTSTS[1].
      * |[21]    |EPEVT5    |Endpoint 5's USB Event Status
      * |        |          |0 = No event occurred in endpoint 5.
-     * |        |          |1 = USB event occurred on Endpoint 5, check USBD_EPSTS0[23:20] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[21] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 5
+     * |        |          |Check USBD_EPSTS0[23:20] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[21] or USBD_EPINTSTS[5] or USBD_INTSTS[1].
      * |[22]    |EPEVT6    |Endpoint 6's USB Event Status
      * |        |          |0 = No event occurred in endpoint 6.
-     * |        |          |1 = USB event occurred on Endpoint 6, check USBD_EPSTS0[27:24] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[22] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 6
+     * |        |          |Check USBD_EPSTS0[27:24] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[22] or USBD_EPINTSTS[6] or USBD_INTSTS[1].
      * |[23]    |EPEVT7    |Endpoint 7's USB Event Status
      * |        |          |0 = No event occurred in endpoint 7.
-     * |        |          |1 = USB event occurred on Endpoint 7, check USBD_EPSTS0[31:28] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[23] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 7
+     * |        |          |Check USBD_EPSTS0[31:28] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[23] or USBD_EPINTSTS[7] or USBD_INTSTS[1].
      * |[24]    |EPEVT8    |Endpoint 8's USB Event Status
      * |        |          |0 = No event occurred in endpoint 8.
-     * |        |          |1 = USB event occurred on Endpoint 8, check USBD_EPSTS1[3 :0] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[24] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 8
+     * |        |          |Check USBD_EPSTS1[3:0] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[24] or USBD_EPINTSTS[8] or USBD_INTSTS[1].
      * |[25]    |EPEVT9    |Endpoint 9's USB Event Status
      * |        |          |0 = No event occurred in endpoint 9.
-     * |        |          |1 = USB event occurred on Endpoint 9, check USBD_EPSTS1[7 :4] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[25] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 9
+     * |        |          |Check USBD_EPSTS1[7:4] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[25] or USBD_EPINTSTS[9] or USBD_INTSTS[1].
      * |[26]    |EPEVT10   |Endpoint 10's USB Event Status
      * |        |          |0 = No event occurred in endpoint 10.
-     * |        |          |1 = USB event occurred on Endpoint 10, check USBD_EPSTS1[11 :8] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[26] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 10
+     * |        |          |Check USBD_EPSTS1[11:8] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[26] or USBD_EPINTSTS[10] or USBD_INTSTS[1].
      * |[27]    |EPEVT11   |Endpoint 11's USB Event Status
      * |        |          |0 = No event occurred in endpoint 11.
-     * |        |          |1 = USB event occurred on Endpoint 11, check USBD_EPSTS1[ 15:12] to know which kind of USB event was occurred, cleared by write 1 to USBD_INTSTS[27] or USBD_INTSTS[1].
+     * |        |          |1 = USB event occurred on Endpoint 11
+     * |        |          |Check USBD_EPSTS1[15:12] to know which kind of USB event was occurred, cleared by writing 1 to USBD_INTSTS[27] or USBD_EPINTSTS[11] or USBD_INTSTS[1].
      * |[31]    |SETUP     |Setup Event Status
      * |        |          |0 = No Setup event.
-     * |        |          |1 = Setup event occurred, cleared by write 1 to USBD_INTSTS[31].
+     * |        |          |1 = Setup event occurred, cleared by writing 1 to USBD_INTSTS[31].
      * @var USBD_T::FADDR
      * Offset: 0x08  USB Device Function Address Register
      * ---------------------------------------------------------------------------------------------------
@@ -212,7 +225,7 @@ typedef struct
      * |[7]     |OV        |Overrun
      * |        |          |It indicates that the received data is over the maximum payload number or not.
      * |        |          |0 = No overrun.
-     * |        |          |1 = Out Data is more than the Max Payload in MXPLD register or the Setup Data is more than 8 Bytes.
+     * |        |          |1 = Out Data is more than the Max Payload in MXPLD register or the Setup Data is more than 8 bytes.
      * @var USBD_T::ATTR
      * Offset: 0x10  USB Device Bus Status and Attribution Register
      * ---------------------------------------------------------------------------------------------------
@@ -221,25 +234,21 @@ typedef struct
      * |[0]     |USBRST    |USB Reset Status (Read Only)
      * |        |          |0 = Bus no reset.
      * |        |          |1 = Bus reset when SE0 (single-ended 0) more than 2.5us.
-     * |        |          |Note: This bit is read only.
      * |[1]     |SUSPEND   |Suspend Status (Read Only)
      * |        |          |0 = Bus no suspend.
-     * |        |          |1 = Bus idle more than 3ms, either cable is plugged off or host is sleeping.
-     * |        |          |Note: This bit is read only.
+     * |        |          |1 = Bus idle more than 3ms, either cable is plugged-out or host is sleeping.
      * |[2]     |RESUME    |Resume Status (Read Only)
      * |        |          |0 = No bus resume.
      * |        |          |1 = Resume from suspend.
-     * |        |          |Note: This bit is read only.
      * |[3]     |TOUT      |Time-out Status (Read Only)
      * |        |          |0 = No time-out.
      * |        |          |1 = No Bus response more than 18 bits time.
-     * |        |          |Note: This bit is read only.
      * |[4]     |PHYEN     |PHY Transceiver Function Enable Bit
      * |        |          |0 = PHY transceiver function Disabled.
      * |        |          |1 = PHY transceiver function Enabled.
      * |[5]     |RWAKEUP   |Remote Wake-up
      * |        |          |0 = Release the USB bus from K state.
-     * |        |          |1 = Force USB bus to K (USB_D+ low, USB_D-: high) state, used for remote wake-up.
+     * |        |          |1 = Force USB bus to K (USB_D+ low, USB_D- high) state, used for remote wake-up.
      * |[7]     |USBEN     |USB Controller Enable Bit
      * |        |          |0 = USB Controller Disabled.
      * |        |          |1 = USB Controller Enabled.
@@ -254,16 +263,14 @@ typedef struct
      * |        |          |1 = Byte mode: The size of the transfer from CPU to USB SRAM can be Byte only.
      * |[11]    |LPMACK    |LPM Token Acknowledge Enable Bit
      * |        |          |The NYET/ACK will be returned only on a successful LPM transaction if no errors in both the EXT token and the LPM token and a valid bLinkState = 0001 (L1) is received, else ERROR and STALL will be returned automatically, respectively.
-     * |        |          |0= the valid LPM Token will be NYET.
-     * |        |          |1= the valid LPM Token will be ACK.
-     * |[12]    |L1SUSPEND |LPM L1 Suspend
+     * |        |          |0= The valid LPM Token will be NYET.
+     * |        |          |1= The valid LPM Token will be ACK.
+     * |[12]    |L1SUSPEND |LPM L1 Suspend (Read Only)
      * |        |          |0 = Bus no L1 state suspend.
      * |        |          |1 = This bit is set by the hardware when LPM command to enter the L1 state is successfully received and acknowledged.
-     * |        |          |Note: This bit is read only.
-     * |[13]    |L1RESUME  |LPM L1 Resume
+     * |[13]    |L1RESUME  |LPM L1 Resume (Read Only)
      * |        |          |0 = Bus no LPM L1 state resume.
-     * |        |          |1 = LPM L1 state Resume from LPM L1 state suspend.
-     * |        |          |Note: This bit is read only.
+     * |        |          |1 = LPM L1 state resume from LPM L1 state suspend.
      * @var USBD_T::VBUSDET
      * Offset: 0x14  USB Device VBUS Detection Register
      * ---------------------------------------------------------------------------------------------------
@@ -277,9 +284,9 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[8:3]   |STBUFSEG  |SETUP Token Buffer Segmentation
-     * |        |          |It is used to indicate the offset address for the SETUP token with the USB Device SRAM starting address The effective starting address is
-     * |        |          |USBD_SRAM address + {STBUFSEG, 3'b000}
+     * |[10:3]  |STBUFSEG  |SETUP Token Buffer Segmentation
+     * |        |          |It is used to indicate the offset address for the SETUP token with the USB Device SRAM starting address
+     * |        |          |The effective starting address is USBD_SRAM address + {STBUFSEG, 3'b000}
      * |        |          |Where the USBD_SRAM address = USBD_BA+0x800h.
      * |        |          |Note: It is used for SETUP token only.
      * @var USBD_T::EPSTS0
@@ -288,67 +295,59 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[03:00] |EPSTS0    |Endpoint 0 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[07:04] |EPSTS1    |Endpoint 1 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[11:08] |EPSTS2    |Endpoint 2 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[15:12] |EPSTS3    |Endpoint 3 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[19:16] |EPSTS4    |Endpoint 4 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[23:20] |EPSTS5    |Endpoint 5 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[27:24] |EPSTS6    |Endpoint 6 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[31:28] |EPSTS7    |Endpoint 7 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * @var USBD_T::EPSTS1
@@ -357,67 +356,59 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[3:0]   |EPSTS8    |Endpoint 8 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[7:4]   |EPSTS9    |Endpoint 9 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[11:8]  |EPSTS10   |Endpoint 10 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[15:12] |EPSTS11   |Endpoint 11 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[19:16] |EPSTS12   |Endpoint 12 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[23:20] |EPSTS13   |Endpoint 13 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[27:24] |EPSTS14   |Endpoint 14 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[31:28] |EPSTS15   |Endpoint 15 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * @var USBD_T::EPSTS2
@@ -426,67 +417,59 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[3:0]   |EPSTS16   |Endpoint 16 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[7:4]   |EPSTS17   |Endpoint 17 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[11:8]  |EPSTS18   |Endpoint 18 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[15:12] |EPSTS19   |Endpoint 19 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[19:16] |EPSTS20   |Endpoint 20 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[23:20] |EPSTS21   |Endpoint 21 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[27:24] |EPSTS22   |Endpoint 22 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * |[31:28] |EPSTS23   |Endpoint 23 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * @var USBD_T::EPSTS3
@@ -495,11 +478,10 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[3:0]   |EPSTS24   |Endpoint 24 Status
-     * |        |          |These bits are used to indicate the current status of this endpoint
+     * |        |          |These bits are used to indicate the current status of this endpoint.
      * |        |          |0000 = In ACK.
      * |        |          |0001 = In NAK.
      * |        |          |0010 = Out Packet Data0 ACK.
-     * |        |          |0011 = Setup ACK.
      * |        |          |0110 = Out Packet Data1 ACK.
      * |        |          |0111 = Isochronous transfer end.
      * @var USBD_T::EPINTSTS
@@ -619,12 +601,12 @@ typedef struct
      * |[8]     |LPMRWAKUP |LPM Remote Wakeup
      * |        |          |This bit contains the bRemoteWake value received with last ACK LPM Token
      * @var USBD_T::FN
-     * Offset: 0x8C  USB Frame number Register
+     * Offset: 0x8C  USB Frame Number Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[10:0]  |FN        |Frame Number
-     * |        |          |These bits contain the 11-bits frame number in the last received SOF packet.
+     * |        |          |These bits contain the 11 bits frame number in the last received SOF packet.
      * @var USBD_T::SE0
      * Offset: 0x90  USB Device Drive SE0 Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -643,27 +625,20 @@ typedef struct
     __IO uint32_t ATTR;                  /*!< [0x0010] USB Device Bus Status and Attribution Register                   */
     __I  uint32_t VBUSDET;               /*!< [0x0014] USB Device VBUS Detection Register                               */
     __IO uint32_t STBUFSEG;              /*!< [0x0018] SETUP Token Buffer Segmentation Register                         */
-    /// @cond HIDDEN_SYMBOLS
     __I  uint32_t RESERVE0[1];
-    /// @endcond //HIDDEN_SYMBOLS
     __I  uint32_t EPSTS0;                /*!< [0x0020] USB Device Endpoint Status Register 0                            */
     __I  uint32_t EPSTS1;                /*!< [0x0024] USB Device Endpoint Status Register 1                            */
     __I  uint32_t EPSTS2;                /*!< [0x0028] USB Device Endpoint Status Register 2                            */
     __I  uint32_t EPSTS3;                /*!< [0x002c] USB Device Endpoint Status Register 3                            */
     __IO uint32_t EPINTSTS;              /*!< [0x0030] USB Device Endpoint Interrupt Event Status Register              */
-    /// @cond HIDDEN_SYMBOLS
     __I  uint32_t RESERVE1[21];
-    /// @endcond //HIDDEN_SYMBOLS
     __I  uint32_t LPMATTR;               /*!< [0x0088] USB LPM Attribution Register                                     */
-    __I  uint32_t FN;                    /*!< [0x008c] USB Frame number Register                                        */
+    __I  uint32_t FN;                    /*!< [0x008c] USB Frame Number Register                                        */
     __IO uint32_t SE0;                   /*!< [0x0090] USB Device Drive SE0 Control Register                            */
-    /// @cond HIDDEN_SYMBOLS
-    __I  uint32_t RESERVE2[283];
-    /// @endcond //HIDDEN_SYMBOLS
+    __I  uint32_t RESERVE3[283];
     USBD_EP_T     EP[25];                /*!< [0x500~0x68c] USB End Point 0 ~ 24 Configuration Register                 */
 
 } USBD_T;
-
 
 /**
     @addtogroup USBD_CONST USBD Bit Field Definition
@@ -775,6 +750,9 @@ typedef struct
 #define USBD_ATTR_DPPUEN_Pos             (8)                                               /*!< USBD_T::ATTR: DPPUEN Position          */
 #define USBD_ATTR_DPPUEN_Msk             (0x1ul << USBD_ATTR_DPPUEN_Pos)                   /*!< USBD_T::ATTR: DPPUEN Mask              */
 
+#define USBD_ATTR_PWRDN_Pos              (9)                                               /*!< USBD_T::ATTR: PWRDN Position           */
+#define USBD_ATTR_PWRDN_Msk              (0x1ul << USBD_ATTR_PWRDN_Pos)                    /*!< USBD_T::ATTR: PWRDN Mask               */
+
 #define USBD_ATTR_BYTEM_Pos              (10)                                              /*!< USBD_T::ATTR: BYTEM Position           */
 #define USBD_ATTR_BYTEM_Msk              (0x1ul << USBD_ATTR_BYTEM_Pos)                    /*!< USBD_T::ATTR: BYTEM Mask               */
 
@@ -791,7 +769,7 @@ typedef struct
 #define USBD_VBUSDET_VBUSDET_Msk         (0x1ul << USBD_VBUSDET_VBUSDET_Pos)               /*!< USBD_T::VBUSDET: VBUSDET Mask          */
 
 #define USBD_STBUFSEG_STBUFSEG_Pos       (3)                                               /*!< USBD_T::STBUFSEG: STBUFSEG Position    */
-#define USBD_STBUFSEG_STBUFSEG_Msk       (0x3ful << USBD_STBUFSEG_STBUFSEG_Pos)            /*!< USBD_T::STBUFSEG: STBUFSEG Mask        */
+#define USBD_STBUFSEG_STBUFSEG_Msk       (0xfful << USBD_STBUFSEG_STBUFSEG_Pos)            /*!< USBD_T::STBUFSEG: STBUFSEG Mask        */
 
 #define USBD_EPSTS0_EPSTS0_Pos           (0)                                               /*!< USBD_T::EPSTS0: EPSTS0 Position        */
 #define USBD_EPSTS0_EPSTS0_Msk           (0xful << USBD_EPSTS0_EPSTS0_Pos)                 /*!< USBD_T::EPSTS0: EPSTS0 Mask            */

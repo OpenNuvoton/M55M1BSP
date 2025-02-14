@@ -403,7 +403,8 @@ extern "C"
 
 static __INLINE void UART_CLEAR_RTS(UART_T *uart);
 static __INLINE void UART_SET_RTS(UART_T *uart);
-
+__STATIC_INLINE void UART_RESET_RXFIFO(UART_T *uart);
+__STATIC_INLINE void UART_RESET_TXFIFO(UART_T *uart);
 
 /**
  *    @brief        Set RTS pin to low
@@ -435,6 +436,73 @@ __STATIC_INLINE void UART_SET_RTS(UART_T *uart)
     uart->MODEM |= UART_MODEM_RTSACTLV_Msk | UART_MODEM_RTS_Msk;
 }
 
+/**
+ * @brief       Reset the receive FIFO of the UART module.
+ *
+ * @param uart  A pointer to the UART_T structure representing the UART module.
+ *
+ * @details     This function resets the receive FIFO of the UART module. It waits
+ *              until the receive FIFO is idle before resetting it. If the FIFO does not
+ *              become idle within the timeout period, the function will return.
+ */
+__STATIC_INLINE void UART_RESET_RXFIFO(UART_T *uart)
+{
+    volatile int32_t i32Timeout = SystemCoreClock;
+
+    while (!UART_RX_IDLE(uart))
+    {
+        if (--i32Timeout <= 0)
+        {
+            break;
+        }
+    }
+
+    (uart)->FIFO |= UART_FIFO_RXRST_Msk;
+
+    i32Timeout = SystemCoreClock;
+
+    while (((uart)->FIFO & UART_FIFO_RXRST_Msk) == UART_FIFO_RXRST_Msk)
+    {
+        if (--i32Timeout <= 0)
+        {
+            break;
+        }
+    }
+}
+
+/**
+ * @brief Resets the transmit FIFO of the specified UART module.
+ *
+ * @param uart A pointer to the UART_T structure representing the UART module.
+ *
+ * @details This function resets the transmit FIFO of the UART module. It waits
+ * until the transmit FIFO is empty before resetting it. If the FIFO does not
+ * become empty within the timeout period, the function will return.
+ */
+__STATIC_INLINE void UART_RESET_TXFIFO(UART_T *uart)
+{
+    volatile int32_t i32Timeout = SystemCoreClock;
+
+    while (!UART_IS_TX_EMPTY(uart))
+    {
+        if (--i32Timeout <= 0)
+        {
+            break;
+        }
+    }
+
+    (uart)->FIFO |= UART_FIFO_TXRST_Msk;
+
+    i32Timeout = SystemCoreClock;
+
+    while (((uart)->FIFO & UART_FIFO_TXRST_Msk) == UART_FIFO_TXRST_Msk)
+    {
+        if (--i32Timeout <= 0)
+        {
+            break;
+        }
+    }
+}
 
 /**
  *    @brief        Clear RS-485 Address Byte Detection Flag

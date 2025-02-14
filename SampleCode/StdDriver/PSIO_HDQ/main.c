@@ -47,8 +47,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -62,9 +62,6 @@ void SYS_Init(void)
     CLK_SET_PCLK2DIV(2);
     CLK_SET_PCLK3DIV(2);
     CLK_SET_PCLK4DIV(2);
-
-    /* Set PCLK1 to HCLK/8 */
-    CLK_SET_PCLK1DIV(4);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock and cyclesPerUs automatically. */
@@ -92,6 +89,7 @@ int main()
 {
     uint8_t u8RxData = 0, u8DataCnt = 0;
     uint8_t u8Col, u8Row, u8Page, u8CRC;
+    volatile int32_t i32TimeOutCnt = SystemCoreClock;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -121,9 +119,15 @@ int main()
     /* Send "Read ID" command and read device ID */
     PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_READID, &u8RxData);
 
+    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
     while (PSIO_BQ2028_BUSY())
     {
-        /* Do something here */
+        if (--i32TimeOutCnt <= 0)
+        {
+            printf("Wait for PSIO transfer done time-out!\n");
+            goto lexit;
+        }
     }
 
     printf("BQ2028 ID is %x.\n", u8RxData);
@@ -131,9 +135,15 @@ int main()
     /* Send "Read ID" command and read device revision */
     PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_READREV, &u8RxData);
 
+    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
     while (PSIO_BQ2028_BUSY())
     {
-        /* Do something here */
+        if (--i32TimeOutCnt <= 0)
+        {
+            printf("Wait for PSIO transfer done time-out!\n");
+            goto lexit;
+        }
     }
 
     printf("REV is %x.\n", u8RxData);
@@ -141,9 +151,15 @@ int main()
     /* Send "Read device status" command and read device status */
     PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_STATUS, &u8RxData);
 
+    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
     while (PSIO_BQ2028_BUSY())
     {
-        /* Do something here */
+        if (--i32TimeOutCnt <= 0)
+        {
+            printf("Wait for PSIO transfer done time-out!\n");
+            goto lexit;
+        }
     }
 
     /* Clear reset flag if reset flag is 1 */
@@ -152,17 +168,29 @@ int main()
         /* Send "Read control 0 register" command and read control 0 register value */
         PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_CTL0, &u8RxData);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Send "Write control 0 register" command and write STATUS_RST_MSK to clear reset flag */
         PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_CTL0, u8RxData | STATUS_RST_MSK);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
     }
 
@@ -178,17 +206,29 @@ int main()
         /* Write 1 Byte data to buffer 0 */
         PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_BUF0, u8DataCnt);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Read 1 Byte from buffer 0 */
         PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_BUF0, &u8RxData);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Check write data correct or not */
@@ -210,17 +250,29 @@ int main()
         /* Write 1 Byte data to buffer 1 */
         PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_BUF1, u8DataCnt);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Read 1 Byte from buffer 1 */
         PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_BUF1, &u8RxData);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Check write data correct or not */
@@ -242,17 +294,29 @@ int main()
         /* Write 1 Byte data to buffer 2 */
         PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_BUF2, u8DataCnt);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Read 1 Byte from buffer 2 */
         PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_BUF2, &u8RxData);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Check data correct or not */
@@ -274,17 +338,29 @@ int main()
         /* Write 1 Byte data to buffer 3 */
         PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_BUF3, u8DataCnt);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Read 1 Byte from buffer 3 */
         PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_BUF3, &u8RxData);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         /* Check data correct or not */
@@ -305,17 +381,29 @@ int main()
     /* Enable to write manufacturer area registers */
     PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_CTL2, 0x01);
 
+    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
     while (PSIO_BQ2028_BUSY())
     {
-        /* Do something here */
+        if (--i32TimeOutCnt <= 0)
+        {
+            printf("Wait for PSIO transfer done time-out!\n");
+            goto lexit;
+        }
     }
 
     /* Enable page */
     PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_PAGE_EN, 0xFF);
 
+    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
     while (PSIO_BQ2028_BUSY())
     {
-        /* Do something here */
+        if (--i32TimeOutCnt <= 0)
+        {
+            printf("Wait for PSIO transfer done time-out!\n");
+            goto lexit;
+        }
     }
 
     /* Update EEPROM page 0 ~ page 7 */
@@ -324,9 +412,15 @@ int main()
         /* Setting current page which we want to access */
         PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_PAGE, u8Page);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         printf("Page %d write pattern\n", u8Page);
@@ -339,22 +433,34 @@ int main()
             {
                 /* Prepare data and calculating the CRC value */
                 u8DataCnt = (u8Page * 0x10 * 4) + (0x10 * u8Row) + u8Col;
-                u8CRC   =   PSIO_BQ2028_CRC8(u8DataCnt);
+                u8CRC = PSIO_BQ2028_CRC8(u8DataCnt);
 
                 /* Send "Write and EEPROM address" command and write data to EEPROM */
                 PSIO_BQ2028_Write_OneByte(&g_Config, (u8Row << 2) | u8Col | HDQ_W | HDQ_MAP, u8DataCnt);
 
+                i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
                 while (PSIO_BQ2028_BUSY())
                 {
-                    /* Do something here */
+                    if (--i32TimeOutCnt <= 0)
+                    {
+                        printf("Wait for PSIO transfer done time-out!\n");
+                        goto lexit;
+                    }
                 }
 
                 /* Send "Check CRC" command and write CRC value */
                 PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_CRCT, u8CRC);
 
+                i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
                 while (PSIO_BQ2028_BUSY())
                 {
-                    /* Do something here */
+                    if (--i32TimeOutCnt <= 0)
+                    {
+                        printf("Wait for PSIO transfer done time-out!\n");
+                        goto lexit;
+                    }
                 }
 
                 /* Check EEPROM status is normal */
@@ -362,9 +468,15 @@ int main()
                 {
                     PSIO_BQ2028_Read_OneByte(&g_Config, HDQ_CMD_STATUS, &u8RxData);
 
+                    i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
                     while (PSIO_BQ2028_BUSY())
                     {
-                        /* Do something here */
+                        if (--i32TimeOutCnt <= 0)
+                        {
+                            printf("Wait for PSIO transfer done time-out!\n");
+                            goto lexit;
+                        }
                     }
 
                     if (u8RxData & (STATUS_PAGEER_MSK | STATUS_MEMER_MSK | STATUS_CRCER_MSK))
@@ -372,7 +484,9 @@ int main()
                         printf("status error 0x%x", u8RxData);
                     }
                     else if (!(u8RxData & STATUS_BUSY_MSK))
+                    {
                         break;
+                    }
                 }
             }
         }
@@ -384,9 +498,15 @@ int main()
         /* Setting current page which we want to access */
         PSIO_BQ2028_Write_OneByte(&g_Config, HDQ_CMD_PAGE, u8Page);
 
+        i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
         while (PSIO_BQ2028_BUSY())
         {
-            /* Do something here */
+            if (--i32TimeOutCnt <= 0)
+            {
+                printf("Wait for PSIO transfer done time-out!\n");
+                goto lexit;
+            }
         }
 
         printf("Page %d read pattern\n", u8Page);
@@ -402,9 +522,15 @@ int main()
                 /* Send "Read and EEPROM address" command and read data from EEPROM */
                 PSIO_BQ2028_Read_OneByte(&g_Config, (u8Row << 2) | u8Col | HDQ_R | HDQ_MAP, &u8RxData);
 
+                i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+
                 while (PSIO_BQ2028_BUSY())
                 {
-                    /* Do something here */
+                    if (--i32TimeOutCnt <= 0)
+                    {
+                        printf("Wait for PSIO transfer done time-out!\n");
+                        goto lexit;
+                    }
                 }
 
                 /* Check data correct or not */
@@ -419,6 +545,8 @@ int main()
     }
 
     printf("PASS...\n");
+
+lexit:
 
     while (1);
 }

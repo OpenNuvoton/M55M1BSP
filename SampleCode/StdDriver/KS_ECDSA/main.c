@@ -10,9 +10,10 @@
 #include <string.h>
 #include "NuMicro.h"
 
-#define USE_KS_KEY      1
+#define USE_KS_KEY
 
-static volatile int g_SHA_done = 0;
+static volatile int32_t  s_i32SHA_Done = 0;
+static volatile uint32_t s_u32SysTicks = 0;
 
 /* Alignment for DMA */
 __ALIGNED(4) static const char sc_strMsg[] = "This is a message. It could be encypted.";
@@ -23,11 +24,16 @@ void DumpBuf(uint8_t *pu8Buf, uint32_t u32BufByteSize);
 void SYS_Init(void);
 void UART_Init(void);
 
+NVT_ITCM void SysTick_Handler(void)
+{
+    s_u32SysTicks++;
+}
+
 NVT_ITCM void CRYPTO_IRQHandler(void)
 {
     if (SHA_GET_INT_FLAG(CRYPTO))
     {
-        g_SHA_done = 1;
+        s_i32SHA_Done = 1;
         SHA_CLR_INT_FLAG(CRYPTO);
     }
 
@@ -85,8 +91,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -95,6 +101,7 @@ void SYS_Init(void)
     /* Enable module clock */
     CLK_EnableModuleClock(KS0_MODULE);
     CLK_EnableModuleClock(CRYPTO0_MODULE);
+    CLK_EnableModuleClock(TRNG0_MODULE);
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -117,7 +124,7 @@ int main(void)
     uint8_t *pu8;
     int32_t err;
     int32_t i32KeyIdx_d, i32KeyIdx_k, i32KeyIdx_Qx, i32KeyIdx_Qy;
-    uint32_t time;
+    uint32_t u32StartTicks, u32TickCnt;
     uint32_t au32ECC_N[18] = {0};
     char d[]  = "5D98653E0F30167D90C33F401C0ABCA9C37D481DB0E0FB362660CA2417DFA9D7";
     char Qx[] = "0000000000000000000000000000000000000000000000000000000000000000";
@@ -151,12 +158,12 @@ int main(void)
     ECC_ENABLE_INT(CRYPTO);
     SHA_ENABLE_INT(CRYPTO);
 
-    /* Reset SysTick to measure time */
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
-
+    /* Enable SysTick timer to measure execution time */
+    CLK_EnableSysTick(CLK_STSEL_ACLK, CyclesPerUs);
 
     /*------------------------------------------------------------------------------*/
-    /* Write private key to Key Store */
+    /* Write private key to Key Store                                               */
+    /*------------------------------------------------------------------------------*/
     Hex2Reg(d, au32Key);
 
     printf("  d  = %s\n", d);
@@ -165,7 +172,9 @@ int main(void)
 
     if (i32KeyIdx_d < 0)
     {
-        printf("Fail to write key to Key Store !\n");
+        printf("Fail to write key to KS SRAM !\n KS SRAM is full then KS_EraseAll(KS_SRAM) to erase.\n");
+        printf("KS SRAM remain size = %d, remain key count: %d\n",
+               KS_GetRemainSize(KS_SRAM), KS_GetRemainKeyCount(KS_SRAM));
         KS_EraseAll(KS_SRAM);
         goto lexit;
     }
@@ -180,9 +189,10 @@ int main(void)
     }
 
     /*------------------------------------------------------------------------------*/
-    /* Calculate Public Key */
-
-    SysTick->VAL = 0;
+    /* Calculate Public Key                                                         */
+    /*------------------------------------------------------------------------------*/
+    /* Save start SysTick value to start measure execution time */
+    u32StartTicks = s_u32SysTicks;
 #ifndef USE_KS_KEY
 
     if (ECC_GeneratePublicKey(CRYPTO, CURVE_P_256, d, Qx, Qy) < 0)
@@ -201,15 +211,16 @@ int main(void)
     }
 
 #endif
-    time = 0xffffff - SysTick->VAL;
+    u32TickCnt = s_u32SysTicks - u32StartTicks;
 
     printf("  Qx = %s\n", Qx);
     printf("  Qy = %s\n", Qy);
-    printf("Elapsed time: %d.%d ms\n", time / CyclesPerUs / 1000, time / CyclesPerUs % 1000);
+    printf("Elapsed time: %d.%d ms\n", u32TickCnt / 1000, u32TickCnt % 1000);
 
 
     /*------------------------------------------------------------------------------*/
-    /* Write random k to Key Store */
+    /* Write random k to Key Store                                                  */
+    /*------------------------------------------------------------------------------*/
 
 #ifndef USE_KS_KEY
     /* Init TRNG */
@@ -224,7 +235,7 @@ int main(void)
 
     /* Generate k by TRNG */
     PRNG_Start(CRYPTO);
-    CRYPTO_Reg2Hex(64, (uint32_t *)CRYPTO->PRNG_KEY, k);
+    Reg2Hex(64, (uint32_t *)CRYPTO->PRNG_KEY, k);
 
     printf("  k  = %s\n", k);
 
@@ -261,7 +272,10 @@ int main(void)
 
     if (i32KeyIdx_k < 0)
     {
-        printf("Fail to write k to KS SRAM !\n");
+        printf("Fail to write key to KS SRAM !\n KS SRAM is full then KS_EraseAll(KS_SRAM) to erase.\n");
+        printf("KS SRAM remain size = %d, remain key count: %d\n",
+               KS_GetRemainSize(KS_SRAM), KS_GetRemainKeyCount(KS_SRAM));
+        KS_EraseAll(KS_SRAM);
         goto lexit;
     }
 
@@ -269,17 +283,18 @@ int main(void)
 #endif
 
     /*------------------------------------------------------------------------------*/
-    /* Calculate the hash of the message */
+    /* Calculate the hash of the message                                            */
+    /*------------------------------------------------------------------------------*/
     SHA_Open(CRYPTO, SHA_MODE_SHA256, SHA_IN_OUT_SWAP, 0);
     SHA_SetDMATransfer(CRYPTO, (uint32_t)&sc_strMsg[0], sizeof(sc_strMsg) - 1);
-    g_SHA_done = 0;
+    s_i32SHA_Done = 0;
     /* Start SHA calculation */
     SHA_Start(CRYPTO, CRYPTO_DMA_ONE_SHOT);
 
     /* Waiting for SHA calcuation done */
     u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
-    while (!g_SHA_done)
+    while (!s_i32SHA_Done)
     {
         if (--u32TimeOutCnt == 0)
         {
@@ -301,9 +316,10 @@ int main(void)
     printf("\n");
 
     /*------------------------------------------------------------------------------*/
-    /* Sign the message */
-
-    SysTick->VAL = 0;
+    /* Sign the message                                                             */
+    /*------------------------------------------------------------------------------*/
+    /* Save start SysTick value to start measure execution time */
+    u32StartTicks = s_u32SysTicks;
 #ifndef USE_KS_KEY
 
     if (ECC_GenerateSignature(CRYPTO, CURVE_P_256, hash, d, k, R, S) < 0)
@@ -325,16 +341,17 @@ int main(void)
     KS_EraseKey(i32KeyIdx_k);
 
 #endif
-    time = 0xffffff - SysTick->VAL;
+    u32TickCnt = s_u32SysTicks - u32StartTicks;
 
     printf("  R  = %s\n", R);
     printf("  S  = %s\n", S);
-    printf("Elapsed time: %d.%d ms\n", time / CyclesPerUs / 1000, time / CyclesPerUs % 1000);
+    printf("Elapsed time: %d.%d ms\n", u32TickCnt / 1000, u32TickCnt % 1000);
 
     /*------------------------------------------------------------------------------*/
-    /* Verify the signature */
-
+    /* Verify the signature                                                         */
+    /*------------------------------------------------------------------------------*/
 #ifndef USE_KS_KEY
+    /* Reset SysTick value to start measure execution time */
     SysTick->VAL = 0;
     err = ECC_VerifySignature(CRYPTO, CURVE_P_256, hash, Qx, Qy, R, S);
 #else
@@ -344,7 +361,10 @@ int main(void)
 
     if (i32KeyIdx_Qx < 0)
     {
-        printf("Fail to write key to Key Store !\n");
+        printf("Fail to write key to KS SRAM !\n KS SRAM is full then KS_EraseAll(KS_SRAM) to erase.\n");
+        printf("KS SRAM remain size = %d, remain key count: %d\n",
+               KS_GetRemainSize(KS_SRAM), KS_GetRemainKeyCount(KS_SRAM));
+        KS_EraseAll(KS_SRAM);
         goto lexit;
     }
 
@@ -360,12 +380,12 @@ int main(void)
     }
 
     printf("i32KeyIdx_Qy = %d, remain size = %d\n", i32KeyIdx_Qy, KS_GetRemainSize(KS_SRAM));
-
-    SysTick->VAL = 0;
+    /* Save start SysTick value to start measure execution time */
+    u32StartTicks = s_u32SysTicks;
     err = ECC_VerifySignature_KS(CRYPTO, CURVE_P_256, hash, i32KeyIdx_Qx, i32KeyIdx_Qy, R, S);
 
 #endif
-    time = 0xffffff - SysTick->VAL;
+    u32TickCnt = s_u32SysTicks - u32StartTicks;
 
     if (err < 0)
     {
@@ -378,7 +398,7 @@ int main(void)
     }
 
 
-    printf("Elapsed time: %d.%d ms\n", time / CyclesPerUs / 1000, time / CyclesPerUs % 1000);
+    printf("Elapsed time: %d.%d ms\n", u32TickCnt / 1000, u32TickCnt % 1000);
 
     printf("Done\n");
 

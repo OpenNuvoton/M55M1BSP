@@ -17,45 +17,30 @@
  */
 
 /*
- * This is a simplified picture of the M55M1 memory system.
- * Please refer to the M55M1 Technical Reference Manual for
- * further information.
- *
- *
- * +---------------+   +---------------+  +------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM |
- * |               |   |               |  +------+
- * |               |   |               |
- * |               |   |               |  +------+
- * |  M1      M0   |   |               +--+ DTCM |
- * +---+-------+---+   +-------+-------+  +------+
- *     |       |               |
- *     |   +---+---------------+-----+
- *     |   | AMBA AXI NIC-400-Lite   |
- *     |   +---+-----------------+---+
- *     |       |                 |
- * +---+-------+------------+ +--+---------+
- * | AMBA AHB               | | SRAM 0/1/2 |
- * +---+--------+--------+--+ +------------+
- *     |
- * +---+---+
- * | FLASH |
- * +-------+
- *
- * +-----------------------+-------------+-------------+----+---------------------------------+
- * |  Memory region name   | Base addr   |    Size     |IDAU|  MCC load address + remarks     |
- * +-----------------------+-------------+-------------+----+---------------------------------+
- * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | 64 kiB                          |
- * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | Non-Secure alias for ITCM       |
- * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | 2 MiB                           |
- * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash      |
- * | DTCM                  | 0x2000_0000 | 0x0002_0000 | S  | 128 kiB                         |
- * | DTCM                  | 0x3000_0000 | 0x0002_0000 | NS | Non-Secure alias for DTCM       |
- * | SRAM                  | 0x2010_0000 | 0x0015_0000 | S  | 1344 kiB                        |
- * | SRAM                  | 0x3010_0000 | 0x0015_0000 | NS | Non-Secure alias for SRAM0/1/2  |
- * | LPSRAM                | 0x2031_0000 | 0x0000_2000 | S  | 8 kiB                           |
- * | LPSRAM                | 0x3031_0000 | 0x0000_2000 | NS | Non-Secure alias for LPSRAM     |
- * +-----------------------+-------------+-------------+----+---------------------------------+
+ * +-----------------------+-------------+-------------+----+----------------------------------+
+ * |  Memory region name   | Base addr   |    Size     |IDAU| Description                      |
+ * +-----------------------+-------------+-------------+----+----------------------------------+
+ * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | 64 kiB;                          |
+ * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | Non-Secure alias for ITCM        |
+ * | DTCM                  | 0x2000_0000 | 0x0002_0000 | S  | 128 kiB;                         |
+ * | DTCM                  | 0x3000_0000 | 0x0002_0000 | NS | Non-Secure alias for DTCM        |
+ * | SRAM01                | 0x2010_0000 | 0x0010_0000 | S  | 2 banks of 512 kiB;              |
+ * | SRAM01                | 0x3010_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01      |
+ * | SRAM2                 | 0x2020_0000 | 0x0005_0000 | S  | 320 kiB                          |
+ * | SRAM2                 | 0x3020_0000 | 0x0005_0000 | NS | Non-Secure alias for SRAM2       |
+ * | SRAM3                 | 0x2030_0000 | 0x0000_2000 | S  | 8 kiB                            |
+ * | SRAM3                 | 0x3030_0000 | 0x0000_2000 | NS | Non-Secure alias for SRAM3       |
+ * | LPSRAM                | 0x2031_0000 | 0x0000_2000 | S  | 8 kiB                            |
+ * | LPSRAM                | 0x3031_0000 | 0x0000_2000 | NS | Non-Secure alias for LPSRAM      |
+ * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | 2 MiB                            |
+ * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash       |
+ * | EBI                   | 0x6000_0000 | 0x0030_0000 | S  | 3 MiB                            |
+ * | EBI                   | 0x7000_0000 | 0x0030_0000 | NS | Non-Secure alias for EBI         |
+ * | Aliased SRAM01        | 0x81F0_0000 | 0x0010_0000 | S  | 2 banks of 512 kiB;              |
+ * | Aliased SRAM01        | 0x91F0_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01      |
+ * | SPIM0                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                           |
+ * | SPIM0                 | 0x9200_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0       |
+ * +-----------------------+-------------+-------------+----+----------------------------------+
  *
  *  Note: Ethos-U55 can access FLASH, internal SRAM 0,1 => activation buffers and
  *        the model should only be placed in those regions.
@@ -74,8 +59,9 @@ MEMORY
   FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x00010000
   MPU_R1 (rx)  : ORIGIN = 0x00110000, LENGTH = 0x00010000
   DTCM   (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00020000
-  SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00020000
-  MPU_R3 (rwx)  : ORIGIN = 0x20120000, LENGTH = 0x00010000
+  SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00010000
+  MPU_R2 (rwx) : ORIGIN = 0x20110000, LENGTH = 0x00010000
+  MPU_R3 (rwx) : ORIGIN = 0x20120000, LENGTH = 0x00010000
   LPSRAM (rwx) : ORIGIN = 0x20310000, LENGTH = 0x00002000
 }
 
@@ -120,7 +106,7 @@ SECTIONS
     KEEP(*(.vectors))
     *startup_*.o(.text*)
 
-    . = 0x400;	/* Prevent code located in VECMAP range */
+    . = 0x400;  /* Prevent code located in VECMAP range */
     *(.text*)
 
     KEEP(*(.init))
@@ -190,8 +176,13 @@ SECTIONS
     LONG (__dtcm_init_start__)
     LONG ((__dtcm_init_end__ - __dtcm_init_start__ ) / 4)
 
-	/* Section to be copied - part 4: MPU Region 3 */
-	LONG (__edtcm_init_data)
+    /* Section to be copied - part 4: MPU Region 3 */
+    LONG (__edtcm_init_data)
+    LONG (__mpu_r2_start__)
+    LONG ((__mpu_r2_end__ - __mpu_r2_start__ ) / 4)
+
+    /* Section to be copied - part 4: MPU Region 3 */
+    LONG (__eMPU_region2)
     LONG (__mpu_r3_start__)
     LONG ((__mpu_r3_end__ - __mpu_r3_start__ ) / 4)
     __copy_table_end__ = .;
@@ -222,8 +213,6 @@ SECTIONS
     *(.data)
     *(.data.*)
 
-	. = ALIGN(4);
-	./User/ExeInRegion2.o
     . = ALIGN(4);
     /* preinit data */
     PROVIDE_HIDDEN (__preinit_array_start = .);
@@ -290,7 +279,18 @@ SECTIONS
 
   __edtcm_init_data = __esram_data + (__dtcm_init_end__ - __dtcm_init_start__);
 
-  .MPU_region3 : AT (__edtcm_init_data)
+  .MPU_region2 : AT (__edtcm_init_data)
+  {
+    . = ALIGN(4);
+    __mpu_r2_start__ = .;
+    *(.MPU_region2)
+    . = ALIGN(4);
+    __mpu_r2_end__ = .;
+  } > MPU_R2
+
+  __eMPU_region2 = __edtcm_init_data + (__mpu_r2_end__ - __mpu_r2_start__);
+
+  .MPU_region3 : AT (__eMPU_region2)
   {
     . = ALIGN(4);
     __mpu_r3_start__ = .;

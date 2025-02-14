@@ -1,4 +1,9 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@tflm_pip_deps//:requirements.bzl", "requirement")
+load(
+    "//tensorflow:extra_rules.bzl",
+    "tflm_kernel_friends",
+)
 
 package(
     # Disabling layering_check because of http://b/177257332
@@ -16,20 +21,25 @@ package_group(
     packages = ["//tensorflow/lite/experimental/microfrontend/..."],
 )
 
+package_group(
+    name = "kernel_test_friends",
+    packages = tflm_kernel_friends(),
+)
+
 cc_library(
     name = "micro_test",
     hdrs = [
         "micro_test.h",
     ],
     visibility = [
-        ":microfrontend",
+        ":kernel_test_friends",
         ":tflite_micro",
     ],
     deps = [
         "//tensorflow/lite/c:common",
         "//tensorflow/lite/core/api",
-        "//tensorflow/lite/micro:micro_error_reporter",
         "//tensorflow/lite/micro:micro_framework",
+        "//tensorflow/lite/micro:micro_log",
         "//tensorflow/lite/micro:micro_utils",
         "//tensorflow/lite/micro:system_setup",
         "//tensorflow/lite/micro:test_helpers",
@@ -59,6 +69,18 @@ cc_library(
     ],
 )
 
+py_library(
+    name = "generate_test_models_lib",
+    srcs = ["generate_test_models.py"],
+    visibility = [
+        ":tflite_micro",
+    ],
+    deps = [
+        requirement("numpy"),
+        requirement("tensorflow"),
+    ],
+)
+
 py_binary(
     name = "generate_test_models",
     srcs = ["generate_test_models.py"],
@@ -71,6 +93,6 @@ py_binary(
     deps = [
         "@absl_py//absl:app",
         requirement("numpy"),
-        requirement("tensorflow-cpu"),
+        requirement("tensorflow"),
     ],
 )

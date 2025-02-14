@@ -172,11 +172,15 @@ void DFU_ClassRequest(void)
 
                     if (s_u32CommandCount == 5)
                     {
-                        dfu_status.bState = STATE_dfuDNLOAD_IDLE;
+                        uint32_t u32ProgAddr = (prog_struct.base_addr + (prog_struct.block_num * TRANSFER_SIZE));
 
+                        if ((u32ProgAddr & (FMC_FLASH_PAGE_SIZE - 1)) == 0)
+                            FMC_Erase_User(u32ProgAddr);
+
+                        dfu_status.bState = STATE_dfuDNLOAD_IDLE;
                         WriteData(
-                            (prog_struct.base_addr + (prog_struct.block_num * TRANSFER_SIZE)),
-                            (prog_struct.base_addr + (prog_struct.block_num * TRANSFER_SIZE) + prog_struct.data_len),
+                            u32ProgAddr,
+                            (u32ProgAddr + prog_struct.data_len),
                             (uint32_t *)(uint32_t)prog_struct.buf);
                         //dfu_status.bStatus = STATUS_errWRITE;
 
@@ -367,3 +371,4 @@ void DFU_ClassRequest(void)
 }
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+

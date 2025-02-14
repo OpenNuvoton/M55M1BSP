@@ -10,13 +10,17 @@
 #include "RTE_Components.h"
 #include CMSIS_device_header
 
+#define RTE_CV_COREINSTR  1
+#define RTE_CV_COREFUNC   1
+#define RTE_CV_L1CACHE    1
+
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 
 // <h> Common Test Settings
 // <o> Print Output Format <0=> Plain Text <1=> XML
 // <i> Set the test results output format to plain text or XML
 #ifndef PRINT_XML_REPORT
-#define PRINT_XML_REPORT            0
+#define PRINT_XML_REPORT            1
 #endif
 // <o> Buffer size for assertions results
 // <i> Set the buffer size for assertions results buffer
@@ -56,10 +60,6 @@
 #define TC_COREAFUNC_CPSR                     1
 // <q0> TC_CoreAFunc_Mode
 #define TC_COREAFUNC_MODE                     1
-// <q0> TC_CoreAFunc_SP
-#define TC_COREAFUNC_SP                       1
-// <q0> TC_CoreAFunc_SP_usr
-#define TC_COREAFUNC_SP_USR                   1
 // <q0> TC_CoreAFunc_FPEXC
 #define TC_COREAFUNC_FPEXC                    1
 // <q0> TC_CoreAFunc_ACTLR
@@ -80,8 +80,6 @@
 #define TC_COREAFUNC_DACR                     1
 // <q0> TC_CoreAFunc_SCTLR
 #define TC_COREAFUNC_SCTLR                    1
-// <q0> TC_CoreAFunc_ACTRL
-#define TC_COREAFUNC_ACTRL                    1
 // <q0> TC_CoreAFunc_MPIDR
 #define TC_COREAFUNC_MPIDR                    1
 // <q0> TC_CoreAFunc_VBAR

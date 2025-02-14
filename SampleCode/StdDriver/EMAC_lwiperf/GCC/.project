@@ -257,6 +257,51 @@
 			<name>LwIP/ethernet.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/netif/ethernet.c</locationURI>
-		</link>			
+		</link>
+		<link>
+			<name>LwIP/dhcp6.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/dhcp6.c</locationURI>
+		</link>	
+		<link>
+			<name>LwIP/ethip6.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/ethip6.c</locationURI>
+		</link>	
+		<link>
+			<name>LwIP/icmp6.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/icmp6.c</locationURI>
+		</link>	
+		<link>
+			<name>LwIP/inet6.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/inet6.c</locationURI>
+		</link>	
+		<link>
+			<name>LwIP/ip6.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/ip6.c</locationURI>
+		</link>	
+		<link>
+			<name>LwIP/ip6_addr.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/ip6_addr.c</locationURI>
+		</link>	
+		<link>
+			<name>LwIP/ip6_frag.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/ip6_frag.c</locationURI>
+		</link>
+		<link>
+			<name>LwIP/mld6.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/mld6.c</locationURI>
+		</link>	
+		<link>
+			<name>LwIP/nd6.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/core/ipv6/nd6.c</locationURI>
+		</link>	
 	</linkedResources>
 </projectDescription>

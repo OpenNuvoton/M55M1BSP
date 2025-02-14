@@ -1,6 +1,6 @@
 """BUILD rules for generating flatbuffer files."""
 
-load("@build_bazel_rules_android//android:rules.bzl", "android_library")
+load("@rules_python//python:defs.bzl", "py_library")
 
 flatc_path = "@flatbuffers//:flatc"
 zip_files = "//tensorflow/lite/tools:zip_files"
@@ -279,6 +279,11 @@ def _gen_flatbuffer_srcs_impl(ctx):
     else:
         no_includes_statement = []
 
+    if ctx.attr.language_flag == "--python":
+        onefile_statement = ["--gen-onefile"]
+    else:
+        onefile_statement = []
+
     # Need to generate all files in a directory.
     if not outputs:
         outputs = [ctx.actions.declare_directory("{}_all".format(ctx.attr.name))]
@@ -314,6 +319,7 @@ def _gen_flatbuffer_srcs_impl(ctx):
                             "-I",
                             ctx.bin_dir.path,
                         ] + no_includes_statement +
+                        onefile_statement +
                         include_paths_cmd_line + [
                 "--no-union-value-namespacing",
                 "--gen-object-api",
@@ -356,10 +362,9 @@ _gen_flatbuffer_srcs = rule(
         "_flatc": attr.label(
             default = Label("@flatbuffers//:flatc"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
-    output_to_genfiles = True,
 )
 
 def flatbuffer_py_strip_prefix_srcs(name, srcs = [], strip_prefix = ""):
@@ -394,6 +399,7 @@ def _concat_flatbuffer_py_srcs_impl(ctx):
             ctx.attr.deps[0].files.to_list()[0].path,
             ctx.outputs.out.path,
         ),
+        use_default_shell_env = True,
     )
 
 _concat_flatbuffer_py_srcs = rule(
@@ -401,7 +407,6 @@ _concat_flatbuffer_py_srcs = rule(
     attrs = {
         "deps": attr.label_list(mandatory = True),
     },
-    output_to_genfiles = True,
     outputs = {"out": "%{name}.py"},
 )
 
@@ -432,6 +437,8 @@ def flatbuffer_py_library(
         deps = deps,
         include_paths = include_paths,
     )
+
+    # TODO(b/235550563): Remove the concatnation rule with 2.0.6 update.
     all_srcs_no_include = "{}_srcs_no_include".format(name)
     _gen_flatbuffer_srcs(
         name = all_srcs_no_include,
@@ -448,7 +455,7 @@ def flatbuffer_py_library(
             ":{}".format(all_srcs_no_include),
         ],
     )
-    native.py_library(
+    py_library(
         name = name,
         srcs = [
             ":{}".format(concat_py_srcs),
@@ -457,182 +464,4 @@ def flatbuffer_py_library(
         deps = deps + [
             "@flatbuffers//:runtime_py",
         ],
-    )
-
-def flatbuffer_java_library(
-        name,
-        srcs,
-        custom_package = "",
-        package_prefix = "",
-        include_paths = DEFAULT_INCLUDE_PATHS,
-        flatc_args = DEFAULT_FLATC_ARGS,
-        visibility = None):
-    """A java library with the generated reader/writers for the given flatbuffer definitions.
-
-    Args:
-      name: Rule name. (required)
-      srcs: List of source .fbs files including all includes. (required)
-      custom_package: Package name of generated Java files. If not specified
-          namespace in the schema files will be used. (optional)
-      package_prefix: like custom_package, but prefixes to the existing
-          namespace. (optional)
-      include_paths: List of paths that includes files can be found in. (optional)
-      flatc_args: List of additional arguments to pass to flatc. (optional)
-      visibility: Visibility setting for the java_library rule. (optional)
-    """
-    out_srcjar = "java_%s_all.srcjar" % name
-    flatbuffer_java_srcjar(
-        name = "%s_srcjar" % name,
-        srcs = srcs,
-        out = out_srcjar,
-        custom_package = custom_package,
-        flatc_args = flatc_args,
-        include_paths = include_paths,
-        package_prefix = package_prefix,
-    )
-
-    native.filegroup(
-        name = "%s.srcjar" % name,
-        srcs = [out_srcjar],
-    )
-
-    native.java_library(
-        name = name,
-        srcs = [out_srcjar],
-        javacopts = ["-source 7 -target 7"],
-        deps = [
-            "@flatbuffers//:runtime_java",
-        ],
-        visibility = visibility,
-    )
-
-def flatbuffer_java_srcjar(
-        name,
-        srcs,
-        out,
-        custom_package = "",
-        package_prefix = "",
-        include_paths = DEFAULT_INCLUDE_PATHS,
-        flatc_args = DEFAULT_FLATC_ARGS):
-    """Generate flatbuffer Java source files.
-
-    Args:
-      name: Rule name. (required)
-      srcs: List of source .fbs files including all includes. (required)
-      out: Output file name. (required)
-      custom_package: Package name of generated Java files. If not specified
-          namespace in the schema files will be used. (optional)
-      package_prefix: like custom_package, but prefixes to the existing
-          namespace. (optional)
-      include_paths: List of paths that includes files can be found in. (optional)
-      flatc_args: List of additional arguments to pass to flatc. (optional)
-    """
-    command_fmt = """set -e
-      tmpdir=$(@D)
-      schemas=$$tmpdir/schemas
-      java_root=$$tmpdir/java
-      rm -rf $$schemas
-      rm -rf $$java_root
-      mkdir -p $$schemas
-      mkdir -p $$java_root
-
-      for src in $(SRCS); do
-        dest=$$schemas/$$src
-        rm -rf $$(dirname $$dest)
-        mkdir -p $$(dirname $$dest)
-        if [ -z "{custom_package}" ] && [ -z "{package_prefix}" ]; then
-          cp -f $$src $$dest
-        else
-          if [ -z "{package_prefix}" ]; then
-            sed -e "s/namespace\\s.*/namespace {custom_package};/" $$src > $$dest
-          else
-            sed -e "s/namespace \\([^;]\\+\\);/namespace {package_prefix}.\\1;/" $$src > $$dest
-          fi
-        fi
-      done
-
-      flatc_arg_I="-I $$tmpdir/schemas"
-      for include_path in {include_paths}; do
-        flatc_arg_I="$$flatc_arg_I -I $$schemas/$$include_path"
-      done
-
-      flatc_additional_args=
-      for arg in {flatc_args}; do
-        flatc_additional_args="$$flatc_additional_args $$arg"
-      done
-
-      for src in $(SRCS); do
-        $(location {flatc_path}) $$flatc_arg_I --java $$flatc_additional_args -o $$java_root  $$schemas/$$src
-      done
-
-      $(location {zip_files}) -export_zip_path=$@ -file_directory=$$java_root
-      """
-    genrule_cmd = command_fmt.format(
-        package_name = native.package_name(),
-        custom_package = custom_package,
-        package_prefix = package_prefix,
-        flatc_path = flatc_path,
-        zip_files = zip_files,
-        include_paths = " ".join(include_paths),
-        flatc_args = " ".join(flatc_args),
-    )
-
-    native.genrule(
-        name = name,
-        srcs = srcs,
-        outs = [out],
-        tools = [flatc_path, zip_files],
-        cmd = genrule_cmd,
-    )
-
-def flatbuffer_android_library(
-        name,
-        srcs,
-        custom_package = "",
-        package_prefix = "",
-        include_paths = DEFAULT_INCLUDE_PATHS,
-        flatc_args = DEFAULT_FLATC_ARGS,
-        visibility = None):
-    """An android_library with the generated reader/writers for the given flatbuffer definitions.
-
-    Args:
-      name: Rule name. (required)
-      srcs: List of source .fbs files including all includes. (required)
-      custom_package: Package name of generated Java files. If not specified
-          namespace in the schema files will be used. (optional)
-      package_prefix: like custom_package, but prefixes to the existing
-          namespace. (optional)
-      include_paths: List of paths that includes files can be found in. (optional)
-      flatc_args: List of additional arguments to pass to flatc. (optional)
-      visibility: Visibility setting for the android_library rule. (optional)
-    """
-    out_srcjar = "android_%s_all.srcjar" % name
-    flatbuffer_java_srcjar(
-        name = "%s_srcjar" % name,
-        srcs = srcs,
-        out = out_srcjar,
-        custom_package = custom_package,
-        flatc_args = flatc_args,
-        include_paths = include_paths,
-        package_prefix = package_prefix,
-    )
-
-    native.filegroup(
-        name = "%s.srcjar" % name,
-        srcs = [out_srcjar],
-    )
-
-    # To support org.checkerframework.dataflow.qual.Pure.
-    checkerframework_annotations = [
-        "@org_checkerframework_qual",
-    ] if "--java-checkerframework" in flatc_args else []
-
-    android_library(
-        name = name,
-        srcs = [out_srcjar],
-        javacopts = ["-source 7 -target 7"],
-        visibility = visibility,
-        deps = [
-            "@flatbuffers//:runtime_android",
-        ] + checkerframework_annotations,
     )

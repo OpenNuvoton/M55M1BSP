@@ -17,30 +17,6 @@
  */
 
 /*
- * This is a simplified picture of the M55M1 memory system.
- * Please refer to the M55M1 Technical Reference Manual for
- * further information.
- *
- *
- * +---------------+   +---------------+  +------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM |
- * |               |   |               |  +------+
- * |               |   |               |
- * |               |   |               |  +------+
- * |  M1      M0   |   |               +--+ DTCM |
- * +---+-------+---+   +-------+-------+  +------+
- *     |       |               |
- *     |   +---+---------------+-----+
- *     |   | AMBA AXI NIC-400-Lite   |
- *     |   +---+-----------------+---+
- *     |       |                 |
- * +---+-------+------------+ +--+---------+
- * | AMBA AHB               | | SRAM 0/1/2 |
- * +---+--------+--------+--+ +------------+
- *     |
- * +---+---+
- * | FLASH |
- * +-------+
  *
  * +-----------------------+-------------+-------------+----+---------------------------------+
  * |  Memory region name   | Base addr   |    Size     |IDAU|  MCC load address + remarks     |

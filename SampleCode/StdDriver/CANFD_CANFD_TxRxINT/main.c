@@ -36,14 +36,14 @@ void CANFD_SendMessage(CANFD_FD_MSG_T *psTxMsg, E_CANFD_ID_TYPE eIdType, uint32_
 
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  ISR to handle CAN FD Line 0 interrupt event                                                          */
+/*  ISR to handle CAN FD Line 0 interrupt event                                                            */
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void CANFD00_IRQHandler(void)
 {
     printf("IR =0x%08X \n", CANFD0->IR);
-    /*Clear the Interrupt flag */
+    /* Clear the Interrupt flag */
     CANFD_ClearStatusFlag(CANFD0, CANFD_IR_TOO_Msk | CANFD_IR_RF1N_Msk);
-    /*Receive the Rx Fifo1 buffer */
+    /* Receive the Rx Fifo1 buffer */
     CANFD_ReadRxFifoMsg(CANFD0, 1, &g_sRxMsgFrame);
     g_u8RxFifo1CompleteFlag = 1;
 }
@@ -76,10 +76,11 @@ void SYS_Init(void)
 
     /* Select CAN FD0 clock source is APLL0/2 */
     CLK_SetModuleClock(CANFD0_MODULE, CLK_CANFDSEL_CANFD0SEL_APLL0_DIV2, CLK_CANFDDIV_CANFD0DIV(1));
+
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/
@@ -87,9 +88,9 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* Set PJ multi-function pins for CAN RXD and TXD */
-    SET_CAN0_RXD_PJ11();
-    SET_CAN0_TXD_PJ10();
+    /* Set PJ multi-function pins for CANFD RXD and TXD */
+    SET_CANFD0_RXD_PJ11();
+    SET_CANFD0_TXD_PJ10();
 }
 
 
@@ -131,44 +132,43 @@ void CANFD_TxTest(void)
 
         switch (u8Item)
         {
-
             case '1':
-                /*Standard ID =0x111,Data lenght 8 bytes*/
+                /* Standard ID =0x111,Data lenght 8 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_SID, 0x111, 0);
                 break;
 
             case '2':
-                /*Standard ID =0x111,Data lenght 12 bytes*/
+                /* Standard ID =0x113,Data lenght 12 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_SID, 0x113, 1);
                 break;
 
             case '3':
-                /*Standard ID =0x22F,Data lenght 16 bytes*/
+                /* Standard ID =0x22F,Data lenght 16 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_SID, 0x22F, 2);
                 break;
 
             case '4':
-                /*Standard ID =0x333,Data lenght 20 bytes*/
+                /* Standard ID =0x333,Data lenght 20 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_SID, 0x333, 3);
                 break;
 
             case '5':
-                /*Extend ID =0x111,Data lenght 24 bytes*/
+                /* Extend ID =0x221,Data lenght 24 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_XID, 0x221, 4);
                 break;
 
             case '6':
-                /*Extend ID =0x111,Data lenght 32 bytes*/
+                /* Extend ID =0x227,Data lenght 32 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_XID, 0x227, 5);
                 break;
 
             case '7':
-                /*Extend ID =0x3333,Data lenght 48 bytes*/
+                /* Extend ID =0x3333,Data lenght 48 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_XID, 0x3333, 6);
                 break;
 
             case '8':
-                /*Extend ID =0x44444,Data lenght 64 bytes*/
+                /* Extend ID =0x44444,Data lenght 64 bytes */
                 CANFD_SendMessage(&g_sTxMsgFrame, eCANFD_XID, 0x44444, 7);
                 break;
 
@@ -187,16 +187,16 @@ void CANFD_SendMessage(CANFD_FD_MSG_T *psTxMsg, E_CANFD_ID_TYPE eIdType, uint32_
 {
     uint8_t u8Cnt;
 
-    /*Set the ID Number*/
+    /* Set the ID Number */
     psTxMsg->u32Id = u32Id;
-    /*Set the frame type*/
+    /* Set the frame type */
     psTxMsg->eIdType = eIdType;
-    /*Set FD frame format attribute */
+    /* Set FD frame format attribute */
     psTxMsg->bFDFormat = 1;
-    /*Set the bitrate switch attribute*/
+    /* Set the bitrate switch attribute */
     psTxMsg->bBitRateSwitch = 1;
 
-    /*Set data length*/
+    /* Set data length */
     if (u8LenType == 0)      psTxMsg->u32DLC = 8;
     else if (u8LenType == 1) psTxMsg->u32DLC = 12;
     else if (u8LenType == 2) psTxMsg->u32DLC = 16;
@@ -297,17 +297,17 @@ void CANFD_Init(void)
     printf("|                                                               |\n");
     printf("+---------------------------------------------------------------+\n\n");
 
-    /*Use defined configuration */
+    /* Use defined configuration */
     sCANFD_Config.sElemSize.u32UserDef = 0;
-    /*Get the CAN FD configuration value*/
+    /* Get the CAN FD configuration value */
     CANFD_GetDefaultConfig(&sCANFD_Config, CANFD_OP_CAN_FD_MODE);
     sCANFD_Config.sBtConfig.sNormBitRate.u32BitRate = 1000000;
     sCANFD_Config.sBtConfig.sDataBitRate.u32BitRate = 2000000;
-    /*Open the CAN FD feature*/
+    /* Open the CAN FD feature */
     CANFD_Open(CANFD0, &sCANFD_Config);
 
-    /* Note: About TLE9351VSJ High speed CAN FD transceiver  */
-    /* Due to TX/RX propagation delay, user should adjust the 'Transmitter Delay Compensation' setting. */
+    /* Note: About TLE9351VSJ High speed CAN FD transceiver */
+    /* Due to TX/RX propagation delay, user should adjust the 'Transmitter Delay Compensation' setting */
     //CANFD0->DBTP |= CANFD_DBTP_TDC_Msk;
     //CANFD0->TDCR = 0x300;
 
@@ -324,13 +324,13 @@ void CANFD_Init(void)
     CANFD_SetXIDFltr(CANFD0, 1, CANFD_RX_FIFO1_EXT_MASK_LOW(0x3333), CANFD_RX_FIFO1_EXT_MASK_HIGH(0x1FFFFFFF));
     /* receive 0x44444 (29-bit id) in CAN FD0 rx fifo1 buffer by setting mask 2 */
     CANFD_SetXIDFltr(CANFD0, 2, CANFD_RX_FIFO1_EXT_MASK_LOW(0x44444), CANFD_RX_FIFO1_EXT_MASK_HIGH(0x1FFFFFFF));
-    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo1)*/
+    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo1) */
     CANFD_SetGFC(CANFD0, eCANFD_REJ_NON_MATCH_FRM, eCANFD_REJ_NON_MATCH_FRM, 1, 1);
-    /* Enable RX fifo1 new message interrupt using interrupt line 0. */
+    /* Enable RX fifo1 new message interrupt using interrupt line 0 */
     CANFD_EnableInt(CANFD0, (CANFD_IE_TOOE_Msk | CANFD_IE_RF1NE_Msk), 0, 0, 0);
-    /* Enable CANFD0 IRQ00 Handler*/
+    /* Enable CANFD0 IRQ00 Handler */
     NVIC_EnableIRQ(CANFD00_IRQn);
-    /* CAN FD0 Run to Normal mode  */
+    /* CAN FD0 Run to Normal mode */
     CANFD_RunToNormal(CANFD0, TRUE);
 }
 
@@ -342,7 +342,7 @@ void CANFD_TxRxINTTest(void)
 {
     uint8_t u8Item;
 
-    /* CAN FD interface initialization*/
+    /* CAN FD interface initialization */
     CANFD_Init();
 
     printf("+----------------------------------------------------------------------------+\n");
@@ -388,6 +388,7 @@ int32_t main(void)
 #endif
     /* Init Debug UART for printf */
     InitDebugUart();
+
     /* Lock protected registers */
     SYS_LockReg();
 

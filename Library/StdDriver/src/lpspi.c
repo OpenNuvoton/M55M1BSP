@@ -23,8 +23,13 @@
 
 static void LPSPI_SetPCLKSrc(LPSPI_T *lpspi)
 {
-    /* Unlock protected registers */
-    SYS_UnlockReg();
+    uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    if (u32RegLockLevel)
+    {
+        /* Unlock protected registers */
+        SYS_UnlockReg();
+    }
 
     /* Select PCLK as the clock source of LPSPI */
     if (lpspi == LPSPI0)
@@ -32,8 +37,11 @@ static void LPSPI_SetPCLKSrc(LPSPI_T *lpspi)
         CLK->LPSPISEL = (CLK->LPSPISEL & (~CLK_LPSPISEL_LPSPI0SEL_Msk)) | CLK_LPSPISEL_LPSPI0SEL_PCLK4;
     }
 
-    /* Lock protected registers */
-    SYS_LockReg();
+    if (u32RegLockLevel)
+    {
+        /* Lock protected registers */
+        SYS_LockReg();
+    }
 }
 
 /**
@@ -218,8 +226,13 @@ uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMo
   */
 void LPSPI_Close(LPSPI_T *lpspi)
 {
-    /* Unlock protected registers */
-    SYS_UnlockReg();
+    uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    if (u32RegLockLevel)
+    {
+        /* Unlock protected registers */
+        SYS_UnlockReg();
+    }
 
     if (lpspi == LPSPI0)
     {
@@ -227,8 +240,11 @@ void LPSPI_Close(LPSPI_T *lpspi)
         SYS_ResetModule(SYS_LPSPI0RST);
     }
 
-    /* Lock protected registers */
-    SYS_LockReg();
+    if (u32RegLockLevel)
+    {
+        /* Lock protected registers */
+        SYS_LockReg();
+    }
 }
 
 /**

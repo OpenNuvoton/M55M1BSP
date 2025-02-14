@@ -14,22 +14,19 @@
 /*--------------------------------------------------------------------------*/
 void SYS_Init(void)
 {
-    uint32_t volatile i;
-
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /*---------------------------------------------------------------------------------------------------------*/
-    /* Init System Clock                                                                                       */
-    /*---------------------------------------------------------------------------------------------------------*/
-#if defined(TESTCHIP_ONLY)
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 144MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_144MHZ);
-#else
+    /* Enable Internal RC 12MHz clock */
+    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
+
+    /* Waiting for Internal RC clock ready */
+    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
+
     /* Switch SCLK clock source to APLL0 and Enable APLL0 192MHz clock */
+    /* The system frequency needs to be set to a multiple of the 48Khz sampling rate, for example, it can be set to 192 MHz.*/
     CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_192MHZ);
-#endif
 
     /* Enable all GPIO clock */
     CLK_EnableModuleClock(GPIOA_MODULE);
@@ -46,20 +43,20 @@ void SYS_Init(void)
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 
-    /* Enable HSOTG0_ module clock */
+    /* Enable HSOTG module clock */
     CLK_EnableModuleClock(HSOTG0_MODULE);
 
-    SYS->USBPHY &= ~SYS_USBPHY_HSUSBROLE_Msk;    /* select HSUSBD */
-    /* Enable USB PHY */
-    SYS->USBPHY = (SYS->USBPHY & ~(SYS_USBPHY_HSUSBROLE_Msk | SYS_USBPHY_HSUSBACT_Msk)) | SYS_USBPHY_HSOTGPHYEN_Msk;
+    /* Select HSOTG PHY Reference clock frequency which is from HXT */
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
-    for (i = 0; i < 0x1000; i++);  // delay > 10 us
+    /* Set HSUSB role to HSUSBD */
+    SET_HSUSBDROLE();
 
-    SYS->USBPHY |= SYS_USBPHY_HSUSBACT_Msk;
+    /* Enable HSUSB PHY */
+    SYS_Enable_HSUSB_PHY();
 
-    /* Enable IP clock */
+    /* Enable HSUSBD peripheral clock */
     CLK_EnableModuleClock(HSUSBD0_MODULE);
-
 
     /* Enable TIMER0 module clock */
     CLK_EnableModuleClock(TMR0_MODULE);
@@ -73,13 +70,8 @@ void SYS_Init(void)
     /* Enable I2S0 module clock */
     CLK_EnableModuleClock(I2S0_MODULE);
 
-#if defined(ALIGN_AF_PINS)
     /* Enable I2C3 module clock */
     CLK_EnableModuleClock(I2C3_MODULE);
-#else
-    /* Enable I2C2 module clock */
-    CLK_EnableModuleClock(I2C2_MODULE);
-#endif
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
@@ -98,22 +90,12 @@ void SYS_Init(void)
     /* Enable I2S0 clock pin (PI6) schmitt trigger */
     PI->SMTEN |= GPIO_SMTEN_SMTEN6_Msk;
 
-#if defined(ALIGN_AF_PINS)
     /* Set I2C3 multi-function pins */
     SET_I2C3_SDA_PG1();
     SET_I2C3_SCL_PG0();
 
     /* Enable I2C3 clock pin (PG0) schmitt trigger */
     PG->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
-#else
-    /* Set I2C3 multi-function pins */
-    SET_I2C2_SDA_PD0();
-    SET_I2C2_SCL_PD1();
-
-    /* Enable I2C2 clock pin (PD1) schmitt trigger */
-    PD->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
-#endif
-
 }
 
 /* Init I2C interface */
@@ -162,15 +144,10 @@ int32_t main(void)
     SYS_LockReg();
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-#if defined(ALIGN_AF_PINS)
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
-#else
-    SET_GPIO_PD4();
-    GPIO_SetMode(PD, BIT4, GPIO_MODE_OUTPUT);
-    PD4 = 0;
-#endif
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
+
 
 #if NAU8822
     NAU8822_Setup();

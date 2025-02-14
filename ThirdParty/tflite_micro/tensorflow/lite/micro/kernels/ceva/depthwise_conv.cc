@@ -28,6 +28,8 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/ceva/ceva_tflm_lib.h"
 #include "tensorflow/lite/micro/kernels/depthwise_conv.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
+#include "tensorflow/lite/micro/micro_log.h"
+
 #ifdef MCPS_MEASUREMENT
 #include "tensorflow/lite/micro/kernels/ceva/mcps_macros.h"
 #endif
@@ -161,8 +163,8 @@ void EvalQuantizedPerChannel(TfLiteContext* context, TfLiteNode* node,
   const int dilation_height_factor = params->dilation_height_factor;
 
   if ((input_depth * 4) > CEVA_TFLM_KERNELS_SCRATCH_SIZE_VAL) {
-    TF_LITE_KERNEL_LOG(context, "Scratch size (%d) less that required (%d)",
-                       CEVA_TFLM_KERNELS_SCRATCH_SIZE_VAL, (input_depth * 4));
+    MicroPrintf("Scratch size (%d) less that required (%d)",
+                CEVA_TFLM_KERNELS_SCRATCH_SIZE_VAL, (input_depth * 4));
   }
 
 #ifdef MCPS_MEASUREMENT
@@ -222,9 +224,33 @@ TfLiteStatus EvalCEVA(TfLiteContext* context, TfLiteNode* node) {
       EvalQuantizedPerChannel(context, node, params, data, input, filter, bias,
                               output);
       break;
+    case kTfLiteInt16: {
+      switch (filter->type) {
+        case kTfLiteInt8: {
+          reference_integer_ops::DepthwiseConvPerChannel(
+              DepthwiseConvParamsQuantized(*params, data),
+              data.per_channel_output_multiplier, data.per_channel_output_shift,
+              tflite::micro::GetTensorShape(input),
+              tflite::micro::GetTensorData<int16_t>(input),
+              tflite::micro::GetTensorShape(filter),
+              tflite::micro::GetTensorData<int8_t>(filter),
+              tflite::micro::GetTensorShape(bias),
+              tflite::micro::GetOptionalTensorData<int64_t>(bias),
+              tflite::micro::GetTensorShape(output),
+              tflite::micro::GetTensorData<int16_t>(output));
+          break;
+        }
+        default:
+          MicroPrintf("Filter type %s (%d) for input type %s not supported.",
+                      TfLiteTypeGetName(filter->type), filter->type,
+                      TfLiteTypeGetName(input->type));
+          return kTfLiteError;
+      }
+      break;
+    }
     default:
-      TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
-                         TfLiteTypeGetName(input->type), input->type);
+      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                  input->type);
       return kTfLiteError;
   }
   return kTfLiteOk;
@@ -240,15 +266,9 @@ TfLiteStatus DepthWiseConvEval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace
 
-TfLiteRegistration Register_DEPTHWISE_CONV_2D() {
-  return {/*init=*/Init,
-          /*free=*/nullptr,
-          /*prepare=*/DepthwiseConvPrepare,
-          /*invoke=*/DepthWiseConvEval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+TFLMRegistration Register_DEPTHWISE_CONV_2D() {
+  return tflite::micro::RegisterOp(Init, DepthwiseConvPrepare,
+                                   DepthWiseConvEval);
 }
 
 }  // namespace tflite

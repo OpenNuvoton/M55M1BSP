@@ -29,7 +29,14 @@ __ALIGNED(4) static char    Msg2[RSA_KBUF_HLEN] =
 __ALIGNED(4) static char    Sign2[RSA_KBUF_HLEN] =
     "11111111a05f626b028c75dc3fbf98963dce66d0f4c3ae4237cff304d84d8836cb6bad9ac86f9d1b8a28dd70404788b869d2429f1ec0663e51b753f7451c6b4645d99126e457c1dac49551d86a8a974a3131e9b371d5c214cc9ff240c299bd0e62dbc7a9a2dad9fa5404adb00632d36332d5be6106e9e6ec81cac45cd339cc87abbe7f89430800e16e032a66210b25e926eda243d9f09955496ddbc77ef74f17fee41c4435e78b46965b713d72ce8a31af641538add387fedfd88bb22a42eb3bda40f72ecad941dbffdd47b3e77737da741553a45b630d070bcc5205804bf80ee2d51612875dbc4796960052f1687e0074007e6a33ab8b2085c033f922222222";
 
-static RSA_BUF_KS_T s_sRSABuf;
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    // Note sizeof(s_sRSABuf) is multiply of 128(also, multiply of DCACHE_LINE_SIZE(32))
+    RSA_BUF_KS_T s_sRSABuf __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    // Standard buffer alignment when DCache is disabled
+    __ALIGNED(4) static RSA_BUF_KS_T s_sRSABuf;
+#endif
 static uint32_t g_au32TmpBuf[RSA_KBUF_HLEN];
 
 static int32_t g_i32PrivateKeyNum = 0, g_i32PNum = 0, g_i32QNum = 0, g_i32CpNum = 0, g_i32CqNum = 0;
@@ -39,7 +46,6 @@ static volatile int g_RSA_done;
 static volatile int g_RSA_error;
 
 void CRYPTO_IRQHandler(void);
-void RSA_Hex2Reg(char *input, uint32_t *reg);
 void SYS_Init(void);
 void DEBUG_PORT_Init(void);
 void EraseAllSramKey(void);
@@ -72,34 +78,6 @@ void CRYPTO_IRQHandler(void)
 }
 
 
-
-void RSA_Hex2Reg(char *input, uint32_t *reg)
-{
-    int       i, si;
-    uint32_t  val32;
-
-    si = (int)strlen(input) - 1;
-
-    while (si >= 0)
-    {
-        val32 = 0;
-
-        for (i = 0; (i < 8) && (si >= 0); i++)
-        {
-            if (input[si] <= '9')
-                val32 |= (uint32_t)((input[si] - '0') << (i * 4));
-            else if ((input[si] <= 'z') && (input[si] >= 'a'))
-                val32 |= (uint32_t)((input[si] - 'a' + 10) << (i * 4));
-            else
-                val32 |= (uint32_t)((input[si] - 'A' + 10) << (i * 4));
-
-            si--;
-        }
-
-        *reg++ = val32;
-    }
-}
-
 void SYS_Init(void)
 {
 
@@ -120,8 +98,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -176,21 +154,21 @@ void EraseAllSramKey(void)
 int32_t PrepareKeys(void)
 {
     /* Create and read the private key number */
-    RSA_Hex2Reg(d, (uint32_t *)&g_au32TmpBuf[0]);
+    Hex2Reg(d, (uint32_t *)&g_au32TmpBuf[0]);
     g_i32PrivateKeyNum = KS_Write(KS_SRAM, KS_META_RSA_EXP | KS_META_2048 | KS_META_READABLE, (uint32_t *)&g_au32TmpBuf[0]);
 
     if (g_i32PrivateKeyNum == -1)
         return -1;
 
     /* Create and read the P key number. P is equal to half of private/public key length. */
-    RSA_Hex2Reg(P, (uint32_t *)&g_au32TmpBuf[0]);
+    Hex2Reg(P, (uint32_t *)&g_au32TmpBuf[0]);
     g_i32PNum = KS_Write(KS_SRAM, KS_META_RSA_EXP | KS_META_1024 | KS_META_READABLE, (uint32_t *)&g_au32TmpBuf[0]);
 
     if (g_i32PNum == -1)
         return -1;
 
     /* Create and read the Q key number. Q is equal to half of private/public key length. */
-    RSA_Hex2Reg(Q, (uint32_t *)&g_au32TmpBuf[0]);
+    Hex2Reg(Q, (uint32_t *)&g_au32TmpBuf[0]);
     g_i32QNum = KS_Write(KS_SRAM, KS_META_RSA_EXP | KS_META_1024 | KS_META_READABLE, (uint32_t *)&g_au32TmpBuf[0]);
 
     if (g_i32QNum == -1)
@@ -312,6 +290,11 @@ int32_t main(void)
     RSA_SetKey_KS(CRYPTO, (uint32_t)g_i32PrivateKeyNum, KS_SRAM, 0);
     RSA_SetDMATransfer_KS(CRYPTO, Msg, N, (uint32_t)g_i32PNum, (uint32_t)g_i32QNum, (uint32_t)g_i32CpNum, (uint32_t)g_i32CqNum,
                           (uint32_t)g_i32DpNum, (uint32_t)g_i32DqNum, (uint32_t)g_i32RpNum, (uint32_t)g_i32RqNum);
+    //Fillup sRSABuf.au32RsaM, au32RsaN, au32RsaMOutput
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//For sRSABuf.au32RsaM, au32RsaN, au32RsaMOutput
+#endif
     RSA_Start(CRYPTO);
 
     /* Waiting for RSA operation done */
@@ -326,12 +309,18 @@ int32_t main(void)
         }
     }
 
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//actually, au32RsaOutput only
+    //Read OutputResult(stack) from sRSABuf.au32RsaOutput
+#endif
+
     /* Check error flag */
     if (g_RSA_error)
     {
         printf("\nRSA has error!!\n");
         goto lexit;
     }
+
 
     /* Get RSA output result */
     RSA_Read(CRYPTO, OutputResult);
@@ -363,6 +352,10 @@ int32_t main(void)
     RSA_SetKey_KS(CRYPTO, (uint32_t)g_i32PrivateKeyNum, KS_SRAM, 0);
     RSA_SetDMATransfer_KS(CRYPTO, Msg2, N, (uint32_t)g_i32PNum, (uint32_t)g_i32QNum, (uint32_t)g_i32CpNum, (uint32_t)g_i32CqNum,
                           (uint32_t)g_i32DpNum, (uint32_t)g_i32DqNum, (uint32_t)g_i32RpNum, (uint32_t)g_i32RqNum);
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//For sRSABuf.au32RsaM, au32RsaN, au32RsaMOutput
+#endif
+
     RSA_Start(CRYPTO);
 
     /* Waiting for RSA operation done */
@@ -383,6 +376,11 @@ int32_t main(void)
         printf("\nRSA has error!!\n");
         goto lexit;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(&s_sRSABuf, sizeof(s_sRSABuf));//actually, au32RsaOutput only
+    //Read OutputResult(stack) from sRSABuf.au32RsaOutput
+#endif
 
     /* Get RSA output result */
     RSA_Read(CRYPTO, OutputResult);

@@ -19,11 +19,10 @@
 /******************************************************************************/
 
 /**
-   @addtogroup REGISTER Control Register
-   @{
+    @addtogroup REGISTER Control Register
+    @{
 */
 
-/*---------------------- Analog Comparator Controller -------------------------*/
 /**
     @addtogroup ACMP Analog Comparator Controller (ACMP)
     Memory Mapped Structure for ACMP Controller
@@ -32,6 +31,8 @@
 
 typedef struct
 {
+
+
     /**
      * @var ACMP_T::CTL
      * Offset: 0x00-0x04  Analog Comparator Control Register 0/1
@@ -53,7 +54,7 @@ typedef struct
      * |        |          |001 = Internal comparator reference voltage (CRV0/2).
      * |        |          |010 = Band-gap voltage.
      * |        |          |011 = DAC0 output.
-     * |        |          |100 = DAC1 output.  (DAC1 is not support in TESTCHIP_ONLY)
+     * |        |          |100 = DAC1 output.
      * |        |          |Note: NEGSEL must select 0x1 in calibration mode.
      * |[10:8]  |POSSEL    |ACMP Positive Input Selection
      * |        |          |000 = ACMP0_P0 or ACMP2_P0 pin.
@@ -89,9 +90,7 @@ typedef struct
      * |        |          |Note: Use FCLKDIV under the condition of FILTSEL = 3'h7, then set FCLKDIV to get the effect of filtering 128,256 consecutive PCLKs.
      * |[26:24] |HYSSEL    |Hysteresis Mode Selection
      * |        |          |000 = Hysteresis is 0mV.
-     * |        |          |001 = Hysteresis is 10mV.
      * |        |          |010 = Hysteresis is 20mV.
-     * |        |          |011 = Hysteresis is 30mV.
      * |        |          |100 = Hysteresis is 40mV.
      * |        |          |Others = Reserved.
      * |[29:28] |MODESEL   |ACMP Operating Mode Selection
@@ -159,7 +158,7 @@ typedef struct
      * |        |          |Set CRV output voltage for ACMP0 or ACMP2 negtive input.
      * |        |          |CRV0/2 = CRV0/2 source voltage * (CRV0SEL)/ 63.
      * |[6]     |CRV0SSEL  |CRV0 Source Voltage Selection
-     * |        |          |0 = AVDD is selected as CRV0 source voltage.
+     * |        |          |0 = AVDD is selected as CRV0/2 source voltage.
      * |        |          |1 = The reference voltage defined by VREFCTL (SYS_VREFCTL[4:0]) register is selected as CRV0/2 source voltage.
      * |[8]     |CRV0EN    |CRV0 Enable Bit
      * |        |          |0 = CRV0/2 Disabled.
@@ -192,28 +191,6 @@ typedef struct
      * |        |          |Note 1: Before this bit is enabled, ACMPEN(ACMP_CTL1[0]) should be set and the internal high speed RC oscillator (HIRC) should be enabled in advance.
      * |        |          |Note 2: Hardware will auto clear this bit when the next calibration is triggered by software.
      * |        |          |Note 3: If user must trigger calibration twice or more times, the second trigger has to wait at least 300us after the previous calibration is done.
-     * |[5:4]   |CALCLK0   |Comparator0 Calibration Clock Rate Selection 0
-     * |        |          |Set ACMP0 or ACMP2 calibration clock rate.
-     * |        |          |00 = 1.5 kHz.
-     * |        |          |01 = 6 kHz.
-     * |        |          |10 = 24 kHz.
-     * |        |          |11 = 95 kHz.
-     * |[7:6]   |CALCLK1   |ACMP Calibration Clock Rate Selection 1
-     * |        |          |Set ACMP1 or ACMP3 calibration clock rate.
-     * |        |          |00 = 1.5 kHz.
-     * |        |          |01 = 6 kHz.
-     * |        |          |10 = 24 kHz.
-     * |        |          |11 = 95 kHz.
-     * |[8]     |OFFSETSEL |ACMP Trim Code Selection
-     * |        |          |0 = calibration trim code will not minus 1 when calibrated done.
-     * |        |          |1 = calibration trim code will not minus 1 when calibrated done.
-     * |[17:16] |CALRVS    |Calibration Reference Voltage Selection
-     * |        |          |00 = option0 (N-pair calibration: 5V - 80mV, P-pair calibration: 80mV).
-     * |        |          |01 = option1.
-     * |        |          |10 = option2 (N-pair calibration: 5V - 160mV, P-pair calibration: 160mV).
-     * |        |          |11 = Reserved.
-     * |        |          |Note: CRV0/2 and CRV1/3 must be the same setting in calibration
-     * |        |          |Note: The details refer to Analog ACMP SPEC
      * @var ACMP_T::CALSR
      * Offset: 0x14  Analog Comparator Calibration Status Register
      * ---------------------------------------------------------------------------------------------------
@@ -230,11 +207,12 @@ typedef struct
      * |        |          |1 = Calibration done.
      * |        |          |Note: this bit is write 1 clear
      */
-    __IO uint32_t CTL[2];           /*!< [0x00-004] Analog Comparator 0/1/2/3 Control Register          */
-    __IO uint32_t STATUS;           /*!< [0x08] Analog Comparator Status Register                       */
-    __IO uint32_t VREF;             /*!< [0x0C] Analog Comparator Reference Voltage Control Register    */
-    __IO uint32_t CALCTL;           /*!< [0x10] Analog Comparator Calibration Control Register          */
-    __IO uint32_t CALSR;            /*!< [0x14] Analog Comparator Calibration Status Register           */
+    __IO uint32_t CTL[2];                /*!< [0x0000-0x0004] Analog Comparator 0/1/2/3 Control Register                */
+    __IO uint32_t STATUS;                /*!< [0x0008] Analog Comparator Status Register                                */
+    __IO uint32_t VREF;                  /*!< [0x000c] Analog Comparator Reference Voltage Control Register             */
+    __IO uint32_t CALCTL;                /*!< [0x0010] Analog Comparator Calibration Control Register                   */
+    __I  uint32_t CALSR;                 /*!< [0x0014] Analog Comparator Calibration Status Register                    */
+
 } ACMP_T;
 
 /**
@@ -242,119 +220,104 @@ typedef struct
     Constant Definitions for ACMP Controller
 @{ */
 
-#define ACMP_CTL_ACMPEN_Pos             (0)                                         /*!< ACMP_T::CTL: ACMPEN Position               */
-#define ACMP_CTL_ACMPEN_Msk             (0x1UL << ACMP_CTL_ACMPEN_Pos)              /*!< ACMP_T::CTL: ACMPEN Mask                   */
+#define ACMP_CTL_ACMPEN_Pos              (0)                                               /*!< ACMP_T::CTL: ACMPEN Position           */
+#define ACMP_CTL_ACMPEN_Msk              (0x1ul << ACMP_CTL_ACMPEN_Pos)                    /*!< ACMP_T::CTL: ACMPEN Mask               */
 
-#define ACMP_CTL_ACMPIE_Pos             (1)                                         /*!< ACMP_T::CTL: ACMPIE Position               */
-#define ACMP_CTL_ACMPIE_Msk             (0x1UL << ACMP_CTL_ACMPIE_Pos)              /*!< ACMP_T::CTL: ACMPIE Mask                   */
+#define ACMP_CTL_ACMPIE_Pos              (1)                                               /*!< ACMP_T::CTL: ACMPIE Position           */
+#define ACMP_CTL_ACMPIE_Msk              (0x1ul << ACMP_CTL_ACMPIE_Pos)                    /*!< ACMP_T::CTL: ACMPIE Mask               */
 
-#define ACMP_CTL_ACMPOINV_Pos           (3)                                         /*!< ACMP_T::CTL: ACMPOINV Position             */
-#define ACMP_CTL_ACMPOINV_Msk           (0x1UL << ACMP_CTL_ACMPOINV_Pos)            /*!< ACMP_T::CTL: ACMPOINV Mask                 */
+#define ACMP_CTL_ACMPOINV_Pos            (3)                                               /*!< ACMP_T::CTL: ACMPOINV Position         */
+#define ACMP_CTL_ACMPOINV_Msk            (0x1ul << ACMP_CTL_ACMPOINV_Pos)                  /*!< ACMP_T::CTL: ACMPOINV Mask             */
 
-#define ACMP_CTL_NEGSEL_Pos             (4)                                         /*!< ACMP_T::CTL: NEGSEL Position               */
-#define ACMP_CTL_NEGSEL_Msk             (0x7UL << ACMP_CTL_NEGSEL_Pos)              /*!< ACMP_T::CTL: NEGSEL Mask                   */
+#define ACMP_CTL_NEGSEL_Pos              (4)                                               /*!< ACMP_T::CTL: NEGSEL Position           */
+#define ACMP_CTL_NEGSEL_Msk              (0x7ul << ACMP_CTL_NEGSEL_Pos)                    /*!< ACMP_T::CTL: NEGSEL Mask               */
 
-#define ACMP_CTL_POSSEL_Pos             (8)                                         /*!< ACMP_T::CTL: POSSEL Position               */
-#define ACMP_CTL_POSSEL_Msk             (0x7UL << ACMP_CTL_POSSEL_Pos)              /*!< ACMP_T::CTL: POSSEL Mask                   */
+#define ACMP_CTL_POSSEL_Pos              (8)                                               /*!< ACMP_T::CTL: POSSEL Position           */
+#define ACMP_CTL_POSSEL_Msk              (0x7ul << ACMP_CTL_POSSEL_Pos)                    /*!< ACMP_T::CTL: POSSEL Mask               */
 
-#define ACMP_CTL_OUTSEL_Pos             (12)                                        /*!< ACMP_T::CTL: OUTSEL Position               */
-#define ACMP_CTL_OUTSEL_Msk             (0x1UL << ACMP_CTL_OUTSEL_Pos)              /*!< ACMP_T::CTL: OUTSEL Mask                   */
+#define ACMP_CTL_OUTSEL_Pos              (12)                                              /*!< ACMP_T::CTL: OUTSEL Position           */
+#define ACMP_CTL_OUTSEL_Msk              (0x1ul << ACMP_CTL_OUTSEL_Pos)                    /*!< ACMP_T::CTL: OUTSEL Mask               */
 
-#define ACMP_CTL_FILTSEL_Pos            (13)                                        /*!< ACMP_T::CTL: FILTSEL Position              */
-#define ACMP_CTL_FILTSEL_Msk            (0x7UL << ACMP_CTL_FILTSEL_Pos)             /*!< ACMP_T::CTL: FILTSEL Mask                  */
+#define ACMP_CTL_FILTSEL_Pos             (13)                                              /*!< ACMP_T::CTL: FILTSEL Position          */
+#define ACMP_CTL_FILTSEL_Msk             (0x7ul << ACMP_CTL_FILTSEL_Pos)                   /*!< ACMP_T::CTL: FILTSEL Mask              */
 
-#define ACMP_CTL_WKEN_Pos               (16)                                        /*!< ACMP_T::CTL: WKEN Position                 */
-#define ACMP_CTL_WKEN_Msk               (0x1UL << ACMP_CTL_WKEN_Pos)                /*!< ACMP_T::CTL: WKEN Mask                     */
+#define ACMP_CTL_WKEN_Pos                (16)                                              /*!< ACMP_T::CTL: WKEN Position             */
+#define ACMP_CTL_WKEN_Msk                (0x1ul << ACMP_CTL_WKEN_Pos)                      /*!< ACMP_T::CTL: WKEN Mask                 */
 
-#define ACMP_CTL_WLATEN_Pos             (17)                                        /*!< ACMP_T::CTL: WLATEN Position               */
-#define ACMP_CTL_WLATEN_Msk             (0x1UL << ACMP_CTL_WLATEN_Pos)              /*!< ACMP_T::CTL: WLATEN Mask                   */
+#define ACMP_CTL_WLATEN_Pos              (17)                                              /*!< ACMP_T::CTL: WLATEN Position           */
+#define ACMP_CTL_WLATEN_Msk              (0x1ul << ACMP_CTL_WLATEN_Pos)                    /*!< ACMP_T::CTL: WLATEN Mask               */
 
-#define ACMP_CTL_WCMPSEL_Pos            (18)                                        /*!< ACMP_T::CTL: WCMPSEL Position              */
-#define ACMP_CTL_WCMPSEL_Msk            (0x1UL << ACMP_CTL_WCMPSEL_Pos)             /*!< ACMP_T::CTL: WCMPSEL Mask                  */
+#define ACMP_CTL_WCMPSEL_Pos             (18)                                              /*!< ACMP_T::CTL: WCMPSEL Position          */
+#define ACMP_CTL_WCMPSEL_Msk             (0x1ul << ACMP_CTL_WCMPSEL_Pos)                   /*!< ACMP_T::CTL: WCMPSEL Mask              */
 
-#define ACMP_CTL_FCLKDIV_Pos            (20)                                        /*!< ACMP_T::CTL: FCLKDIV Position              */
-#define ACMP_CTL_FCLKDIV_Msk            (0x3UL << ACMP_CTL_FCLKDIV_Pos)             /*!< ACMP_T::CTL: FCLKDIV Mask                  */
+#define ACMP_CTL_FCLKDIV_Pos             (20)                                              /*!< ACMP_T::CTL: FCLKDIV Position          */
+#define ACMP_CTL_FCLKDIV_Msk             (0x3ul << ACMP_CTL_FCLKDIV_Pos)                   /*!< ACMP_T::CTL: FCLKDIV Mask              */
 
-#define ACMP_CTL_HYSSEL_Pos             (24)                                        /*!< ACMP_T::CTL: HYSSEL Position               */
-#define ACMP_CTL_HYSSEL_Msk             (0x7UL << ACMP_CTL_HYSSEL_Pos)              /*!< ACMP_T::CTL: HYSSEL Mask                   */
+#define ACMP_CTL_HYSSEL_Pos              (24)                                              /*!< ACMP_T::CTL: HYSSEL Position           */
+#define ACMP_CTL_HYSSEL_Msk              (0x7ul << ACMP_CTL_HYSSEL_Pos)                    /*!< ACMP_T::CTL: HYSSEL Mask               */
 
-#define ACMP_CTL_MODESEL_Pos            (28)                                        /*!< ACMP_T::CTL: MODESEL Position              */
-#define ACMP_CTL_MODESEL_Msk            (0x3UL << ACMP_CTL_MODESEL_Pos)             /*!< ACMP_T::CTL: MODESEL Mask                  */
+#define ACMP_CTL_MODESEL_Pos             (28)                                              /*!< ACMP_T::CTL: MODESEL Position          */
+#define ACMP_CTL_MODESEL_Msk             (0x3ul << ACMP_CTL_MODESEL_Pos)                   /*!< ACMP_T::CTL: MODESEL Mask              */
 
-#define ACMP_CTL_INTPOL_Pos             (30)                                        /*!< ACMP_T::CTL: INTPOL Position               */
-#define ACMP_CTL_INTPOL_Msk             (0x3UL << ACMP_CTL_INTPOL_Pos)              /*!< ACMP_T::CTL: INTPOL Mask                   */
+#define ACMP_CTL_INTPOL_Pos              (30)                                              /*!< ACMP_T::CTL: INTPOL Position           */
+#define ACMP_CTL_INTPOL_Msk              (0x3ul << ACMP_CTL_INTPOL_Pos)                    /*!< ACMP_T::CTL: INTPOL Mask               */
 
-#define ACMP_STATUS_ACMPIF0_Pos         (0)                                         /*!< ACMP_T::STATUS: ACMPIF0 Position           */
-#define ACMP_STATUS_ACMPIF0_Msk         (0x1UL << ACMP_STATUS_ACMPIF0_Pos)          /*!< ACMP_T::STATUS: ACMPIF0 Mask               */
+#define ACMP_STATUS_ACMPIF0_Pos          (0)                                               /*!< ACMP_T::STATUS: ACMPIF0 Position       */
+#define ACMP_STATUS_ACMPIF0_Msk          (0x1ul << ACMP_STATUS_ACMPIF0_Pos)                /*!< ACMP_T::STATUS: ACMPIF0 Mask           */
 
-#define ACMP_STATUS_ACMPIF1_Pos         (1)                                         /*!< ACMP_T::STATUS: ACMPIF1 Position           */
-#define ACMP_STATUS_ACMPIF1_Msk         (0x1UL << ACMP_STATUS_ACMPIF1_Pos)          /*!< ACMP_T::STATUS: ACMPIF1 Mask               */
+#define ACMP_STATUS_ACMPIF1_Pos          (1)                                               /*!< ACMP_T::STATUS: ACMPIF1 Position       */
+#define ACMP_STATUS_ACMPIF1_Msk          (0x1ul << ACMP_STATUS_ACMPIF1_Pos)                /*!< ACMP_T::STATUS: ACMPIF1 Mask           */
 
-#define ACMP_STATUS_ACMPO0_Pos          (4)                                         /*!< ACMP_T::STATUS: ACMPO0 Position            */
-#define ACMP_STATUS_ACMPO0_Msk          (0x1UL << ACMP_STATUS_ACMPO0_Pos)           /*!< ACMP_T::STATUS: ACMPO0 Mask                */
+#define ACMP_STATUS_ACMPO0_Pos           (4)                                               /*!< ACMP_T::STATUS: ACMPO0 Position        */
+#define ACMP_STATUS_ACMPO0_Msk           (0x1ul << ACMP_STATUS_ACMPO0_Pos)                 /*!< ACMP_T::STATUS: ACMPO0 Mask            */
 
-#define ACMP_STATUS_ACMPO1_Pos          (5)                                         /*!< ACMP_T::STATUS: ACMPO1 Position            */
-#define ACMP_STATUS_ACMPO1_Msk          (0x1UL << ACMP_STATUS_ACMPO1_Pos)           /*!< ACMP_T::STATUS: ACMPO1 Mask                */
+#define ACMP_STATUS_ACMPO1_Pos           (5)                                               /*!< ACMP_T::STATUS: ACMPO1 Position        */
+#define ACMP_STATUS_ACMPO1_Msk           (0x1ul << ACMP_STATUS_ACMPO1_Pos)                 /*!< ACMP_T::STATUS: ACMPO1 Mask            */
 
-#define ACMP_STATUS_WKIF0_Pos           (8)                                         /*!< ACMP_T::STATUS: WKIF0 Position             */
-#define ACMP_STATUS_WKIF0_Msk           (0x1UL << ACMP_STATUS_WKIF0_Pos)            /*!< ACMP_T::STATUS: WKIF0 Mask                 */
+#define ACMP_STATUS_WKIF0_Pos            (8)                                               /*!< ACMP_T::STATUS: WKIF0 Position         */
+#define ACMP_STATUS_WKIF0_Msk            (0x1ul << ACMP_STATUS_WKIF0_Pos)                  /*!< ACMP_T::STATUS: WKIF0 Mask             */
 
-#define ACMP_STATUS_WKIF1_Pos           (9)                                         /*!< ACMP_T::STATUS: WKIF1 Position             */
-#define ACMP_STATUS_WKIF1_Msk           (0x1UL << ACMP_STATUS_WKIF1_Pos)            /*!< ACMP_T::STATUS: WKIF1 Mask                 */
+#define ACMP_STATUS_WKIF1_Pos            (9)                                               /*!< ACMP_T::STATUS: WKIF1 Position         */
+#define ACMP_STATUS_WKIF1_Msk            (0x1ul << ACMP_STATUS_WKIF1_Pos)                  /*!< ACMP_T::STATUS: WKIF1 Mask             */
 
-#define ACMP_STATUS_ACMPS0_Pos          (12)                                        /*!< ACMP_T::STATUS: ACMPS0 Position            */
-#define ACMP_STATUS_ACMPS0_Msk          (0x1UL << ACMP_STATUS_ACMPS0_Pos)           /*!< ACMP_T::STATUS: ACMPS0 Mask                */
+#define ACMP_STATUS_ACMPS0_Pos           (12)                                              /*!< ACMP_T::STATUS: ACMPS0 Position        */
+#define ACMP_STATUS_ACMPS0_Msk           (0x1ul << ACMP_STATUS_ACMPS0_Pos)                 /*!< ACMP_T::STATUS: ACMPS0 Mask            */
 
-#define ACMP_STATUS_ACMPS1_Pos          (13)                                        /*!< ACMP_T::STATUS: ACMPS1 Position            */
-#define ACMP_STATUS_ACMPS1_Msk          (0x1UL << ACMP_STATUS_ACMPS1_Pos)           /*!< ACMP_T::STATUS: ACMPS1 Mask                */
+#define ACMP_STATUS_ACMPS1_Pos           (13)                                              /*!< ACMP_T::STATUS: ACMPS1 Position        */
+#define ACMP_STATUS_ACMPS1_Msk           (0x1ul << ACMP_STATUS_ACMPS1_Pos)                 /*!< ACMP_T::STATUS: ACMPS1 Mask            */
 
-#define ACMP_STATUS_ACMPWO_Pos          (16)                                        /*!< ACMP_T::STATUS: ACMPWO Position            */
-#define ACMP_STATUS_ACMPWO_Msk          (0x1UL << ACMP_STATUS_ACMPWO_Pos)           /*!< ACMP_T::STATUS: ACMPWO Mask                */
+#define ACMP_STATUS_ACMPWO_Pos           (16)                                              /*!< ACMP_T::STATUS: ACMPWO Position        */
+#define ACMP_STATUS_ACMPWO_Msk           (0x1ul << ACMP_STATUS_ACMPWO_Pos)                 /*!< ACMP_T::STATUS: ACMPWO Mask            */
 
-#define ACMP_VREF_CRV0SEL_Pos           (0)                                         /*!< ACMP_T::VREF: CRV0SEL Position             */
-#define ACMP_VREF_CRV0SEL_Msk           (0x3fUL << ACMP_VREF_CRV0SEL_Pos)           /*!< ACMP_T::VREF: CRV0SEL Mask                 */
+#define ACMP_VREF_CRV0SEL_Pos            (0)                                               /*!< ACMP_T::VREF: CRV0SEL Position         */
+#define ACMP_VREF_CRV0SEL_Msk            (0x3ful << ACMP_VREF_CRV0SEL_Pos)                 /*!< ACMP_T::VREF: CRV0SEL Mask             */
 
-#define ACMP_VREF_CRV0SSEL_Pos          (6)                                         /*!< ACMP_T::VREF: CRV0SSEL Position            */
-#define ACMP_VREF_CRV0SSEL_Msk          (0x1UL << ACMP_VREF_CRV0SSEL_Pos)           /*!< ACMP_T::VREF: CRV0SSEL Mask                */
+#define ACMP_VREF_CRV0SSEL_Pos           (6)                                               /*!< ACMP_T::VREF: CRV0SSEL Position        */
+#define ACMP_VREF_CRV0SSEL_Msk           (0x1ul << ACMP_VREF_CRV0SSEL_Pos)                 /*!< ACMP_T::VREF: CRV0SSEL Mask            */
 
-#define ACMP_VREF_CRV0EN_Pos            (8)                                         /*!< ACMP_T::VREF: CRV0EN Position              */
-#define ACMP_VREF_CRV0EN_Msk            (0x1UL << ACMP_VREF_CRV0EN_Pos)             /*!< ACMP_T::VREF: CRV0EN Mask                  */
+#define ACMP_VREF_CRV0EN_Pos             (8)                                               /*!< ACMP_T::VREF: CRV0EN Position          */
+#define ACMP_VREF_CRV0EN_Msk             (0x1ul << ACMP_VREF_CRV0EN_Pos)                   /*!< ACMP_T::VREF: CRV0EN Mask              */
 
-#define ACMP_VREF_CRV1SEL_Pos           (16)                                        /*!< ACMP_T::VREF: CRV1SEL Position             */
-#define ACMP_VREF_CRV1SEL_Msk           (0x3fUL << ACMP_VREF_CRV1SEL_Pos)           /*!< ACMP_T::VREF: CRV1SEL Mask                 */
+#define ACMP_VREF_CRV1SEL_Pos            (16)                                              /*!< ACMP_T::VREF: CRV1SEL Position         */
+#define ACMP_VREF_CRV1SEL_Msk            (0x3ful << ACMP_VREF_CRV1SEL_Pos)                 /*!< ACMP_T::VREF: CRV1SEL Mask             */
 
-#define ACMP_VREF_CRV1SSEL_Pos          (22)                                        /*!< ACMP_T::VREF: CRV1SSEL Position            */
-#define ACMP_VREF_CRV1SSEL_Msk          (0x1UL << ACMP_VREF_CRV1SSEL_Pos)           /*!< ACMP_T::VREF: CRV1SSEL Mask                */
+#define ACMP_VREF_CRV1SSEL_Pos           (22)                                              /*!< ACMP_T::VREF: CRV1SSEL Position        */
+#define ACMP_VREF_CRV1SSEL_Msk           (0x1ul << ACMP_VREF_CRV1SSEL_Pos)                 /*!< ACMP_T::VREF: CRV1SSEL Mask            */
 
-#define ACMP_VREF_CRV1EN_Pos            (24)                                        /*!< ACMP_T::VREF: CRV1EN Position              */
-#define ACMP_VREF_CRV1EN_Msk            (0x1UL << ACMP_VREF_CRV1EN_Pos)             /*!< ACMP_T::VREF: CRV1EN Mask                  */
+#define ACMP_VREF_CRV1EN_Pos             (24)                                              /*!< ACMP_T::VREF: CRV1EN Position          */
+#define ACMP_VREF_CRV1EN_Msk             (0x1ul << ACMP_VREF_CRV1EN_Pos)                   /*!< ACMP_T::VREF: CRV1EN Mask              */
 
-#define ACMP_CALCTL_CALTRG0_Pos         (0)                                         /*!< ACMP_T::CALCTL: CALTRG0 Position           */
-#define ACMP_CALCTL_CALTRG0_Msk         (0x1UL << ACMP_CALCTL_CALTRG0_Pos)          /*!< ACMP_T::CALCTL: CALTRG0 Mask               */
+#define ACMP_CALCTL_CALTRG0_Pos          (0)                                               /*!< ACMP_T::CALCTL: CALTRG0 Position       */
+#define ACMP_CALCTL_CALTRG0_Msk          (0x1ul << ACMP_CALCTL_CALTRG0_Pos)                /*!< ACMP_T::CALCTL: CALTRG0 Mask           */
 
-#define ACMP_CALCTL_CALTRG1_Pos         (1)                                         /*!< ACMP_T::CALCTL: CALTRG1 Position           */
-#define ACMP_CALCTL_CALTRG1_Msk         (0x1UL << ACMP_CALCTL_CALTRG1_Pos)          /*!< ACMP_T::CALCTL: CALTRG1 Mask               */
+#define ACMP_CALCTL_CALTRG1_Pos          (1)                                               /*!< ACMP_T::CALCTL: CALTRG1 Position       */
+#define ACMP_CALCTL_CALTRG1_Msk          (0x1ul << ACMP_CALCTL_CALTRG1_Pos)                /*!< ACMP_T::CALCTL: CALTRG1 Mask           */
 
-#define ACMP_CALCTL_CALCLK0_Pos         (4)                                         /*!< ACMP_T::CALCTL: CALCLK0 Position           */
-#define ACMP_CALCTL_CALCLK0_Msk         (0x3UL << ACMP_CALCTL_CALCLK0_Pos)          /*!< ACMP_T::CALCTL: CALCLK0 Mask               */
+#define ACMP_CALSR_DONE0_Pos             (0)                                               /*!< ACMP_T::CALSR: DONE0 Position          */
+#define ACMP_CALSR_DONE0_Msk             (0x1ul << ACMP_CALSR_DONE0_Pos)                   /*!< ACMP_T::CALSR: DONE0 Mask              */
 
-#define ACMP_CALCTL_CALCLK1_Pos         (6)                                         /*!< ACMP_T::CALCTL: CALCLK1 Position           */
-#define ACMP_CALCTL_CALCLK1_Msk         (0x3UL << ACMP_CALCTL_CALCLK1_Pos)          /*!< ACMP_T::CALCTL: CALCLK1 Mask               */
-
-#define ACMP_CALCTL_OFFSETSEL_Pos       (8)                                         /*!< ACMP_T::CALCTL: OFFSETSEL Position         */
-#define ACMP_CALCTL_OFFSETSEL_Msk       (0x1UL << ACMP_CALCTL_OFFSETSEL_Pos)        /*!< ACMP_T::CALCTL: OFFSETSEL Mask             */
-
-#define ACMP_CALCTL_CALRVS_Pos          (16)                                        /*!< ACMP_T::CALCTL: CALRVS Position            */
-#define ACMP_CALCTL_CALRVS_Msk          (0x3UL << ACMP_CALCTL_CALRVS_Pos)           /*!< ACMP_T::CALCTL: CALRVS Mask                */
-
-#define ACMP_CALSR_DONE0_Pos            (0)                                         /*!< ACMP_T::CALSR: DONE0 Position              */
-#define ACMP_CALSR_DONE0_Msk            (0x1UL << ACMP_CALSR_DONE0_Pos)             /*!< ACMP_T::CALSR: DONE0 Mask                  */
-
-#define ACMP_CALSR_DONE1_Pos            (4)                                         /*!< ACMP_T::CALSR: DONE1 Position              */
-#define ACMP_CALSR_DONE1_Msk            (0x1UL << ACMP_CALSR_DONE1_Pos)             /*!< ACMP_T::CALSR: DONE1 Mask                  */
-
-#define ACMP_COFF_NCODE0_Pos            (0)                                         /*!< ACMP_T::COFF: NCODE0 Position              */
-#define ACMP_COFF_NCODE0_Msk            (0xfUL << ACMP_COFF_NCODE0_Pos)             /*!< ACMP_T::COFF: NCODE0 Mask                  */
+#define ACMP_CALSR_DONE1_Pos             (4)                                               /*!< ACMP_T::CALSR: DONE1 Position          */
+#define ACMP_CALSR_DONE1_Msk             (0x1ul << ACMP_CALSR_DONE1_Pos)                   /*!< ACMP_T::CALSR: DONE1 Mask              */
 
 
 /** @} ACMP_CONST */

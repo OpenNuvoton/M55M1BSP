@@ -14,6 +14,10 @@ extern "C"
 {
 #endif
 
+#if (defined (__GNUC__)) && !defined(__ARMCC_VERSION)
+#undef NULL
+#define NULL 0
+#endif
 
 /** @addtogroup Standard_Driver Standard Driver
   @{
@@ -95,7 +99,7 @@ int32_t UTCPD_ClearAlertStatus(int port, int AlertStClr)
   *             - \ref UTCPD_ALERTM_RXHRSTIE
   *             - \ref UTCPD_ALERTM_TXFAILIE
   *             - \ref UTCPD_ALERTM_TXDCUIE
-  *             - \ref UTCPD_ALERTM_TXOKIE
+  *             - \ref UTCPD_ALERTM_TXSOKIE
   *             - \ref UTCPD_ALERTM_VBAMHIE
   *             - \ref UTCPD_ALERTM_VBAMLIE
   *             - \ref UTCPD_ALERTM_FUTIE
@@ -124,7 +128,7 @@ int32_t UTCPD_EnableAlertMask(int port, int mask_set)
   *             - \ref UTCPD_ALERTM_RXHRSTIE
   *             - \ref UTCPD_ALERTM_TXFAILIE
   *             - \ref UTCPD_ALERTM_TXDCUIE
-  *             - \ref UTCPD_ALERTM_TXOKIE
+  *             - \ref UTCPD_ALERTM_TXSOKIE
   *             - \ref UTCPD_ALERTM_VBAMHIE
   *             - \ref UTCPD_ALERTM_VBAMLIE
   *             - \ref UTCPD_ALERTM_FUTIE
@@ -1114,11 +1118,11 @@ void UTCPD_frs_mux_selection(int port, uint32_t cc1frssel, uint32_t cc2frssel)
   * @details
   *
   */
-int32_t UTCPD_GetVoltagInfo(int port, uint16_t *pu16VbusVol, uint16_t *pu16VconnVol)
+void UTCPD_GetVoltagInfo(int port, uint16_t *pu16VbusVol, uint16_t *pu16VconnVol)
 {
-    tcpc_addr_read16(port, NULL, TCPC_REG_VBUS_VOLTAGE, pu16VbusVol);
+    tcpc_addr_read16(port, NULL, TCPC_REG_VBUS_VOLTAGE, (int *)pu16VbusVol);
     *pu16VbusVol &= TCPC_REG_VBUS_VOLTAGE_VBVOL;
-    tcpc_addr_read16(port, NULL, UTCPD_VCVOL, pu16VconnVol);
+    tcpc_addr_read16(port, NULL, UTCPD_VCVOL, (int *)pu16VconnVol);
 }
 
 
@@ -1141,19 +1145,24 @@ uint32_t UTCPD_Open(int port)
     /* Reset UTCPD  */
     SYS_ResetModule(SYS_UTCPD0RST);
 
-    /* Workaround solution for TESTCHIP */
+    /* Workaround solution */
     outp32((uint32_t)UTCPD0_BASE + 0x308, 0xA5);
+    // UTCPD trim value, if romap has , you can't write this code.
     outp32((uint32_t)UTCPD0_BASE + 0x118, 0x82648423);
+    //outp32((uint32_t)UTCPD0_BASE + 0x118, 0xB1538423);
 
-    /* Enable PHY */
-    /* The register IOMODE(SYS_UTCPDCTL) in TESTCHIP needs to be set to 1 */
-    SYS->UTCPDCTL = SYS->UTCPDCTL | (SYS_UTCPDCTL_POREN0_Msk | SYS_UTCPDCTL_IOMODE_Msk);
+    /* Set SYS_UTCPDCTL IO as CCx and CCDBx function */
+    SYS->UTCPDCTL &= ~(SYS_UTCPDCTL_IOMODE_Msk);
+    /* Enable UTCPD0 PHY */
+    SYS->UTCPDCTL |= SYS_UTCPDCTL_POREN0_Msk;
     tcpc_addr_write16(port, NULL, UTCPD_PHYCTL, 0x03);
 
-    /* Workaround solution for TESTCHIP */
+
+    /* Workaround solution */
     outp32((uint32_t)UTCPD0_BASE + 0x308, 0);
     UTCPD_frs_mux_selection(port, 1, 1);
     UTCPD_vconn_mux_selection(port, 1, 1);
+    UTCPD->IE = 0xfff; /* enable interrupt */
 
     return 0;
 }

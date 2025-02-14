@@ -320,7 +320,7 @@
 //#define MBEDTLS_RIPEMD160_ALT
 #define MBEDTLS_RSA_ALT
 //#define MBEDTLS_SHA1_ALT
-#define MBEDTLS_SHA256_ALT
+//#define MBEDTLS_SHA256_ALT
 //#define MBEDTLS_SHA512_ALT
 
 /*
@@ -654,7 +654,7 @@
 #define MBEDTLS_ECP_DP_BP512R1_ENABLED
 /* Montgomery curves (supporting ECP) */
 //#define MBEDTLS_ECP_DP_CURVE25519_ENABLED
-#define MBEDTLS_ECP_DP_CURVE448_ENABLED
+//#define MBEDTLS_ECP_DP_CURVE448_ENABLED
 
 /**
  * \def MBEDTLS_ECP_NIST_OPTIM
@@ -3319,3 +3319,4 @@
 //#define MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED
 
 /* \} name SECTION: Customisation configuration options */
+

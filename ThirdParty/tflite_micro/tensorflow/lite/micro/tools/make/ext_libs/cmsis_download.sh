@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 #
 # Called with following arguments:
 # 1 - Path to the downloads folder which is typically
-#     tensorflow/lite/micro/tools/make/downloads
+#     ${TENSORFLOW_ROOT}/tensorflow/lite/micro/tools/make/downloads
+# 2 - (optional) TENSORFLOW_ROOT: path to root of the TFLM tree (relative to directory from where the script is called).
 #
 # This script is called from the Makefile and uses the following convention to
 # enable determination of sucess/failure:
@@ -31,11 +32,8 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR=${SCRIPT_DIR}/../../../../../..
-cd "${ROOT_DIR}"
-
-source tensorflow/lite/micro/tools/make/bash_helpers.sh
+TENSORFLOW_ROOT=${2}
+source ${TENSORFLOW_ROOT}tensorflow/lite/micro/tools/make/bash_helpers.sh
 
 DOWNLOADS_DIR=${1}
 if [ ! -d ${DOWNLOADS_DIR} ]; then
@@ -49,9 +47,9 @@ if [ -d ${DOWNLOADED_CMSIS_PATH} ]; then
   echo >&2 "${DOWNLOADED_CMSIS_PATH} already exists, skipping the download."
 else
 
-  ZIP_PREFIX="977abe9849781a2e788b02282986480ff4e25ea6"
+  ZIP_PREFIX="e94a96201a97be3e84d3d6ef081d2f0f7db9b5fd"
   CMSIS_URL="http://github.com/ARM-software/CMSIS_5/archive/${ZIP_PREFIX}.zip"
-  CMSIS_MD5="7f87371ed9e8ac2749fe49598700a448"
+  CMSIS_MD5="e72a40716ca8adca690b91819c69d83e"
 
   # wget is much faster than git clone of the entire repo. So we wget a specific
   # version and can then apply a patch, as needed.

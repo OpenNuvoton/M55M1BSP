@@ -27,19 +27,19 @@
 */
 /*
 // <q.0> 0: eMPU_ATTR_DEV_nGnRnE
-// <i> Device-nGnRnE
+// <i> Device memory type non Gathering, non Re-ordering, non Early Write Acknowledgement
 // <q.1> 1: eMPU_ATTR_DEV_nGnRE
-// <i> Device-nGnRE
+// <i> Device memory type non Gathering, non Re-ordering, Early Write Acknowledgement
 // <q.2> 2: eMPU_ATTR_DEV_nGRE
-// <i> Device-nGRE
+// <i> Device memory type non Gathering, Re-ordering, Early Write Acknowledgement
 // <q.3> 3: eMPU_ATTR_DEV_GRE
-// <i> Device-GRE
+// <i> Device memory type Gathering, Re-ordering, Early Write Acknowledgement
 // <q.4> 4: eMPU_ATTR_NON_CACHEABLE
-// <i> Non-cacheable
+// <i> Attribute for non-cacheable normal memory
 // <q.5> 5: eMPU_ATTR_CACHEABLE_WTRA
-// <i> Cacheable-WTRA
+// <i> Attribute for cacheable normal memory with Non-transient, Write-Through, Read-allocate, Not Write-allocate
 // <q.6> 6: eMPU_ATTR_CACHEABLE_WBWARA
-// <i> Cacheable-WBWARA
+// <i> Attribute for cacheable normal memory with Non-transient, Write-Back, Read-allocate, Write-allocate
 */
 #define MPU_INIT_MEM_ATTRS  0x7F
 /*
@@ -48,6 +48,7 @@
 /*
 //   <e> MPU Region 0 (Lowest priority)
 //   <i> Setup MPU Region 0 Attributes
+//   <i> Default Set to EBI Memory Space
 */
 #define MPU_INIT_REGION0    1
 /*
@@ -96,16 +97,17 @@
 /*
 //   <e> MPU Region 1
 //   <i> Setup MPU Region 1 Attributes
+//   <i> Default Set to Aliased SRAM + HyperRAM Memory Space
 */
 #define MPU_INIT_REGION1    1
 /*
 //     <o>Base Address <0-0xFFFFFFE0>
 */
-#define MPU_INIT_BASE1     0x80000000       /* Base address of MPU region 0 */
+#define MPU_INIT_BASE1     0x81F00000       /* Base address of MPU region 1 */
 /*
 //     <o>Region Size <0x20-0xFFFFFFFF:0x20>
 */
-#define MPU_INIT_SIZE1     0x04000000       /* Size of MPU region 1 */
+#define MPU_INIT_SIZE1     0x02100000       /* Size of MPU region 1 */
 #define MPU_INIT_LIMIT1    (MPU_INIT_BASE1 + MPU_INIT_SIZE1 - 1)
 /*
 //    <o>  Memory attribute
@@ -117,14 +119,14 @@
 //      <5=> Cacheable-WTRA
 //      <6=> Cacheable-WBWARA
 */
-#define MPU_MEM_ATTR1       0x0
+#define MPU_MEM_ATTR1       0x6
 /*
 //  <h> Access attribute
 //   <q.1> Read-Only
 //   <q.2> Non-Privileged
 //   <q.3> Non-executable
 */
-#define MPU_MEM_ACC_ATTR1    0xC
+#define MPU_MEM_ACC_ATTR1    0x4
 /*
 //   </h>
 */

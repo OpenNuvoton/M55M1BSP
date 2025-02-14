@@ -16,22 +16,25 @@ uint8_t volatile g_u8EP5Ready = 0;
 
 void GPIO_Init(void)
 {
-    /* Enable PB0, PC9~12, PE4 */
-    PB->MODE |= 0x3;
-    PC->MODE |= 0x3fc0000;
-    PE->MODE |= 0x300;
-    PB->INTSRC |= 0x1;
-    PC->INTSRC |= 0x1e00;
-    PE->INTSRC |= 0x10;
-    PB->INTEN |= 0x1 | (0x1 << 16);
-    PC->INTEN |= 0x1e00 | (0x1e00 << 16);
-    PE->INTEN |= 0x10 | (0x10 << 16);
-    PB->DBEN |= 0x1;
-    PC->DBEN |= 0x1e00;      // Enable key debounce
-    PE->DBEN |= 0x10;
-    PB->DBCTL = 0x16;
-    PC->DBCTL = 0x16;
-    PE->DBCTL = 0x16; // Debounce time is about 6ms
+    GPIO_SetMode(PB, BIT0, GPIO_MODE_QUASI);
+    GPIO_SetMode(PC, BIT9 | BIT10 | BIT11 | BIT12, GPIO_MODE_QUASI);
+    GPIO_SetMode(PE, BIT4, GPIO_MODE_QUASI);
+    GPIO_CLR_INT_FLAG(PB, BIT0);
+    GPIO_CLR_INT_FLAG(PC, BIT9 | BIT10 | BIT11 | BIT12);
+    GPIO_CLR_INT_FLAG(PE, BIT4);
+    GPIO_EnableInt(PB, 0, GPIO_INT_BOTH_EDGE);
+    GPIO_EnableInt(PC, 9, GPIO_INT_BOTH_EDGE);
+    GPIO_EnableInt(PC, 10, GPIO_INT_BOTH_EDGE);
+    GPIO_EnableInt(PC, 11, GPIO_INT_BOTH_EDGE);
+    GPIO_EnableInt(PC, 12, GPIO_INT_BOTH_EDGE);
+    GPIO_EnableInt(PE, 4, GPIO_INT_BOTH_EDGE);
+    // Enable key debounce
+    GPIO_ENABLE_DEBOUNCE(PB, BIT0);
+    GPIO_ENABLE_DEBOUNCE(PC, BIT9 | BIT10 | BIT11 | BIT12);
+    GPIO_ENABLE_DEBOUNCE(PE, BIT4);
+    PB->DBCTL = GPIO_DBCTL_DBCLKSRC_Msk | GPIO_DBCTL_DBCLKSEL_64;
+    PC->DBCTL = GPIO_DBCTL_DBCLKSRC_Msk | GPIO_DBCTL_DBCLKSEL_64;
+    PE->DBCTL = GPIO_DBCTL_DBCLKSRC_Msk | GPIO_DBCTL_DBCLKSEL_64; // Debounce time is about 6ms
     //    NVIC_EnableIRQ(GPB_IRQn);
     //    NVIC_EnableIRQ(GPC_IRQn);
     //    NVIC_EnableIRQ(GPE_IRQn);

@@ -23,7 +23,7 @@ uint16_t g_u16CtrlSignal = 0;     /* BIT0: DTR(Data Terminal Ready) , BIT1: RTS(
 
 /*--------------------------------------------------------------------------*/
 #define RXBUFSIZE           512 /* RX buffer size */
-#define TXBUFSIZE           512 /* RX buffer size */
+#define TXBUFSIZE           512 /* TX buffer size */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
@@ -53,12 +53,12 @@ void SetDebugUartCLK(void)
 #if (CRYSTAL_LESS)
 
     /* Select UART clock source from HIRC */
-    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART6SEL_HIRC, CLK_UARTDIV0_UART6DIV(1));
+    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART0SEL_HIRC, CLK_UARTDIV0_UART0DIV(1));
 
 #else
 
     /* Select UART clock source from HXT */
-    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART6SEL_HXT, CLK_UARTDIV0_UART6DIV(1));
+    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART0SEL_HXT, CLK_UARTDIV0_UART0DIV(1));
 
 #endif
 
@@ -79,19 +79,19 @@ void SYS_Init(void)
 
 #if (!CRYSTAL_LESS)
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
-    /* Enable APLL1 96MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, 96000000, CLK_APLL1_SELECT);
+    /* Enable APLL1 192MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_192MHZ, CLK_APLL1_SELECT);
 
     /* Select USB clock source as APLL1/2 and USB clock divider as 2 */
-    CLK_SetModuleClock(USBD0_MODULE, CLK_USBSEL_USBSEL_APLL1_DIV2, CLK_USBDIV_USBDIV(1));
+    CLK_SetModuleClock(USBD0_MODULE, CLK_USBSEL_USBSEL_APLL1_DIV2, CLK_USBDIV_USBDIV(2));
 
 #else
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Enable HIRC48M clock */
     CLK_EnableXtalRC(CLK_SRCCTL_HIRC48MEN_Msk);
@@ -119,7 +119,7 @@ void SYS_Init(void)
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 
-    /* Enable OTG0_ module clock */
+    /* Enable OTG0 module clock */
     CLK_EnableModuleClock(OTG0_MODULE);
 
     /* Select USBD */
@@ -363,11 +363,13 @@ void PowerDown(void)
     /* Wakeup Enable */
     USBD_ENABLE_INT(USBD_INTEN_WKEN_Msk);
 
-    PMC_PowerDown();
+    if (!USBD_IS_ATTACHED())
+    {
 
-    /* Clear PWR_DOWN_EN if it is not clear by itself */
-    if (PMC->PWRCTL & PMC_PWRCTL_PDEN_Msk)
-        PMC->PWRCTL ^= PMC_PWRCTL_PDEN_Msk;
+        UART_WAIT_TX_EMPTY(DEBUG_PORT);
+
+        PMC_PowerDown();
+    }
 
     /* Lock protected registers */
     SYS_LockReg();

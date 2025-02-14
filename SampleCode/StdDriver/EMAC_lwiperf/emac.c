@@ -17,19 +17,14 @@
 #include "lwip/apps/lwiperf.h"
 #include "lwip/netif.h"
 
-
-#if (LWIP_USING_HW_CHECKSUM == 1)
-    #define USING_HW_CHECKSUM
-#endif
-
-#ifdef NVT_DCACHE_ON
-NVT_NONCACHEABLE static synopGMACdevice GMACdev = {0};
+static synopGMACdevice GMACdev = {0};
+#if (NVT_DCACHE_ON == 1)
+/* Descriptor and data buffer are placed in a non-cacheable region */
 NVT_NONCACHEABLE static DmaDesc tx_desc[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};
 NVT_NONCACHEABLE static DmaDesc rx_desc[RECEIVE_DESC_SIZE] __attribute__((aligned(32))) = {0};
 NVT_NONCACHEABLE static PKT_FRAME_T tx_buf[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};
 NVT_NONCACHEABLE static PKT_FRAME_T rx_buf[RECEIVE_DESC_SIZE] __attribute__((aligned(32))) = {0};
 #else
-static synopGMACdevice GMACdev = {0};
 static DmaDesc tx_desc[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};
 static DmaDesc rx_desc[RECEIVE_DESC_SIZE] __attribute__((aligned(32))) = {0};
 static PKT_FRAME_T tx_buf[TRANSMIT_DESC_SIZE] __attribute__((aligned(32))) = {0};
@@ -37,15 +32,6 @@ static PKT_FRAME_T rx_buf[RECEIVE_DESC_SIZE] __attribute__((aligned(32))) = {0};
 #endif
 
 extern uint32_t queue_try_put(struct pbuf *p);
-
-struct nu_emac_lwip_pbuf
-{
-    struct pbuf_custom p;           // lwip pbuf
-    PKT_FRAME_T *psPktFrameDataBuf; // emac descriptor
-};
-
-typedef struct nu_emac_lwip_pbuf *nu_emac_lwip_pbuf_t;
-LWIP_MEMPOOL_DECLARE(emac_rx, RECEIVE_DESC_SIZE, sizeof(struct nu_emac_lwip_pbuf), "EMAC0 RX PBUF pool");
 
 void EMAC_Open(uint8_t *macaddr)
 {
@@ -105,7 +91,7 @@ void EMAC_Open(uint8_t *macaddr)
 
     synopGMAC_pause_control(&GMACdev); // This enables the pause control in Full duplex mode of operation
 
-#if defined(USING_HW_CHECKSUM)
+#if (LWIP_USING_HW_CHECKSUM == 1)
     /* IPC Checksum offloading is enabled for this driver. Should only be used if Full Ip checksumm offload engine is configured in the hardware */
     synopGMAC_enable_rx_chksum_offload(&GMACdev);    // Enable the offload engine in the receive path
     synopGMAC_rx_tcpip_chksum_drop_enable(&GMACdev); // This is default configuration, DMA drops the packets if error in encapsulated ethernet payload
@@ -130,8 +116,6 @@ void EMAC_Open(uint8_t *macaddr)
     printf("Link speed......%d\n", GMACdev.Speed);
 
     synopGMAC_set_mode(&GMACdev, GMACdev.Speed);
-    /* Initial zero_copy rx pool */
-    memp_init_pool(&memp_emac_rx);
 
     NVIC_EnableIRQ(EMAC0_IRQn);
 }
@@ -141,7 +125,6 @@ void EMAC_Open(uint8_t *macaddr)
  *----------------------------------------------------------------------------*/
 NVT_ITCM void EMAC0_IRQHandler(void)
 {
-    uint32_t u32Status;
     u32 interrupt, dma_status_reg;
     s32 status;
     u32 u32GmacIntSts;
@@ -284,16 +267,12 @@ NVT_ITCM void EMAC0_IRQHandler(void)
         /* Enable the interrrupt before returning from ISR */
         synopGMAC_enable_interrupt(&GMACdev, u32GmacDmaIE);
     }
-
-    /* CPU read interrupt flag register to wait write(clear) instruction completement */
-    u32Status = synopGMACReadReg(GMACdev.MacBase, GmacInterruptStatus);
 }
 
 uint32_t EMAC_ReceivePkt(void)
 {
     uint32_t len = 0;
     PKT_FRAME_T *psPktFrame;
-    struct pbuf *pbuf;
 
     if ((len = synop_handle_received_data(&GMACdev, &psPktFrame)) > 0)
     {
@@ -304,7 +283,6 @@ uint32_t EMAC_ReceivePkt(void)
         {
             /* Copy ethernet frame into pbuf */
             pbuf_take(p, psPktFrame, len);
-            synopGMAC_set_rx_qptr(&GMACdev, (u32)psPktFrame, PKT_FRAME_BUF_SIZE, 0);
 
             /* Put in a queue which is processed in main loop */
             if (!queue_try_put(p))
@@ -314,6 +292,8 @@ uint32_t EMAC_ReceivePkt(void)
                 pbuf_free(p);
             }
         }
+
+        synopGMAC_set_rx_qptr(&GMACdev, (u32)psPktFrame, PKT_FRAME_BUF_SIZE, 0);
     }
     else
     {
@@ -331,13 +311,11 @@ uint8_t *EMAC_AllocatePktBuf(void)
 
 int32_t EMAC_TransmitPkt(uint8_t *pbuf, uint32_t len)
 {
-    u32 offload_needed;
-
     if ((pbuf != NULL) && (len > 0) &&
             !synopGMAC_is_desc_owned_by_dma(GMACdev.TxNextDesc))
     {
-
-#if defined(USING_HW_CHECKSUM)
+        u32 offload_needed;
+#if (LWIP_USING_HW_CHECKSUM == 1)
         offload_needed = 1;
 #else
         offload_needed = 0;

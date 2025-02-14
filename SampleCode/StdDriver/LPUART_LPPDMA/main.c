@@ -22,8 +22,15 @@
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t LPUART_TEST_LENGTH = 64;
-static uint8_t SrcArray[64] __attribute__((section(".lpSram")));
-static uint8_t DestArray[64] __attribute__((section(".lpSram")));
+
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    static uint8_t SrcArray[DCACHE_ALIGN_LINE_SIZE(64)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+    static uint8_t DestArray[DCACHE_ALIGN_LINE_SIZE(64)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+#else
+    static uint8_t SrcArray[64] __attribute__((section(".lpSram")));
+    static uint8_t DestArray[64] __attribute__((section(".lpSram")));
+#endif
 
 volatile int32_t IntCnt;
 volatile int32_t IsTestOver;
@@ -89,11 +96,11 @@ void LPPDMA_LPUART_TxTest(void)
     /* Set source/destination address and attributes */
     LPPDMA_SetTransferAddr(LPPDMA, LPUART_TX_DMA_CH, (uint32_t)SrcArray, LPPDMA_SAR_INC, (uint32_t)&LPUART0->DAT, LPPDMA_DAR_FIX);
 
-    /* Set request source; set basic mode. */
-    LPPDMA_SetTransferMode(LPPDMA, LPUART_TX_DMA_CH, LPPDMA_LPUART0_TX, FALSE, 0);
-
     /* Single request type */
     LPPDMA_SetBurstType(LPPDMA, LPUART_TX_DMA_CH, LPPDMA_REQ_SINGLE, 0);
+
+    /* Set request source; set basic mode. */
+    LPPDMA_SetTransferMode(LPPDMA, LPUART_TX_DMA_CH, LPPDMA_LPUART0_TX, FALSE, 0);
 
     /* Disable table interrupt */
     LPPDMA_DisableInt(LPPDMA, LPUART_TX_DMA_CH, LPPDMA_INT_TEMPTY);
@@ -107,15 +114,18 @@ void LPPDMA_LPUART_RxTest(void)
     /* LPUART Rx LPPDMA channel configuration */
     /* Set transfer width (8 bits) and transfer count */
     LPPDMA_SetTransferCnt(LPPDMA, LPUART_RX_DMA_CH, LPPDMA_WIDTH_8, LPUART_TEST_LENGTH);
-
+#if (NVT_DCACHE_ON == 1)
+    /* Clean the data cache for the destination buffer of LPUART PDMA RX channel */
+    SCB_InvalidateDCache_by_Addr(&DestArray, sizeof(DestArray));
+#endif
     /* Set source/destination address and attributes */
     LPPDMA_SetTransferAddr(LPPDMA, LPUART_RX_DMA_CH, (uint32_t)&LPUART0->DAT, LPPDMA_SAR_FIX, (uint32_t)DestArray, LPPDMA_DAR_INC);
 
-    /* Set request source; set basic mode. */
-    LPPDMA_SetTransferMode(LPPDMA, LPUART_RX_DMA_CH, LPPDMA_LPUART0_RX, FALSE, 0);
-
     /* Single request type */
     LPPDMA_SetBurstType(LPPDMA, LPUART_RX_DMA_CH, LPPDMA_REQ_SINGLE, 0);
+
+    /* Set request source; set basic mode. */
+    LPPDMA_SetTransferMode(LPPDMA, LPUART_RX_DMA_CH, LPPDMA_LPUART0_RX, FALSE, 0);
 
     /* Disable table interrupt */
     LPPDMA_DisableInt(LPPDMA, LPUART_RX_DMA_CH, LPPDMA_INT_TEMPTY);
@@ -242,6 +252,13 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
 /*---------------------------------------------------------------------------------------------------------*/
 void LPPDMA_LPUART(int32_t i32option)
 {
+#if (NVT_DCACHE_ON == 1)
+    /* If DCACHE is enabled, clean the data cache for the two buffers before writing to them and enabling DMA */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_CleanDCache_by_Addr((uint32_t *)&SrcArray, sizeof(SrcArray));
+    SCB_CleanDCache_by_Addr((uint32_t *)&DestArray, sizeof(DestArray));
+#endif
+
     /* Source data initiation */
     BuildSrcPattern((uint32_t)SrcArray, LPUART_TEST_LENGTH);
     ClearBuf((uint32_t)DestArray, LPUART_TEST_LENGTH, 0xFF);
@@ -354,14 +371,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -433,6 +444,7 @@ int32_t main(void)
 
     /* Init LPUART0 */
     LPUART0_Init();
+
     /* Lock protected registers */
     SYS_LockReg();
 
@@ -449,10 +461,10 @@ int32_t main(void)
     {
         printf("\n\n");
         printf("+------------------------------------------------------------------------+\n");
-        printf("|                      LPUART LPPDMA Driver Sample Code                      |\n");
+        printf("|                      LPUART LPPDMA Driver Sample Code                  |\n");
         printf("+------------------------------------------------------------------------+\n");
-        printf("| [1] Using TWO LPPDMA channel to test. < TX1(CH1)-->RX1(CH0) >            |\n");
-        printf("| [2] Using ONE LPPDMA channel to test. < TX1-->RX1(CH0) >                 |\n");
+        printf("| [1] Using TWO LPPDMA channel to test. < TX1(CH1)-->RX1(CH0) >          |\n");
+        printf("| [2] Using ONE LPPDMA channel to test. < TX1-->RX1(CH0) >               |\n");
         printf("+------------------------------------------------------------------------+\n");
         unItem = getchar();
 

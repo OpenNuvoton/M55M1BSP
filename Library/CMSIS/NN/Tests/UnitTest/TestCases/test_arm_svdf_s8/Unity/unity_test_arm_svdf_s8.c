@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2021 Arm Limited or its affiliates. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright 2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -10,7 +10,7 @@
  * www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an AS IS BASIS, WITHOUT
+ * distributd under the License is distributed on an AS IS BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -44,10 +44,5 @@ void setUp(void)
  */
 void tearDown(void) {}
 
-void test_svdf_arm_svdf_s8(void) { svdf_arm_svdf_s8(); }
-
-void test_svdf_1_arm_svdf_s8(void) { svdf_1_arm_svdf_s8(); }
-
-void test_svdf_2_arm_svdf_s8(void) { svdf_2_arm_svdf_s8(); }
-
-void test_svdf_3_arm_svdf_s8(void) { svdf_3_arm_svdf_s8(); }
+void test_svdf_int8_arm_s8(void) { svdf_int8_arm_svdf_s8(); }
+void test_svdf_int8_2_arm_s8(void) { svdf_int8_2_arm_svdf_s8(); }

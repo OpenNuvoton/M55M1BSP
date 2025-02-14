@@ -15,7 +15,7 @@ typedef int32_t (*PFN_INIT_SENSOR_FUNC)(uint32_t u32Param);
 
 typedef struct s_sensor_info
 {
-    char        m_strName[16];
+    char        m_strName[32];
     uint32_t    m_u32Polarity;
     uint32_t    m_u32InputFormat;
     uint16_t    m_u16Width;
@@ -23,7 +23,6 @@ typedef struct s_sensor_info
     PFN_INIT_SENSOR_FUNC    pfnInitSensor;
 } S_SENSOR_INFO;
 
-extern S_SENSOR_INFO g_sSensorNT99141;
-extern S_SENSOR_INFO g_sSensorHM1055;
+extern S_SENSOR_INFO g_sSensorHM1055_VGA_YUV422;
 
 #endif  // __SENSOR_H__

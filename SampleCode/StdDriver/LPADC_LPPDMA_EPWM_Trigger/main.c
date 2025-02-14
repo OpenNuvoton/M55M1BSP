@@ -17,7 +17,12 @@ volatile uint32_t g_u32IsTestOver = 0;
 /* M55M1: Because LPPDMA only can access LPSRAM,
    the g_i32ConversionData[] MUST be allocated at LPSRAM area 0x20310000 ~ 0x20311FFF (8 KB).
  */
-volatile uint32_t g_i32ConversionData[7] __attribute__((section(".lpSram")));
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    volatile uint32_t g_i32ConversionData[DCACHE_ALIGN_LINE_SIZE(7)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+#else
+    volatile uint32_t g_i32ConversionData[7] __attribute__((section(".lpSram")));
+#endif
 
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
     extern void initialise_monitor_handles(void);
@@ -61,20 +66,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -162,12 +155,12 @@ void LPPDMA_Init()
     /* Open LPPDMA Channel 1 */
     LPPDMA_Open(LPPDMA, BIT1);
 
-    ReloadLPPDMA();
-
     /* Set source address as LPADC LPPDMA Current Transfer Data register (no increment) and destination address as g_i32ConversionData array (increment) */
     LPPDMA_SetTransferAddr(LPPDMA, 1, (uint32_t) & (LPADC0->ADPDMA), LPPDMA_SAR_FIX, (uint32_t)g_i32ConversionData, LPPDMA_DAR_INC);
 
     LPPDMA_SetBurstType(LPPDMA, 1, LPPDMA_REQ_SINGLE, LPPDMA_BURST_1);
+
+    ReloadLPPDMA();
 
     LPPDMA_CLR_TD_FLAG(LPPDMA, LPPDMA_TDSTS_TDIF1_Msk);
     LPPDMA_EnableInt(LPPDMA, 1, LPPDMA_INT_TRANS_DONE);
@@ -186,13 +179,20 @@ void LPADC_FunctionTest()
 
     printf("\nIn this test, software will get 6 conversion result from the specified channel.\n");
 
-    /* Calibration LPADC */
-    LPADC_Calibration(LPADC0);
-
     while (1)
     {
-        /* reload LPPDMA configuration for next transmission */
+#if (NVT_DCACHE_ON == 1)
+        /* If DCACHE is enabled, clean the data cache for the buffer before writing to them and enabling DMA */
+        /* This is to ensure that the data written to the cache is actually written to the memory */
+        SCB_CleanDCache_by_Addr((uint32_t *)&g_i32ConversionData, sizeof(g_i32ConversionData));
+#endif
+        /* Reload LPPDMA configuration for next transmission */
         ReloadLPPDMA();
+
+#if (NVT_DCACHE_ON == 1)
+        /* Clean the data cache for the destination buffer of LPADC PDMA RX channel */
+        SCB_InvalidateDCache_by_Addr((uint32_t *)&g_i32ConversionData, sizeof(g_i32ConversionData));
+#endif
 
         printf("Select input mode:\n");
         printf("  [1] Single end input (channel 1 only)\n");

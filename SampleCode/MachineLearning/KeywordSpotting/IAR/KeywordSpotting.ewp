@@ -70,11 +70,11 @@
                 </option>
                 <option>
                     <name>OGLastSavedByProductVersion</name>
-                    <state>9.40.1.63870</state>
+                    <state>9.50.2.71646</state>
                 </option>
                 <option>
                     <name>OGChipSelectEditMenu</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>GenLowLevelInterface</name>
@@ -120,7 +120,7 @@
                 </option>
                 <option>
                     <name>GFPUDeviceSlave</name>
-                    <state>M55M1 series	Nuvoton M55M1 series</state>
+                    <state>M55M1x2LJAE series	Nuvoton M55M1x2LJAE series</state>
                 </option>
                 <option>
                     <name>FPU2</name>
@@ -180,7 +180,7 @@
                 </option>
                 <option>
                     <name>DSPExtension</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>TrustZone</name>
@@ -189,7 +189,7 @@
                 <option>
                     <name>TrustZoneModes</name>
                     <version>0</version>
-                    <state>1</state>
+                    <state>0</state>
                 </option>
                 <option>
                     <name>OGAarch64Abi</name>
@@ -229,7 +229,6 @@
                     <name>CCDefines</name>
                     <state>MODEL_DS_CNN</state>
                     <state>NVT_VECTOR_ON_FLASH</state>
-                    <state>NVT_DCACHE_ON</state>
                     <state>TF_LITE_STATIC_MEMORY</state>
                     <state>ARM_MATH_DSP</state>
                     <state>ARM_NPU</state>
@@ -273,7 +272,7 @@
                 </option>
                 <option>
                     <name>CCDiagSuppress</name>
-                    <state>Pe550, Pe997</state>
+                    <state>Pe550, Pe997, Pe111</state>
                 </option>
                 <option>
                     <name>CCDiagRemark</name>
@@ -310,11 +309,11 @@
                 </option>
                 <option>
                     <name>IExtraOptionsCheck</name>
-                    <state>1</state>
+                    <state>0</state>
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state>--diag_suppress Pe550</state>
+                    <state></state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -377,6 +376,7 @@
                     <state>$PROJ_DIR$\..\Pattern\include</state>
                     <state>$PROJ_DIR$\..\ProfilerCounter\include</state>
                     <state>$PROJ_DIR$\..</state>
+                    <state>$PROJ_DIR$\..\..\..\..\ThirdParty\tflite_micro\_deps\tensorflow-gemlowp-src</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1218,7 +1218,7 @@
                     <option>
                         <name>CCAllowList</name>
                         <version>1</version>
-                        <state>00000000</state>
+                        <state>11111110</state>
                     </option>
                     <option>
                         <name>CCDebugInfo</name>
@@ -1288,6 +1288,7 @@
                         <state>$PROJ_DIR$\..\..\..\..\Library\CMSIS\DSP\Include</state>
                         <state>$PROJ_DIR$\..\..\..\..\Library\CMSIS\Core\Include</state>
                         <state>$PROJ_DIR$\..\ProfilerCounter\include</state>
+                        <state>$PROJ_DIR$\..\..\..\..\ThirdParty\tflite_micro\_deps\tensorflow-gemlowp-src</state>
                     </option>
                     <option>
                         <name>CCStdIncCheck</name>
@@ -1303,7 +1304,7 @@
                     </option>
                     <option>
                         <name>CCOptLevel</name>
-                        <state>1</state>
+                        <state>3</state>
                     </option>
                     <option>
                         <name>CCOptStrategy</name>
@@ -1312,7 +1313,7 @@
                     </option>
                     <option>
                         <name>CCOptLevelSlave</name>
-                        <state>1</state>
+                        <state>3</state>
                     </option>
                     <option>
                         <name>CCPosIndRopi</name>
@@ -1446,6 +1447,9 @@
             <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\lppdma.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\pmc.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\retarget.c</name>
         </file>
         <file>
@@ -1471,6 +1475,9 @@
         <name>Model</name>
         <file>
             <name>$PROJ_DIR$\..\Model\ds_cnn_m_quantized_vela_H256.tflite.cpp</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Model\kws_micronet_m_vela_H256.tflite.cpp</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Model\KwsModel.cpp</name>

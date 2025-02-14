@@ -32,7 +32,6 @@ extern "C"
 #define KDF_KS_OWNER_HMAC       (0x1UL << KDF_KSCTL_OWNER_Pos)  /*!< Only for HMAC engine use              */
 #define KDF_KS_OWNER_ECC        (0x4UL << KDF_KSCTL_OWNER_Pos)  /*!< Only for ECC engine use               */
 #define KDF_KS_OWNER_CPU        (0x5UL << KDF_KSCTL_OWNER_Pos)  /*!< Only for CPU use                      */
-#define KDF_KS_OWNER_CHACHA     (0x6UL << KDF_KSCTL_OWNER_Pos)  /*!< Only for ChaCha engine use            */
 #define KDF_KS_PRIV             (0x1UL << KDF_KSCTL_PRIV_Pos)   /*!< Privilege key                         */
 #define KDF_KS_NON_PRIV         (0x0UL << KDF_KSCTL_PRIV_Pos)   /*!< Non-privilege key                     */
 #define KDF_KS_SECURE           (0x1UL << KDF_KSCTL_TRUST_Pos)  /*!< Secure key                            */

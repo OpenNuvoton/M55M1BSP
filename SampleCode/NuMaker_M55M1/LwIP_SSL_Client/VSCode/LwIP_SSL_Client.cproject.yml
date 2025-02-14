@@ -1,0 +1,226 @@
+project:
+  packs:
+    - pack: Nuvoton::NuMicro_DFP
+  setups:
+    - output:
+        # bin, elf, hex, lib
+        type: bin
+    - setup: Options for Project
+      processor:
+        fpu: dp
+        mve: fp
+        endian: little
+        trustzone: "off"
+      add-path:
+        - ../../../../Library/CMSIS/Core/Include
+        - ../../../../Library/Device/Nuvoton/M55M1/Include
+        - ../../../../Library/StdDriver/inc
+        - ../../../../ThirdParty/FreeRTOS/Source/include
+        - ../../../../ThirdParty/FreeRTOS/Demo/Common/include
+        - ../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure
+        - ../../lwIP/include
+        - ../../lwIP/drv_emac
+        - ../../../../ThirdParty/lwIP/src/include
+        - ..
+        - ../../../../Library/StdDriver/inc/emac
+        - ../../../../ThirdParty/mbedtls/include
+        - ../../../../ThirdParty/mbedtls/library
+        - ../../../../ThirdParty/mbedtls/tests/include
+      misc:
+        - for-compiler: AC6
+          C:
+            - -std=c11
+          C-CPP:
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -D__MICROLIB
+          CPP:
+            - -xc++
+            - -std=c++11
+          ASM:
+            - -masm=auto
+          Link:
+            - --library_type=microlib --map --load_addr_map_info --xref --callgraph --symbols
+            - --info sizes --info totals --info unused --info veneers
+            - --strict --summary_stderr --info summarysizes
+        - for-compiler: GCC
+          C:
+            - -std=gnu11
+          C-CPP:
+            - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+          Link:
+            - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
+            - -Wl,--gc-sections,-Map="$elf()$.map"
+  linker:
+    - script: M55M1.scatter
+      for-compiler: AC6
+    - script: ../../../../Library/Device/Nuvoton/M55M1/Source/GCC/M55M1.ld
+      for-compiler: GCC
+  groups:
+    - group: CMSIS
+      files:
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+    - group: User
+      files:
+        - file: ../main.c
+        - file: ../net_sockets.c
+        - file: ../ssl_client.c
+    - group: drv_emac
+      files:
+        - file: ../../lwIP/drv_emac/emac.c
+        - file: ../../lwIP/drv_emac/mii.c
+    - group: FreeRTOS
+      files:
+        - file: ../../../../ThirdParty/FreeRTOS/Source/list.c
+        - file: ../../../../ThirdParty/FreeRTOS/Source/tasks.c
+        - file: ../../../../ThirdParty/FreeRTOS/Source/timers.c
+        - file: ../../../../ThirdParty/FreeRTOS/Source/portable/MemMang/heap_2.c
+        - file: ../../../../ThirdParty/FreeRTOS/Source/queue.c
+        - file: ../../../../ThirdParty/FreeRTOS/Demo/Common/Minimal/GenQTest.c
+        - file: ../../../../ThirdParty/FreeRTOS/Demo/Common/Minimal/PollQ.c
+        - file: ../../../../ThirdParty/FreeRTOS/Demo/Common/Minimal/semtest.c
+        - file: ../../../../ThirdParty/FreeRTOS/Demo/Common/Minimal/QueueSet.c
+        - file: ../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure/port.c
+        - file: ../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure/portasm.c
+    - group: Library
+      files:
+        - file: ../../../../Library/StdDriver/src/retarget.c
+        - file: ../../../../Library/StdDriver/src/clk.c
+        - file: ../../../../Library/StdDriver/src/sys.c
+        - file: ../../../../Library/StdDriver/src/uart.c
+        - file: ../../../../Library/StdDriver/src/emac/synopGMAC_Dev.c
+        - file: ../../../../Library/StdDriver/src/emac/synopGMAC_network_interface.c
+        - file: ../../../../Library/StdDriver/src/emac/synopGMAC_plat.c
+        - file: ../../../../Library/StdDriver/src/gpio.c
+    - group: LwIP
+      files:
+        - file: ../../lwIP/sys_arch.c
+        - file: ../../lwIP/time_stamp.c
+        - file: ../../lwIP/netif/ethernetif.c
+        - file: ../../../../ThirdParty/lwIP/src/core/def.c
+        - file: ../../../../ThirdParty/lwIP/src/core/dns.c
+        - file: ../../../../ThirdParty/lwIP/src/core/inet_chksum.c
+        - file: ../../../../ThirdParty/lwIP/src/core/init.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ip.c
+        - file: ../../../../ThirdParty/lwIP/src/core/mem.c
+        - file: ../../../../ThirdParty/lwIP/src/core/memp.c
+        - file: ../../../../ThirdParty/lwIP/src/core/netif.c
+        - file: ../../../../ThirdParty/lwIP/src/core/pbuf.c
+        - file: ../../../../ThirdParty/lwIP/src/core/raw.c
+        - file: ../../../../ThirdParty/lwIP/src/core/stats.c
+        - file: ../../../../ThirdParty/lwIP/src/core/sys_lwip.c
+        - file: ../../../../ThirdParty/lwIP/src/core/tcp.c
+        - file: ../../../../ThirdParty/lwIP/src/core/tcp_in.c
+        - file: ../../../../ThirdParty/lwIP/src/core/tcp_out.c
+        - file: ../../../../ThirdParty/lwIP/src/core/timeouts.c
+        - file: ../../../../ThirdParty/lwIP/src/core/udp.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/autoip.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/dhcp.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/etharp.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/icmp.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/igmp.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/ip4.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/ip4_addr.c
+        - file: ../../../../ThirdParty/lwIP/src/core/ipv4/ip4_frag.c
+        - file: ../../../../ThirdParty/lwIP/src/api/api_lib.c
+        - file: ../../../../ThirdParty/lwIP/src/api/api_msg.c
+        - file: ../../../../ThirdParty/lwIP/src/api/err.c
+        - file: ../../../../ThirdParty/lwIP/src/api/netbuf.c
+        - file: ../../../../ThirdParty/lwIP/src/api/netdb.c
+        - file: ../../../../ThirdParty/lwIP/src/api/netifapi.c
+        - file: ../../../../ThirdParty/lwIP/src/api/sockets.c
+        - file: ../../../../ThirdParty/lwIP/src/api/tcpip.c
+        - file: ../../../../ThirdParty/lwIP/src/netif/ethernet.c
+    - group: mbedtls
+      files:
+        - file: ../../../../ThirdParty/mbedtls/library/aes.c
+        - file: ../../../../ThirdParty/mbedtls/library/aesni.c
+        - file: ../../../../ThirdParty/mbedtls/library/aria.c
+        - file: ../../../../ThirdParty/mbedtls/library/asn1parse.c
+        - file: ../../../../ThirdParty/mbedtls/library/asn1write.c
+        - file: ../../../../ThirdParty/mbedtls/library/base64.c
+        - file: ../../../../ThirdParty/mbedtls/library/bignum.c
+        - file: ../../../../ThirdParty/mbedtls/library/camellia.c
+        - file: ../../../../ThirdParty/mbedtls/library/ccm.c
+        - file: ../../../../ThirdParty/mbedtls/library/chacha20.c
+        - file: ../../../../ThirdParty/mbedtls/library/chachapoly.c
+        - file: ../../../../ThirdParty/mbedtls/library/cipher.c
+        - file: ../../../../ThirdParty/mbedtls/library/cipher_wrap.c
+        - file: ../../../../ThirdParty/mbedtls/library/cmac.c
+        - file: ../../../../ThirdParty/mbedtls/library/constant_time.c
+        - file: ../../../../ThirdParty/mbedtls/library/ctr_drbg.c
+        - file: ../../../../ThirdParty/mbedtls/library/debug.c
+        - file: ../../../../ThirdParty/mbedtls/library/des.c
+        - file: ../../../../ThirdParty/mbedtls/library/dhm.c
+        - file: ../../../../ThirdParty/mbedtls/library/ecdh.c
+        - file: ../../../../ThirdParty/mbedtls/library/ecdsa.c
+        - file: ../../../../ThirdParty/mbedtls/library/ecjpake.c
+        - file: ../../../../ThirdParty/mbedtls/library/ecp.c
+        - file: ../../../../ThirdParty/mbedtls/library/ecp_curves.c
+        - file: ../../../../ThirdParty/mbedtls/library/entropy.c
+        - file: ../../../../ThirdParty/mbedtls/library/entropy_poll.c
+        - file: ../../../../ThirdParty/mbedtls/library/gcm.c
+        - file: ../../../../ThirdParty/mbedtls/library/hkdf.c
+        - file: ../../../../ThirdParty/mbedtls/library/hmac_drbg.c
+        - file: ../../../../ThirdParty/mbedtls/library/md.c
+        - file: ../../../../ThirdParty/mbedtls/library/md5.c
+        - file: ../../../../ThirdParty/mbedtls/library/memory_buffer_alloc.c
+        - file: ../../../../ThirdParty/mbedtls/library/mps_reader.c
+        - file: ../../../../ThirdParty/mbedtls/library/mps_trace.c
+        - file: ../../../../ThirdParty/mbedtls/library/nist_kw.c
+        - file: ../../../../ThirdParty/mbedtls/library/oid.c
+        - file: ../../../../ThirdParty/mbedtls/library/padlock.c
+        - file: ../../../../ThirdParty/mbedtls/library/pem.c
+        - file: ../../../../ThirdParty/mbedtls/library/pk.c
+        - file: ../../../../ThirdParty/mbedtls/library/pk_wrap.c
+        - file: ../../../../ThirdParty/mbedtls/library/pkcs5.c
+        - file: ../../../../ThirdParty/mbedtls/library/pkcs12.c
+        - file: ../../../../ThirdParty/mbedtls/library/pkparse.c
+        - file: ../../../../ThirdParty/mbedtls/library/pkwrite.c
+        - file: ../../../../ThirdParty/mbedtls/library/platform_util.c
+        - file: ../../../../ThirdParty/mbedtls/library/poly1305.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_aead.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_cipher.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_client.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_driver_wrappers.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_ecp.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_hash.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_mac.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_rsa.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_se.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_slot_management.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_crypto_storage.c
+        - file: ../../../../ThirdParty/mbedtls/library/psa_its_file.c
+        - file: ../../../../ThirdParty/mbedtls/library/ripemd160.c
+        - file: ../../../../ThirdParty/mbedtls/library/rsa.c
+        - file: ../../../../ThirdParty/mbedtls/library/rsa_alt_helpers.c
+        - file: ../../../../ThirdParty/mbedtls/library/sha1.c
+        - file: ../../../../ThirdParty/mbedtls/library/sha256.c
+        - file: ../../../../ThirdParty/mbedtls/library/sha512.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_cache.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_ciphersuites.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_cli.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_cookie.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_msg.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_srv.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_ticket.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_tls.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_tls13_client.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_tls13_generic.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_tls13_keys.c
+        - file: ../../../../ThirdParty/mbedtls/library/ssl_tls13_server.c
+        - file: ../../../../ThirdParty/mbedtls/library/threading.c
+        - file: ../../../../ThirdParty/mbedtls/library/timing.c
+        - file: ../../../../ThirdParty/mbedtls/library/version.c
+        - file: ../../../../ThirdParty/mbedtls/library/x509.c
+        - file: ../../../../ThirdParty/mbedtls/library/x509_create.c
+        - file: ../../../../ThirdParty/mbedtls/library/x509_crl.c
+        - file: ../../../../ThirdParty/mbedtls/library/x509_crt.c
+        - file: ../../../../ThirdParty/mbedtls/library/x509_csr.c
+        - file: ../../../../ThirdParty/mbedtls/library/x509write_crt.c
+        - file: ../../../../ThirdParty/mbedtls/library/x509write_csr.c
+        - file: ../../../../ThirdParty/mbedtls/tests/src/certs.c
+  define:
+      - SYSTEM_CORE_CLOCK: 220000000
+      - MBEDTLS_CONFIG_FILE

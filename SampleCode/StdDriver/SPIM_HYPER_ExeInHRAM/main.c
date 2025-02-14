@@ -12,7 +12,7 @@
 #include "hyperram_code.h"
 
 //------------------------------------------------------------------------------
-#define SPIM_PORT           SPIM1
+#define SPIM_PORT           SPIM0
 
 //------------------------------------------------------------------------------
 void spim_routine(void);
@@ -23,9 +23,12 @@ void spim_routine(void);
 */
 void Reset_Handler_PreInit(void)
 {
+    uint32_t u32SlewRate = GPIO_SLEWCTL_FAST0;
+
     SYS_UnlockReg();
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_160MHZ, CLK_APLL0_SELECT);
+
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -40,114 +43,71 @@ void Reset_Handler_PreInit(void)
     CLK_SET_PCLK3DIV(2);
     CLK_SET_PCLK4DIV(2);
 
-    if (SPIM_PORT == SPIM0)
-    {
-        /* Enable SPIM module clock */
-        CLK_EnableModuleClock(SPIM0_MODULE);
+    /* Enable SPIM module clock */
+    CLK_EnableModuleClock(SPIM0_MODULE);
+    CLK_EnableModuleClock(OTFC0_MODULE);
 
-        /* Enable GPIO Module clock */
-        CLK_EnableModuleClock(GPIOC_MODULE);
-        CLK_EnableModuleClock(GPIOG_MODULE);
+    /* Enable GPIO Module clock */
+    CLK_EnableModuleClock(GPIOG_MODULE);
+    CLK_EnableModuleClock(GPIOH_MODULE);
+    CLK_EnableModuleClock(GPIOJ_MODULE);
 
-        /* Init SPIM multi-function pins */
-        SET_SPIM0_CLKN_PC5();
-        SET_SPIM0_CLK_PC4();
-        SET_SPIM0_D2_PC0();
-        SET_SPIM0_D3_PG10();
-        SET_SPIM0_D4_PG9();
-        SET_SPIM0_D5_PG13();
-        SET_SPIM0_D6_PG14();
-        SET_SPIM0_D7_PG15();
-        SET_SPIM0_MISO_PG12();
-        SET_SPIM0_MOSI_PG11();
-        SET_SPIM0_RESETN_PC2();
-        SET_SPIM0_RWDS_PC1();
-        SET_SPIM0_SS_PC3();
+    /* Init SPIM multi-function pins */
+    SET_SPIM0_CLKN_PH12();
+    SET_SPIM0_CLK_PH13();
+    SET_SPIM0_D2_PJ5();
+    SET_SPIM0_D3_PJ6();
+    SET_SPIM0_D4_PH14();
+    SET_SPIM0_D5_PH15();
+    SET_SPIM0_D6_PG13();
+    SET_SPIM0_D7_PG14();
+    SET_SPIM0_MISO_PJ4();
+    SET_SPIM0_MOSI_PJ3();
+    SET_SPIM0_RESETN_PJ2();
+    SET_SPIM0_RWDS_PG15();
+    SET_SPIM0_SS_PJ7();
 
-        PC->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
-        PG->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
+    PG->SMTEN |= (GPIO_SMTEN_SMTEN13_Msk |
+                  GPIO_SMTEN_SMTEN14_Msk |
+                  GPIO_SMTEN_SMTEN15_Msk);
+    PH->SMTEN |= (GPIO_SMTEN_SMTEN12_Msk |
+                  GPIO_SMTEN_SMTEN13_Msk |
+                  GPIO_SMTEN_SMTEN14_Msk |
+                  GPIO_SMTEN_SMTEN15_Msk);
+    PJ->SMTEN |= (GPIO_SMTEN_SMTEN2_Msk |
+                  GPIO_SMTEN_SMTEN3_Msk |
+                  GPIO_SMTEN_SMTEN4_Msk |
+                  GPIO_SMTEN_SMTEN5_Msk |
+                  GPIO_SMTEN_SMTEN6_Msk |
+                  GPIO_SMTEN_SMTEN7_Msk);
 
-        /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
-        GPIO_SetSlewCtl(PC, BIT0, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PC, BIT1, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PC, BIT2, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PC, BIT3, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PC, BIT4, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PC, BIT5, GPIO_SLEWCTL_HIGH);
+    /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
+    GPIO_SetSlewCtl(PG, BIT13, u32SlewRate);
+    GPIO_SetSlewCtl(PG, BIT14, u32SlewRate);
+    GPIO_SetSlewCtl(PG, BIT15, u32SlewRate);
 
-        GPIO_SetSlewCtl(PG, BIT9, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT10, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT11, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT12, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT13, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT14, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PG, BIT15, GPIO_SLEWCTL_HIGH);
-    }
-    else if (SPIM_PORT == SPIM1)
-    {
-        /* Enable SPIM module clock */
-        CLK_EnableModuleClock(SPIM1_MODULE);
+    GPIO_SetSlewCtl(PH, BIT12, u32SlewRate);
+    GPIO_SetSlewCtl(PH, BIT13, u32SlewRate);
+    GPIO_SetSlewCtl(PH, BIT14, u32SlewRate);
+    GPIO_SetSlewCtl(PH, BIT15, u32SlewRate);
 
-        /* Enable GPIO Module clock */
-        CLK_EnableModuleClock(GPIOD_MODULE);
-        CLK_EnableModuleClock(GPIOH_MODULE);
-        CLK_EnableModuleClock(GPIOJ_MODULE);
-
-        /* Init SPIM multi-function pins */
-        SET_SPIM1_CLKN_PH12();
-        SET_SPIM1_CLK_PH13();
-        SET_SPIM1_D2_PJ4();
-        SET_SPIM1_D3_PJ3();
-        SET_SPIM1_D4_PH15();
-        SET_SPIM1_D5_PD7();
-        SET_SPIM1_D6_PD6();
-        SET_SPIM1_D7_PD5();
-        SET_SPIM1_MISO_PJ5();
-        SET_SPIM1_MOSI_PJ6();
-        SET_SPIM1_RESETN_PJ2();
-        SET_SPIM1_RWDS_PH14();
-        SET_SPIM1_SS_PJ7();
-
-        PD->SMTEN |= (GPIO_SMTEN_SMTEN5_Msk |
-                      GPIO_SMTEN_SMTEN6_Msk |
-                      GPIO_SMTEN_SMTEN7_Msk);
-        PH->SMTEN |= (GPIO_SMTEN_SMTEN12_Msk |
-                      GPIO_SMTEN_SMTEN13_Msk |
-                      GPIO_SMTEN_SMTEN14_Msk |
-                      GPIO_SMTEN_SMTEN15_Msk);
-        PJ->SMTEN |= (GPIO_SMTEN_SMTEN2_Msk |
-                      GPIO_SMTEN_SMTEN3_Msk |
-                      GPIO_SMTEN_SMTEN4_Msk |
-                      GPIO_SMTEN_SMTEN5_Msk |
-                      GPIO_SMTEN_SMTEN6_Msk |
-                      GPIO_SMTEN_SMTEN7_Msk);
-
-        /* Set SPIM I/O pins as high slew rate up to 80 MHz. */
-        GPIO_SetSlewCtl(PD, BIT5, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PD, BIT6, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PD, BIT7, GPIO_SLEWCTL_HIGH);
-
-        GPIO_SetSlewCtl(PH, BIT12, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PH, BIT13, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PH, BIT14, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PH, BIT15, GPIO_SLEWCTL_HIGH);
-
-        GPIO_SetSlewCtl(PJ, BIT2, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT3, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT4, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT5, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT6, GPIO_SLEWCTL_HIGH);
-        GPIO_SetSlewCtl(PJ, BIT7, GPIO_SLEWCTL_HIGH);
-    }
+    GPIO_SetSlewCtl(PJ, BIT2, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT3, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT4, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT5, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT6, u32SlewRate);
+    GPIO_SetSlewCtl(PJ, BIT7, u32SlewRate);
 
     HyperRAM_Init(SPIM_PORT);
+
+    /*Enable DMM Mode */
     SPIM_HYPER_EnterDirectMapMode(SPIM_PORT);
 }
 
 //------------------------------------------------------------------------------
 void SPIM_SetDMMAddrNonCacheable(void)
 {
-    uint32_t u32DMMAddr = SPIM_GetDMMAddress(SPIM_PORT);
+    uint32_t u32DMMAddr = SPIM_HYPER_GET_DMMADDR(SPIM_PORT);
 
     /* Disable D-Cache */
     SCB_DisableDCache();
@@ -180,8 +140,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_160MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);

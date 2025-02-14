@@ -15,9 +15,9 @@
  */
 
 /* Base address and size must be 32-byte aligned */
-#define REGION_FLASH_RW_BASE_ADDR   (MPU_INIT_BASE(0))
-#define REGION_FLASH_RW_SIZE        (MPU_INIT_SIZE(0))
-#define REGION_FLASH_RW_END_ADDR    (MPU_INIT_LIMIT(0))
+#define REGION_FLASH_RO_BASE_ADDR   (MPU_INIT_BASE(0))
+#define REGION_FLASH_RO_SIZE        (MPU_INIT_SIZE(0))
+#define REGION_FLASH_RO_END_ADDR    (MPU_INIT_LIMIT(0))
 
 #define REGION_SRAM_RW_BASE_ADDR    (MPU_INIT_BASE(1))
 #define REGION_SRAM_RW_SIZE         (MPU_INIT_SIZE(1))
@@ -60,10 +60,14 @@ void MemManage_Handler(void)
 
     if (SCB->CFSR & SCB_CFSR_DACCVIOL_Msk)
     {
+        uint32_t u32FaultAddr = SCB->MMFAR;
+
         printf("  Data access violation flag is raised.\n");
 
         if (SCB->CFSR & SCB_CFSR_MMARVALID_Msk)
-            printf("  Fault address: 0x%08X\n", SCB->MMFAR);
+            printf("  Fault address: 0x%08X\n", u32FaultAddr);
+
+        printf("  Check read 0x%08X is old value (0x%08X).\n", u32FaultAddr, M32(u32FaultAddr));
     }
 
     /* Clear MemManage fault status register */
@@ -78,8 +82,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -103,6 +107,9 @@ void SYS_Init(void)
 
 void MPU_TestAccess(void)
 {
+    uint32_t u32TestAddr      = 0,
+             u32TestWriteData = 0;
+
     /* Disable I-Cache and D-Cache before config MPU */
     SCB_DisableICache();
     SCB_DisableDCache();
@@ -115,20 +122,6 @@ void MPU_TestAccess(void)
     SCB_EnableICache();
 
     printf("\n==============================================\n");
-    printf("RW Memory Region (Flash Memory) configuration:\n");
-    printf("==============================================\n");
-    printf(" Start address: 0x%08X\n", (uint32_t)REGION_FLASH_RW_BASE_ADDR);
-    printf(" End address  : 0x%08X\n", (uint32_t)REGION_FLASH_RW_END_ADDR);
-    printf(" Size         : %d KB\n", (uint32_t)(REGION_FLASH_RW_SIZE / 1024));
-    printf(" Memory Type  : Normal\n");
-    printf(" Permission   : Full access\n");
-    printf("----------------------------------------------\n");
-
-    printf("Press any key to test read access from RW memory region (Flash Memory).\n");
-    getchar();
-    printf("\nRead value from 0x%08X is 0x%08X.\n", (uint32_t)REGION_FLASH_RW_BASE_ADDR, M32(REGION_FLASH_RW_BASE_ADDR));
-
-    printf("\n==============================================\n");
     printf("RW Memory Region (SRAM Memory) configuration:\n");
     printf("==============================================\n");
     printf(" Start address: 0x%08X\n", (uint32_t)REGION_SRAM_RW_BASE_ADDR);
@@ -137,10 +130,15 @@ void MPU_TestAccess(void)
     printf(" Memory Type  : Normal\n");
     printf(" Permission   : Full access\n");
     printf("----------------------------------------------\n");
-
-    printf("Press any key to test read access from RW memory region (SRAM Memory).\n");
+    u32TestAddr = REGION_SRAM_RW_BASE_ADDR;
+    printf("Read value from 0x%08X is 0x%08X.\n", u32TestAddr, M32(u32TestAddr));
+    printf("Press any key to test write access in RW memory region (SRAM Memory).\n");
     getchar();
-    printf("\nRead value from 0x%08X is 0x%08X.\n", REGION_SRAM_RW_BASE_ADDR, M32(REGION_SRAM_RW_BASE_ADDR));
+    // Test write access
+    u32TestWriteData = ~M32(u32TestAddr);
+    printf("\nTest write 0x%08X to 0x%08X.\n", u32TestWriteData, u32TestAddr);
+    M32(u32TestAddr) = u32TestWriteData;
+    printf("\nRead new value from 0x%08X is 0x%08X.\n", u32TestAddr, M32(u32TestAddr));
 
     printf("\n==============================================\n");
     printf("RO Memory Region (SRAM Memory) configuration:\n");
@@ -151,13 +149,44 @@ void MPU_TestAccess(void)
     printf(" Memory Type  : Normal\n");
     printf(" Permission   : No write access\n");
     printf("----------------------------------------------\n");
-
-    printf("Press any key to test read/write access from RO memory region (SRAM Memory).\n");
-    printf("(It should trigger a memory fault exception.)\n");
+    u32TestAddr = REGION_SRAM_RO_BASE_ADDR;
+    printf("Read value from 0x%08X is 0x%08X.\n", u32TestAddr, M32(u32TestAddr));
+    printf("Press any key to test write access in RO memory region (SRAM Memory).\n");
+    printf(" * It should trigger memory fault exception.\n");
     getchar();
-    printf("\nRead value from 0x%08X is 0x%08X.\n", REGION_SRAM_RO_BASE_ADDR, M32(REGION_SRAM_RO_BASE_ADDR));
-    printf("\nWrite 0 to 0x%08X.\n", REGION_SRAM_RO_BASE_ADDR);
-    M32(REGION_SRAM_RO_BASE_ADDR) = 0;
+    // Test write access
+    u32TestWriteData = ~M32(u32TestAddr);
+    printf("\nTest write 0x%08X to 0x%08X.\n", u32TestWriteData, u32TestAddr);
+    UART_WAIT_TX_EMPTY(DEBUG_PORT);
+    __DSB();
+    M32(u32TestAddr) = u32TestWriteData;
+    printf("\nRead new value from 0x%08X is 0x%08X.\n", u32TestAddr, M32(u32TestAddr));
+    /* Because MPU is disabled in MemManage_Handler, enable MPU again here. */
+    ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk);
+
+    printf("\n==============================================\n");
+    printf("RO Memory Region (Flash Memory) configuration:\n");
+    printf("==============================================\n");
+    printf(" Start address: 0x%08X\n", (uint32_t)REGION_FLASH_RO_BASE_ADDR);
+    printf(" End address  : 0x%08X\n", (uint32_t)REGION_FLASH_RO_END_ADDR);
+    printf(" Size         : %d KB\n", (uint32_t)(REGION_FLASH_RO_SIZE / 1024));
+    printf(" Memory Type  : Normal\n");
+    printf(" Permission   : No write access\n");
+    printf("----------------------------------------------\n");
+    u32TestAddr = (uint32_t)REGION_FLASH_RO_BASE_ADDR;
+    printf("Read value from 0x%08X is 0x%08X.\n", u32TestAddr, M32(u32TestAddr));
+    printf("Press any key to test read access from RO memory region (Flash Memory).\n");
+    printf(" * It should trigger memory fault exception due to writing to RO region.\n");
+    printf(" * It should trigger hard fault exception due to writing directly to Flash.\n");
+    getchar();
+    // Test write access
+    u32TestWriteData = ~M32(u32TestAddr);
+    printf("\nTest write 0x%08X to 0x%08X.\n", u32TestWriteData, u32TestAddr);
+    UART_WAIT_TX_EMPTY(DEBUG_PORT);
+    __DSB();
+    M32(u32TestAddr) = u32TestWriteData;
+    /* Because MPU is disabled in MemManage_Handler, enable MPU again here. */
+    ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk);
 }
 
 int main()

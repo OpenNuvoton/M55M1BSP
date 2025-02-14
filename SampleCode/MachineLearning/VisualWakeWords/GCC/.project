@@ -121,6 +121,11 @@
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/Display/Display.c</locationURI>
 		</link>
 		<link>
+			<name>Device/drv_pdma.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/Display/drv_pdma.c</locationURI>
+		</link>
+		<link>
 			<name>Device/Font8_16.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/Display/Font8_16.c</locationURI>
@@ -136,14 +141,39 @@
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/Display/LCD/LCD_FSA506.c</locationURI>
 		</link>
 		<link>
+			<name>Device/LCD_ILI9341.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/Display/LCD/LCD_ILI9341.c</locationURI>
+		</link>
+		<link>
+			<name>Device/LCD_LT7381.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/Display/LCD/LCD_LT7381.c</locationURI>
+		</link>
+		<link>
 			<name>Device/SWI2C.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/ImageSensor/Sensor/SWI2C.c</locationURI>
 		</link>
 		<link>
+			<name>Device/descriptors.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/UVC/descriptors.c</locationURI>
+		</link>
+		<link>
+			<name>Device/UVC.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/UVC/UVC.c</locationURI>
+		</link>
+		<link>
 			<name>Device/Sensor_HM1055.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/ImageSensor/Sensor/Sensor_HM1055.c</locationURI>
+		</link>
+		<link>
+			<name>Device/hyperram_code.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Device/HyperRAM/hyperram_code.c</locationURI>
 		</link>
 		<link>
 			<name>Driver/ccap.c</name>
@@ -159,6 +189,11 @@
 			<name>Driver/ebi.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/ebi.c</locationURI>
+		</link>
+		<link>
+			<name>Driver/spi.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/spi.c</locationURI>
 		</link>
 		<link>
 			<name>Driver/ethosu_device_u55_u65.c</name>
@@ -186,6 +221,11 @@
 			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/retarget.c</locationURI>
 		</link>
 		<link>
+			<name>Driver/spim_hyper.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/spim_hyper.c</locationURI>
+		</link>
+		<link>
 			<name>Driver/sys.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/sys.c</locationURI>
@@ -194,6 +234,16 @@
 			<name>Driver/uart.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/uart.c</locationURI>
+		</link>
+		<link>
+			<name>Driver/hsusbd.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/hsusbd.c</locationURI>
+		</link>
+		<link>
+			<name>Driver/pdma.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/pdma.c</locationURI>
 		</link>
 		<link>
 			<name>Model/Labels.cpp</name>

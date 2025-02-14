@@ -22,7 +22,19 @@ void SYS_Init(void);
 
 void Configure_EBI_16BIT_Pins(void)
 {
-    /* AD0 ~ AD15*/
+    /* EBI ALE, nRD and nWR */
+    SET_EBI_ALE_PA8();
+    SET_EBI_nRD_PA11();
+    SET_EBI_nWR_PA10();
+
+    /* EBI nWRH and nWRL pins */
+    SET_EBI_nWRH_PG6();
+    SET_EBI_nWRL_PB7();
+
+    /* EBI nCS1 */
+    SET_EBI_nCS1_PD11();
+
+    /* AD0 ~ AD15 */
     SET_EBI_AD0_PC0();
     SET_EBI_AD1_PC1();
     SET_EBI_AD2_PC2();
@@ -33,32 +45,34 @@ void Configure_EBI_16BIT_Pins(void)
     SET_EBI_AD7_PD9();
     SET_EBI_AD8_PE14();
     SET_EBI_AD9_PE15();
-    SET_EBI_AD10_PE1();
-    SET_EBI_AD11_PE0();
-    SET_EBI_AD12_PH8();
-    SET_EBI_AD13_PH9();
+    SET_EBI_AD10_PD3();
+    SET_EBI_AD11_PD2();
+    SET_EBI_AD12_PB15();
+    SET_EBI_AD13_PB14();
     SET_EBI_AD14_PH10();
     SET_EBI_AD15_PH11();
 
-    /* ADDR16 ~ ADDR19; */
-    SET_EBI_ADR16_PF9();
-    SET_EBI_ADR17_PF8();
+    /* ADR0 ~ ADR19 */
+    SET_EBI_ADR0_PH7();
+    SET_EBI_ADR1_PB4();
+    SET_EBI_ADR2_PB3();
+    SET_EBI_ADR3_PB2();
+    SET_EBI_ADR4_PC12();
+    SET_EBI_ADR5_PC11();
+    SET_EBI_ADR6_PC10();
+    SET_EBI_ADR7_PC9();
+    SET_EBI_ADR8_PB1();
+    SET_EBI_ADR9_PG1();
+    SET_EBI_ADR10_PC13();
+    SET_EBI_ADR11_PG2();
+    SET_EBI_ADR12_PG3();
+    SET_EBI_ADR13_PG4();
+    SET_EBI_ADR14_PF11();
+    SET_EBI_ADR15_PE13();
+    SET_EBI_ADR16_PB11();
+    SET_EBI_ADR17_PB10();
     SET_EBI_ADR18_PF7();
     SET_EBI_ADR19_PF6();
-
-    /* EBI nWR and nRD pins on PA.10 and PA.11 */
-    SET_EBI_nWR_PA10();
-    SET_EBI_nRD_PA11();
-
-    /* EBI nWRH and nWRL pins on PB.6 and PB.7 */
-    SET_EBI_nWRH_PB6();
-    SET_EBI_nWRL_PB7();
-
-    /* EBI nCS1 pin on PD.11 */
-    SET_EBI_nCS1_PD11();
-
-    /* EBI ALE pin on PA.8 */
-    SET_EBI_ALE_PA8();
 }
 
 void SYS_Init(void)
@@ -78,8 +92,8 @@ void SYS_Init(void)
     /* Switch SCLK clock source to HIRC */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -95,9 +109,6 @@ void SYS_Init(void)
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
-
-    /* Initialize MPU Region */
-    InitPreDefMPURegion(NULL, 0);
 
     /* Lock protected registers */
     SYS_LockReg();
@@ -125,19 +136,6 @@ int main(void)
 
     printf("************************************************************************\n");
     printf("* Please connect MX29LV320T nor flash to EBI bank1 before accessing !! *\n");
-    printf("* EBI pins settings:                                                   *\n");
-    printf("*   - AD0 ~ AD5 on PC.0~5                                              *\n");
-    printf("*   - AD6 ~ AD7 on PD.8 and PD.9                                       *\n");
-    printf("*   - AD8 ~ AD9 on PE.14 and PE.15                                     *\n");
-    printf("*   - AD10 ~ AD11 on PE.1 and PE.0                                     *\n");
-    printf("*   - AD12 ~ AD15 on PH.8~11                                           *\n");
-    printf("*   - ADR16 ~ ADR19 on PF.9~6                                          *\n");
-    printf("*   - nWR on PA.10                                                     *\n");
-    printf("*   - nRD on PA.11                                                     *\n");
-    printf("*   - nWRL on PB.7                                                     *\n");
-    printf("*   - nWRH on PB.6                                                     *\n");
-    printf("*   - nCS1 on PD.11                                                    *\n");
-    printf("*   - ALE on PA.8                                                      *\n");
     printf("************************************************************************\n\n");
 
     /* Configure multi-function pins for EBI 16-bit application */

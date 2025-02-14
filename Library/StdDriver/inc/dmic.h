@@ -27,6 +27,24 @@ extern "C"
   @{
 */
 
+/*-----------------------------------------------------------------
+  | APLL1                     | Sample-Rate Hz      | Down-Sample |
+  |---------------------------|---------------------|-------------|
+  | FREQ_192MHZ               | 8000/16000/48000 Hz | 50/100      |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_196608KHZ | 8000/16000/48000 Hz | 64/128/256  |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_194040KHZ | 11025/22050/44100 Hz| 50/100      |
+  |---------------------------|---------------------|-------------|
+  | DMIC_APLL1_FREQ_180634KHZ | 11025/22050/44100 Hz| 64/128/256  |
+  ---------------------------------------------------------------*/
+/*---------------------------------------------------------------------------------------------------------*/
+/* DMIC clock source APLL1 Frequency Definitions                                                                           */
+/*---------------------------------------------------------------------------------------------------------*/
+#define DMIC_APLL1_FREQ_196608KHZ  196608000UL  /*!< 196608 KHz for DMIC 8000/16000/48000 Hz sample-rate with 64/128/256 down-sample \hideinitializer */
+#define DMIC_APLL1_FREQ_194040KHZ  194040000UL  /*!< 194040 KHz for DMIC 11025/22050/44100 Hz sample-rate with 50/100 down-sample \hideinitializer */
+#define DMIC_APLL1_FREQ_180634KHZ  180634000UL  /*!< 180634 KHz for DMIC 11025/22050/44100 Hz sample-rate with 64/128/256 down-sample \hideinitializer */
+
 /*---------------------------------------------------------------------------------------------------------*/
 /* DMIC CTL Constant Definitions                                                                           */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -54,6 +72,15 @@ extern "C"
 #define DMIC_LATCHDATA_CH23F      (DMIC_LATCHDATA_CH23FR)    /*!< DMIC Data Latch Channel2 Falling Edge Channel3 Rising Edge */
 #define DMIC_LATCHDATA_CH23R      (DMIC_LATCHDATA_CH23RF)    /*!< DMIC Data Latch Channel2 Rising Edge Channel3 Falling Edge  */
 
+#define DMIC_DIV_HPF_CUT_F        (0x70000000UL)             /*!< DMIC High pass filter -3B cut-off frequency Setting 7 = 1.029%. */
+#define DMIC_CTL_DSPMEMT_Pos      (26)                               /*!< DMIC Enable the MCU accessing of DSP RAM Position */
+#define DMIC_CTL_DSPMEMT_Msk      (0x1ul << DMIC_CTL_DSPMEMT_Pos)    /*!< DMIC Enable the MCU accessing of DSP RAM Mask */
+#define DMIC_DSP0_RAMDATA         (DMIC0_BASE+0x40)          /*!< DMIC DSP0 RAM Test Data Register. */
+#define DMIC_DSP1_RAMDATA         (DMIC0_BASE+0x44)          /*!< DMIC DSP1 RAM Test Data Register. */
+#define DMIC_RAM_LGAIN_ADDR       (58)                       /*!< DMIC RAM LGAIN_ADDR. */
+#define DMIC_RAM_RGAIN_ADDR       (122)                      /*!< DMIC RAM RGAIN_ADDR. */
+#define DMIC_RAM_LINITSAMPLE_ADDR (62)                       /*!< DMIC RAM LINITSAMPLE_ADDR. */
+#define DMIC_RAM_RINITSAMPLE_ADDR (126)                      /*!< DMIC RAM RINITSAMPLE_ADDR. */
 /*---------------------------------------------------------------------------------------------------------*/
 /* VAD SINCCTL Constant Definitions                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -126,32 +153,6 @@ typedef struct
   * @details    Channel 23 latched on rising or falling edge of DMIC_CLK.
   */
 #define DMIC_SET_LATCHEDGE_CH23(dmic,u32Value)             ((dmic)->CTL = ((dmic)->CTL & ~(DMIC_CTL_LCHEDGE23_Msk))|(u32Value))
-
-/**
-  * @brief      Enable DMIC's channel
-  * @param[in]  dmic The base address of DMIC module
-  * @param[in]  u32ChMsk Enable channel Msk.
-  *             - \ref DMIC_CTL_CHEN0_Msk
-  *             - \ref DMIC_CTL_CHEN1_Msk
-  *             - \ref DMIC_CTL_CHEN2_Msk
-  *             - \ref DMIC_CTL_CHEN3_Msk
-  * @return     None
-  * @details    Enable channel to start input data.
-  */
-#define DMIC_ENABLE_CHANNEL(dmic,u32ChMsk)               ((dmic)->CTL |= (u32ChMsk))
-
-/**
-  * @brief      Disable DMIC's channel
-  * @param[in]  dmic The base address of DMIC module
-  * @param[in]  u32ChMsk Disable channel Msk.
-  *             - \ref DMIC_CTL_CHEN0_Msk
-  *             - \ref DMIC_CTL_CHEN1_Msk
-  *             - \ref DMIC_CTL_CHEN2_Msk
-  *             - \ref DMIC_CTL_CHEN3_Msk
-  * @return     None
-  * @details    Disable channel to start input data.
-  */
-#define DMIC_DISABLE_CHANNEL(dmic,u32ChMsk)              ((dmic)->CTL &= ~(u32ChMsk))
 
 /**
   * @brief      Enable DMIC FIFO threshold interrupt.
@@ -369,8 +370,6 @@ typedef struct
 __STATIC_INLINE void DMIC_SetFIFOWidth(DMIC_T *dmic, uint32_t u32Width);
 __STATIC_INLINE void DMIC_SetGainStep(DMIC_T *dmic, uint32_t u32Volume);
 __STATIC_INLINE void DMIC_ResetDSP(DMIC_T *dmic);
-__STATIC_INLINE void DMIC_EnableHPF(DMIC_T *dmic, uint32_t u32ChHPF);
-__STATIC_INLINE void DMIC_DisableHPF(DMIC_T *dmic, uint32_t u32ChHPF);
 __STATIC_INLINE void DMIC_EnableMute(DMIC_T *dmic, uint32_t u32ChMute);
 __STATIC_INLINE void DMIC_DisableMute(DMIC_T *dmic, uint32_t u32ChMute);
 __STATIC_INLINE uint32_t DMIC_GetFIFOPTR(DMIC_T *dmic);
@@ -422,34 +421,6 @@ __STATIC_INLINE void DMIC_ResetDSP(DMIC_T *dmic)
     {
         __NOP();
     }
-}
-
-/**
-  * @brief      Enable DMIC's channel HPF filter
-  * @param[in]  dmic The base address of DMIC module
-  * @param[in]  u32ChHPF Enable channel HPF filter.
-  *             - \ref DMIC_CTL_CH01HPFEN_Msk
-  *             - \ref DMIC_CTL_CH23HPFEN_Msk
-  * @return     None
-  * @details    Enable DMIC HPF filter for remove DC component.
-  */
-__STATIC_INLINE void DMIC_EnableHPF(DMIC_T *dmic, uint32_t u32ChHPF)
-{
-    dmic->CTL |= (u32ChHPF);
-}
-
-/**
-  * @brief      Disable DMIC's channel HPF filter
-  * @param[in]  dmic The base address of DMIC module
-  * @param[in]  u32ChHPF Disable channel HPF filter.
-  *             - \ref DMIC_CTL_CH01HPFEN_Msk
-  *             - \ref DMIC_CTL_CH23HPFEN_Msk
-  * @return     None
-  * @details    Disable DMIC HPF filter.
-  */
-__STATIC_INLINE void DMIC_DisableHPF(DMIC_T *dmic, uint32_t u32ChHPF)
-{
-    dmic->CTL &= ~(u32ChHPF);
 }
 
 /**
@@ -513,6 +484,8 @@ __STATIC_INLINE void DMIC_VAD_SetBIQCoeff(VAD_T *vad, DMIC_VAD_BIQ_T *psBIQCoeff
     vad->BIQCTL2 = (vad->BIQCTL2 & ~VAD_BIQCTL2_BIQB2_Msk) | ((psBIQCoeff->u16BIQCoeffB2 << VAD_BIQCTL2_BIQB2_Pos)&VAD_BIQCTL2_BIQB2_Msk);
 }
 
+void DMIC_EnableChMsk(DMIC_T *dmic, uint32_t u32ChMsk);
+void DMIC_DisableChMsk(DMIC_T *dmic, uint32_t u32ChMsk);
 void DMIC_Open(DMIC_T *dmic);
 void DMIC_Close(DMIC_T *dmic);
 void DMIC_SetDSPGainVolume(DMIC_T *dmic, uint32_t u32ChMsk, int16_t i16ChVolume);

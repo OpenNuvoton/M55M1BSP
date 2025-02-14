@@ -58,7 +58,6 @@ typedef enum KSMEM
 #define KS_OWNER_RSA_MID    (3ul)
 #define KS_OWNER_ECC        (4ul)
 #define KS_OWNER_CPU        (5ul)
-#define KS_OWNER_CHACHA     (6ul)
 
 #define KS_META_AES         (KS_OWNER_AES     << KS_METADATA_OWNER_Pos)      /*!< AES Access Only                            */
 #define KS_META_HMAC        (KS_OWNER_HMAC    << KS_METADATA_OWNER_Pos)      /*!< HMAC Access Only                           */
@@ -66,7 +65,6 @@ typedef enum KSMEM
 #define KS_META_RSA_MID     (KS_OWNER_RSA_MID << KS_METADATA_OWNER_Pos)      /*!< RSA_MID Access Only                        */
 #define KS_META_ECC         (KS_OWNER_ECC     << KS_METADATA_OWNER_Pos)      /*!< ECC Access Only                            */
 #define KS_META_CPU         (KS_OWNER_CPU     << KS_METADATA_OWNER_Pos)      /*!< CPU Access Only                            */
-#define KS_META_CHACHA      (KS_OWNER_CHACHA  << KS_METADATA_OWNER_Pos)      /*!< CPU Access Only                            */
 
 #define KS_META_128         ( 0ul << KS_METADATA_SIZE_Pos)      /*!< Key size 128 bits                          */
 #define KS_META_163         ( 1ul << KS_METADATA_SIZE_Pos)      /*!< Key size 163 bits                          */
@@ -152,8 +150,6 @@ typedef enum KSMEM
 #define KS_CLR_STS(u32Status)       (KS->STS = (u32Status))
 
 /** @} end of group KS_EXPORTED_CONSTANTS */
-
-extern int32_t g_KS_i32ErrCode;
 
 /** @addtogroup KS_EXPORTED_FUNCTIONS KS Exported Functions
     @{

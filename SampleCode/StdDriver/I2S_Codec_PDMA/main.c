@@ -12,12 +12,8 @@
 #include "config.h"
 
 //------------------------------------------------------------------------------
-#define NAU8822             1
-#if defined(ALIGN_AF_PINS)
-    #define I2C_PORT                        I2C3
-#else
-    #define I2C_PORT                        I2C2
-#endif
+#define NAU8822         1
+#define I2C_PORT        I2C3
 
 //------------------------------------------------------------------------------
 void SYS_Init(void);
@@ -35,16 +31,22 @@ void I2C_Init(void);
 #endif
 
 //------------------------------------------------------------------------------
-static uint32_t s_au32PcmRxBuff[2][BUFF_LEN] = {{0}};
-static uint32_t s_au32PcmTxBuff[2][BUFF_LEN] = {{0}};
-static DMA_DESC_T DMA_TXDESC[2], DMA_RXDESC[2];
+#if (NVT_DCACHE_ON == 1)
+/* Using DCACHE, each buffer is aligned to a full cache line and is padded to a full cache line size */
+static uint32_t s_au32PcmRxBuff[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(BUFF_LEN)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+static uint32_t s_au32PcmTxBuff[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(BUFF_LEN)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+#else
+/* Without DCACHE, each buffer is not aligned to a full cache line and is not padded */
+static uint32_t s_au32PcmRxBuff[2][BUFF_LEN] = {0};
+static uint32_t s_au32PcmTxBuff[2][BUFF_LEN] = {0};
+#endif
+static NVT_NONCACHEABLE DMA_DESC_T DMA_TXDESC[2] = {0}, DMA_RXDESC[2] = {0};
 
 static volatile uint8_t s_u8TxIdx = 0, s_u8RxIdx = 0;
 static volatile uint8_t s_u8CopyData = 0;
 
 //------------------------------------------------------------------------------
-//NVT_ITCM
-void PDMA0_IRQHandler(void)
+NVT_ITCM void PDMA0_IRQHandler(void)
 {
     uint32_t u32Status = PDMA_GET_INT_STATUS(PDMA0);
 
@@ -291,8 +293,8 @@ void NAU88L25_Setup(void)
 
 void SYS_Init(void)
 {
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Enable all GPIO clock */
     CLK_EnableModuleClock(GPIOA_MODULE);
@@ -309,13 +311,8 @@ void SYS_Init(void)
     /* Enable I2S0 module clock */
     CLK_EnableModuleClock(I2S0_MODULE);
 
-#if defined(ALIGN_AF_PINS)
     /* Enable I2C3 module clock */
     CLK_EnableModuleClock(I2C3_MODULE);
-#else
-    /* Enable I2C2 module clock */
-    CLK_EnableModuleClock(I2C2_MODULE);
-#endif
 
     /* Enable PDMA0 module clock */
     CLK_EnableModuleClock(PDMA0_MODULE);
@@ -338,21 +335,12 @@ void SYS_Init(void)
     /* Enable I2S0 clock pin (PI6) schmitt trigger */
     PI->SMTEN |= GPIO_SMTEN_SMTEN6_Msk;
 
-#if defined(ALIGN_AF_PINS)
     /* Set I2C3 multi-function pins */
     SET_I2C3_SDA_PG1();
     SET_I2C3_SCL_PG0();
 
     /* Enable I2C3 clock pin (PG0) schmitt trigger */
     PG->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
-#else
-    /* Set I2C3 multi-function pins */
-    SET_I2C2_SDA_PD0();
-    SET_I2C2_SCL_PD1();
-
-    /* Enable I2C2 clock pin (PD1) schmitt trigger */
-    PD->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
-#endif
 }
 
 /* Configure PDMA to Scatter Gather mode */
@@ -440,15 +428,9 @@ int32_t main(void)
 #endif
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-#if defined(ALIGN_AF_PINS)
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
-#else
-    SET_GPIO_PD4();
-    GPIO_SetMode(PD, BIT4, GPIO_MODE_OUTPUT);
-    PD4 = 0;
-#endif
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
 
     /* Select source from HIRC(12MHz) */
     CLK_SetModuleClock(I2S0_MODULE, CLK_I2SSEL_I2S0SEL_HIRC, 0);
@@ -485,6 +467,12 @@ int32_t main(void)
     {
         if (s_u8CopyData)
         {
+#if (NVT_DCACHE_ON == 1)
+            /* Clean and invalidate the whole cache line */
+            /* which the Rx and Tx buffer belongs to */
+            SCB_CleanInvalidateDCache_by_Addr((uint32_t *)&s_au32PcmRxBuff, sizeof(s_au32PcmRxBuff));
+            SCB_CleanInvalidateDCache_by_Addr((uint32_t *)&s_au32PcmTxBuff, sizeof(s_au32PcmTxBuff));
+#endif
             memcpy(&s_au32PcmTxBuff[s_u8TxIdx ^ 1], &s_au32PcmRxBuff[s_u8RxIdx], BUFF_LEN * 4);
         }
     }

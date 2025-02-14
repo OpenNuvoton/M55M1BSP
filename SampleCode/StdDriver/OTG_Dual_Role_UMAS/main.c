@@ -28,7 +28,7 @@ void put_dump(const unsigned char *buff, unsigned long addr, int cnt);
 static FRESULT scan_files(char *path);
 void put_rc(FRESULT rc);
 void get_line(char *buff, int len);
-unsigned long get_fattime(void);
+DWORD get_fattime(void);
 void SYS_Init(void);
 void USBH_Process(void);
 
@@ -395,9 +395,9 @@ void get_line(char *buff, int len)
 /* the system does not support an RTC.                     */
 /* This function is not required in read-only cfg.         */
 /*---------------------------------------------------------*/
-unsigned long get_fattime(void)
+DWORD get_fattime(void)
 {
-    unsigned long tmr;
+    DWORD tmr;
 
     tmr = 0x00000;
 
@@ -421,8 +421,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
 #if (USE_USB_APLL1_CLOCK)
     /* Enable APLL1 96MHz clock */
@@ -476,11 +476,11 @@ void SYS_Init(void)
     /* Set multi-function pins for UART RXD and TXD */
     SetDebugUartMFP();
 
-    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.8     */
-    SET_USB_VBUS_EN_PB8();
+    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.15     */
+    SET_USB_VBUS_EN_PB15();
 
-    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.9   */
-    SET_USB_VBUS_ST_PB9();
+    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.14   */
+    SET_USB_VBUS_ST_PB14();
 
     /* USB 1.1 port multi-function pin VBUS, D+, D-, and ID pins */
     SET_USB_VBUS_PA12();
@@ -745,7 +745,7 @@ void USBH_Process(void)
                         put_rc(res);
 
                         if (res == FR_OK)
-                            printf("fptr=%d(0x%lX)\n", (INT)file1.fptr, file1.fptr);
+                            printf("fptr=%d(0x%X)\n", (INT)file1.fptr, file1.fptr);
 
                         break;
 
@@ -1162,7 +1162,8 @@ int32_t main(void)
     {
         if (OTG_GET_STATUS(OTG_STATUS_IDSTS_Msk))  /* B-device */
         {
-            if (OTG_GET_STATUS(OTG_STATUS_VBUSVLD_Msk))  /* plug-in */
+            //PA12 is VBUS Detection PIN , it will check status of plug-in.
+            if (OTG_GET_STATUS(OTG_STATUS_ASPERI_Msk) && (PA12 == 1))  /* plug-in */
             {
                 USBD_Open(&gsInfo, MSC_ClassRequest, NULL);
                 USBD_SetConfigCallback(MSC_SetConfig);
@@ -1198,6 +1199,7 @@ int32_t main(void)
 
                 /* Disable B-device session valid state change interrupt */
                 OTG->INTEN &= ~OTG_INTEN_BVLDCHGIEN_Msk;
+
                 /* Clear B-device session valid state change interrupt flag */
                 OTG_CLR_INT_FLAG(OTG_INTSTS_BVLDCHGIF_Msk);
                 printf("break-B (OTG_STATUS: 0x%x)\n", OTG->STATUS);

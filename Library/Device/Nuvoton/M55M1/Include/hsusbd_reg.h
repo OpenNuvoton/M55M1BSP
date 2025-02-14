@@ -261,7 +261,7 @@ typedef struct
      * |[7:4]   |EPNUM     |Endpoint Number
      * |        |          |This field selects the number of the endpoint. Valid numbers 1 to 15.
      * |        |          |Note: Do not support two endpoints have same endpoint number.
-     * @var HSUSBD_EP_T::EPBUFST
+     * @var HSUSBD_EP_T::EPBUFSTART
      * Offset: 0x84/0xAC/0xD4/0xFC/0x124/0x14C/0x174/0x19C/0x1C4/0x1EC/0x214/0x23C/0x264/0x28C/0x2B4/0x2DC/0x304/0x32C  Endpoint n RAM Start Address Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
@@ -291,13 +291,14 @@ typedef struct
     __IO uint32_t EPMPS;                /*!< [0x0014] Endpoint n Maximum Packet Size Register                          */
     __IO uint32_t EPTXCNT;              /*!< [0x0018] Endpoint n Transfer Count Register                               */
     __IO uint32_t EPCFG;                /*!< [0x001c] Endpoint n Configuration Register                                */
-    __IO uint32_t EPBUFST;              /*!< [0x0020] Endpoint n RAM Start Address Register                            */
+    __IO uint32_t EPBUFSTART;              /*!< [0x0020] Endpoint n RAM Start Address Register                            */
     __IO uint32_t EPBUFEND;             /*!< [0x0024] Endpoint n RAM End Address Register                              */
 
 } HSUSBD_EP_T;
 
 typedef struct
 {
+
 
     /**
      * @var HSUSBD_T::GINTSTS
@@ -309,84 +310,84 @@ typedef struct
      * |        |          |This bit conveys the interrupt status for USB specific events endpoint
      * |        |          |When set, USB interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[1]     |CEPIF     |Control Endpoint Interrupt
      * |        |          |This bit conveys the interrupt status for control endpoint
      * |        |          |When set, Control-ep's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
-     * |[2]     |EPAIF     |Endpoint a Interrupt
+     * |        |          |1 = The related interrupt event occurred.
+     * |[2]     |EPAIF     |Endpoint A Interrupt
      * |        |          |When set, the corresponding Endpoint A's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[3]     |EPBIF     |Endpoint B Interrupt
      * |        |          |When set, the corresponding Endpoint B's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[4]     |EPCIF     |Endpoint C Interrupt
      * |        |          |When set, the corresponding Endpoint C's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[5]     |EPDIF     |Endpoint D Interrupt
      * |        |          |When set, the corresponding Endpoint D's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[6]     |EPEIF     |Endpoint E Interrupt
      * |        |          |When set, the corresponding Endpoint E's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[7]     |EPFIF     |Endpoint F Interrupt
      * |        |          |When set, the corresponding Endpoint F's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[8]     |EPGIF     |Endpoint G Interrupt
      * |        |          |When set, the corresponding Endpoint G's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[9]     |EPHIF     |Endpoint H Interrupt
      * |        |          |When set, the corresponding Endpoint H's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[10]    |EPIIF     |Endpoint I Interrupt
      * |        |          |When set, the corresponding Endpoint I's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[11]    |EPJIF     |Endpoint J Interrupt
      * |        |          |When set, the corresponding Endpoint J's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[12]    |EPKIF     |Endpoint K Interrupt
      * |        |          |When set, the corresponding Endpoint K's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[13]    |EPLIF     |Endpoint L Interrupt
      * |        |          |When set, the corresponding Endpoint L's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[14]    |EPMIF     |Endpoint M Interrupt
      * |        |          |When set, the corresponding Endpoint M's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[15]    |EPNIF     |Endpoint N Interrupt
      * |        |          |When set, the corresponding Endpoint N's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[16]    |EPOIF     |Endpoint O Interrupt
      * |        |          |When set, the corresponding Endpoint O's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[17]    |EPPIF     |Endpoint P Interrupt
      * |        |          |When set, the corresponding Endpoint P's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[18]    |EPQIF     |Endpoint Q Interrupt
      * |        |          |When set, the corresponding Endpoint Q's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * |[19]    |EPRIF     |Endpoint R Interrupt
      * |        |          |When set, the corresponding Endpoint R's interrupt status register should be read to determine the cause of the interrupt.
      * |        |          |0 = No interrupt event occurred.
-     * |        |          |1 = The related interrupt event is occurred.
+     * |        |          |1 = The related interrupt event occurred.
      * @var HSUSBD_T::GINTEN
      * Offset: 0x08  Global Interrupt Enable Register
      * ---------------------------------------------------------------------------------------------------
@@ -400,7 +401,7 @@ typedef struct
      * |        |          |When set, this bit enables a local interrupt to be generated when an interrupt is pending for the control endpoint.
      * |        |          |0 = The related interrupt Disabled.
      * |        |          |1 = The related interrupt Enabled.
-     * |[2]     |EPAIEN    |Interrupt Enable Control for Endpoint a
+     * |[2]     |EPAIEN    |Interrupt Enable Control for Endpoint A
      * |        |          |When set, this bit enables a local interrupt to be generated when an interrupt is pending for the endpoint A.
      * |        |          |0 = The related interrupt Disabled.
      * |        |          |1 = The related interrupt Enabled.
@@ -477,28 +478,28 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |SOFIF     |SOF Receive Control
+     * |[0]     |SOFIF     |SOF Receive Control Interrupt
      * |        |          |This bit indicates when a start-of-frame packet has been received.
      * |        |          |0 = No start-of-frame packet has been received.
      * |        |          |1 = Start-of-frame packet has been received.
      * |        |          |Note: Write 1 to clear this bit to 0.
-     * |[1]     |RSTIF     |Reset Status
+     * |[1]     |RSTIF     |Reset Interrupt
      * |        |          |When set, this bit indicates that either the USB root port reset is end.
      * |        |          |0 = No USB root port reset is end.
      * |        |          |1 = USB root port reset is end.
      * |        |          |Note: Write 1 to clear this bit to 0.
-     * |[2]     |RESUMEIF  |Resume
+     * |[2]     |RESUMEIF  |Resume Interrupt
      * |        |          |When set, this bit indicates that a device resume has occurred.
      * |        |          |0 = No device resume has occurred.
      * |        |          |1 = Device resume has occurred.
      * |        |          |Note: Write 1 to clear this bit to 0.
-     * |[3]     |SUSPENDIF |Suspend Request
+     * |[3]     |SUSPENDIF |Suspend Request Interrupt
      * |        |          |This bit is set as default and it has to be cleared by writing '1' before the USB reset
      * |        |          |This bit is also set when a USB Suspend request is detected from the host.
      * |        |          |0 = No USB Suspend request is detected from the host.
      * |        |          |1= USB Suspend request is detected from the host.
      * |        |          |Note: Write 1 to clear this bit to 0.
-     * |[4]     |HISPDIF   |High-speed Settle
+     * |[4]     |HISPDIF   |High-speed Settle Interrupt
      * |        |          |0 = No valid high-speed reset protocol is detected.
      * |        |          |1 = Valid high-speed reset protocol is over and the device has settled in high-speed.
      * |        |          |Note: Write 1 to clear this bit to 0.
@@ -523,31 +524,31 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |SOFIEN    |SOF Interrupt
+     * |[0]     |SOFIEN    |SOF Interrupt Enable Bit
      * |        |          |This bit enables the SOF interrupt.
      * |        |          |0 = SOF interrupt Disabled.
      * |        |          |1 = SOF interrupt Enabled.
-     * |[1]     |RSTIEN    |Reset Status
+     * |[1]     |RSTIEN    |Reset Interrupt Enable Bit
      * |        |          |This bit enables the USB-Reset interrupt.
      * |        |          |0 = USB-Reset interrupt Disabled.
      * |        |          |1 = USB-Reset interrupt Enabled.
-     * |[2]     |RESUMEIEN |Resume
+     * |[2]     |RESUMEIEN |Resume Interrupt Enable Bit
      * |        |          |This bit enables the Resume interrupt.
      * |        |          |0 = Resume interrupt Disabled.
      * |        |          |1 = Resume interrupt Enabled.
-     * |[3]     |SUSPENDIEN|Suspend Request
+     * |[3]     |SUSPENDIEN|Suspend Request Interrupt Enable Bit
      * |        |          |This bit enables the Suspend interrupt.
      * |        |          |0 = Suspend interrupt Disabled.
      * |        |          |1 = Suspend interrupt Enabled.
-     * |[4]     |HISPDIEN  |High-speed Settle
+     * |[4]     |HISPDIEN  |High-speed Settle Interrupt Enable Bit
      * |        |          |This bit enables the high-speed settle interrupt.
      * |        |          |0 = High-speed settle interrupt Disabled.
      * |        |          |1 = High-speed settle interrupt Enabled.
-     * |[5]     |DMADONEIEN|DMA Completion Interrupt
+     * |[5]     |DMADONEIEN|DMA Completion Interrupt Enable Bit
      * |        |          |This bit enables the DMA completion interrupt
      * |        |          |0 = DMA completion interrupt Disabled.
      * |        |          |1 = DMA completion interrupt Enabled.
-     * |[6]     |PHYCLKVLDIEN|Usable Clock Interrupt
+     * |[6]     |PHYCLKVLDIEN|Usable Clock Interrupt Enable Bit
      * |        |          |This bit enables the usable clock interrupt.
      * |        |          |0 = Usable clock interrupt Disabled.
      * |        |          |1 = Usable clock interrupt Enabled.
@@ -571,8 +572,11 @@ typedef struct
      * |        |          |0 = The USB device controller to suppress the chirp-sequence during reset protocol, thereby allowing the USB device controller to settle in full-speed, even though it is connected to a USB2.0 Host.
      * |        |          |1 = The USB device controller to initiate a chirp-sequence during reset protocol.
      * |[2]     |CURSPD    |USB Current Speed
-     * |        |          |0 = The device has settled in Full Speed.
-     * |        |          |1 = The USB device controller has settled in High-speed.
+     * |        |          |0 = The device has settled in full-speed.
+     * |        |          |1 = The USB device controller has settled in high-speed.
+     * |[3]     |HISHSEN   |USB High-speed Handshake Enable Bit
+     * |        |          |0 = The USB device can not start high speed handshake.
+     * |        |          |1 = The USB device can start high speed handshake.
      * @var HSUSBD_T::FRAMECNT
      * Offset: 0x1C  USB Frame Count Register
      * ---------------------------------------------------------------------------------------------------
@@ -649,8 +653,8 @@ typedef struct
      * |        |          |This bit gets cleared once the zero length data packet is sent
      * |        |          |So, the local CPU need not write again to clear this bit.
      * |[3]     |FLUSH     |CEP-flush Bit
-     * |        |          |0 = No the packet buffer and its corresponding USBD_CEPDATCNT register to be cleared.
-     * |        |          |1 = The packet buffer and its corresponding USBD_CEPDATCNT register to be cleared
+     * |        |          |0 = No the packet buffer and its corresponding HSUSBD_CEPDATCNT register to be cleared.
+     * |        |          |1 = The packet buffer and its corresponding HSUSBD_CEPDATCNT register to be cleared
      * |        |          |This bit is self-cleaning.
      * @var HSUSBD_T::CEPINTEN
      * Offset: 0x30  Control-Endpoint Interrupt Enable
@@ -660,44 +664,44 @@ typedef struct
      * |[0]     |SETUPTKIEN|Setup Token Interrupt Enable Bit
      * |        |          |0 = The SETUP token interrupt in Control Endpoint Disabled.
      * |        |          |1 = The SETUP token interrupt in Control Endpoint Enabled.
-     * |[1]     |SETUPPKIEN|Setup Packet Interrupt
+     * |[1]     |SETUPPKIEN|Setup Packet Interrupt Enable Bit
      * |        |          |0 = The SETUP packet interrupt in Control Endpoint Disabled.
      * |        |          |1 = The SETUP packet interrupt in Control Endpoint Enabled.
-     * |[2]     |OUTTKIEN  |Out Token Interrupt
+     * |[2]     |OUTTKIEN  |Out Token Interrupt Enable Bit
      * |        |          |0 = The OUT token interrupt in Control Endpoint Disabled.
      * |        |          |1 = The OUT token interrupt in Control Endpoint Enabled.
-     * |[3]     |INTKIEN   |In Token Interrupt
+     * |[3]     |INTKIEN   |In Token Interrupt Enable Bit
      * |        |          |0 = The IN token interrupt in Control Endpoint Disabled.
      * |        |          |1 = The IN token interrupt in Control Endpoint Enabled.
-     * |[4]     |PINGIEN   |Ping Token Interrupt
+     * |[4]     |PINGIEN   |Ping Token Interrupt Enable Bit
      * |        |          |0 = The ping token interrupt in Control Endpoint Disabled.
      * |        |          |1 = The ping token interrupt Control Endpoint Enabled.
-     * |[5]     |TXPKIEN   |Data Packet Transmitted Interrupt
+     * |[5]     |TXPKIEN   |Data Packet Transmitted Interrupt Enable Bit
      * |        |          |0 = The data packet transmitted interrupt in Control Endpoint Disabled.
      * |        |          |1 = The data packet transmitted interrupt in Control Endpoint Enabled.
-     * |[6]     |RXPKIEN   |Data Packet Received Interrupt
+     * |[6]     |RXPKIEN   |Data Packet Received Interrupt Enable Bit
      * |        |          |0 = The data received interrupt in Control Endpoint Disabled.
      * |        |          |1 = The data received interrupt in Control Endpoint Enabled.
-     * |[7]     |NAKIEN    |NAK Sent Interrupt
+     * |[7]     |NAKIEN    |NAK Sent Interrupt Enable Bit
      * |        |          |0 = The NAK sent interrupt in Control Endpoint Disabled.
      * |        |          |1 = The NAK sent interrupt in Control Endpoint Enabled.
-     * |[8]     |STALLIEN  |STALL Sent Interrupt
+     * |[8]     |STALLIEN  |STALL Sent Interrupt Enable Bit
      * |        |          |0 = The STALL sent interrupt in Control Endpoint Disabled.
      * |        |          |1 = The STALL sent interrupt in Control Endpoint Enabled.
-     * |[9]     |ERRIEN    |USB Error Interrupt
+     * |[9]     |ERRIEN    |USB Error Interrupt Enable Bit
      * |        |          |0 = The USB Error interrupt in Control Endpoint Disabled.
      * |        |          |1 = The USB Error interrupt in Control Endpoint Enabled.
-     * |[10]    |STSDONEIEN|Status Completion Interrupt
+     * |[10]    |STSDONEIEN|Status Completion Interrupt Enable Bit
      * |        |          |0 = The Status Completion interrupt in Control Endpoint Disabled.
      * |        |          |1 = The Status Completion interrupt in Control Endpoint Enabled.
-     * |[11]    |BUFFULLIEN|Buffer Full Interrupt
+     * |[11]    |BUFFULLIEN|Buffer Full Interrupt Enable Bit
      * |        |          |0 = The buffer full interrupt in Control Endpoint Disabled.
      * |        |          |1 = The buffer full interrupt in Control Endpoint Enabled.
-     * |[12]    |BUFEMPTYIEN|Buffer Empty Interrupt
+     * |[12]    |BUFEMPTYIEN|Buffer Empty Interrupt Enable Bit
      * |        |          |0 = The buffer empty interrupt in Control Endpoint Disabled.
      * |        |          |1= The buffer empty interrupt in Control Endpoint Enabled.
      * @var HSUSBD_T::CEPINTSTS
-     * Offset: 0x34  Control-Endpoint Interrupt Status
+     * Offset: 0x34  Control-endpoint Interrupt Status
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
@@ -712,15 +716,15 @@ typedef struct
      * |        |          |1 = A Setup packet has been received from the host.
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[2]     |OUTTKIF   |Out Token Interrupt
-     * |        |          |0 = The control-endpoint does not received an OUT token from the host.
+     * |        |          |0 = The control-endpoint does not receive an OUT token from the host.
      * |        |          |1 = The control-endpoint receives an OUT token from the host.
      * |        |          |Note: Write 1 to clear this bit to 0.
-     * |[3]     |INTKIF    |in Token Interrupt
-     * |        |          |0 = The control-endpoint does not received an IN token from the host.
+     * |[3]     |INTKIF    |In Token Interrupt
+     * |        |          |0 = The control-endpoint does not receive an IN token from the host.
      * |        |          |1 = The control-endpoint receives an IN token from the host.
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[4]     |PINGIF    |Ping Token Interrupt
-     * |        |          |0 = The control-endpoint does not received a ping token from the host.
+     * |        |          |0 = The control-endpoint does not receive a ping token from the host.
      * |        |          |1 = The control-endpoint receives a ping token from the host.
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[5]     |TXPKIF    |Data Packet Transmitted Interrupt
@@ -750,56 +754,57 @@ typedef struct
      * |[11]    |BUFFULLIF |Buffer Full Interrupt
      * |        |          |0 = The control-endpoint buffer is not full.
      * |        |          |1 = The control-endpoint buffer is full.
-     * |        |          |Note: Write 1 to clear this bit to 0.
+     * |        |          |Note: This bit is read-only.
      * |[12]    |BUFEMPTYIF|Buffer Empty Interrupt
      * |        |          |0 = The control-endpoint buffer is not empty.
      * |        |          |1 = The control-endpoint buffer is empty.
-     * |        |          |Note: Write 1 to clear this bit to 0.
+     * |        |          |Note: This bit is read-only.
      * @var HSUSBD_T::CEPTXCNT
-     * Offset: 0x38  Control-Endpoint In-transfer Data Count
+     * Offset: 0x38  Control-endpoint In-transfer Data Count
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[7:0]   |TXCNT     |In-transfer Data Count
-     * |        |          |There is no mode selection for the control endpoint (but it operates like manual mode).The local-CPU has to fill the control-endpoint buffer with the data to be sent for an in-token and to write the count of bytes in this register
-     * |        |          |When zero is written into this field, a zero length packet is sent to the host
+     * |        |          |There is no mode selection for the control endpoint (but it operates like manual mode).
+     * |        |          |The local-CPU has to fill the control-endpoint buffer with the data to be sent for an in-token and to write the count of bytes in this register.
+     * |        |          |When zero is written into this field, a zero length packet is sent to the host.
      * |        |          |When the count written in the register is more than the MPS, the data sent will be of only MPS.
      * @var HSUSBD_T::CEPRXCNT
-     * Offset: 0x3C  Control-Endpoint Out-transfer Data Count
+     * Offset: 0x3C  Control-endpoint Out-transfer Data Count
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[7:0]   |RXCNT     |Out-transfer Data Count
      * |        |          |The USB device controller maintains the count of the data received in case of an out transfer, during the control transfer.
      * @var HSUSBD_T::CEPDATCNT
-     * Offset: 0x40  Control-Endpoint data count
+     * Offset: 0x40  Control-endpoint Data Count
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[15:0]  |DATCNT    |Control-endpoint Data Count
      * |        |          |The USB device controller maintains the count of the data of control-endpoint.
      * @var HSUSBD_T::SETUP1_0
-     * Offset: 0x44  Setup1 & Setup0 bytes
+     * Offset: 0x44  Setup1 & Setup0 Bytes
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[7:0]   |SETUP0    |Setup Byte 0[7:0]
      * |        |          |This register provides byte 0 of the last setup packet received
      * |        |          |For a Standard Device Request, the following bmRequestType information is returned.
-     * |        |          |Bit 7(Direction):
-     * |        |          | 0: Host to device
-     * |        |          | 1: Device to host
+     * |        |          |Bit 7 (Direction):
+     * |        |          | 0 = Host to device
+     * |        |          | 1 = Device to host
      * |        |          |Bit 6-5 (Type):
-     * |        |          | 00: Standard
-     * |        |          | 01: Class
-     * |        |          | 10: Vendor
-     * |        |          | 11: Reserved
+     * |        |          | 00 = Standard
+     * |        |          | 01 = Class
+     * |        |          | 10 = Vendor
+     * |        |          | 11 = Reserved
      * |        |          |Bit 4-0 (Recipient)
-     * |        |          | 00000: Device
-     * |        |          | 00001: Interface
-     * |        |          | 00010: Endpoint
-     * |        |          | 00011: Other
-     * |        |          | Others: Reserved
+     * |        |          | 00000 = Device
+     * |        |          | 00001 = Interface
+     * |        |          | 00010 = Endpoint
+     * |        |          | 00011 = Other
+     * |        |          | Others = Reserved
      * |[15:8]  |SETUP1    |Setup Byte 1[15:8]
      * |        |          |This register provides byte 1 of the last setup packet received
      * |        |          |For a Standard Device Request, the following bRequest Code information is returned.
@@ -821,10 +826,10 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[7:0]   |SETUP2    |Setup Byte 2 [7:0]
+     * |[7:0]   |SETUP2    |Setup Byte 2[7:0]
      * |        |          |This register provides byte 2 of the last setup packet received
      * |        |          |For a Standard Device Request, the least significant byte of the wValue field is returned
-     * |[15:8]  |SETUP3    |Setup Byte 3 [15:8]
+     * |[15:8]  |SETUP3    |Setup Byte 3[15:8]
      * |        |          |This register provides byte 3 of the last setup packet received
      * |        |          |For a Standard Device Request, the most significant byte of the wValue field is returned.
      * @var HSUSBD_T::SETUP5_4
@@ -834,7 +839,7 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[7:0]   |SETUP4    |Setup Byte 4[7:0]
      * |        |          |This register provides byte 4 of the last setup packet received
-     * |        |          |For a Standard Device Request, the least significant byte of the wIndex is returned.
+     * |        |          |For a Standard Device Request, the least significant byte of the wIndex field is returned.
      * |[15:8]  |SETUP5    |Setup Byte 5[15:8]
      * |        |          |This register provides byte 5 of the last setup packet received
      * |        |          |For a Standard Device Request, the most significant byte of the wIndex field is returned.
@@ -849,7 +854,7 @@ typedef struct
      * |[15:8]  |SETUP7    |Setup Byte 7[15:8]
      * |        |          |This register provides byte 7 of the last setup packet received
      * |        |          |For a Standard Device Request, the most significant byte of the wLength field is returned.
-     * @var HSUSBD_T::CEPBUFST
+     * @var HSUSBD_T::CEPBUFSTART
      * Offset: 0x54  Control Endpoint RAM Start Address Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
@@ -871,22 +876,22 @@ typedef struct
      * |[3:0]   |EPNUM     |DMA Endpoint Address Bits
      * |        |          |Used to define the Endpoint Address
      * |[4]     |DMARD     |DMA Operation
-     * |        |          |0 : The operation is a DMA write (read from USB buffer)
-     * |        |          |DMA will check endpoint data available count (USBD_EPxDATCNT) according to EPNM setting before to perform DMA write operation.
-     * |        |          |1 : The operation is a DMA read (write to USB buffer).
+     * |        |          |0 = The operation is a DMA write (read from USB buffer)
+     * |        |          |DMA will check endpoint data available count (HSUSBD_EPxDATCNT) according to EPNUM setting before to perform DMA write operation.
+     * |        |          |1 = The operation is a DMA read (write to USB buffer).
      * |[5]     |DMAEN     |DMA Enable Bit
-     * |        |          |0 : DMA function Disabled.
-     * |        |          |1 : DMA function Enabled.
+     * |        |          |0 = DMA function Disabled.
+     * |        |          |1 = DMA function Enabled.
      * |[6]     |SGEN      |Scatter Gather Function Enable Bit
-     * |        |          |0 : Scatter gather function Disabled.
-     * |        |          |1 : Scatter gather function Enabled.
+     * |        |          |0 = Scatter gather function Disabled.
+     * |        |          |1 = Scatter gather function Enabled.
      * |[7]     |DMARST    |Reset DMA State Machine
-     * |        |          |0 : No reset the DMA state machine.
-     * |        |          |1 : Reset the DMA state machine.
+     * |        |          |0 = No reset the DMA state machine.
+     * |        |          |1 = Reset the DMA state machine.
      * |[8]     |SVINEP    |Serve IN Endpoint
      * |        |          |This bit is used to specify DMA serving endpoint-IN endpoint or OUT endpoint.
-     * |        |          |0: DMA serves OUT endpoint
-     * |        |          |1: DMA serves IN endpoint
+     * |        |          |0 = DMA serves OUT endpoint.
+     * |        |          |1 = DMA serves IN endpoint.
      * @var HSUSBD_T::DMACNT
      * Offset: 0x60  DMA Count Register
      * ---------------------------------------------------------------------------------------------------
@@ -895,45 +900,42 @@ typedef struct
      * |[19:0]  |DMACNT    |DMA Transfer Count
      * |        |          |The transfer count of the DMA operation to be performed is written to this register.
      * @var HSUSBD_T::BCDC
-     * Offset: 0x6F8  USB Device Battery Charge Detect Control Register
+     * Offset: 0x6F8  Battery Charge Detect Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |BCDEN     |Battery Charge Detect Enable
-     * |        |          |Enable battery charge detect, user select DETMOD then observer DETSTS to decide contact
-     * |        |          |port PHY be used to BCD, can't be used to communication when BCDEN = 1
-     * |        |          |0 = Normal operation
-     * |        |          |1 = Battery charge detect operation
+     * |[0]     |BCDEN     |Battery Charge Detect Enable Bit
+     * |        |          |Enable battery charge detect, select DETMOD and then observer DETSTS to decide contact port.
+     * |        |          |PHY can be used for BCD, but cannot be used for communication when BCDEN = 1.
+     * |        |          |0 = Normal operation.
+     * |        |          |1 = Battery charge detect operation.
      * |[3:1]   |DETMOD    |Detect Mode
-     * |        |          |When BCDEN = 1, select detect mode to perform
-     * |        |          |000 = Idle, nothing to detect
-     * |        |          |001 = VBUS detect, detect USB VBUS whether great than threshold voltage
-     * |        |          |010 = Data contact detect(DCD), detect data pin contact status
-     * |        |          |011 = Primary detect(PD), distinguish between (SDP or NUSP) and (CDP or DCP)
-     * |        |          |100 = Secondary detect(SD), distinguish between CDP and DCP
-     * |        |          |101~111 = Reserved
+     * |        |          |When BCDEN = 1, select detect mode to perform.
+     * |        |          |000 = Idle, nothing to detect.
+     * |        |          |001 = VBUS detect, detect USB VBUS whether great than threshold voltage.
+     * |        |          |010 = Data contact detect (DCD), detect data pin contact status.
+     * |        |          |011 = Primary detect (PD), distinguish between (SDP or USP) and (CDP or DCP).
+     * |        |          |100 = Secondary detect (SD), distinguish between CDP and DCP.
+     * |        |          |101~111 = Reserved.
      * |[4]     |DETSTS    |Detect Status (Read Only)
-     * |        |          |When DETMOD = 000(IDLE), DETSTS = 0
-     * |        |          |
-     * |        |          |When DETMOD = 001(VBUS detect)
-     * |        |          |000 = VBUS is less than threshold voltage
-     * |        |          |001 = VBUS is greater than threshold voltage
-     * |        |          |
-     * |        |          |When DETMOD = 010(DCD detect)
-     * |        |          |000 = Data pin not contacted
-     * |        |          |001 = Data pin contacted
-     * |        |          |
-     * |        |          |When DETMOD = 011(PD)
-     * |        |          |000 = SDP port or not USB support port. If it is not USB support, NUSP is 1
-     * |        |          |001 = DCP or CDP
-     * |        |          |
-     * |        |          |When DETMOD = 100(SD)
-     * |        |          |000 = CDP
-     * |        |          |001 = DCP
-     * |[5]     |USP       |Not USB Support Port (Read Only)
-     * |        |          |When DETMOD = 011(PD), detect DM be pulled logic high, it means contact port not USB support port
-     * |        |          |0 = USB support port
-     * |        |          |1 = Special port.(PS/2 or proprietary charger)
+     * |        |          |When DETMOD = 000 (IDLE).
+     * |        |          |DETSTS = 0.
+     * |        |          |When DETMOD = 001 (VBUS detect).
+     * |        |          |0 = VBUS is less than threshold voltage.
+     * |        |          |1 = VBUS is greater than threshold voltage.
+     * |        |          |When DETMOD = 010 (DCD detect).
+     * |        |          |0 = Data pin not contacted.
+     * |        |          |1 = Data pin contacted.
+     * |        |          |When DETMOD = 011 (PD).
+     * |        |          |0 = SDP port or not USB support port. If it is not USB support port, USP is 1.
+     * |        |          |1 = DCP or CDP.
+     * |        |          |When DETMOD = 100 (SD).
+     * |        |          |0 = CDP.
+     * |        |          |1 = DCP.
+     * |[5]     |USP       |USB Special Port (Read Only)
+     * |        |          |When DETMOD = 011(PD), detect DM be pulled logic high, it means contact port not USB support port.
+     * |        |          |0 = USB support port.
+     * |        |          |1 = Special port. (PS/2 or proprietary charger)
      * |[30]    |BCDIEN    |Battery Charge Detect Interrupt Enable Bit
      * |        |          |0 = BCD Interrupt Disabled.
      * |        |          |1 = BCD Interrupt Enabled.
@@ -944,17 +946,25 @@ typedef struct
      * |        |          |0 = BCD event did not occur.
      * |        |          |1 = BCD event occurred.
      * |        |          |Note: Write 1 to clear this bit to 0.
+     * @var HSUSBD_T::LPMCSR
      * Offset: 0x6FC  LPM Control and Status Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
+     * |[10:0]  |bmAttributes|The LPM Token bmAttributes Field Definition (Read Only)
+     * |        |          |Bit 10-9 (Reserved)
+     * |        |          |Bit 8 (bRemoteWake)
+     * |        |          |Bit [7:4] (HIRD)
+     * |        |          |Bit [3:0] (bLinkState):
+     * |        |          | 0001 = L1 (Sleep)
+     * |        |          | Others = Reserved.
      * |[12]    |LPMEN     |LPM Function Enable Bit
      * |        |          |0 = The LPM function Disabled.
      * |        |          |1 = The LPM function Enabled.
      * |[13]    |LPMSLEEPEN|LPM Sleep Function Enable Bit
      * |        |          |0 = The LPM sleep function Disabled.
      * |        |          |1 = The LPM sleep function Enabled.
-     * |[14]    |LPMSENDNYET|NLPM Send NYET Response
+     * |[14]    |LPMSENDNYET|LPM Send NYET Response
      * |        |          |0 = Not send a NYET handshake as response to the LPM token.
      * |        |          |1 = Send a NYET handshake as response to the LPM token.
      * @var HSUSBD_T::DMAADDR
@@ -970,19 +980,19 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[8]     |DPPUEN    |DP Pull-up
+     * |[8]     |DPPUEN    |DP Pull-up Enable Bit
      * |        |          |0 = Pull-up resistor on D+ Disabled.
      * |        |          |1 = Pull-up resistor on D+ Enabled.
      * |[9]     |PHYEN     |PHY Suspend Enable Bit
      * |        |          |0 = The USB PHY is suspend.
      * |        |          |1 = The USB PHY is not suspend.
-     * |[24]    |VBUSWKEN  |Wake-up Enable Bit
+     * |[24]    |VBUSWKEN  |VBUS Wake-up Enable Bit
      * |        |          |0 = The wake-up function Disabled.
      * |        |          |1 = The wake-up function Enabled.
      * |[25]    |LINESTATEWKEN|Line State Wake-up Enable Bit
      * |        |          |0 = The Line State wake-up function Disabled.
      * |        |          |1 = The Line State wake-up function Enabled.
-     * |[26]    |STALLREVER|Stall Revert Write Pointer Enable Bit
+     * |[26]    |STALLREVERT|Stall Revert Write Pointer Enable Bit
      * |        |          |0 = The Stall revert write pointer function Disabled.
      * |        |          |1 = The Stall revert write pointer function Enabled.
      * |[27]    |PHYCLKSTB |PHY Clock Stable Flag
@@ -994,13 +1004,9 @@ typedef struct
      */
 
     __I  uint32_t GINTSTS;               /*!< [0x0000] Global Interrupt Status Register                                 */
-    /// @cond HIDDEN_SYMBOLS
     __I  uint32_t RESERVE0[1];
-    /// @endcond //HIDDEN_SYMBOLS
     __IO uint32_t GINTEN;                /*!< [0x0008] Global Interrupt Enable Register                                 */
-    /// @cond HIDDEN_SYMBOLS
     __I  uint32_t RESERVE1[1];
-    /// @endcond //HIDDEN_SYMBOLS
     __IO uint32_t BUSINTSTS;             /*!< [0x0010] USB Bus Interrupt Status Register                                */
     __IO uint32_t BUSINTEN;              /*!< [0x0014] USB Bus Interrupt Enable Register                                */
     __IO uint32_t OPER;                  /*!< [0x0018] USB Operational Register                                         */
@@ -1025,16 +1031,14 @@ typedef struct
     __I  uint32_t SETUP3_2;              /*!< [0x0048] Setup3 & Setup2 Bytes                                            */
     __I  uint32_t SETUP5_4;              /*!< [0x004c] Setup5 & Setup4 Bytes                                            */
     __I  uint32_t SETUP7_6;              /*!< [0x0050] Setup7 & Setup6 Bytes                                            */
-    __IO uint32_t CEPBUFST;              /*!< [0x0054] Control Endpoint RAM Start Address Register                      */
+    __IO uint32_t CEPBUFSTART;           /*!< [0x0054] Control Endpoint RAM Start Address Register                      */
     __IO uint32_t CEPBUFEND;             /*!< [0x0058] Control Endpoint RAM End Address Register                        */
     __IO uint32_t DMACTL;                /*!< [0x005c] DMA Control Status Register                                      */
     __IO uint32_t DMACNT;                /*!< [0x0060] DMA Count Register                                               */
 
     HSUSBD_EP_T EP[18];
 
-    /// @cond HIDDEN_SYMBOLS
     __I  uint32_t RESERVE2[241];
-    /// @endcond //HIDDEN_SYMBOLS
     __IO uint32_t BCDC;                  /*!< [0x06f8] Battery Charge Detect Control Register                           */
     __IO uint32_t LPMCSR;                /*!< [0x06fc] LPM Control and Status Register                                  */
     __IO uint32_t DMAADDR;               /*!< [0x0700] AHB DMA Address Register                                         */
@@ -1089,6 +1093,24 @@ typedef struct
 #define HSUSBD_GINTSTS_EPLIF_Pos         (13)                                              /*!< HSUSBD_T::GINTSTS: EPLIF Position      */
 #define HSUSBD_GINTSTS_EPLIF_Msk         (0x1ul << HSUSBD_GINTSTS_EPLIF_Pos)               /*!< HSUSBD_T::GINTSTS: EPLIF Mask          */
 
+#define HSUSBD_GINTSTS_EPMIF_Pos         (14)                                              /*!< HSUSBD_T::GINTSTS: EPMIF Position      */
+#define HSUSBD_GINTSTS_EPMIF_Msk         (0x1ul << HSUSBD_GINTSTS_EPMIF_Pos)               /*!< HSUSBD_T::GINTSTS: EPMIF Mask          */
+
+#define HSUSBD_GINTSTS_EPNIF_Pos         (15)                                              /*!< HSUSBD_T::GINTSTS: EPNIF Position      */
+#define HSUSBD_GINTSTS_EPNIF_Msk         (0x1ul << HSUSBD_GINTSTS_EPNIF_Pos)               /*!< HSUSBD_T::GINTSTS: EPNIF Mask          */
+
+#define HSUSBD_GINTSTS_EPOIF_Pos         (16)                                              /*!< HSUSBD_T::GINTSTS: EPOIF Position      */
+#define HSUSBD_GINTSTS_EPOIF_Msk         (0x1ul << HSUSBD_GINTSTS_EPOIF_Pos)               /*!< HSUSBD_T::GINTSTS: EPOIF Mask          */
+
+#define HSUSBD_GINTSTS_EPPIF_Pos         (17)                                              /*!< HSUSBD_T::GINTSTS: EPPIF Position      */
+#define HSUSBD_GINTSTS_EPPIF_Msk         (0x1ul << HSUSBD_GINTSTS_EPPIF_Pos)               /*!< HSUSBD_T::GINTSTS: EPPIF Mask          */
+
+#define HSUSBD_GINTSTS_EPQIF_Pos         (18)                                              /*!< HSUSBD_T::GINTSTS: EPQIF Position      */
+#define HSUSBD_GINTSTS_EPQIF_Msk         (0x1ul << HSUSBD_GINTSTS_EPQIF_Pos)               /*!< HSUSBD_T::GINTSTS: EPQIF Mask          */
+
+#define HSUSBD_GINTSTS_EPRIF_Pos         (19)                                              /*!< HSUSBD_T::GINTSTS: EPRIF Position      */
+#define HSUSBD_GINTSTS_EPRIF_Msk         (0x1ul << HSUSBD_GINTSTS_EPRIF_Pos)               /*!< HSUSBD_T::GINTSTS: EPRIF Mask          */
+
 #define HSUSBD_GINTEN_USBIEN_Pos         (0)                                               /*!< HSUSBD_T::GINTEN: USBIEN Position      */
 #define HSUSBD_GINTEN_USBIEN_Msk         (0x1ul << HSUSBD_GINTEN_USBIEN_Pos)               /*!< HSUSBD_T::GINTEN: USBIEN Mask          */
 
@@ -1130,6 +1152,24 @@ typedef struct
 
 #define HSUSBD_GINTEN_EPLIEN_Pos         (13)                                              /*!< HSUSBD_T::GINTEN: EPLIEN Position      */
 #define HSUSBD_GINTEN_EPLIEN_Msk         (0x1ul << HSUSBD_GINTEN_EPLIEN_Pos)               /*!< HSUSBD_T::GINTEN: EPLIEN Mask          */
+
+#define HSUSBD_GINTEN_EPMIEN_Pos         (14)                                              /*!< HSUSBD_T::GINTEN: EPMIEN Position      */
+#define HSUSBD_GINTEN_EPMIEN_Msk         (0x1ul << HSUSBD_GINTEN_EPMIEN_Pos)               /*!< HSUSBD_T::GINTEN: EPMIEN Mask          */
+
+#define HSUSBD_GINTEN_EPNIEN_Pos         (15)                                              /*!< HSUSBD_T::GINTEN: EPNIEN Position      */
+#define HSUSBD_GINTEN_EPNIEN_Msk         (0x1ul << HSUSBD_GINTEN_EPNIEN_Pos)               /*!< HSUSBD_T::GINTEN: EPNIEN Mask          */
+
+#define HSUSBD_GINTEN_EPOIEN_Pos         (16)                                              /*!< HSUSBD_T::GINTEN: EPOIEN Position      */
+#define HSUSBD_GINTEN_EPOIEN_Msk         (0x1ul << HSUSBD_GINTEN_EPOIEN_Pos)               /*!< HSUSBD_T::GINTEN: EPOIEN Mask          */
+
+#define HSUSBD_GINTEN_EPPIEN_Pos         (17)                                              /*!< HSUSBD_T::GINTEN: EPPIEN Position      */
+#define HSUSBD_GINTEN_EPPIEN_Msk         (0x1ul << HSUSBD_GINTEN_EPPIEN_Pos)               /*!< HSUSBD_T::GINTEN: EPPIEN Mask          */
+
+#define HSUSBD_GINTEN_EPQIEN_Pos         (18)                                              /*!< HSUSBD_T::GINTEN: EPQIEN Position      */
+#define HSUSBD_GINTEN_EPQIEN_Msk         (0x1ul << HSUSBD_GINTEN_EPQIEN_Pos)               /*!< HSUSBD_T::GINTEN: EPQIEN Mask          */
+
+#define HSUSBD_GINTEN_EPRIEN_Pos         (19)                                              /*!< HSUSBD_T::GINTEN: EPRIEN Position      */
+#define HSUSBD_GINTEN_EPRIEN_Msk         (0x1ul << HSUSBD_GINTEN_EPRIEN_Pos)               /*!< HSUSBD_T::GINTEN: EPRIEN Mask          */
 
 #define HSUSBD_BUSINTSTS_SOFIF_Pos       (0)                                               /*!< HSUSBD_T::BUSINTSTS: SOFIF Position    */
 #define HSUSBD_BUSINTSTS_SOFIF_Msk       (0x1ul << HSUSBD_BUSINTSTS_SOFIF_Pos)             /*!< HSUSBD_T::BUSINTSTS: SOFIF Mask        */
@@ -1193,6 +1233,9 @@ typedef struct
 
 #define HSUSBD_OPER_CURSPD_Pos           (2)                                               /*!< HSUSBD_T::OPER: CURSPD Position        */
 #define HSUSBD_OPER_CURSPD_Msk           (0x1ul << HSUSBD_OPER_CURSPD_Pos)                 /*!< HSUSBD_T::OPER: CURSPD Mask            */
+
+#define HSUSBD_OPER_HISHSEN_Pos          (3)                                               /*!< HSUSBD_T::OPER: HISHSEN Position       */
+#define HSUSBD_OPER_HISHSEN_Msk          (0x1ul << HSUSBD_OPER_HISHSEN_Pos)                /*!< HSUSBD_T::OPER: HISHSEN Mask           */
 
 #define HSUSBD_FRAMECNT_MFRAMECNT_Pos    (0)                                               /*!< HSUSBD_T::FRAMECNT: MFRAMECNT Position */
 #define HSUSBD_FRAMECNT_MFRAMECNT_Msk    (0x7ul << HSUSBD_FRAMECNT_MFRAMECNT_Pos)          /*!< HSUSBD_T::FRAMECNT: MFRAMECNT Mask     */
@@ -1332,11 +1375,11 @@ typedef struct
 #define HSUSBD_SETUP7_6_SETUP7_Pos       (8)                                               /*!< HSUSBD_T::SETUP7_6: SETUP7 Position    */
 #define HSUSBD_SETUP7_6_SETUP7_Msk       (0xfful << HSUSBD_SETUP7_6_SETUP7_Pos)            /*!< HSUSBD_T::SETUP7_6: SETUP7 Mask        */
 
-#define HSUSBD_CEPBUFST_SADDR_Pos        (0)                                               /*!< HSUSBD_T::CEPBUFST: SADDR Position     */
-#define HSUSBD_CEPBUFST_SADDR_Msk        (0x1fffful << HSUSBD_CEPBUFST_SADDR_Pos)          /*!< HSUSBD_T::CEPBUFST: SADDR Mask         */
+#define HSUSBD_CEPBUFSTART_SADDR_Pos     (0)                                               /*!< HSUSBD_T::CEPBUFSTART: SADDR Position  */
+#define HSUSBD_CEPBUFSTART_SADDR_Msk     (0x1ffful << HSUSBD_CEPBUFSTART_SADDR_Pos)        /*!< HSUSBD_T::CEPBUFSTART: SADDR Mask      */
 
 #define HSUSBD_CEPBUFEND_EADDR_Pos       (0)                                               /*!< HSUSBD_T::CEPBUFEND: EADDR Position    */
-#define HSUSBD_CEPBUFEND_EADDR_Msk       (0x1fffful << HSUSBD_CEPBUFEND_EADDR_Pos)         /*!< HSUSBD_T::CEPBUFEND: EADDR Mask        */
+#define HSUSBD_CEPBUFEND_EADDR_Msk       (0x1ffful << HSUSBD_CEPBUFEND_EADDR_Pos)          /*!< HSUSBD_T::CEPBUFEND: EADDR Mask        */
 
 #define HSUSBD_DMACTL_EPNUM_Pos          (0)                                               /*!< HSUSBD_T::DMACTL: EPNUM Position       */
 #define HSUSBD_DMACTL_EPNUM_Msk          (0xful << HSUSBD_DMACTL_EPNUM_Pos)                /*!< HSUSBD_T::DMACTL: EPNUM Mask           */
@@ -1485,8 +1528,8 @@ typedef struct
 #define HSUSBD_EPCFG_EPNUM_Pos           (4)                                               /*!< HSUSBD_T::EPCFG: EPNUM Position        */
 #define HSUSBD_EPCFG_EPNUM_Msk           (0xful << HSUSBD_EPCFG_EPNUM_Pos)                 /*!< HSUSBD_T::EPCFG: EPNUM Mask            */
 
-#define HSUSBD_EPBUFST_SADDR_Pos         (0)                                               /*!< HSUSBD_T::EPBUFST: SADDR Position      */
-#define HSUSBD_EPBUFST_SADDR_Msk         (0xffful << HSUSBD_EPBUFST_SADDR_Pos)             /*!< HSUSBD_T::EPBUFST: SADDR Mask          */
+#define HSUSBD_EPBUFSTART_SADDR_Pos      (0)                                               /*!< HSUSBD_T::EPBUFST: SADDR Position      */
+#define HSUSBD_EPBUFSTART_SADDR_Msk      (0xffful << HSUSBD_EPBUFST_SADDR_Pos)             /*!< HSUSBD_T::EPBUFST: SADDR Mask          */
 
 #define HSUSBD_EPBUFEND_EADDR_Pos        (0)                                               /*!< HSUSBD_T::EPBUFEND: EADDR Position     */
 #define HSUSBD_EPBUFEND_EADDR_Msk        (0xffful << HSUSBD_EPBUFEND_EADDR_Pos)            /*!< HSUSBD_T::EPBUFEND: EADDR Mask         */
@@ -1508,6 +1551,9 @@ typedef struct
 
 #define HSUSBD_BCDC_BCDIF_Pos            (31)                                              /*!< HSUSBD_T::BCDC: BCDIF Position         */
 #define HSUSBD_BCDC_BCDIF_Msk            (0x1ul << HSUSBD_BCDC_BCDIF_Pos)                  /*!< HSUSBD_T::BCDC: BCDIF Mask             */
+
+#define HSUSBD_LPMCSR_bmAttributes_Pos   (0)                                               /*!< HSUSBD_T::LPMCSR: bmAttributes Position*/
+#define HSUSBD_LPMCSR_bmAttributes_Msk   (0x7fful << HSUSBD_LPMCSR_bmAttributes_Pos)       /*!< HSUSBD_T::LPMCSR: bmAttributes Mask    */
 
 #define HSUSBD_LPMCSR_LPMEN_Pos          (12)                                              /*!< HSUSBD_T::LPMCSR: LPMEN Position       */
 #define HSUSBD_LPMCSR_LPMEN_Msk          (0x1ul << HSUSBD_LPMCSR_LPMEN_Pos)                /*!< HSUSBD_T::LPMCSR: LPMEN Mask           */

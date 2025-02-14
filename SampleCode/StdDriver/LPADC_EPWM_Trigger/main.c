@@ -24,13 +24,18 @@ volatile uint32_t g_u32AdcIntFlag, g_u32COVNUMFlag = 0;
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void LPADC0_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt = 1000;
     LPADC_CLR_INT_FLAG(LPADC0, LPADC_ADF_INT); /* Clear the A/D interrupt flag */
 
     g_u32AdcIntFlag = 1;
     g_u32COVNUMFlag++;
 
     /*Confirm that the Flag has been cleared.*/
-    M32(&LPADC0->ADSR0);
+    while (LPADC_GET_INT_FLAG(LPADC0, LPADC_ADF_INT) != 0)
+    {
+        if ((--u32TimeOutCnt) == 0)
+            break;
+    }
 }
 
 void SYS_Init(void)
@@ -39,20 +44,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -90,7 +83,6 @@ void SYS_Init(void)
 
     /* Disable the PB.0 - PB.1 digital input path to avoid the leakage current. */
     GPIO_DISABLE_DIGITAL_PATH(PB, BIT0 | BIT1);
-
 
 }
 
@@ -132,9 +124,6 @@ void LPADC_FunctionTest()
     printf("+----------------------------------------------------------------------+\n");
 
     printf("\nIn this test, software will get 6 conversion result from the specified channel.\n");
-
-    /* LPADC Calibration */
-    LPADC_Calibration(LPADC0);
 
     while (1)
     {

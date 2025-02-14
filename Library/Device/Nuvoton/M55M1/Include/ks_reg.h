@@ -214,20 +214,6 @@ typedef struct
      * |        |          |The RRMKCNT shows the remaining key count for SRAM.
      * |[21:16] |FRMKCNT   |Key Store Flash Remaining Key Count
      * |        |          |The FRMKCNT shows the remaining key count for Flash.
-     * @var KS_T::VERSION
-     * Offset: 0xFFC  Key Store RTL Design Version Register
-     * ---------------------------------------------------------------------------------------------------
-     * |Bits    |Field     |Descriptions
-     * | :----: | :----:   | :---- |
-     * |[15:0]  |MINOR     |RTL Design Minor Version Number
-     * |        |          |Minor version number is dependent on moduleu2019s ECO version control.
-     * |        |          |0x0000 (Current Minor Version Number)
-     * |[23:16] |SUB       |RTL Design Sub Version Number
-     * |        |          |Sub version number is correlated to moduleu2019s key feature.
-     * |        |          |0x031 (Current Sub Version Number)
-     * |[31:24] |MAJOR     |RTL Design Major Version Number
-     * |        |          |Major version number is correlated to Product Line.
-     * |        |          |0x02 (Current Major Version Number)
      */
     __IO uint32_t CTL;                   /*!< [0x0000] Key Store Control Register                                       */
     __IO uint32_t METADATA;              /*!< [0x0004] Key Store Metadata Register                                      */
@@ -237,9 +223,7 @@ typedef struct
     __IO uint32_t KEY[8];                /*!< [0x0020-0x003c] Key Store Entry Key Word 0-7 Register                     */
     __I  uint32_t OTPSTS;                /*!< [0x0040] Key Store OTP Keys Status Register                               */
     __I  uint32_t REMKCNT;               /*!< [0x0044] Key Store Remaining Key Count Register                           */
-    __I  uint32_t RESERVE0[1005];
-    __I  uint32_t VERSION;               /*!< [0x0ffc] Key Store RTL Design Version Register                            */
-
+    __I  uint32_t RSTERR;                /*!< [0x00f0] Key Store Reset Error Register                                   */
 } KS_T;
 
 /**
@@ -316,6 +300,9 @@ typedef struct
 #define KS_STS_KRVKF_Pos                 (9)                                               /*!< KS_T::STS: KRVKF Position              */
 #define KS_STS_KRVKF_Msk                 (0x1ul << KS_STS_KRVKF_Pos)                       /*!< KS_T::STS: KRVKF Mask                  */
 
+#define KS_STS_RSTEF_Pos                 (16)                                              /*!< KS_T::STS: RSTEF Position              */
+#define KS_STS_RSTEF_Msk                 (0x1ul << KS_STS_RSTEF_Pos)                       /*!< KS_T::STS: RSTEF Mask                  */
+
 #define KS_REMAIN_RRMNG_Pos              (0)                                               /*!< KS_T::REMAIN: RRMNG Position           */
 #define KS_REMAIN_RRMNG_Msk              (0x1ffful << KS_REMAIN_RRMNG_Pos)                 /*!< KS_T::REMAIN: RRMNG Mask               */
 
@@ -382,20 +369,35 @@ typedef struct
 #define KS_OTPSTS_KEY7_Pos               (7)                                               /*!< KS_T::OTPSTS: KEY7 Position            */
 #define KS_OTPSTS_KEY7_Msk               (0x1ul << KS_OTPSTS_KEY7_Pos)                     /*!< KS_T::OTPSTS: KEY7 Mask                */
 
+#define KS_OTPSTS_KEY8_Pos               (8)                                               /*!< KS_T::OTPSTS: KEY8 Position            */
+#define KS_OTPSTS_KEY8_Msk               (0x1ul << KS_OTPSTS_KEY8_Pos)                     /*!< KS_T::OTPSTS: KEY8 Mask                */
+
+#define KS_OTPSTS_KEY9_Pos               (9)                                               /*!< KS_T::OTPSTS: KEY9 Position            */
+#define KS_OTPSTS_KEY9_Msk               (0x1ul << KS_OTPSTS_KEY9_Pos)                     /*!< KS_T::OTPSTS: KEY9 Mask                */
+
+#define KS_OTPSTS_KEY10_Pos              (10)                                              /*!< KS_T::OTPSTS: KEY10 Position           */
+#define KS_OTPSTS_KEY10_Msk              (0x1ul << KS_OTPSTS_KEY10_Pos)                    /*!< KS_T::OTPSTS: KEY10 Mask               */
+
+#define KS_OTPSTS_KEY11_Pos              (11)                                              /*!< KS_T::OTPSTS: KEY11 Position           */
+#define KS_OTPSTS_KEY11_Msk              (0x1ul << KS_OTPSTS_KEY11_Pos)                    /*!< KS_T::OTPSTS: KEY11 Mask               */
+
+#define KS_OTPSTS_KEY12_Pos              (12)                                              /*!< KS_T::OTPSTS: KEY12 Position           */
+#define KS_OTPSTS_KEY12_Msk              (0x1ul << KS_OTPSTS_KEY12_Pos)                    /*!< KS_T::OTPSTS: KEY12 Mask               */
+
+#define KS_OTPSTS_KEY13_Pos              (13)                                              /*!< KS_T::OTPSTS: KEY13 Position           */
+#define KS_OTPSTS_KEY13_Msk              (0x1ul << KS_OTPSTS_KEY13_Pos)                    /*!< KS_T::OTPSTS: KEY13 Mask               */
+
+#define KS_OTPSTS_KEY14_Pos              (14)                                              /*!< KS_T::OTPSTS: KEY14 Position           */
+#define KS_OTPSTS_KEY14_Msk              (0x1ul << KS_OTPSTS_KEY14_Pos)                    /*!< KS_T::OTPSTS: KEY14 Mask               */
+
+#define KS_OTPSTS_KEY15_Pos              (15)                                              /*!< KS_T::OTPSTS: KEY15 Position           */
+#define KS_OTPSTS_KEY15_Msk              (0x1ul << KS_OTPSTS_KEY15_Pos)                    /*!< KS_T::OTPSTS: KEY15 Mask               */
+
 #define KS_REMKCNT_RRMKCNT_Pos           (0)                                               /*!< KS_T::REMKCNT: RRMKCNT Position        */
 #define KS_REMKCNT_RRMKCNT_Msk           (0x3ful << KS_REMKCNT_RRMKCNT_Pos)                /*!< KS_T::REMKCNT: RRMKCNT Mask            */
 
 #define KS_REMKCNT_FRMKCNT_Pos           (16)                                              /*!< KS_T::REMKCNT: FRMKCNT Position        */
 #define KS_REMKCNT_FRMKCNT_Msk           (0x3ful << KS_REMKCNT_FRMKCNT_Pos)                /*!< KS_T::REMKCNT: FRMKCNT Mask            */
-
-#define KS_VERSION_MINOR_Pos             (0)                                               /*!< KS_T::VERSION: MINOR Position          */
-#define KS_VERSION_MINOR_Msk             (0xfffful << KS_VERSION_MINOR_Pos)                /*!< KS_T::VERSION: MINOR Mask              */
-
-#define KS_VERSION_SUB_Pos               (16)                                              /*!< KS_T::VERSION: SUB Position            */
-#define KS_VERSION_SUB_Msk               (0xfful << KS_VERSION_SUB_Pos)                    /*!< KS_T::VERSION: SUB Mask                */
-
-#define KS_VERSION_MAJOR_Pos             (24)                                              /*!< KS_T::VERSION: MAJOR Position          */
-#define KS_VERSION_MAJOR_Msk             (0xfful << KS_VERSION_MAJOR_Pos)                  /*!< KS_T::VERSION: MAJOR Mask              */
 
 /** @} KS_CONST */
 /** @} end of KS register group */

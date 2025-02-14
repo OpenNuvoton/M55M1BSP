@@ -12,8 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+
 // Read what you wrote.
 use flexbuffers::*;
+#[cfg(not(miri))]  // slow.
 use quickcheck;
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +26,7 @@ use serde::{Deserialize, Serialize};
 pub struct NonNullString(String);
 impl quickcheck::Arbitrary for NonNullString {
     fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
-        let size = std::cmp::min(1, usize::arbitrary(g));
+        let size = core::cmp::min(1, usize::arbitrary(g));
         NonNullString(
             (0..)
                 .map(|_| <char>::arbitrary(g))
@@ -33,6 +37,7 @@ impl quickcheck::Arbitrary for NonNullString {
     }
 }
 
+#[cfg(not(miri))]  // slow.
 quickcheck! {
     fn qc_vec_bool(xs: Vec<bool>) -> bool {
         let mut builder = Builder::default();
@@ -41,7 +46,7 @@ quickcheck! {
             v.push(x);
         }
         v.end_vector();
-        let r = Reader::get_root(&builder.view()).unwrap().as_vector();
+        let r = Reader::get_root(builder.view()).unwrap().as_vector();
         xs.iter().enumerate().all(|(i, &x)| r.index(i).unwrap().get_bool().unwrap() == x)
     }
     fn qc_vec_uint(xs: Vec<u64>) -> bool {
@@ -51,7 +56,7 @@ quickcheck! {
             v.push(x);
         }
         v.end_vector();
-        let r = Reader::get_root(&builder.view()).unwrap().as_vector();
+        let r = Reader::get_root(builder.view()).unwrap().as_vector();
         xs.iter().enumerate().all(|(i, &x)| r.idx(i).as_u64() == x)
     }
     fn qc_vec_int(xs: Vec<i64>) -> bool {
@@ -61,7 +66,7 @@ quickcheck! {
             v.push(x);
         }
         v.end_vector();
-        let r = Reader::get_root(&builder.view()).unwrap().as_vector();
+        let r = Reader::get_root(builder.view()).unwrap().as_vector();
         xs.iter().enumerate().all(|(i, &x)| r.idx(i).as_i64() == x)
     }
     fn qc_vec_float(xs: Vec<f64>) -> bool {
@@ -71,8 +76,8 @@ quickcheck! {
             v.push(x);
         }
         v.end_vector();
-        let r = Reader::get_root(&builder.view()).unwrap().as_vector();
-        xs.iter().enumerate().all(|(i, &x)| (r.idx(i).as_f64() - x).abs() < std::f64::EPSILON)
+        let r = Reader::get_root(builder.view()).unwrap().as_vector();
+        xs.iter().enumerate().all(|(i, &x)| (r.idx(i).as_f64() - x).abs() < core::f64::EPSILON)
     }
     fn qc_vec_string(xs: Vec<String>) -> bool {
         let mut builder = Builder::default();
@@ -81,9 +86,10 @@ quickcheck! {
             v.push(x as &str);
         }
         v.end_vector();
-        let r = Reader::get_root(&builder.view()).unwrap().as_vector();
+        let r = Reader::get_root(builder.view()).unwrap().as_vector();
         xs.iter().enumerate().all(|(i, x)| (r.idx(i).as_str() == x))
     }
+    #[cfg(not(feature = "no_std"))]
     fn qc_map_int(xs: std::collections::BTreeMap<NonNullString, i64>) -> bool {
         let mut builder = Builder::default();
         let mut m = builder.start_map();
@@ -91,11 +97,12 @@ quickcheck! {
             m.push(&k.0, v);
         }
         m.end_map();
-        let r = Reader::get_root(&builder.view()).unwrap().as_map();
+        let r = Reader::get_root(builder.view()).unwrap().as_map();
         xs.iter().enumerate().all(|(i, (k, &v))| {
             r.idx(i).as_i64() == v && r.idx(k.0.as_str()).as_i64() == v
         })
     }
+    #[cfg(not(feature = "no_std"))]
     fn qc_map_string(xs: std::collections::BTreeMap<NonNullString, String>) -> bool {
         let mut builder = Builder::default();
         let mut m = builder.start_map();
@@ -103,7 +110,7 @@ quickcheck! {
             m.push(&k.0, v as &str);
         }
         m.end_map();
-        let r = Reader::get_root(&builder.view()).unwrap().as_map();
+        let r = Reader::get_root(builder.view()).unwrap().as_map();
         xs.iter().enumerate().all(|(i, (k, v))| {
             r.idx(i).as_str() == v && r.idx(k.0.as_str()).as_str() == v
         })
@@ -112,10 +119,10 @@ quickcheck! {
         let mut builder = Builder::default();
         let mut v = builder.start_vector();
         for x in &xs {
-            v.push(Blob(&x));
+            v.push(Blob(x.as_ref()));
         }
         v.end_vector();
-        let r = Reader::get_root(&builder.view()).unwrap().as_vector();
+        let r = Reader::get_root(builder.view()).unwrap().as_vector();
         xs.iter().enumerate().all(
             |(i, x)| r.idx(i).get_blob().unwrap().0.iter().eq(x.iter())
         )
@@ -193,7 +200,6 @@ fn empty_vectors() {
     let foo1 = Foo::default();
     let mut s = FlexbufferSerializer::new();
     foo1.serialize(&mut s).unwrap();
-    dbg!(s.view());
     let r = Reader::get_root(s.view()).unwrap();
     let foo2 = Foo::deserialize(r).unwrap();
     assert_eq!(foo1, foo2);
@@ -207,7 +213,7 @@ fn string() {
     v.push("barrr");
     v.push("bazzzzzz");
     v.end_vector();
-    let r = Reader::get_root(&builder.view()).unwrap().as_vector();
+    let r = Reader::get_root(builder.view()).unwrap().as_vector();
     assert_eq!(r.idx(0).as_str(), "foo");
     assert_eq!(r.idx(1).as_str(), "barrr");
     assert_eq!(r.idx(2).as_str(), "bazzzzzz");
@@ -216,7 +222,7 @@ fn string() {
 #[test]
 fn store_13() {
     let finished = singleton::<i32>(13);
-    let r = Reader::get_root(&finished).unwrap();
+    let r = Reader::get_root(finished.as_ref()).unwrap();
     assert_eq!(r.as_i32(), 13);
 }
 #[test]
@@ -231,7 +237,7 @@ fn singleton_vector_uint_4_16bit() {
     let buf2 = singleton(&[2u8, 3, 5]);
     assert_eq!(buf1, buf2.as_slice());
 
-    let r = Reader::get_root(&buf1).unwrap().as_vector();
+    let r = Reader::get_root(buf1).unwrap().as_vector();
     assert_eq!(r.idx(0).get_u64(), Ok(2));
     assert_eq!(r.idx(1).get_u64(), Ok(3));
     assert_eq!(r.idx(2).get_u64(), Ok(5));
@@ -246,13 +252,14 @@ fn vector_uint4() {
     v.push(5u8);
     v.push(7u8);
     v.end_vector();
-    let r = Reader::get_root(&fxb.view()).unwrap();
+    let r = Reader::get_root(fxb.view()).unwrap();
     let v = r.as_vector();
     assert_eq!(v.idx(0).get_u64(), Ok(2));
     assert_eq!(v.idx(1).get_u64(), Ok(3));
     assert_eq!(v.idx(2).get_u64(), Ok(5));
     assert_eq!(v.idx(3).get_u64(), Ok(7));
     assert!(v.index(4).is_err());
+    #[allow(deprecated)]
     #[cfg(target_endian = "little")]
     {
         assert_eq!(r.get_slice::<u8>().unwrap(), [2, 3, 5, 7]);
@@ -262,13 +269,13 @@ fn vector_uint4() {
 fn store_and_read_blob() {
     let mut fxb = Builder::default();
     let mut v = fxb.start_vector();
-    v.push(Blob(&[1, 2, 3, 4]));
-    v.push(Blob(&[5, 6, 7]));
+    v.push(Blob([1, 2, 3, 4].as_ref()));
+    v.push(Blob([5, 6, 7].as_ref()));
     v.end_vector();
 
-    let r = Reader::get_root(&fxb.view()).unwrap().as_vector();
-    assert_eq!(r.idx(0).get_blob(), Ok(Blob(&[1, 2, 3, 4])));
-    assert_eq!(r.idx(1).get_blob(), Ok(Blob(&[5, 6, 7])));
+    let r = Reader::get_root(fxb.view()).unwrap().as_vector();
+    assert_eq!(r.idx(0).get_blob(), Ok(Blob([1, 2, 3, 4].as_ref())));
+    assert_eq!(r.idx(1).get_blob(), Ok(Blob([5, 6, 7].as_ref())));
 }
 #[test]
 fn map_64bit() {
@@ -278,7 +285,7 @@ fn map_64bit() {
     m.push("b", u64::max_value() - 3);
     m.end_map();
 
-    let r = Reader::get_root(&fxb.view()).unwrap().as_map();
+    let r = Reader::get_root(fxb.view()).unwrap().as_map();
     assert_eq!(r.idx("a").as_u16(), 257);
     assert_eq!(r.idx("b").as_u64(), u64::max_value() - 3);
 }
@@ -339,7 +346,7 @@ fn map_strings() {
 #[test]
 fn store_u64() {
     let finished = singleton(u64::max_value() - 10);
-    let r = Reader::get_root(&finished).unwrap();
+    let r = Reader::get_root(finished.as_ref()).unwrap();
     assert_eq!(r.get_u64(), Ok(u64::max_value() - 10));
 }
 #[test]
@@ -363,6 +370,8 @@ struct Foo {
     c: Vec<u32>,
     d: String,
 }
+
+#[cfg(not(miri))]  // slow.
 quickcheck! {
     fn serde_foo(a: i8,
     b: f64,
@@ -395,7 +404,7 @@ fn serde_serious() {
         b: u16,
         c: u32,
         d: u64,
-    };
+    }
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct MyUnitStruct(Vec<String>);
@@ -440,7 +449,7 @@ fn serialize_serde_with_bytes_as_blob() {
     Foo(vec![5, 6, 7, 8]).serialize(&mut s).unwrap();
     let reader = Reader::get_root(s.view()).unwrap();
     assert_eq!(reader.flexbuffer_type(), FlexBufferType::Blob);
-    assert_eq!(reader.as_blob(), Blob(&[5, 6, 7, 8]));
+    assert_eq!(reader.as_blob(), Blob([5, 6, 7, 8].as_ref()));
 }
 #[test]
 fn iter() {
@@ -462,7 +471,7 @@ fn deserialize_newtype_i8() {
     #[derive(Deserialize)]
     struct Foo(u8);
     let data = [13, 4, 1];
-    let r = Reader::get_root(&data).unwrap();
+    let r = Reader::get_root(data.as_ref()).unwrap();
     let foo = Foo::deserialize(r).unwrap();
     assert_eq!(foo.0, 13);
 }
@@ -471,7 +480,7 @@ fn deserialize_newtype_str() {
     #[derive(Deserialize)]
     struct Foo<'a>(&'a str);
     let data = [5, b'h', b'e', b'l', b'l', b'o', b'\0', 6, 5 << 2, 1];
-    let r = Reader::get_root(&data).unwrap();
+    let r = Reader::get_root(data.as_ref()).unwrap();
     let foo = Foo::deserialize(r).unwrap();
     assert_eq!(foo.0, "hello");
 }
@@ -486,7 +495,7 @@ fn deserialize_tuple_struct_to_vec_uint4() {
         23 << 2 | 1,    // (VectorUInt4, W16 - referring to data).
         1,              // Root width W8 - referring to vector.
     ];
-    let r = Reader::get_root(&data).unwrap();
+    let r = Reader::get_root(data.as_ref()).unwrap();
     let foo = Foo::deserialize(r).unwrap();
     assert_eq!(foo.0, 4);
     assert_eq!(foo.1, 16);
@@ -499,7 +508,7 @@ fn deserialize_tuple_struct_to_vec_uint4() {
         23 << 2,    // Root type: VectorUInt4, W8.
         1,          // Root width: W8.
     ];
-    let r = Reader::get_root(&data).unwrap();
+    let r = Reader::get_root(data.as_ref()).unwrap();
     let foo = Foo::deserialize(r).unwrap();
     assert_eq!(foo.0, 1);
     assert_eq!(foo.1, 2);

@@ -22,7 +22,13 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-static uint16_t g_au16Period[2] = {31999, 15999};
+#if (NVT_DCACHE_ON == 1)
+/* Data size (g_au16Period) < one cache line size (32B) => Non-cacheable should be ok. */
+NVT_NONCACHEABLE_INIT __attribute__((aligned(4))) static uint16_t g_au16Period[2] = {31999, 15999};
+#else
+__attribute__((aligned(4))) static uint16_t g_au16Period[2] = {31999, 15999};
+#endif
+
 static volatile uint32_t g_u32IsTestOver = 0;
 
 /**
@@ -73,8 +79,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -125,10 +131,10 @@ int main(void)
     printf("|              EPWM AccumulatorINT TriggerPDMA Sample Code               |\n");
     printf("+------------------------------------------------------------------------+\n");
     printf("  This sample code demonstrate EPWM1 channel 0 accumulator interrupt trigger PDMA.\n");
-    printf("  When accumulator interrupt happens, EPWM1 channel 0 period register will be updated \n");
+    printf("  When accumulator interrupt happens, EPWM1 channel 0 (PC5) period register will be updated \n");
     printf("  to g_u32Count array content, 31999(0x7CFF), by PDMA.\n");
 
-    printf("\n\nPress any key to start EPWM1 channel 0.\n");
+    printf("\n\nPress any key to start EPWM1 channel 0.(PC5)\n");
     getchar();
 
     /*--------------------------------------------------------------------------------------*/

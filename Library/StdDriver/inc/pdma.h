@@ -139,9 +139,7 @@ extern "C"
 #define PDMA_EADC0_RX          64UL /*!<DMA Connect to EADC0_RX \hideinitializer */
 #define PDMA_EADC1_RX          65UL /*!<DMA Connect to EADC1_RX \hideinitializer */
 #define PDMA_DAC0_TX           66UL /*!<DMA Connect to DAC0_TX \hideinitializer */
-#if ! defined (TESTCHIP_ONLY)
 #define PDMA_DAC1_TX           67UL /*!<DMA Connect to DAC1_TX \hideinitializer */
-#endif
 #define PDMA_EPWM0_CH0_TX      68UL /*!<DMA Connect to EPWM0_CH0_TX \hideinitializer */
 #define PDMA_EPWM0_CH1_TX      69UL /*!<DMA Connect to EPWM0_CH1_TX \hideinitializer */
 #define PDMA_EPWM0_CH2_TX      70UL /*!<DMA Connect to EPWM0_CH2_TX \hideinitializer */

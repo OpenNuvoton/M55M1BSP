@@ -8,6 +8,7 @@
  * @copyright Copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include "NuMicro.h"
 #include "common.h"
 #include "mbedtls/aes.h"
@@ -15,12 +16,9 @@
 
 #define MBEDTLS_EXIT_SUCCESS    0
 #define MBEDTLS_EXIT_FAILURE    -1
+#define AES_BLOCK_SIZE         (16)
 
-extern int mbedtls_aes_self_test(int verbose);
-extern int mbedtls_gcm_self_test(int verbose);
-extern int mbedtls_ccm_self_test(int verbose);
 void SYS_Init(void);
-
 
 volatile uint32_t g_u32Ticks = 0;
 
@@ -45,8 +43,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -84,7 +82,7 @@ void SysTick_Handler()
     g_u32Ticks++;
 }
 
-
+#define TEST_AES
 int32_t main(void)
 {
     int  i32Ret = MBEDTLS_EXIT_SUCCESS;
@@ -103,23 +101,32 @@ int32_t main(void)
     SysTick_Config(SystemCoreClock / 1000);
 
     printf("MBEDTLS AES self test ...\n");
-
+#if(NVT_DCACHE_ON==1)
+    printf("  NVT_DCACHE_ON  \n");
+#endif
 #ifdef MBEDTLS_AES_ALT
     printf("Hardware Accelerator Enabled.\n");
 #else
     printf("Pure software crypto running.\n");
 #endif
 
+
+#ifdef TEST_AES
     g_u32Ticks = 0;
     i32Ret = mbedtls_aes_self_test(1);
     printf("Total elapsed time is %d ms\n", g_u32Ticks);
-
-#ifdef GCM_TEST
-    i32Ret = mbedtls_gcm_self_test(1);
 #endif
 
-#ifdef CCM_TEST
-    i32Ret = mbedtls_ccm_self_test(1);
+#ifdef TEST_GCM
+    g_u32Ticks = 0;
+    i32Ret |= mbedtls_gcm_self_test(1);
+    printf("Total elapsed time is %d ms\n", g_u32Ticks);
+#endif
+
+#ifdef TEST_CCM
+    g_u32Ticks = 0;
+    i32Ret |= mbedtls_ccm_self_test(1);
+    printf("Total elapsed time is %d ms\n", g_u32Ticks);
 #endif
 
     if (i32Ret < 0)
@@ -132,3 +139,6 @@ int32_t main(void)
     while (1);
 
 }
+
+
+/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

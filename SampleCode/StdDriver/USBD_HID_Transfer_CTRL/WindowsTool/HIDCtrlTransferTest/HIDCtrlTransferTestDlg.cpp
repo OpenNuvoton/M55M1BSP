@@ -812,18 +812,10 @@ void CHIDCtrlTransferTestDlg::WriteOutputReport()
 {
     //Send a report to the device.
 
-    DWORD   BytesWritten = 0;
-    INT     Index = 0;
-    ULONG   Result = 0;
-    CString strBytesWritten = _T("");
-    INT BufSize = 0;
-
     UpdateData(true);
 
     for (int i = 0; i < 64; i++)
         OutputReport[i] = i;
-
-    BufSize = 64;
 
     //Send a report to the device.
 
@@ -839,23 +831,23 @@ void CHIDCtrlTransferTestDlg::WriteOutputReport()
 
     if (WriteHandle != INVALID_HANDLE_VALUE)
     {
-        Result = HidD_SetOutputReport
-                 (WriteHandle,
-                  OutputReport,
-                  Capabilities.OutputReportByteLength);
-    }
+        ULONG   Result = HidD_SetOutputReport
+                         (WriteHandle,
+                          OutputReport,
+                          Capabilities.OutputReportByteLength);
 
-    if (Result)
-    {
-        DisplayData(_T("An Output report was written to the device."));
-    }
-    else if (WriteHandle != INVALID_HANDLE_VALUE)
-    {
-        //The write attempt failed, so close the handles, display a message,
-        //and set MyDeviceDetected to FALSE so the next attempt will look for the device.
-        CloseHandles();
-        DisplayData(_T("Can't write to device"));
-        MyDeviceDetected = FALSE;
+        if (Result)
+        {
+            DisplayData(_T("An Output report was written to the device."));
+        }
+        else
+        {
+            //The write attempt failed, so close the handles, display a message,
+            //and set MyDeviceDetected to FALSE so the next attempt will look for the device.
+            CloseHandles();
+            DisplayData(_T("Can't write to device"));
+            MyDeviceDetected = FALSE;
+        }
     }
 }
 

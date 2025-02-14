@@ -189,12 +189,58 @@ struct ethosu_driver ethosu0_driver;
 extern "C" {
 #endif
 
-void NPU_IRQHandler(void)
+NVT_ITCM void NPU_IRQHandler(void)
 {
     ethosu_irq_handler(&ethosu0_driver);
     __DSB();
     __ISB();
 }
+
+#if (NVT_DCACHE_ON == 1)
+
+void ethosu_flush_dcache(uint32_t *p, size_t bytes)
+{
+#if defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)
+
+    if (SCB->CCR & SCB_CCR_DC_Msk)
+    {
+        if (p)
+        {
+            SCB_CleanDCache_by_Addr((void *) p, (int32_t) bytes);
+        }
+        else
+        {
+            SCB_CleanDCache();
+        }
+    }
+
+#else
+    UNUSED(p);
+    UNUSED(bytes);
+#endif /* defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U) */
+}
+void ethosu_invalidate_dcache(uint32_t *p, size_t bytes)
+{
+#if defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)
+
+    if (SCB->CCR & SCB_CCR_DC_Msk)
+    {
+        if (p)
+        {
+            SCB_InvalidateDCache_by_Addr((void *) p, (int32_t) bytes);
+        }
+        else
+        {
+            SCB_InvalidateDCache();
+        }
+    }
+
+#else
+    UNUSED(p);
+    UNUSED(bytes);
+#endif /* defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U) */
+}
+#endif
 
 #ifdef __cplusplus
 }
@@ -218,8 +264,8 @@ void SYS_Init(void)
     /* Waiting for HXT clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -249,7 +295,7 @@ static uint64_t cpu_cycle_count = 0;    /* 64-bit cpu cycle counter */
 extern "C" {
 #endif
 
-void SysTick_Handler(void)
+NVT_ITCM void SysTick_Handler(void)
 {
     /* Increment the cycle counter based on load value. */
     cpu_cycle_count += SysTick->LOAD + 1;

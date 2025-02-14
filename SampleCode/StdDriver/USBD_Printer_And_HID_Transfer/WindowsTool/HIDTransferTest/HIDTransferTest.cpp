@@ -8,15 +8,12 @@
 #include "HIDTransferTest.h"
 #include "HID.hpp"
 
-
-
 #ifdef _DEBUG
     #define new DEBUG_NEW
 #endif
 
 #define USB_VID         0x0416  /* Vendor ID */
-//#define USB_PID         0x5020  /* Product ID */
-USHORT USB_PID;                    /* Product ID */
+#define USB_PID         0x5020  /* Product ID */
 
 #define HID_CMD_SIGNATURE   0x43444948
 
@@ -35,7 +32,7 @@ USHORT USB_PID;                    /* Product ID */
 
 #define USB_TIME_OUT    100
 
-// 僅有的一個應用程式物件
+// The only application object
 
 CWinApp theApp;
 
@@ -43,23 +40,25 @@ using namespace std;
 
 int main(void);
 
-
 int _tmain(int argc, TCHAR *argv[], TCHAR *envp[])
 {
     int nRetCode = 0;
 
-
-    // 初始化 MFC 並於失敗時列印錯誤
+    // Initialize MFC and print errors on failure
     if (!AfxWinInit(::GetModuleHandle(NULL), NULL, ::GetCommandLine(), 0))
     {
-        // TODO: 配合您的需要變更錯誤碼
-        _tprintf(_T("嚴重錯誤: MFC 初始化失敗\n"));
+        // TODO: Change the error code to suit your needs
+        _tprintf(_T("Fatal error: MFC initialization failed\n"));
         nRetCode = 1;
     }
     else
     {
-        // TODO: 在此撰寫應用程式行為的程式碼。
+        // TODO: Write the code for your application's behavior here
         main();
+
+
+
+
     }
 
     return nRetCode;
@@ -120,7 +119,7 @@ int ReadPages(unsigned char *pReadBuf, unsigned int startPage, unsigned int page
     readBytes = 0;
     isDeviceOpened = 0;
 
-    if (!(io.OpenDevice(USB_VID, USB_PID)))
+    if (!io.OpenDevice(USB_VID, USB_PID))
     {
         printf("Can't Open HID Device\n");
         goto lexit;
@@ -166,6 +165,7 @@ int ReadPages(unsigned char *pReadBuf, unsigned int startPage, unsigned int page
 
     }
 
+
 lexit:
 
     if (isDeviceOpened)
@@ -194,14 +194,13 @@ int EraseSectors(unsigned int startSector, unsigned int sectors)
     eraseCnt = 0;
     isDeviceOpened = 0;
 
-    if (!(io.OpenDevice(USB_VID, USB_PID)))
+    if (!io.OpenDevice(USB_VID, USB_PID))
     {
         printf("Can't Open HID Device\n");
         goto lexit;
     }
     else
     {
-        //io.OpenDevice(USB_VID, USB_PID);
         isDeviceOpened = TRUE;
         printf("USB HID Device VID[%04x] PID[%04x] Open Success.\n", USB_VID, USB_PID);
         printf(">>> Erase sectors: %d - %d\n", startSector, startSector + sectors - 1);
@@ -262,7 +261,6 @@ int WritePages(unsigned char *pWriteBuf, unsigned int startPage, unsigned int pa
     }
     else
     {
-        //io.OpenDevice(USB_VID, USB_PID);
         isDeviceOpened = TRUE;
         printf("USB HID Device VID[%04x] PID[%04x] Open Success.\n", USB_VID, USB_PID);
         printf(">>> Write pages: %d - %d\n", startPage, startPage + pages - 1);
@@ -299,7 +297,9 @@ int WritePages(unsigned char *pWriteBuf, unsigned int startPage, unsigned int pa
 
             writeBytes += length;
         }
+
     }
+
 
 lexit:
 
@@ -322,16 +322,14 @@ int SendTestCmd(void)
 
 
     isDeviceOpened = 0;
-    printf("SendTestCmd OpenDevice = %d\n", io.OpenDevice(USB_VID, USB_PID));
 
-    if (!(io.OpenDevice(USB_VID, USB_PID)))
+    if (!io.OpenDevice(USB_VID, USB_PID))
     {
         printf("Can't Open HID Device\n");
         goto lexit;
     }
     else
     {
-        //io.OpenDevice(USB_VID, USB_PID);
         isDeviceOpened = TRUE;
         printf("USB HID Device VID[%04x] PID[%04x] Open Success.\n", USB_VID, USB_PID);
         printf(">>> Test command\n");
@@ -352,6 +350,7 @@ int SendTestCmd(void)
         }
     }
 
+
 lexit:
 
     if (isDeviceOpened)
@@ -361,7 +360,7 @@ lexit:
 }
 
 
-#define TEST_PAGES   4          /* 4 pages */
+#define TEST_PAGES   4       /* 4 pages */
 #define TEST_BASE    0x10000    /* 64kbytes */
 
 int main(void)
@@ -369,34 +368,7 @@ int main(void)
     int i;
     int isErr;
     unsigned char buf[TEST_PAGES * PAGE_SIZE];
-    CHidCmd io;
-    char buffer[1024] = "";
 
-    /* Set PID */
-    printf("Input PID : Please input the Hex Number\n");
-    //scanf("%s",buffer);
-    scanf("%[^ \n]", buffer); //接收除了空白及 \n 以外的所有字元
-
-
-    USB_PID = strtol(buffer, NULL, 16);
-
-    if (USB_PID > 65535 || USB_PID == 0)
-    {
-        USB_PID = 0x5011;    // default PID
-        printf("PID is invalid, use default PID 0x5011\n");
-    }
-    else
-        printf("USB HID Device PID[%04x]\n", USB_PID);
-
-    // Detect HID Device
-    if (!io.OpenDevice(USB_VID, USB_PID))
-    {
-        printf("Can't Open HID Device\n");
-
-        while (1);
-
-        return -1;
-    }
 
     /* Erase test space */
     EraseSectors(TEST_BASE / SECTOR_SIZE, (TEST_PAGES * PAGE_SIZE) / SECTOR_SIZE);
@@ -480,7 +452,10 @@ int main(void)
         return -1;
     }
 
+
     printf("HID Transfer test ok!\n");
-    //while(1);
+
     return 0;
+
+
 }

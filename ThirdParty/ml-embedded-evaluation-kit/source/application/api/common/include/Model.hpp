@@ -33,9 +33,9 @@ namespace app {
         Model();
 
         /** @brief Destructor. */
-        ~Model();
+		virtual ~Model() = default;
 
-        /** @brief  Gets the pointer to the model's input tensor at given input index. */
+		/** @brief  Gets the pointer to the model's input tensor at given input index. */
         TfLiteTensor* GetInputTensor(size_t index) const;
 
         /** @brief  Gets the pointer to the model's output tensor at given output index. */
@@ -133,9 +133,8 @@ namespace app {
         size_t GetActivationBufferSize();
 
     private:
-        tflite::ErrorReporter* m_pErrorReporter{nullptr};  /* Pointer to the error reporter. */
         const tflite::Model* m_pModel{nullptr};            /* Tflite model pointer. */
-        tflite::MicroInterpreter* m_pInterpreter{nullptr}; /* Tflite interpreter. */
+        std::unique_ptr<tflite::MicroInterpreter> m_pInterpreter{nullptr}; /* Tflite interpreter. */
         tflite::MicroAllocator* m_pAllocator{nullptr};     /* Tflite micro allocator. */
         bool m_inited{false}; /* Indicates whether this object has been initialised. */
         const uint8_t* m_modelAddr{nullptr}; /* Model address */

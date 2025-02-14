@@ -75,8 +75,18 @@ int32_t SYS_Init(void)
 
     /* Select SCLK to HIRC before APLL setting*/
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
-    /* Enable APLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+
+    /* Enable APLL0 220MHz clock */
+    CLK_DisableAPLL(CLK_APLL0_SELECT);
+    /* Apply new PLL0 setting. */
+    CLK->APLL0CTL = (CLK_APLLCTL_220MHz | CLK_APLLCTL_STBSEL_2460);
+    /* Apply PLL0 Clock Source */
+    CLK->APLL0SEL = (CLK->APLL0SEL & ~CLK_APLL0SEL_APLLSRC_Msk) | (CLK_APLLCTL_APLLSRC_HIRC << CLK_APLL0SEL_APLLSRC_Pos);
+    /* Enable PLL0 */
+    CLK->SRCCTL |= CLK_SRCCTL_APLL0EN_Msk;
+    /* Wait for PLL clock stable */
+    CLK_WaitClockReady(CLK_STATUS_APLL0STB_Msk);
+
     /* Set clock with limitations */
     CLK_SET_HCLK2DIV(2);
     CLK_SET_PCLK0DIV(2);
@@ -98,8 +108,8 @@ int32_t SYS_Init(void)
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Set PC multi-function pins for CAN FD0 RXD and TXD */
-    SET_CAN0_RXD_PJ11();
-    SET_CAN0_TXD_PJ10();
+    SET_CANFD0_RXD_PJ11();
+    SET_CANFD0_TXD_PJ10();
 
     return 0;
 }
@@ -170,6 +180,7 @@ int main(void)
 
     /* Init CAN port */
     CANFD_Init();
+
     /* Unlock write-protected registers */
     SYS_UnlockReg();
     /* Enable ISP */

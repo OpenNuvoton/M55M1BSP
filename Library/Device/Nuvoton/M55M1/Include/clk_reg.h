@@ -27,6 +27,8 @@
 
 typedef struct
 {
+
+
     /**
      * @var CLK_T::SRCCTL
      * Offset: 0x00  Clock Source Control Register
@@ -43,9 +45,10 @@ typedef struct
      * |        |          |1 = 32.768 kHz external low speed crystal (LXT) Enabled.
      * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: This bit is not retained when D5 power is turned off.
+     * |        |          |Note 3: This bit is clear if LXTFIF(CLK_CLKDSTS[13]) is 1.
      * |[2]     |MIRCEN    |MIRC Enable Bit (Write Protect)
-     * |        |          |0 = 1 MHz internal middle speed RC oscillator (MIRC) Disabled.
-     * |        |          |1 = 1 MHz internal middle speed RC oscillator (MIRC) Enabled.
+     * |        |          |0 = 1~8 MHz internal middle speed RC oscillator (MIRC) Disabled.
+     * |        |          |1 = 1~8 MHz internal middle speed RC oscillator (MIRC) Enabled.
      * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: This bit is not retained when D2 power is turned off.
      * |        |          |Note 3: This bit is write ignore when SCLKSEL(CLK_SCLKSEL[2:0]) is set to MIRC.
@@ -61,6 +64,7 @@ typedef struct
      * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: This bit is not retained when D2 power is turned off.
      * |        |          |Note 3: This bit is write ignore when SCLKSEL(CLK_SCLKSEL[2:0]) is set to HXT.
+     * |        |          |Note 4: This bit is clear if HXTFIF(CLK_CLKDSTS[5]) is 1.
      * |[5]     |HIRC48MEN |HIRC48M Enable Bit (Write Protect)
      * |        |          |0 = 48 MHz internal high speed RC oscillator (HIRC48M) Disabled.
      * |        |          |1 = 48 MHz internal high speed RC oscillator (HIRC48M) Enabled.
@@ -130,10 +134,39 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[1:0]   |MIRC1MSTBS|MIRC1M Stable Count Select (Write Protect)
-     * |        |          |00 = MIRC1M stable count is 9 clocks and clock output deviation about 2%.
-     * |        |          |01 = MIRC1M stable count is 8 clocks and clock output deviation about 5%.
-     * |        |          |Others = Reserved.
+     * |        |          |00 = MIRC1M stable count is 4 clocks and clock output deviation about 2%.
+     * |        |          |01 = MIRC1M stable count is 4 clocks and clock output deviation about 3%.
+     * |        |          |10 = MIRC1M stable count is 3 clocks and clock output deviation about 4%.
+     * |        |          |11 = MIRC1M stable count is 3 clocks and clock output deviation about 5%.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: These bits are not retained when D2 power is turned off.
+     * |[5:4]   |MIRC2MSTBS|MIRC2M Stable Count Select (Write Protect)
+     * |        |          |00 = MIRC2M stable count is 6 clocks and clock output deviation about 2%.
+     * |        |          |01 = MIRC2M stable count is 6 clocks and clock output deviation about 3%.
+     * |        |          |10 = MIRC2M stable count is 5 clocks and clock output deviation about 4%.
+     * |        |          |11 = MIRC2M stable count is 5 clocks and clock output deviation about 5%.
+     * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: These bits are not retained when D2 power is turned off.
+     * |[9:8]   |MIRC4MSTBS|MIRC4M Stable Count Select (Write Protect)
+     * |        |          |00 = MIRC4M stable count is 20 clocks and clock output deviation about 2%.
+     * |        |          |01 = MIRC4M stable count is 17 clocks and clock output deviation about 3%.
+     * |        |          |10 = MIRC4M stable count is 16 clocks and clock output deviation about 4%.
+     * |        |          |11 = MIRC4M stable count is 14 clocks and clock output deviation about 5%.
+     * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: These bits are not retained when D2 power is turned off.
+     * |[13:12] |MIRC8MSTBS|MIRC8M Stable Count Select (Write Protect)
+     * |        |          |00 = MIRC8M stable count is 75 clocks and clock output deviation about 2%.
+     * |        |          |01 = MIRC8M stable count is 56 clocks and clock output deviation about 3%.
+     * |        |          |10 = MIRC8M stable count is 48 clocks and clock output deviation about 4%.
+     * |        |          |11 = MIRC8M stable count is 44 clocks and clock output deviation about 5%.
+     * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: These bits are not retained when D2 power is turned off.
+     * |[17:16] |MIRCFSEL  |MIRC Frequency Select Bits (Write Protect)
+     * |        |          |00 = Internal middle speed RC oscillator frequency is 1 MHz.
+     * |        |          |01 = Internal middle speed RC oscillator frequency is 2 MHz.
+     * |        |          |10 = Internal middle speed RC oscillator frequency is 4 MHz.
+     * |        |          |11 = Internal middle speed RC oscillator frequency is 8 MHz.
+     * |        |          |Note: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D2 power is turned off.
      * |[20]    |MIRCFDIS  |MIRC Clock Filter Disable Bit
      * |        |          |0 = MIRC Filter enabled.
@@ -146,9 +179,10 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[1:0]   |HIRCSTBS  |HIRC Stable Count Select (Write Protect)
-     * |        |          |00 = HIRC stable count is 64 clocks.
-     * |        |          |01 = HIRC stable count is 24 clocks.
-     * |        |          |Others = Reserved.
+     * |        |          |00 = HIRC stable count is 23 clocks and clock output deviation about 2%.
+     * |        |          |01 = HIRC stable count is 16 clocks and clock output deviation about 3%.
+     * |        |          |10 = HIRC stable count is 14 clocks and clock output deviation about 4%.
+     * |        |          |11 = HIRC stable count is 13 clocks and clock output deviation about 5%.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D3 power is turned off.
      * |[4]     |HIRCFDIS  |HIRC Clock Filter Disable Bit
@@ -162,6 +196,7 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[2:0]   |HXTGAIN   |HXT Gain Control Bit (Write Protect)
+     * |        |          |The default value is set by Flash controller user configuration register XT1XSG (CONFIG0 [18:16]).
      * |        |          |Gain control is used to enlarge the gain of crystal to make sure crystal work normally.
      * |        |          |000 = HXT frequency is from 4 MHz to 8 MHz.
      * |        |          |001 = HXT frequency is from 8 MHz to 12 MHz.
@@ -169,7 +204,7 @@ typedef struct
      * |        |          |011 = HXT frequency is from 16 MHz to 24 MHz.
      * |        |          |100 = HXT frequency is from 24 MHz to 32 MHz.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: This bit is not retained when D2 power is turned off.
+     * |        |          |Note 2: These bits are not retained when D2 power is turned off.
      * |        |          |Note 3: The default value is set by UCFG0[18:16].
      * |[4]     |HXTSELTYP |HXT Crystal Type Select Bit (Write Protect)
      * |        |          |0 = Select INV type.
@@ -198,9 +233,10 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[1:0]   |HIRC48MSTBS|HIRC48M Stable Count Select (Write Protect)
-     * |        |          |00 = HIRC48M stable count = 1024 clocks.
-     * |        |          |01 = HIRC48M stable count = 512 clocks.
-     * |        |          |Others: Reserved
+     * |        |          |00 = HIRC48M stable count is 23 clocks and clock output deviation about 2%.
+     * |        |          |01 = HIRC48M stable count is 22 clocks and clock output deviation about 3%.
+     * |        |          |10 = HIRC48M stable count is 21 clocks and clock output deviation about 4%.
+     * |        |          |11 = HIRC48M stable count is 21 clocks and clock output deviation about 5%.
      * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: This bit is not retained when D2 power is turned off.
      * |[4]     |HIRC48MFDIS|HIRC48M Clock Filter Disable Bit
@@ -237,7 +273,7 @@ typedef struct
      * |        |          |00 = APLL0 stable time is 820 APLL0 source clock (source clock is equal to 4M).
      * |        |          |01 = APLL0 stable time is 2460 APLL0 source clock (4 MHz < source clock <=12 MHz).
      * |        |          |10 = APLL0 stable time is 4920 APLL0 source clock (12 MHz < source clock <=24 MHz).
-     * |        |          |11 = APLL0 stable time is 6560 APLL0 source clock (24 MHz < source clock <=32 MHz).
+     * |        |          |11 = Reserved.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D2 power is turned off.
      * |        |          |Note 3: These bits are write ignore when APLL0EN(CLK_SRCCTL[6]) is set to enable.
@@ -259,9 +295,10 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[1:0]   |APLLSRC   |APLL0 Source Clock Selection (Write Protect)
-     * |        |          |00 = APLL0 source clock from 4~32 MHz external high-speed crystal oscillator (HXT).
-     * |        |          |01 = APLL0 source clock from 12 MHz internal high-speed oscillator (HIRC).
-     * |        |          |10 = APLL0 source clock from 48 MHz internal high-speed oscillator (HIRC48M/4).
+     * |        |          |00 = APLL0 source clock from 4~24 MHz external high-speed crystal oscillator (HXT).
+     * |        |          |01 = APLL0 source clock from 24~32 MHz external high-speed crystal oscillator (HXT/2).
+     * |        |          |10 = APLL0 source clock from 12 MHz internal high-speed oscillator (HIRC).
+     * |        |          |11 = APLL0 source clock from 48 MHz internal high-speed oscillator (HIRC48M/4).
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D2 power is turned off.
      * |        |          |Note 3: These bits are write ignore when APLL0EN(CLK_SRCCTL[6]) is set to enable.
@@ -292,9 +329,9 @@ typedef struct
      * |        |          |Note 3: These bits are write ignore when APLL1EN(CLK_SRCCTL[7]) is set to enable.
      * |[29:28] |STBSEL    |APLL1 Stable Counter Selection (Write Protect)
      * |        |          |00 = APLL1 stable time is 820 APLL1 source clock (source clock is equal to 4M).
-     * |        |          |01 = APLL1 stable time is 2460 APLL1 source clock (4 MHz < source clock <= 12 MHz).
-     * |        |          |10 = APLL1 stable time is 4920 APLL1 source clock (12 MHz < source clock <= 24 MHz).
-     * |        |          |11 = APLL1 stable time is 6560 APLL1 source clock (24 MHz < source clock <= 32 MHz).
+     * |        |          |01 = APLL1 stable time is 2460 APLL1 source clock (4 MHz < source clock <=12 MHz).
+     * |        |          |10 = APLL1 stable time is 4920 APLL1 source clock (12 MHz < source clock <=24 MHz).
+     * |        |          |11 = Reserved.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D2 power is turned off.
      * |        |          |Note 3: These bits are write ignore when APLL1EN(CLK_SRCCTL[7]) is set to enable.
@@ -316,9 +353,10 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[1:0]   |APLLSRC   |APLL1 Source Clock Selection (Write Protect)
-     * |        |          |00 = APLL1 source clock from 4~32 MHz external high-speed crystal oscillator (HXT).
-     * |        |          |01 = APLL1 source clock from 12 MHz internal high-speed oscillator (HIRC).
-     * |        |          |10 = APLL1 source clock from 48 MHz internal high-speed oscillator (HIRC48M/4).
+     * |        |          |00 = APLL1 source clock from 4~24 MHz external high-speed crystal oscillator (HXT).
+     * |        |          |01 = APLL1 source clock from 24~32 MHz external high-speed crystal oscillator (HXT/2).
+     * |        |          |10 = APLL1 source clock from 12 MHz internal high-speed oscillator (HIRC).
+     * |        |          |11 = APLL1 source clock from 48 MHz internal high-speed oscillator (HIRC48M/4).
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D2 power is turned off.
      * |        |          |Note 3: These bits are write ignore when APLL1EN(CLK_SRCCTL[7]) is set to enable.
@@ -424,7 +462,7 @@ typedef struct
      * |[9:0]   |UPERBD    |HXT Clock Frequency Range Detector Upper Boundary Value
      * |        |          |The bits define the high value of frequency monitor window.
      * |        |          |When HXT frequency monitor value higher than this register, the HXT frequency detect fail interrupt flag will set to 1.
-     * |        |          |Frequency out of range will be asserted when ((HIRC48M_period*512) / HXT_period)-1 > CLK_UPERBD.
+     * |        |          |Frequency out of range will be asserted when HXT frequency > ((UPERBD+1)/512)* HIRC48M frequency.
      * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var CLK_T::CDLOWB
      * Offset: 0x3C  Clock Frequency Range Detector Lower Boundary Register
@@ -434,7 +472,7 @@ typedef struct
      * |[9:0]   |LOWERBD   |HXT Clock Frequency Range Detector Lower Boundary Value
      * |        |          |The bits define the low value of frequency monitor window.
      * |        |          |When HXT frequency monitor value lower than this register, the HXT frequency detect fail interrupt flag will set to 1.
-     * |        |          |Frequency out of range will be asserted when ((HIRC48M_period*512) / HXT_period)-1 < CLK_CDLOWB.
+     * |        |          |Frequency out of range will be asserted when HXT frequency < ((LOWERBD+1)/512)* HIRC48M frequency.
      * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var CLK_T::STOPREQ
      * Offset: 0x40  Clock Stop Request Register
@@ -479,9 +517,6 @@ typedef struct
      * |        |          |0 = ACMP2/3 clock Disabled.
      * |        |          |1 = ACMP2/3 clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |ACMP Clock Stable Flag (Read Only)
-     * |        |          |0 = ACMP clock is not stable.
-     * |        |          |1 = ACMP clock is stable.
      * @var CLK_T::AWFCTL
      * Offset: 0x204  AWF Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -491,9 +526,6 @@ typedef struct
      * |        |          |0 = AWFx clock Disabled.
      * |        |          |1 = AWFx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |AWF Clock Stable Flag (Read Only)
-     * |        |          |0 = AWF clock is not stable.
-     * |        |          |1 = AWF clock is stable.
      * @var CLK_T::BPWMCTL
      * Offset: 0x208  BPWM Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -507,9 +539,6 @@ typedef struct
      * |        |          |0 = BPWMx clock Disabled.
      * |        |          |1 = BPWMx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |BPWM Clock Stable Flag (Read Only)
-     * |        |          |0 = BPWM clock is not stable.
-     * |        |          |1 = BPWM clock is stable.
      * @var CLK_T::CANFDCTL
      * Offset: 0x20C  CANFD Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -531,9 +560,6 @@ typedef struct
      * |        |          |0 = CANFD1 Message SRAM clock Disabled.
      * |        |          |1 = CANFD1 Message SRAM clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |CANFD Clock Stable Flag (Read Only)
-     * |        |          |0 = CANFD clock is not stable.
-     * |        |          |1 = CANFD clock is stable.
      * @var CLK_T::CCAPCTL
      * Offset: 0x210  CCAP Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -543,9 +569,6 @@ typedef struct
      * |        |          |0 = CCAPx clock Disabled.
      * |        |          |1 = CCAPx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |CCAP Clock Stable Flag (Read Only)
-     * |        |          |0 = CCAP clock is not stable.
-     * |        |          |1 = CCAP clock is stable.
      * @var CLK_T::CRCCTL
      * Offset: 0x214  CRC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -555,9 +578,6 @@ typedef struct
      * |        |          |0 = CRCx clock Disabled.
      * |        |          |1 = CRCx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |CRC Clock Stable Flag (Read Only)
-     * |        |          |0 = CRC clock is not stable.
-     * |        |          |1 = CRC clock is stable.
      * @var CLK_T::CRYPTOCTL
      * Offset: 0x218  CRYPTO Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -567,21 +587,15 @@ typedef struct
      * |        |          |0 = CRYPTOx clock Disabled.
      * |        |          |1 = CRYPTOx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |CRYPTO Clock Stable Flag (Read Only)
-     * |        |          |0 = CRYPTO clock is not stable.
-     * |        |          |1 = CRYPTO clock is stable.
      * @var CLK_T::DACCTL
      * Offset: 0x21C  DAC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |DAC01CKEN |DAC0/DAC1 Clock Enable Bit  (DAC1 is not support in TESTCHIP_ONLY)
+     * |[0]     |DAC01CKEN |DAC0/DAC1 Clock Enable Bit
      * |        |          |0 = DAC0/1 clock Disabled.
      * |        |          |1 = DAC0/1 clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |DAC Clock Stable Flag (Read Only)
-     * |        |          |0 = DAC clock is not stable.
-     * |        |          |1 = DAC clock is stable.
      * @var CLK_T::DMICCTL
      * Offset: 0x220  DMIC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -590,10 +604,7 @@ typedef struct
      * |[0]     |DMIC0CKEN |DMICx Clock Enable Bit
      * |        |          |0 = DMICx clock Disabled.
      * |        |          |1 = DMICx clock Enabled.
-     * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |DMIC Clock Stable Flag (Read Only)
-     * |        |          |0 = DMIC clock is not stable.
-     * |        |          |1 = DMIC clock is stable.
+     * |        |          |Note: This bit is not retained when D2 power is turned off.
      * @var CLK_T::EADCCTL
      * Offset: 0x224  EADC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -603,13 +614,6 @@ typedef struct
      * |        |          |0 = EADCx clock Disabled.
      * |        |          |1 = EADCx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[1]     |EADC1CKEN |EADCx Clock Enable Bit
-     * |        |          |0 = EADCx clock Disabled.
-     * |        |          |1 = EADCx clock Enabled.
-     * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |EADC Clock Stable Flag (Read Only)
-     * |        |          |0 = EADC clock is not stable.
-     * |        |          |1 = EADC clock is stable.
      * @var CLK_T::EBICTL
      * Offset: 0x228  EBI Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -619,9 +623,6 @@ typedef struct
      * |        |          |0 = EBIx clock Disabled.
      * |        |          |1 = EBIx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |EBI Clock Stable Flag (Read Only)
-     * |        |          |0 = EBI clock is not stable.
-     * |        |          |1 = EBI clock is stable.
      * @var CLK_T::ECAPCTL
      * Offset: 0x22C  ECAP Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -643,9 +644,6 @@ typedef struct
      * |        |          |0 = ECAPx clock Disabled.
      * |        |          |1 = ECAPx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |ECAP Clock Stable Flag (Read Only)
-     * |        |          |0 = ECAP clock is not stable.
-     * |        |          |1 = ECAP clock is stable.
      * @var CLK_T::EMACCTL
      * Offset: 0x230  EMAC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -655,9 +653,6 @@ typedef struct
      * |        |          |0 = EMACx clock Disabled.
      * |        |          |1 = EMACx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |EMAC Clock Stable Flag (Read Only)
-     * |        |          |0 = EMAC clock is not stable.
-     * |        |          |1 = EMAC clock is stable.
      * @var CLK_T::EPWMCTL
      * Offset: 0x234  EPWM Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -671,9 +666,6 @@ typedef struct
      * |        |          |0 = EPWMx clock Disabled.
      * |        |          |1 = EPWMx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |EPWM Clock Stable Flag (Read Only)
-     * |        |          |0 = EPWM clock is not stable.
-     * |        |          |1 = EPWM clock is stable.
      * @var CLK_T::EQEICTL
      * Offset: 0x238  EQEI Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -695,9 +687,6 @@ typedef struct
      * |        |          |0 = EQEIx clock Disabled.
      * |        |          |1 = EQEIx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |EQEI Clock Stable Flag (Read Only)
-     * |        |          |0 = EQEI clock is not stable.
-     * |        |          |1 = EQEI clock is stable.
      * @var CLK_T::FMCCTL
      * Offset: 0x23C  FMC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -720,9 +709,6 @@ typedef struct
      * |        |          |0 = GDMAx clock Disabled.
      * |        |          |1 = GDMAx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |GDMA Clock Stable Flag (Read Only)
-     * |        |          |0 = GDMA clock is not stable.
-     * |        |          |1 = GDMA clock is stable.
      * @var CLK_T::GPIOCTL
      * Offset: 0x244  GPIO Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -768,9 +754,6 @@ typedef struct
      * |        |          |0 = GPIOJ clock Disabled.
      * |        |          |1 = GPIOJ clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |GPIO Clock Stable Flag (Read Only)
-     * |        |          |0 = GPIO clock is not stable.
-     * |        |          |1 = GPIO clock is stable.
      * @var CLK_T::HSOTGCTL
      * Offset: 0x248  HSOTG Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -780,9 +763,6 @@ typedef struct
      * |        |          |0 = HSOTGx clock Disabled.
      * |        |          |1 = HSOTGx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |HSOTG Clock Stable Flag (Read Only)
-     * |        |          |0 = HSOTG clock is not stable.
-     * |        |          |1 = HSOTG clock is stable.
      * @var CLK_T::HSUSBDCTL
      * Offset: 0x24C  HSUSBD Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -792,9 +772,6 @@ typedef struct
      * |        |          |0 = HSUSBDx clock Disabled.
      * |        |          |1 = HSUSBDx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |HSUSBD Clock Stable Flag (Read Only)
-     * |        |          |0 = HSUSBD clock is not stable.
-     * |        |          |1 = HSUSBD clock is stable.
      * @var CLK_T::HSUSBHCTL
      * Offset: 0x250  HSUSBH Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -804,9 +781,6 @@ typedef struct
      * |        |          |0 = HSUSBHx clock Disabled.
      * |        |          |1 = HSUSBHx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |HSUSBH Clock Stable Flag (Read Only)
-     * |        |          |0 = HSUSBH clock is not stable.
-     * |        |          |1 = HSUSBH clock is stable.
      * @var CLK_T::I2CCTL
      * Offset: 0x254  I2C Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -828,9 +802,6 @@ typedef struct
      * |        |          |0 = I2Cx clock Disabled.
      * |        |          |1 = I2Cx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |I2C Clock Stable Flag (Read Only)
-     * |        |          |0 = I2C clock is not stable.
-     * |        |          |1 = I2C clock is stable.
      * @var CLK_T::I2SCTL
      * Offset: 0x258  I2S Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -844,9 +815,6 @@ typedef struct
      * |        |          |0 = I2Sx clock Disabled.
      * |        |          |1 = I2Sx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |I2S Clock Stable Flag (Read Only)
-     * |        |          |0 = I2S clock is not stable.
-     * |        |          |1 = I2S clock is stable.
      * @var CLK_T::I3CCTL
      * Offset: 0x25C  I3C Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -856,9 +824,6 @@ typedef struct
      * |        |          |0 = I3Cx clock Disabled.
      * |        |          |1 = I3Cx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |I3C Clock Stable Flag (Read Only)
-     * |        |          |0 = I3C clock is not stable.
-     * |        |          |1 = I3C clock is stable.
      * @var CLK_T::KDFCTL
      * Offset: 0x260  KDF Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -868,9 +833,6 @@ typedef struct
      * |        |          |0 = KDFx clock Disabled.
      * |        |          |1 = KDFx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |KDF Clock Stable Flag (Read Only)
-     * |        |          |0 = KDF clock is not stable.
-     * |        |          |1 = KDF clock is stable.
      * @var CLK_T::KPICTL
      * Offset: 0x264  KPI Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -880,9 +842,6 @@ typedef struct
      * |        |          |0 = KPIx clock Disabled.
      * |        |          |1 = KPIx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |KPI Clock Stable Flag (Read Only)
-     * |        |          |0 = KPI clock is not stable.
-     * |        |          |1 = KPI clock is stable.
      * @var CLK_T::KSCTL
      * Offset: 0x268  KS Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -892,9 +851,6 @@ typedef struct
      * |        |          |0 = KSx clock Disabled.
      * |        |          |1 = KSx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |KS Clock Stable Flag (Read Only)
-     * |        |          |0 = KS clock is not stable.
-     * |        |          |1 = KS clock is stable.
      * @var CLK_T::LPADCCTL
      * Offset: 0x26C  Low Power ADC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -904,9 +860,6 @@ typedef struct
      * |        |          |0 = LPADCx clock Disabled.
      * |        |          |1 = LPADCx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPADC Clock Stable Flag (Read Only)
-     * |        |          |0 = LPADC clock is not stable.
-     * |        |          |1 = LPADC clock is stable.
      * @var CLK_T::LPPDMACTL
      * Offset: 0x270  Low Power PDMA Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -916,9 +869,6 @@ typedef struct
      * |        |          |0 = LPPDMAx clock Disabled.
      * |        |          |1 = LPPDMAx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPPDMA Clock Stable Flag (Read Only)
-     * |        |          |0 = LPPDMA clock is not stable.
-     * |        |          |1 = LPPDMA clock is stable.
      * @var CLK_T::LPGPIOCTL
      * Offset: 0x274  Low Power GPIO Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -928,9 +878,6 @@ typedef struct
      * |        |          |0 = LPGPIOx clock Disabled.
      * |        |          |1 = LPGPIOx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPGPIO Clock Stable Flag (Read Only)
-     * |        |          |0 = LPGPIO clock is not stable.
-     * |        |          |1 = LPGPIO clock is stable.
      * @var CLK_T::LPI2CCTL
      * Offset: 0x278  Low Power I2C Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -940,9 +887,6 @@ typedef struct
      * |        |          |0 = LPI2Cx clock Disabled.
      * |        |          |1 = LPI2Cx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPI2C Clock Stable Flag (Read Only)
-     * |        |          |0 = LPI2C clock is not stable.
-     * |        |          |1 = LPI2C clock is stable.
      * @var CLK_T::LPSPICTL
      * Offset: 0x27C  Low Power SPI Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -952,9 +896,6 @@ typedef struct
      * |        |          |0 = LPSPIx clock Disabled.
      * |        |          |1 = LPSPIx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPSPI Clock Stable Flag (Read Only)
-     * |        |          |0 = LPSPI clock is not stable.
-     * |        |          |1 = LPSPI clock is stable.
      * @var CLK_T::LPSRAMCTL
      * Offset: 0x280  Low Power SRAM Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -964,9 +905,6 @@ typedef struct
      * |        |          |0 = LPSRAMx clock Disabled.
      * |        |          |1 = LPSRAMx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPSRAM Clock Stable Flag (Read Only)
-     * |        |          |0 = LPSRAM clock is not stable.
-     * |        |          |1 = LPSRAM clock is stable.
      * @var CLK_T::LPTMRCTL
      * Offset: 0x284  Low Power Timer Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -980,9 +918,6 @@ typedef struct
      * |        |          |0 = LPTMRx clock Disabled.
      * |        |          |1 = LPTMRx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPTMR Clock Stable Flag (Read Only)
-     * |        |          |0 = LPTMR clock is not stable.
-     * |        |          |1 = LPTMR clock is stable.
      * @var CLK_T::LPUARTCTL
      * Offset: 0x288  Low Power UART Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -992,9 +927,6 @@ typedef struct
      * |        |          |0 = LPUARTx clock Disabled.
      * |        |          |1 = LPUARTx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |LPUART Clock Stable Flag (Read Only)
-     * |        |          |0 = LPUART clock is not stable.
-     * |        |          |1 = LPUART clock is stable.
      * @var CLK_T::NPUCTL
      * Offset: 0x28C  NPU Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1004,9 +936,6 @@ typedef struct
      * |        |          |0 = NPUx clock Disabled.
      * |        |          |1 = NPUx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |NPU Clock Stable Flag (Read Only)
-     * |        |          |0 = NPU clock is not stable.
-     * |        |          |1 = NPU clock is stable.
      * @var CLK_T::OTFCCTL
      * Offset: 0x294  OTFC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1016,13 +945,6 @@ typedef struct
      * |        |          |0 = OTFCx clock Disabled.
      * |        |          |1 = OTFCx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[1]     |OTFC1CKEN |OTFCx Clock Enable Bit
-     * |        |          |0 = OTFCx clock Disabled.
-     * |        |          |1 = OTFCx clock Enabled.
-     * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |OTFC Clock Stable Flag (Read Only)
-     * |        |          |0 = OTFC clock is not stable.
-     * |        |          |1 = OTFC clock is stable.
      * @var CLK_T::OTGCTL
      * Offset: 0x298  OTG Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1032,9 +954,6 @@ typedef struct
      * |        |          |0 = OTGx clock Disabled.
      * |        |          |1 = OTGx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |OTG Clock Stable Flag (Read Only)
-     * |        |          |0 = OTG clock is not stable.
-     * |        |          |1 = OTG clock is stable.
      * @var CLK_T::PDMACTL
      * Offset: 0x29C  PDMA Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1048,9 +967,6 @@ typedef struct
      * |        |          |0 = PDMAx clock Disabled.
      * |        |          |1 = PDMAx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |PDMA Clock Stable Flag (Read Only)
-     * |        |          |0 = PDMA clock is not stable.
-     * |        |          |1 = PDMA clock is stable.
      * @var CLK_T::PSIOCTL
      * Offset: 0x2A0  PSIO Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1060,9 +976,6 @@ typedef struct
      * |        |          |0 = PSIOx clock Disabled.
      * |        |          |1 = PSIOx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |PSIO Clock Stable Flag (Read Only)
-     * |        |          |0 = PSIO clock is not stable.
-     * |        |          |1 = PSIO clock is stable.
      * @var CLK_T::QSPICTL
      * Offset: 0x2A4  QSPI Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1076,9 +989,6 @@ typedef struct
      * |        |          |0 = QSPIx clock Disabled.
      * |        |          |1 = QSPIx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |QSPI Clock Stable Flag (Read Only)
-     * |        |          |0 = QSPI clock is not stable.
-     * |        |          |1 = QSPI clock is stable.
      * @var CLK_T::RTCCTL
      * Offset: 0x2A8  RTC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1088,9 +998,6 @@ typedef struct
      * |        |          |0 = RTCx clock Disabled.
      * |        |          |1 = RTCx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |RTC Clock Stable Flag (Read Only)
-     * |        |          |0 = RTC clock is not stable.
-     * |        |          |1 = RTC clock is stable.
      * @var CLK_T::SCCTL
      * Offset: 0x2AC  SC Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1108,9 +1015,6 @@ typedef struct
      * |        |          |0 = SCx clock Disabled.
      * |        |          |1 = SCx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |SC Clock Stable Flag (Read Only)
-     * |        |          |0 = SC clock is not stable.
-     * |        |          |1 = SC clock is stable.
      * @var CLK_T::SCUCTL
      * Offset: 0x2B0  SCU Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1120,9 +1024,6 @@ typedef struct
      * |        |          |0 = SCUx clock Disabled.
      * |        |          |1 = SCUx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |SCU Clock Stable Flag (Read Only)
-     * |        |          |0 = SCU clock is not stable.
-     * |        |          |1 = SCU clock is stable.
      * @var CLK_T::SDHCTL
      * Offset: 0x2B4  SDH Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1136,9 +1037,6 @@ typedef struct
      * |        |          |0 = SDHx clock Disabled.
      * |        |          |1 = SDHx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |SDH Clock Stable Flag (Read Only)
-     * |        |          |0 = SDH clock is not stable.
-     * |        |          |1 = SDH clock is stable.
      * @var CLK_T::SPICTL
      * Offset: 0x2B8  SPI Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1160,9 +1058,6 @@ typedef struct
      * |        |          |0 = SPIx clock Disabled.
      * |        |          |1 = SPIx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |SPI Clock Stable Flag (Read Only)
-     * |        |          |0 = SPI clock is not stable.
-     * |        |          |1 = SPI clock is stable.
      * @var CLK_T::SPIMCTL
      * Offset: 0x2BC  SPIM Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1172,37 +1067,27 @@ typedef struct
      * |        |          |0 = SPIMx clock Disabled.
      * |        |          |1 = SPIMx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[1]     |SPIM1CKEN |SPIMx Clock Enable Bit
-     * |        |          |0 = SPIMx clock Disabled.
-     * |        |          |1 = SPIMx clock Enabled.
-     * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |SPIM Clock Stable Flag (Read Only)
-     * |        |          |0 = SPIM clock is not stable.
-     * |        |          |1 = SPIM clock is stable.
      * @var CLK_T::SRAMCTL
      * Offset: 0x2C0  System SRAM Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |SRAM0CKEN |SRAMx Clock Enable Bit
-     * |        |          |0 = SRAMx clock Disabled.
-     * |        |          |1 = SRAMx clock Enabled.
+     * |[0]     |SRAM0CKEN |SRAM0 Clock Enable Bit
+     * |        |          |0 = SRAM0 clock Disabled.
+     * |        |          |1 = SRAM0 clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[1]     |SRAM1CKEN |SRAMx Clock Enable Bit
-     * |        |          |0 = SRAMx clock Disabled.
-     * |        |          |1 = SRAMx clock Enabled.
+     * |[1]     |SRAM1CKEN |SRAM1 Clock Enable Bit
+     * |        |          |0 = SRAM1 clock Disabled.
+     * |        |          |1 = SRAM1 clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[2]     |SRAM2CKEN |SRAMx Clock Enable Bit
-     * |        |          |0 = SRAMx clock Disabled.
-     * |        |          |1 = SRAMx clock Enabled.
+     * |[2]     |SRAM2CKEN |SRAM2 Clock Enable Bit
+     * |        |          |0 = SRAM2 clock Disabled.
+     * |        |          |1 = SRAM2 clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[3]     |SRAM3CKEN |SRAMx Clock Enable Bit
-     * |        |          |0 = SRAMx clock Disabled.
-     * |        |          |1 = SRAMx clock Enabled.
+     * |[3]     |SRAM3CKEN |SRAM3 Clock Enable Bit
+     * |        |          |0 = SRAM3 clock Disabled.
+     * |        |          |1 = SRAM3 clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |SRAM Clock Stable Flag (Read Only)
-     * |        |          |0 = SRAM clock is not stable.
-     * |        |          |1 = SRAM clock is stable.
      * @var CLK_T::STCTL
      * Offset: 0x2CC  System Tick Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1212,21 +1097,6 @@ typedef struct
      * |        |          |0 = SYSTICKx clock Disabled.
      * |        |          |1 = SYSTICKx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |SYSTICK Clock Stable Flag (Read Only)
-     * |        |          |0 = SYSTICK clock is not stable.
-     * |        |          |1 = SYSTICK clock is stable.
-     * @var CLK_T::TAMPERCTL
-     * Offset: 0x2D0  TAMPER Clock Enable Control Register
-     * ---------------------------------------------------------------------------------------------------
-     * |Bits    |Field     |Descriptions
-     * | :----: | :----:   | :---- |
-     * |[0]     |TAMPER0CKEN|TAMPERx Clock Enable Bit
-     * |        |          |0 = TAMPERx clock Disabled.
-     * |        |          |1 = TAMPERx clock Enabled.
-     * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |TAMPER Clock Stable Flag (Read Only)
-     * |        |          |0 = TAMPER clock is not stable.
-     * |        |          |1 = TAMPER clock is stable.
      * @var CLK_T::TMRCTL
      * Offset: 0x2D4  Timer Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1248,9 +1118,6 @@ typedef struct
      * |        |          |0 = TIMERx clock Disabled.
      * |        |          |1 = TIMERx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |TIMER Clock Stable Flag (Read Only)
-     * |        |          |0 = TIMER clock is not stable.
-     * |        |          |1 = TIMER clock is stable.
      * @var CLK_T::TRNGCTL
      * Offset: 0x2D8  TRNG Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1260,9 +1127,6 @@ typedef struct
      * |        |          |0 = TRNGx clock Disabled.
      * |        |          |1 = TRNGx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |TRNG Clock Stable Flag (Read Only)
-     * |        |          |0 = TRNG clock is not stable.
-     * |        |          |1 = TRNG clock is stable.
      * @var CLK_T::TTMRCTL
      * Offset: 0x2DC  Tick Timer Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1276,9 +1140,6 @@ typedef struct
      * |        |          |0 = TTMRx clock Disabled.
      * |        |          |1 = TTMRx clock Enabled.
      * |        |          |Note: This bit is not retained when D2 power is turned off.
-     * |[31]    |CLKSTB    |TTMR Clock Stable Flag (Read Only)
-     * |        |          |0 = TTMR clock is not stable.
-     * |        |          |1 = TTMR clock is stable.
      * @var CLK_T::UARTCTL
      * Offset: 0x2E0  UART Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1324,9 +1185,6 @@ typedef struct
      * |        |          |0 = UARTx clock Disabled.
      * |        |          |1 = UARTx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |UART Clock Stable Flag (Read Only)
-     * |        |          |0 = UART clock is not stable.
-     * |        |          |1 = UART clock is stable.
      * @var CLK_T::USBDCTL
      * Offset: 0x2E4  USBD Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1336,9 +1194,6 @@ typedef struct
      * |        |          |0 = USBDx clock Disabled.
      * |        |          |1 = USBDx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |USBD Clock Stable Flag (Read Only)
-     * |        |          |0 = USBD clock is not stable.
-     * |        |          |1 = USBD clock is stable.
      * @var CLK_T::USBHCTL
      * Offset: 0x2E8  USBH Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1348,9 +1203,6 @@ typedef struct
      * |        |          |0 = USBHx clock Disabled.
      * |        |          |1 = USBHx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |USBH Clock Stable Flag (Read Only)
-     * |        |          |0 = USBH clock is not stable.
-     * |        |          |1 = USBH clock is stable.
      * @var CLK_T::USCICTL
      * Offset: 0x2EC  USCI Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1360,9 +1212,6 @@ typedef struct
      * |        |          |0 = USCIx clock Disabled.
      * |        |          |1 = USCIx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |USCI Clock Stable Flag (Read Only)
-     * |        |          |0 = USCI clock is not stable.
-     * |        |          |1 = USCI clock is stable.
      * @var CLK_T::UTCPDCTL
      * Offset: 0x2F0  UTCPD Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1372,9 +1221,6 @@ typedef struct
      * |        |          |0 = UTCPDx clock Disabled.
      * |        |          |1 = UTCPDx clock Enabled.
      * |        |          |Note: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |UTCPD Clock Stable Flag (Read Only)
-     * |        |          |0 = UTCPD clock is not stable.
-     * |        |          |1 = UTCPD clock is stable.
      * @var CLK_T::WDTCTL
      * Offset: 0x2F4  WDT Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1383,14 +1229,11 @@ typedef struct
      * |[0]     |WDT0CKEN  |WDTx Clock Enable Bit
      * |        |          |0 = WDTx clock Disabled.
      * |        |          |1 = WDTx clock Enabled.
-     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * |        |          |Note 2: This bit is not retained when D2 power is turned off.
      * |[1]     |WDT1CKEN  |WDTx Clock Enable Bit
      * |        |          |0 = WDTx clock Disabled.
      * |        |          |1 = WDTx clock Enabled.
-     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |WDT Clock Stable Flag (Read Only)
-     * |        |          |0 = WDT clock is not stable.
-     * |        |          |1 = WDT clock is stable.
+     * |        |          |Note 2: This bit is not retained when D2 power is turned off.
      * @var CLK_T::WWDTCTL
      * Offset: 0x2F8  WWDT Clock Enable Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1404,9 +1247,6 @@ typedef struct
      * |        |          |0 = WWDTx clock Disabled.
      * |        |          |1 = WWDTx clock Enabled.
      * |        |          |Note 2: This bit is not retained when D0 power is turned off.
-     * |[31]    |CLKSTB    |WWDT Clock Stable Flag (Read Only)
-     * |        |          |0 = WWDT clock is not stable.
-     * |        |          |1 = WWDT clock is stable.
      * @var CLK_T::SCLKSEL
      * Offset: 0x400  System Clock Source Select Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1432,13 +1272,13 @@ typedef struct
      * |        |          |0 = Clock source from PCLK0.
      * |        |          |1 = Clock source from HCLK0.
      * |        |          |Note 0: This bit is write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 1: These bits are not retained when D1 power is turned off.
+     * |        |          |Note 1: This bit is not retained when D1 power is turned off.
      * |[4]     |BPWM1SEL  |BPWM1 Clock Source Selection (Write Protect)
      * |        |          |The peripheral clock source of BPWM1 is defined by BPWM1SEL.
      * |        |          |0 = Clock source from PCLK2.
      * |        |          |1 = Clock source from HCLK0.
      * |        |          |Note 0: This bit is write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 1: These bits are not retained when D1 power is turned off.
+     * |        |          |Note 1: This bit is not retained when D1 power is turned off.
      * @var CLK_T::CANFDSEL
      * Offset: 0x408  CANFD Clock Source Select Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1472,7 +1312,9 @@ typedef struct
      * |[2:0]   |CCAP0SEL  |CCAP Sensor Clock Source Selection (Write Protect)
      * |        |          |The peripheral clock source of CCAP is defined by CCAP0SEL.
      * |        |          |000 = Clock source from MIRC.
+     * |        |          |001 = Clock source from HCLK2.
      * |        |          |010 = Clock source from HIRC.
+     * |        |          |011 = Clock source from APLL0/2.
      * |        |          |100 = Clock source from HXT.
      * |        |          |Others = Reserved.
      * |        |          |Note 0: These bits are write protected. Refer to the SYS_REGLCTL register.
@@ -1483,7 +1325,7 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[3:0]   |CLKOSEL   |Clock Output Clock Source Selection (Write Protect)
-     * |        |          |0000 = Clock source from SYSCLK.
+     * |        |          |0000 = Clock source from SCLK.
      * |        |          |0001 = Clock source from ACLK.
      * |        |          |0010 = Clock source from HCLK0.
      * |        |          |0011 = Clock source from HCLK1.
@@ -1533,14 +1375,6 @@ typedef struct
      * |        |          |00 = Clock source from APLL1/2.
      * |        |          |01 = Clock source from APLL0/2.
      * |        |          |10 = PCLK0.
-     * |        |          |Others = Reserved.
-     * |        |          |Note 0: These bits are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 1: These bits are not retained when D1 power is turned off.
-     * |[5:4]   |EADC1SEL  |EADC1 Clock Source Selection (Write Protect)
-     * |        |          |The peripheral clock source of EADC0 is defined by EADC1SEL.
-     * |        |          |00 = Clock source from APLL1/2.
-     * |        |          |01 = Clock source from APLL0/2.
-     * |        |          |10 = PCLK2.
      * |        |          |Others = Reserved.
      * |        |          |Note 0: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 1: These bits are not retained when D1 power is turned off.
@@ -1606,7 +1440,7 @@ typedef struct
      * |[0]     |I3C0SEL   |I3C0 Clock Source Selection (Write Protect)
      * |        |          |The peripheral clock source of I3C0 is defined by I3C0SEL.
      * |        |          |0 = Clock source from HCLK0.
-     * |        |          |1 = Clock source from APLL1.
+     * |        |          |1 = Clock source from APLL1/2.
      * |        |          |Others = Reserved.
      * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: This bit is not retained when D1 power is turned off.
@@ -1845,13 +1679,12 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[2:0]   |ST0SEL    |Cortex-M55 SysTick 0 Clock Source Selection (Write Protect)
+     * |[1:0]   |ST0SEL    |Cortex-M55 SysTick 0 Clock Source Selection (Write Protect)
      * |        |          |If SYST_CTRL[2]=0, SysTick uses listed clock source below.
-     * |        |          |000 = Clock source from HXT.
-     * |        |          |001 = Clock source from LXT.
-     * |        |          |010 = Clock source from HXT/2.
-     * |        |          |011 = Clock source from ACLK/2.
-     * |        |          |100 = Clock source from HIRC/2.
+     * |        |          |00 = Clock source from HXT.
+     * |        |          |01 = Clock source from HXT/2.
+     * |        |          |10 = Clock source from ACLK/2.
+     * |        |          |11 = Clock source from HIRC/2.
      * |        |          |Others = Reserved.
      * |        |          |Note 1: if SysTick clock source is not from CPUCLK (i.e
      * |        |          |SYST_CTRL[2] = 0), SysTick needs to enable ST0CKEN(CLK_STCTL [0])
@@ -2062,41 +1895,20 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[1:0]   |WDT0SEL   |WDT0 Clock Source Selection (Write Protect)
+     * |[0]     |WDT0SEL   |WDT0 Clock Source Selection (Write Protect)
      * |        |          |The peripheral clock source of WDT0 is defined by WDT0SEL.
-     * |        |          |00 = Clock source from LXT.
-     * |        |          |01 = Clock source from HCLK2/2048.
-     * |        |          |10 = Clock source from LIRC.
+     * |        |          |0 = Clock source from LXT.
+     * |        |          |1 = Clock source from LIRC.
      * |        |          |Others = Reserved.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D2 power is turned off.
-     * |[5:4]   |WDT1SEL   |WDT1 Clock Source Selection (Write Protect)
+     * |[4]     |WDT1SEL   |WDT1 Clock Source Selection (Write Protect)
      * |        |          |The peripheral clock source of WDT1 is defined by WDT1SEL.
-     * |        |          |00 = Clock source from LXT.
-     * |        |          |01 = Clock source from HCLK2/2048.
-     * |        |          |10 = Clock source from LIRC.
+     * |        |          |0 = Clock source from LXT.
+     * |        |          |1 = Clock source from LIRC.
      * |        |          |Others = Reserved.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D2 power is turned off.
-     * @var CLK_T::WWDTSEL
-     * Offset: 0x470  WWDT Clock Source Select Control Register
-     * ---------------------------------------------------------------------------------------------------
-     * |Bits    |Field     |Descriptions
-     * | :----: | :----:   | :---- |
-     * |[0]     |WWDT0SEL  |WWDT0 Clock Source Selection (Write Protect)
-     * |        |          |The peripheral clock source of WWDT0 is defined by WWDT0SEL.
-     * |        |          |0 = Clock source from HCLK0/2048.
-     * |        |          |1 = Clock source from LIRC.
-     * |        |          |Others = Reserved.
-     * |        |          |Note 1: This bit are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: These bits are not retained when D1 power is turned off.
-     * |[4]     |WWDT1SEL  |WWDT1 Clock Source Selection (Write Protect)
-     * |        |          |The peripheral clock source of WWDT1 is defined by WWDT1SEL.
-     * |        |          |0 = Clock source from HCLK0/2048.
-     * |        |          |1 = Clock source from LIRC.
-     * |        |          |Others = Reserved.
-     * |        |          |Note 1: This bit are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: These bits are not retained when D1 power is turned off.
      * @var CLK_T::DLLSEL
      * Offset: 0x474  DLL Clock Source Select Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -2106,14 +1918,23 @@ typedef struct
      * |        |          |0 = Clock source from APLL0.
      * |        |          |1 = Clock source from APLL1.
      * |        |          |Others = Reserved.
-     * |        |          |Note 1: This bit are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: These bits are not retained when D0 power is turned off.
-     * |[4]     |DLL1SEL   |DLL1 Clock Source Selection (Write Protect)
-     * |        |          |0 = Clock source from APLL0.
-     * |        |          |1 = Clock source from APLL1.
-     * |        |          |Others = Reserved.
-     * |        |          |Note 1: This bit are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: These bits are not retained when D0 power is turned off.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * @var CLK_T::WWDTSEL
+     * Offset: 0x47C  WWDT Clock Source Select Control Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |WWDT0SEL  |WWDT0 Clock Source Selection (Write Protect)
+     * |        |          |0 = Clock source from LIRC.
+     * |        |          |1 = Clock source from LXT.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * |[4]     |WWDT1SEL  |WWDT1 Clock Source Selection (Write Protect)
+     * |        |          |0 = Clock source from LIRC.
+     * |        |          |1 = Clock source from LXT.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
      * @var CLK_T::SCLKDIV
      * Offset: 0x500  SCLK Clock Divider Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -2166,7 +1987,7 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[7:0]   |DMIC0DIV  |DMIC0 Clock Divide Number from CANFD0 Clock Source
+     * |[7:0]   |DMIC0DIV  |DMIC0 Clock Divide Number from DMIC0 Clock Source
      * |        |          |DMIC0 clock frequency = (DMIC0DIV clock source frequency) / (DMIC0DIV + 1).
      * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var CLK_T::EADCDIV
@@ -2176,9 +1997,6 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[7:0]   |EADC0DIV  |EADC0 Clock Divide Number from EADC0 Clock Source
      * |        |          |EADC0 clock frequency = (EADC0 clock source frequency) / (EADC0DIV + 1).
-     * |        |          |Note: These bits are not retained when D1 power is turned off.
-     * |[15:8]  |EADC1DIV  |EADC1 Clock Divide Number from EADC1 Clock Source
-     * |        |          |EADC1 clock frequency = (EADC1 clock source frequency) / (EADC1DIV + 1).
      * |        |          |Note: These bits are not retained when D1 power is turned off.
      * @var CLK_T::I2SDIV
      * Offset: 0x51C  I2S Clock Divider Control Register
@@ -2383,7 +2201,7 @@ typedef struct
     __IO uint32_t SRAMCTL;               /*!< [0x02c0] System SRAM Clock Enable Control Register                        */
     __I  uint32_t RESERVE3[2];
     __IO uint32_t STCTL;                 /*!< [0x02cc] System Tick Clock Enable Control Register                        */
-    __IO uint32_t TAMPERCTL;             /*!< [0x02d0] TAMPER Clock Enable Control Register                             */
+    __I  uint32_t RESERVE4[1];
     __IO uint32_t TMRCTL;                /*!< [0x02d4] Timer Clock Enable Control Register                              */
     __IO uint32_t TRNGCTL;               /*!< [0x02d8] TRNG Clock Enable Control Register                               */
     __IO uint32_t TTMRCTL;               /*!< [0x02dc] Tick Timer Clock Enable Control Register                         */
@@ -2394,7 +2212,7 @@ typedef struct
     __IO uint32_t UTCPDCTL;              /*!< [0x02f0] UTCPD Clock Enable Control Register                              */
     __IO uint32_t WDTCTL;                /*!< [0x02f4] WDT Clock Enable Control Register                                */
     __IO uint32_t WWDTCTL;               /*!< [0x02f8] WWDT Clock Enable Control Register                               */
-    __I  uint32_t RESERVE4[65];
+    __I  uint32_t RESERVE5[65];
     __IO uint32_t SCLKSEL;               /*!< [0x0400] System Clock Source Select Control Register                      */
     __IO uint32_t BPWMSEL;               /*!< [0x0404] BPWM Clock Source Select Control Register                        */
     __IO uint32_t CANFDSEL;              /*!< [0x0408] CANFD Clock Source Select Control Register                       */
@@ -2423,11 +2241,13 @@ typedef struct
     __IO uint32_t UARTSEL1;              /*!< [0x0464] UART Clock Source Select Control Register 1                      */
     __IO uint32_t USBSEL;                /*!< [0x0468] USB Clock Source Select Control Register                         */
     __IO uint32_t WDTSEL;                /*!< [0x046c] WDT Clock Source Select Control Register                         */
-    __IO uint32_t WWDTSEL;               /*!< [0x0470] WWDT Clock Source Select Control Register                        */
-    __IO uint32_t DLLSEL;                /*!< [0x0474] DLL Clock Source Select Control Register                         */
-    __I  uint32_t RESERVE5[34];
-    __IO uint32_t SCLKDIV;               /*!< [0x0500] SCLK Clock Divider Control Register                              */
     __I  uint32_t RESERVE6[1];
+    __IO uint32_t DLLSEL;                /*!< [0x0474] DLL Clock Source Select Control Register                         */
+    __I  uint32_t RESERVE7[1];
+    __IO uint32_t WWDTSEL;               /*!< [0x047c] WWDT Clock Source Select Control Register                        */
+    __I  uint32_t RESERVE8[32];
+    __IO uint32_t SCLKDIV;               /*!< [0x0500] SCLK Clock Divider Control Register                              */
+    __I  uint32_t RESERVE9[1];
     __IO uint32_t HCLKDIV;               /*!< [0x0508] HCLK Clock Divider Control Register                              */
     __IO uint32_t PCLKDIV;               /*!< [0x050c] PCLK Clock Divider Control Register                              */
     __IO uint32_t CANFDDIV;              /*!< [0x0510] CANFD Clock Divider Control Register                             */
@@ -2506,6 +2326,18 @@ typedef struct
 
 #define CLK_MIRCCTL_MIRC1MSTBS_Pos       (0)                                               /*!< CLK_T::MIRCCTL: MIRC1MSTBS Position    */
 #define CLK_MIRCCTL_MIRC1MSTBS_Msk       (0x3ul << CLK_MIRCCTL_MIRC1MSTBS_Pos)             /*!< CLK_T::MIRCCTL: MIRC1MSTBS Mask        */
+
+#define CLK_MIRCCTL_MIRC2MSTBS_Pos       (4)                                               /*!< CLK_T::MIRCCTL: MIRC2MSTBS Position    */
+#define CLK_MIRCCTL_MIRC2MSTBS_Msk       (0x3ul << CLK_MIRCCTL_MIRC2MSTBS_Pos)             /*!< CLK_T::MIRCCTL: MIRC2MSTBS Mask        */
+
+#define CLK_MIRCCTL_MIRC4MSTBS_Pos       (8)                                               /*!< CLK_T::MIRCCTL: MIRC4MSTBS Position    */
+#define CLK_MIRCCTL_MIRC4MSTBS_Msk       (0x3ul << CLK_MIRCCTL_MIRC4MSTBS_Pos)             /*!< CLK_T::MIRCCTL: MIRC4MSTBS Mask        */
+
+#define CLK_MIRCCTL_MIRC8MSTBS_Pos       (12)                                              /*!< CLK_T::MIRCCTL: MIRC8MSTBS Position    */
+#define CLK_MIRCCTL_MIRC8MSTBS_Msk       (0x3ul << CLK_MIRCCTL_MIRC8MSTBS_Pos)             /*!< CLK_T::MIRCCTL: MIRC8MSTBS Mask        */
+
+#define CLK_MIRCCTL_MIRCFSEL_Pos         (16)                                              /*!< CLK_T::MIRCCTL: MIRCFSEL Position      */
+#define CLK_MIRCCTL_MIRCFSEL_Msk         (0x3ul << CLK_MIRCCTL_MIRCFSEL_Pos)               /*!< CLK_T::MIRCCTL: MIRCFSEL Mask          */
 
 #define CLK_MIRCCTL_MIRCFDIS_Pos         (20)                                              /*!< CLK_T::MIRCCTL: MIRCFDIS Position      */
 #define CLK_MIRCCTL_MIRCFDIS_Msk         (0x1ul << CLK_MIRCCTL_MIRCFDIS_Pos)               /*!< CLK_T::MIRCCTL: MIRCFDIS Mask          */
@@ -2660,23 +2492,14 @@ typedef struct
 #define CLK_ACMPCTL_ACMP23CKEN_Pos       (1)                                               /*!< CLK_T::ACMPCTL: ACMP23CKEN Position    */
 #define CLK_ACMPCTL_ACMP23CKEN_Msk       (0x1ul << CLK_ACMPCTL_ACMP23CKEN_Pos)             /*!< CLK_T::ACMPCTL: ACMP23CKEN Mask        */
 
-#define CLK_ACMPCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::ACMPCTL: CLKSTB Position        */
-#define CLK_ACMPCTL_CLKSTB_Msk           (0x1ul << CLK_ACMPCTL_CLKSTB_Pos)                 /*!< CLK_T::ACMPCTL: CLKSTB Mask            */
-
 #define CLK_AWFCTL_AWF0CKEN_Pos          (0)                                               /*!< CLK_T::AWFCTL: AWF0CKEN Position       */
 #define CLK_AWFCTL_AWF0CKEN_Msk          (0x1ul << CLK_AWFCTL_AWF0CKEN_Pos)                /*!< CLK_T::AWFCTL: AWF0CKEN Mask           */
-
-#define CLK_AWFCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::AWFCTL: CLKSTB Position         */
-#define CLK_AWFCTL_CLKSTB_Msk            (0x1ul << CLK_AWFCTL_CLKSTB_Pos)                  /*!< CLK_T::AWFCTL: CLKSTB Mask             */
 
 #define CLK_BPWMCTL_BPWM0CKEN_Pos        (0)                                               /*!< CLK_T::BPWMCTL: BPWM0CKEN Position     */
 #define CLK_BPWMCTL_BPWM0CKEN_Msk        (0x1ul << CLK_BPWMCTL_BPWM0CKEN_Pos)              /*!< CLK_T::BPWMCTL: BPWM0CKEN Mask         */
 
 #define CLK_BPWMCTL_BPWM1CKEN_Pos        (1)                                               /*!< CLK_T::BPWMCTL: BPWM1CKEN Position     */
 #define CLK_BPWMCTL_BPWM1CKEN_Msk        (0x1ul << CLK_BPWMCTL_BPWM1CKEN_Pos)              /*!< CLK_T::BPWMCTL: BPWM1CKEN Mask         */
-
-#define CLK_BPWMCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::BPWMCTL: CLKSTB Position        */
-#define CLK_BPWMCTL_CLKSTB_Msk           (0x1ul << CLK_BPWMCTL_CLKSTB_Pos)                 /*!< CLK_T::BPWMCTL: CLKSTB Mask            */
 
 #define CLK_CANFDCTL_CANFD0CKEN_Pos      (0)                                               /*!< CLK_T::CANFDCTL: CANFD0CKEN Position   */
 #define CLK_CANFDCTL_CANFD0CKEN_Msk      (0x1ul << CLK_CANFDCTL_CANFD0CKEN_Pos)            /*!< CLK_T::CANFDCTL: CANFD0CKEN Mask       */
@@ -2690,53 +2513,26 @@ typedef struct
 #define CLK_CANFDCTL_CANRM1CKEN_Pos      (17)                                              /*!< CLK_T::CANFDCTL: CANRM1CKEN Position   */
 #define CLK_CANFDCTL_CANRM1CKEN_Msk      (0x1ul << CLK_CANFDCTL_CANRM1CKEN_Pos)            /*!< CLK_T::CANFDCTL: CANRM1CKEN Mask       */
 
-#define CLK_CANFDCTL_CLKSTB_Pos          (31)                                              /*!< CLK_T::CANFDCTL: CLKSTB Position       */
-#define CLK_CANFDCTL_CLKSTB_Msk          (0x1ul << CLK_CANFDCTL_CLKSTB_Pos)                /*!< CLK_T::CANFDCTL: CLKSTB Mask           */
-
 #define CLK_CCAPCTL_CCAP0CKEN_Pos        (0)                                               /*!< CLK_T::CCAPCTL: CCAP0CKEN Position     */
 #define CLK_CCAPCTL_CCAP0CKEN_Msk        (0x1ul << CLK_CCAPCTL_CCAP0CKEN_Pos)              /*!< CLK_T::CCAPCTL: CCAP0CKEN Mask         */
-
-#define CLK_CCAPCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::CCAPCTL: CLKSTB Position        */
-#define CLK_CCAPCTL_CLKSTB_Msk           (0x1ul << CLK_CCAPCTL_CLKSTB_Pos)                 /*!< CLK_T::CCAPCTL: CLKSTB Mask            */
 
 #define CLK_CRCCTL_CRC0CKEN_Pos          (0)                                               /*!< CLK_T::CRCCTL: CRC0CKEN Position       */
 #define CLK_CRCCTL_CRC0CKEN_Msk          (0x1ul << CLK_CRCCTL_CRC0CKEN_Pos)                /*!< CLK_T::CRCCTL: CRC0CKEN Mask           */
 
-#define CLK_CRCCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::CRCCTL: CLKSTB Position         */
-#define CLK_CRCCTL_CLKSTB_Msk            (0x1ul << CLK_CRCCTL_CLKSTB_Pos)                  /*!< CLK_T::CRCCTL: CLKSTB Mask             */
-
 #define CLK_CRYPTOCTL_CRYPTO0CKEN_Pos    (0)                                               /*!< CLK_T::CRYPTOCTL: CRYPTO0CKEN Position */
 #define CLK_CRYPTOCTL_CRYPTO0CKEN_Msk    (0x1ul << CLK_CRYPTOCTL_CRYPTO0CKEN_Pos)          /*!< CLK_T::CRYPTOCTL: CRYPTO0CKEN Mask     */
-
-#define CLK_CRYPTOCTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::CRYPTOCTL: CLKSTB Position      */
-#define CLK_CRYPTOCTL_CLKSTB_Msk         (0x1ul << CLK_CRYPTOCTL_CLKSTB_Pos)               /*!< CLK_T::CRYPTOCTL: CLKSTB Mask          */
 
 #define CLK_DACCTL_DAC01CKEN_Pos         (0)                                               /*!< CLK_T::DACCTL: DAC01CKEN Position      */
 #define CLK_DACCTL_DAC01CKEN_Msk         (0x1ul << CLK_DACCTL_DAC01CKEN_Pos)               /*!< CLK_T::DACCTL: DAC01CKEN Mask          */
 
-#define CLK_DACCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::DACCTL: CLKSTB Position         */
-#define CLK_DACCTL_CLKSTB_Msk            (0x1ul << CLK_DACCTL_CLKSTB_Pos)                  /*!< CLK_T::DACCTL: CLKSTB Mask             */
-
 #define CLK_DMICCTL_DMIC0CKEN_Pos        (0)                                               /*!< CLK_T::DMICCTL: DMIC0CKEN Position     */
 #define CLK_DMICCTL_DMIC0CKEN_Msk        (0x1ul << CLK_DMICCTL_DMIC0CKEN_Pos)              /*!< CLK_T::DMICCTL: DMIC0CKEN Mask         */
-
-#define CLK_DMICCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::DMICCTL: CLKSTB Position        */
-#define CLK_DMICCTL_CLKSTB_Msk           (0x1ul << CLK_DMICCTL_CLKSTB_Pos)                 /*!< CLK_T::DMICCTL: CLKSTB Mask            */
 
 #define CLK_EADCCTL_EADC0CKEN_Pos        (0)                                               /*!< CLK_T::EADCCTL: EADC0CKEN Position     */
 #define CLK_EADCCTL_EADC0CKEN_Msk        (0x1ul << CLK_EADCCTL_EADC0CKEN_Pos)              /*!< CLK_T::EADCCTL: EADC0CKEN Mask         */
 
-#define CLK_EADCCTL_EADC1CKEN_Pos        (1)                                               /*!< CLK_T::EADCCTL: EADC1CKEN Position     */
-#define CLK_EADCCTL_EADC1CKEN_Msk        (0x1ul << CLK_EADCCTL_EADC1CKEN_Pos)              /*!< CLK_T::EADCCTL: EADC1CKEN Mask         */
-
-#define CLK_EADCCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::EADCCTL: CLKSTB Position        */
-#define CLK_EADCCTL_CLKSTB_Msk           (0x1ul << CLK_EADCCTL_CLKSTB_Pos)                 /*!< CLK_T::EADCCTL: CLKSTB Mask            */
-
 #define CLK_EBICTL_EBI0CKEN_Pos          (0)                                               /*!< CLK_T::EBICTL: EBI0CKEN Position       */
 #define CLK_EBICTL_EBI0CKEN_Msk          (0x1ul << CLK_EBICTL_EBI0CKEN_Pos)                /*!< CLK_T::EBICTL: EBI0CKEN Mask           */
-
-#define CLK_EBICTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::EBICTL: CLKSTB Position         */
-#define CLK_EBICTL_CLKSTB_Msk            (0x1ul << CLK_EBICTL_CLKSTB_Pos)                  /*!< CLK_T::EBICTL: CLKSTB Mask             */
 
 #define CLK_ECAPCTL_ECAP0CKEN_Pos        (0)                                               /*!< CLK_T::ECAPCTL: ECAP0CKEN Position     */
 #define CLK_ECAPCTL_ECAP0CKEN_Msk        (0x1ul << CLK_ECAPCTL_ECAP0CKEN_Pos)              /*!< CLK_T::ECAPCTL: ECAP0CKEN Mask         */
@@ -2750,23 +2546,14 @@ typedef struct
 #define CLK_ECAPCTL_ECAP3CKEN_Pos        (3)                                               /*!< CLK_T::ECAPCTL: ECAP3CKEN Position     */
 #define CLK_ECAPCTL_ECAP3CKEN_Msk        (0x1ul << CLK_ECAPCTL_ECAP3CKEN_Pos)              /*!< CLK_T::ECAPCTL: ECAP3CKEN Mask         */
 
-#define CLK_ECAPCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::ECAPCTL: CLKSTB Position        */
-#define CLK_ECAPCTL_CLKSTB_Msk           (0x1ul << CLK_ECAPCTL_CLKSTB_Pos)                 /*!< CLK_T::ECAPCTL: CLKSTB Mask            */
-
 #define CLK_EMACCTL_EMAC0CKEN_Pos        (0)                                               /*!< CLK_T::EMACCTL: EMAC0CKEN Position     */
 #define CLK_EMACCTL_EMAC0CKEN_Msk        (0x1ul << CLK_EMACCTL_EMAC0CKEN_Pos)              /*!< CLK_T::EMACCTL: EMAC0CKEN Mask         */
-
-#define CLK_EMACCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::EMACCTL: CLKSTB Position        */
-#define CLK_EMACCTL_CLKSTB_Msk           (0x1ul << CLK_EMACCTL_CLKSTB_Pos)                 /*!< CLK_T::EMACCTL: CLKSTB Mask            */
 
 #define CLK_EPWMCTL_EPWM0CKEN_Pos        (0)                                               /*!< CLK_T::EPWMCTL: EPWM0CKEN Position     */
 #define CLK_EPWMCTL_EPWM0CKEN_Msk        (0x1ul << CLK_EPWMCTL_EPWM0CKEN_Pos)              /*!< CLK_T::EPWMCTL: EPWM0CKEN Mask         */
 
 #define CLK_EPWMCTL_EPWM1CKEN_Pos        (1)                                               /*!< CLK_T::EPWMCTL: EPWM1CKEN Position     */
 #define CLK_EPWMCTL_EPWM1CKEN_Msk        (0x1ul << CLK_EPWMCTL_EPWM1CKEN_Pos)              /*!< CLK_T::EPWMCTL: EPWM1CKEN Mask         */
-
-#define CLK_EPWMCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::EPWMCTL: CLKSTB Position        */
-#define CLK_EPWMCTL_CLKSTB_Msk           (0x1ul << CLK_EPWMCTL_CLKSTB_Pos)                 /*!< CLK_T::EPWMCTL: CLKSTB Mask            */
 
 #define CLK_EQEICTL_EQEI0CKEN_Pos        (0)                                               /*!< CLK_T::EQEICTL: EQEI0CKEN Position     */
 #define CLK_EQEICTL_EQEI0CKEN_Msk        (0x1ul << CLK_EQEICTL_EQEI0CKEN_Pos)              /*!< CLK_T::EQEICTL: EQEI0CKEN Mask         */
@@ -2780,9 +2567,6 @@ typedef struct
 #define CLK_EQEICTL_EQEI3CKEN_Pos        (3)                                               /*!< CLK_T::EQEICTL: EQEI3CKEN Position     */
 #define CLK_EQEICTL_EQEI3CKEN_Msk        (0x1ul << CLK_EQEICTL_EQEI3CKEN_Pos)              /*!< CLK_T::EQEICTL: EQEI3CKEN Mask         */
 
-#define CLK_EQEICTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::EQEICTL: CLKSTB Position        */
-#define CLK_EQEICTL_CLKSTB_Msk           (0x1ul << CLK_EQEICTL_CLKSTB_Pos)                 /*!< CLK_T::EQEICTL: CLKSTB Mask            */
-
 #define CLK_FMCCTL_FMC0CKEN_Pos          (0)                                               /*!< CLK_T::FMCCTL: FMC0CKEN Position       */
 #define CLK_FMCCTL_FMC0CKEN_Msk          (0x1ul << CLK_FMCCTL_FMC0CKEN_Pos)                /*!< CLK_T::FMCCTL: FMC0CKEN Mask           */
 
@@ -2791,9 +2575,6 @@ typedef struct
 
 #define CLK_GDMACTL_GDMA0CKEN_Pos        (0)                                               /*!< CLK_T::GDMACTL: GDMA0CKEN Position     */
 #define CLK_GDMACTL_GDMA0CKEN_Msk        (0x1ul << CLK_GDMACTL_GDMA0CKEN_Pos)              /*!< CLK_T::GDMACTL: GDMA0CKEN Mask         */
-
-#define CLK_GDMACTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::GDMACTL: CLKSTB Position        */
-#define CLK_GDMACTL_CLKSTB_Msk           (0x1ul << CLK_GDMACTL_CLKSTB_Pos)                 /*!< CLK_T::GDMACTL: CLKSTB Mask            */
 
 #define CLK_GPIOCTL_GPIOACKEN_Pos        (0)                                               /*!< CLK_T::GPIOCTL: GPIOACKEN Position     */
 #define CLK_GPIOCTL_GPIOACKEN_Msk        (0x1ul << CLK_GPIOCTL_GPIOACKEN_Pos)              /*!< CLK_T::GPIOCTL: GPIOACKEN Mask         */
@@ -2825,26 +2606,14 @@ typedef struct
 #define CLK_GPIOCTL_GPIOJCKEN_Pos        (9)                                               /*!< CLK_T::GPIOCTL: GPIOJCKEN Position     */
 #define CLK_GPIOCTL_GPIOJCKEN_Msk        (0x1ul << CLK_GPIOCTL_GPIOJCKEN_Pos)              /*!< CLK_T::GPIOCTL: GPIOJCKEN Mask         */
 
-#define CLK_GPIOCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::GPIOCTL: CLKSTB Position        */
-#define CLK_GPIOCTL_CLKSTB_Msk           (0x1ul << CLK_GPIOCTL_CLKSTB_Pos)                 /*!< CLK_T::GPIOCTL: CLKSTB Mask            */
-
 #define CLK_HSOTGCTL_HSOTG0CKEN_Pos      (0)                                               /*!< CLK_T::HSOTGCTL: HSOTG0CKEN Position   */
 #define CLK_HSOTGCTL_HSOTG0CKEN_Msk      (0x1ul << CLK_HSOTGCTL_HSOTG0CKEN_Pos)            /*!< CLK_T::HSOTGCTL: HSOTG0CKEN Mask       */
-
-#define CLK_HSOTGCTL_CLKSTB_Pos          (31)                                              /*!< CLK_T::HSOTGCTL: CLKSTB Position       */
-#define CLK_HSOTGCTL_CLKSTB_Msk          (0x1ul << CLK_HSOTGCTL_CLKSTB_Pos)                /*!< CLK_T::HSOTGCTL: CLKSTB Mask           */
 
 #define CLK_HSUSBDCTL_HSUSBD0CKEN_Pos    (0)                                               /*!< CLK_T::HSUSBDCTL: HSUSBD0CKEN Position */
 #define CLK_HSUSBDCTL_HSUSBD0CKEN_Msk    (0x1ul << CLK_HSUSBDCTL_HSUSBD0CKEN_Pos)          /*!< CLK_T::HSUSBDCTL: HSUSBD0CKEN Mask     */
 
-#define CLK_HSUSBDCTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::HSUSBDCTL: CLKSTB Position      */
-#define CLK_HSUSBDCTL_CLKSTB_Msk         (0x1ul << CLK_HSUSBDCTL_CLKSTB_Pos)               /*!< CLK_T::HSUSBDCTL: CLKSTB Mask          */
-
 #define CLK_HSUSBHCTL_HSUSBH0CKEN_Pos    (0)                                               /*!< CLK_T::HSUSBHCTL: HSUSBH0CKEN Position */
 #define CLK_HSUSBHCTL_HSUSBH0CKEN_Msk    (0x1ul << CLK_HSUSBHCTL_HSUSBH0CKEN_Pos)          /*!< CLK_T::HSUSBHCTL: HSUSBH0CKEN Mask     */
-
-#define CLK_HSUSBHCTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::HSUSBHCTL: CLKSTB Position      */
-#define CLK_HSUSBHCTL_CLKSTB_Msk         (0x1ul << CLK_HSUSBHCTL_CLKSTB_Pos)               /*!< CLK_T::HSUSBHCTL: CLKSTB Mask          */
 
 #define CLK_I2CCTL_I2C0CKEN_Pos          (0)                                               /*!< CLK_T::I2CCTL: I2C0CKEN Position       */
 #define CLK_I2CCTL_I2C0CKEN_Msk          (0x1ul << CLK_I2CCTL_I2C0CKEN_Pos)                /*!< CLK_T::I2CCTL: I2C0CKEN Mask           */
@@ -2858,77 +2627,41 @@ typedef struct
 #define CLK_I2CCTL_I2C3CKEN_Pos          (3)                                               /*!< CLK_T::I2CCTL: I2C3CKEN Position       */
 #define CLK_I2CCTL_I2C3CKEN_Msk          (0x1ul << CLK_I2CCTL_I2C3CKEN_Pos)                /*!< CLK_T::I2CCTL: I2C3CKEN Mask           */
 
-#define CLK_I2CCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::I2CCTL: CLKSTB Position         */
-#define CLK_I2CCTL_CLKSTB_Msk            (0x1ul << CLK_I2CCTL_CLKSTB_Pos)                  /*!< CLK_T::I2CCTL: CLKSTB Mask             */
-
 #define CLK_I2SCTL_I2S0CKEN_Pos          (0)                                               /*!< CLK_T::I2SCTL: I2S0CKEN Position       */
 #define CLK_I2SCTL_I2S0CKEN_Msk          (0x1ul << CLK_I2SCTL_I2S0CKEN_Pos)                /*!< CLK_T::I2SCTL: I2S0CKEN Mask           */
 
 #define CLK_I2SCTL_I2S1CKEN_Pos          (1)                                               /*!< CLK_T::I2SCTL: I2S1CKEN Position       */
 #define CLK_I2SCTL_I2S1CKEN_Msk          (0x1ul << CLK_I2SCTL_I2S1CKEN_Pos)                /*!< CLK_T::I2SCTL: I2S1CKEN Mask           */
 
-#define CLK_I2SCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::I2SCTL: CLKSTB Position         */
-#define CLK_I2SCTL_CLKSTB_Msk            (0x1ul << CLK_I2SCTL_CLKSTB_Pos)                  /*!< CLK_T::I2SCTL: CLKSTB Mask             */
-
 #define CLK_I3CCTL_I3C0CKEN_Pos          (0)                                               /*!< CLK_T::I3CCTL: I3C0CKEN Position       */
 #define CLK_I3CCTL_I3C0CKEN_Msk          (0x1ul << CLK_I3CCTL_I3C0CKEN_Pos)                /*!< CLK_T::I3CCTL: I3C0CKEN Mask           */
-
-#define CLK_I3CCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::I3CCTL: CLKSTB Position         */
-#define CLK_I3CCTL_CLKSTB_Msk            (0x1ul << CLK_I3CCTL_CLKSTB_Pos)                  /*!< CLK_T::I3CCTL: CLKSTB Mask             */
 
 #define CLK_KDFCTL_KDF0CKEN_Pos          (0)                                               /*!< CLK_T::KDFCTL: KDF0CKEN Position       */
 #define CLK_KDFCTL_KDF0CKEN_Msk          (0x1ul << CLK_KDFCTL_KDF0CKEN_Pos)                /*!< CLK_T::KDFCTL: KDF0CKEN Mask           */
 
-#define CLK_KDFCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::KDFCTL: CLKSTB Position         */
-#define CLK_KDFCTL_CLKSTB_Msk            (0x1ul << CLK_KDFCTL_CLKSTB_Pos)                  /*!< CLK_T::KDFCTL: CLKSTB Mask             */
-
 #define CLK_KPICTL_KPI0CKEN_Pos          (0)                                               /*!< CLK_T::KPICTL: KPI0CKEN Position       */
 #define CLK_KPICTL_KPI0CKEN_Msk          (0x1ul << CLK_KPICTL_KPI0CKEN_Pos)                /*!< CLK_T::KPICTL: KPI0CKEN Mask           */
-
-#define CLK_KPICTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::KPICTL: CLKSTB Position         */
-#define CLK_KPICTL_CLKSTB_Msk            (0x1ul << CLK_KPICTL_CLKSTB_Pos)                  /*!< CLK_T::KPICTL: CLKSTB Mask             */
 
 #define CLK_KSCTL_KS0CKEN_Pos            (0)                                               /*!< CLK_T::KSCTL: KS0CKEN Position         */
 #define CLK_KSCTL_KS0CKEN_Msk            (0x1ul << CLK_KSCTL_KS0CKEN_Pos)                  /*!< CLK_T::KSCTL: KS0CKEN Mask             */
 
-#define CLK_KSCTL_CLKSTB_Pos             (31)                                              /*!< CLK_T::KSCTL: CLKSTB Position          */
-#define CLK_KSCTL_CLKSTB_Msk             (0x1ul << CLK_KSCTL_CLKSTB_Pos)                   /*!< CLK_T::KSCTL: CLKSTB Mask              */
-
 #define CLK_LPADCCTL_LPADC0CKEN_Pos      (0)                                               /*!< CLK_T::LPADCCTL: LPADC0CKEN Position   */
 #define CLK_LPADCCTL_LPADC0CKEN_Msk      (0x1ul << CLK_LPADCCTL_LPADC0CKEN_Pos)            /*!< CLK_T::LPADCCTL: LPADC0CKEN Mask       */
-
-#define CLK_LPADCCTL_CLKSTB_Pos          (31)                                              /*!< CLK_T::LPADCCTL: CLKSTB Position       */
-#define CLK_LPADCCTL_CLKSTB_Msk          (0x1ul << CLK_LPADCCTL_CLKSTB_Pos)                /*!< CLK_T::LPADCCTL: CLKSTB Mask           */
 
 #define CLK_LPPDMACTL_LPPDMA0CKEN_Pos    (0)                                               /*!< CLK_T::LPPDMACTL: LPPDMA0CKEN Position */
 #define CLK_LPPDMACTL_LPPDMA0CKEN_Msk    (0x1ul << CLK_LPPDMACTL_LPPDMA0CKEN_Pos)          /*!< CLK_T::LPPDMACTL: LPPDMA0CKEN Mask     */
 
-#define CLK_LPPDMACTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::LPPDMACTL: CLKSTB Position      */
-#define CLK_LPPDMACTL_CLKSTB_Msk         (0x1ul << CLK_LPPDMACTL_CLKSTB_Pos)               /*!< CLK_T::LPPDMACTL: CLKSTB Mask          */
-
 #define CLK_LPGPIOCTL_LPGPIO0CKEN_Pos    (0)                                               /*!< CLK_T::LPGPIOCTL: LPGPIO0CKEN Position */
 #define CLK_LPGPIOCTL_LPGPIO0CKEN_Msk    (0x1ul << CLK_LPGPIOCTL_LPGPIO0CKEN_Pos)          /*!< CLK_T::LPGPIOCTL: LPGPIO0CKEN Mask     */
-
-#define CLK_LPGPIOCTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::LPGPIOCTL: CLKSTB Position      */
-#define CLK_LPGPIOCTL_CLKSTB_Msk         (0x1ul << CLK_LPGPIOCTL_CLKSTB_Pos)               /*!< CLK_T::LPGPIOCTL: CLKSTB Mask          */
 
 #define CLK_LPI2CCTL_LPI2C0CKEN_Pos      (0)                                               /*!< CLK_T::LPI2CCTL: LPI2C0CKEN Position   */
 #define CLK_LPI2CCTL_LPI2C0CKEN_Msk      (0x1ul << CLK_LPI2CCTL_LPI2C0CKEN_Pos)            /*!< CLK_T::LPI2CCTL: LPI2C0CKEN Mask       */
 
-#define CLK_LPI2CCTL_CLKSTB_Pos          (31)                                              /*!< CLK_T::LPI2CCTL: CLKSTB Position       */
-#define CLK_LPI2CCTL_CLKSTB_Msk          (0x1ul << CLK_LPI2CCTL_CLKSTB_Pos)                /*!< CLK_T::LPI2CCTL: CLKSTB Mask           */
-
 #define CLK_LPSPICTL_LPSPI0CKEN_Pos      (0)                                               /*!< CLK_T::LPSPICTL: LPSPI0CKEN Position   */
 #define CLK_LPSPICTL_LPSPI0CKEN_Msk      (0x1ul << CLK_LPSPICTL_LPSPI0CKEN_Pos)            /*!< CLK_T::LPSPICTL: LPSPI0CKEN Mask       */
 
-#define CLK_LPSPICTL_CLKSTB_Pos          (31)                                              /*!< CLK_T::LPSPICTL: CLKSTB Position       */
-#define CLK_LPSPICTL_CLKSTB_Msk          (0x1ul << CLK_LPSPICTL_CLKSTB_Pos)                /*!< CLK_T::LPSPICTL: CLKSTB Mask           */
-
 #define CLK_LPSRAMCTL_LPSRAM0CKEN_Pos    (0)                                               /*!< CLK_T::LPSRAMCTL: LPSRAM0CKEN Position */
 #define CLK_LPSRAMCTL_LPSRAM0CKEN_Msk    (0x1ul << CLK_LPSRAMCTL_LPSRAM0CKEN_Pos)          /*!< CLK_T::LPSRAMCTL: LPSRAM0CKEN Mask     */
-
-#define CLK_LPSRAMCTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::LPSRAMCTL: CLKSTB Position      */
-#define CLK_LPSRAMCTL_CLKSTB_Msk         (0x1ul << CLK_LPSRAMCTL_CLKSTB_Pos)               /*!< CLK_T::LPSRAMCTL: CLKSTB Mask          */
 
 #define CLK_LPTMRCTL_LPTMR0CKEN_Pos      (0)                                               /*!< CLK_T::LPTMRCTL: LPTMR0CKEN Position   */
 #define CLK_LPTMRCTL_LPTMR0CKEN_Msk      (0x1ul << CLK_LPTMRCTL_LPTMR0CKEN_Pos)            /*!< CLK_T::LPTMRCTL: LPTMR0CKEN Mask       */
@@ -2936,35 +2669,17 @@ typedef struct
 #define CLK_LPTMRCTL_LPTMR1CKEN_Pos      (1)                                               /*!< CLK_T::LPTMRCTL: LPTMR1CKEN Position   */
 #define CLK_LPTMRCTL_LPTMR1CKEN_Msk      (0x1ul << CLK_LPTMRCTL_LPTMR1CKEN_Pos)            /*!< CLK_T::LPTMRCTL: LPTMR1CKEN Mask       */
 
-#define CLK_LPTMRCTL_CLKSTB_Pos          (31)                                              /*!< CLK_T::LPTMRCTL: CLKSTB Position       */
-#define CLK_LPTMRCTL_CLKSTB_Msk          (0x1ul << CLK_LPTMRCTL_CLKSTB_Pos)                /*!< CLK_T::LPTMRCTL: CLKSTB Mask           */
-
 #define CLK_LPUARTCTL_LPUART0CKEN_Pos    (0)                                               /*!< CLK_T::LPUARTCTL: LPUART0CKEN Position */
 #define CLK_LPUARTCTL_LPUART0CKEN_Msk    (0x1ul << CLK_LPUARTCTL_LPUART0CKEN_Pos)          /*!< CLK_T::LPUARTCTL: LPUART0CKEN Mask     */
-
-#define CLK_LPUARTCTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::LPUARTCTL: CLKSTB Position      */
-#define CLK_LPUARTCTL_CLKSTB_Msk         (0x1ul << CLK_LPUARTCTL_CLKSTB_Pos)               /*!< CLK_T::LPUARTCTL: CLKSTB Mask          */
 
 #define CLK_NPUCTL_NPU0CKEN_Pos          (0)                                               /*!< CLK_T::NPUCTL: NPU0CKEN Position       */
 #define CLK_NPUCTL_NPU0CKEN_Msk          (0x1ul << CLK_NPUCTL_NPU0CKEN_Pos)                /*!< CLK_T::NPUCTL: NPU0CKEN Mask           */
 
-#define CLK_NPUCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::NPUCTL: CLKSTB Position         */
-#define CLK_NPUCTL_CLKSTB_Msk            (0x1ul << CLK_NPUCTL_CLKSTB_Pos)                  /*!< CLK_T::NPUCTL: CLKSTB Mask             */
-
 #define CLK_OTFCCTL_OTFC0CKEN_Pos        (0)                                               /*!< CLK_T::OTFCCTL: OTFC0CKEN Position     */
 #define CLK_OTFCCTL_OTFC0CKEN_Msk        (0x1ul << CLK_OTFCCTL_OTFC0CKEN_Pos)              /*!< CLK_T::OTFCCTL: OTFC0CKEN Mask         */
 
-#define CLK_OTFCCTL_OTFC1CKEN_Pos        (1)                                               /*!< CLK_T::OTFCCTL: OTFC1CKEN Position     */
-#define CLK_OTFCCTL_OTFC1CKEN_Msk        (0x1ul << CLK_OTFCCTL_OTFC1CKEN_Pos)              /*!< CLK_T::OTFCCTL: OTFC1CKEN Mask         */
-
-#define CLK_OTFCCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::OTFCCTL: CLKSTB Position        */
-#define CLK_OTFCCTL_CLKSTB_Msk           (0x1ul << CLK_OTFCCTL_CLKSTB_Pos)                 /*!< CLK_T::OTFCCTL: CLKSTB Mask            */
-
 #define CLK_OTGCTL_OTG0CKEN_Pos          (0)                                               /*!< CLK_T::OTGCTL: OTG0CKEN Position       */
 #define CLK_OTGCTL_OTG0CKEN_Msk          (0x1ul << CLK_OTGCTL_OTG0CKEN_Pos)                /*!< CLK_T::OTGCTL: OTG0CKEN Mask           */
-
-#define CLK_OTGCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::OTGCTL: CLKSTB Position         */
-#define CLK_OTGCTL_CLKSTB_Msk            (0x1ul << CLK_OTGCTL_CLKSTB_Pos)                  /*!< CLK_T::OTGCTL: CLKSTB Mask             */
 
 #define CLK_PDMACTL_PDMA0CKEN_Pos        (0)                                               /*!< CLK_T::PDMACTL: PDMA0CKEN Position     */
 #define CLK_PDMACTL_PDMA0CKEN_Msk        (0x1ul << CLK_PDMACTL_PDMA0CKEN_Pos)              /*!< CLK_T::PDMACTL: PDMA0CKEN Mask         */
@@ -2972,14 +2687,8 @@ typedef struct
 #define CLK_PDMACTL_PDMA1CKEN_Pos        (1)                                               /*!< CLK_T::PDMACTL: PDMA1CKEN Position     */
 #define CLK_PDMACTL_PDMA1CKEN_Msk        (0x1ul << CLK_PDMACTL_PDMA1CKEN_Pos)              /*!< CLK_T::PDMACTL: PDMA1CKEN Mask         */
 
-#define CLK_PDMACTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::PDMACTL: CLKSTB Position        */
-#define CLK_PDMACTL_CLKSTB_Msk           (0x1ul << CLK_PDMACTL_CLKSTB_Pos)                 /*!< CLK_T::PDMACTL: CLKSTB Mask            */
-
 #define CLK_PSIOCTL_PSIO0CKEN_Pos        (0)                                               /*!< CLK_T::PSIOCTL: PSIO0CKEN Position     */
 #define CLK_PSIOCTL_PSIO0CKEN_Msk        (0x1ul << CLK_PSIOCTL_PSIO0CKEN_Pos)              /*!< CLK_T::PSIOCTL: PSIO0CKEN Mask         */
-
-#define CLK_PSIOCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::PSIOCTL: CLKSTB Position        */
-#define CLK_PSIOCTL_CLKSTB_Msk           (0x1ul << CLK_PSIOCTL_CLKSTB_Pos)                 /*!< CLK_T::PSIOCTL: CLKSTB Mask            */
 
 #define CLK_QSPICTL_QSPI0CKEN_Pos        (0)                                               /*!< CLK_T::QSPICTL: QSPI0CKEN Position     */
 #define CLK_QSPICTL_QSPI0CKEN_Msk        (0x1ul << CLK_QSPICTL_QSPI0CKEN_Pos)              /*!< CLK_T::QSPICTL: QSPI0CKEN Mask         */
@@ -2987,14 +2696,8 @@ typedef struct
 #define CLK_QSPICTL_QSPI1CKEN_Pos        (1)                                               /*!< CLK_T::QSPICTL: QSPI1CKEN Position     */
 #define CLK_QSPICTL_QSPI1CKEN_Msk        (0x1ul << CLK_QSPICTL_QSPI1CKEN_Pos)              /*!< CLK_T::QSPICTL: QSPI1CKEN Mask         */
 
-#define CLK_QSPICTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::QSPICTL: CLKSTB Position        */
-#define CLK_QSPICTL_CLKSTB_Msk           (0x1ul << CLK_QSPICTL_CLKSTB_Pos)                 /*!< CLK_T::QSPICTL: CLKSTB Mask            */
-
 #define CLK_RTCCTL_RTC0CKEN_Pos          (0)                                               /*!< CLK_T::RTCCTL: RTC0CKEN Position       */
 #define CLK_RTCCTL_RTC0CKEN_Msk          (0x1ul << CLK_RTCCTL_RTC0CKEN_Pos)                /*!< CLK_T::RTCCTL: RTC0CKEN Mask           */
-
-#define CLK_RTCCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::RTCCTL: CLKSTB Position         */
-#define CLK_RTCCTL_CLKSTB_Msk            (0x1ul << CLK_RTCCTL_CLKSTB_Pos)                  /*!< CLK_T::RTCCTL: CLKSTB Mask             */
 
 #define CLK_SCCTL_SC0CKEN_Pos            (0)                                               /*!< CLK_T::SCCTL: SC0CKEN Position         */
 #define CLK_SCCTL_SC0CKEN_Msk            (0x1ul << CLK_SCCTL_SC0CKEN_Pos)                  /*!< CLK_T::SCCTL: SC0CKEN Mask             */
@@ -3005,23 +2708,14 @@ typedef struct
 #define CLK_SCCTL_SC2CKEN_Pos            (2)                                               /*!< CLK_T::SCCTL: SC2CKEN Position         */
 #define CLK_SCCTL_SC2CKEN_Msk            (0x1ul << CLK_SCCTL_SC2CKEN_Pos)                  /*!< CLK_T::SCCTL: SC2CKEN Mask             */
 
-#define CLK_SCCTL_CLKSTB_Pos             (31)                                              /*!< CLK_T::SCCTL: CLKSTB Position          */
-#define CLK_SCCTL_CLKSTB_Msk             (0x1ul << CLK_SCCTL_CLKSTB_Pos)                   /*!< CLK_T::SCCTL: CLKSTB Mask              */
-
 #define CLK_SCUCTL_SCU0CKEN_Pos          (0)                                               /*!< CLK_T::SCUCTL: SCU0CKEN Position       */
 #define CLK_SCUCTL_SCU0CKEN_Msk          (0x1ul << CLK_SCUCTL_SCU0CKEN_Pos)                /*!< CLK_T::SCUCTL: SCU0CKEN Mask           */
-
-#define CLK_SCUCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::SCUCTL: CLKSTB Position         */
-#define CLK_SCUCTL_CLKSTB_Msk            (0x1ul << CLK_SCUCTL_CLKSTB_Pos)                  /*!< CLK_T::SCUCTL: CLKSTB Mask             */
 
 #define CLK_SDHCTL_SDH0CKEN_Pos          (0)                                               /*!< CLK_T::SDHCTL: SDH0CKEN Position       */
 #define CLK_SDHCTL_SDH0CKEN_Msk          (0x1ul << CLK_SDHCTL_SDH0CKEN_Pos)                /*!< CLK_T::SDHCTL: SDH0CKEN Mask           */
 
 #define CLK_SDHCTL_SDH1CKEN_Pos          (1)                                               /*!< CLK_T::SDHCTL: SDH1CKEN Position       */
 #define CLK_SDHCTL_SDH1CKEN_Msk          (0x1ul << CLK_SDHCTL_SDH1CKEN_Pos)                /*!< CLK_T::SDHCTL: SDH1CKEN Mask           */
-
-#define CLK_SDHCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::SDHCTL: CLKSTB Position         */
-#define CLK_SDHCTL_CLKSTB_Msk            (0x1ul << CLK_SDHCTL_CLKSTB_Pos)                  /*!< CLK_T::SDHCTL: CLKSTB Mask             */
 
 #define CLK_SPICTL_SPI0CKEN_Pos          (0)                                               /*!< CLK_T::SPICTL: SPI0CKEN Position       */
 #define CLK_SPICTL_SPI0CKEN_Msk          (0x1ul << CLK_SPICTL_SPI0CKEN_Pos)                /*!< CLK_T::SPICTL: SPI0CKEN Mask           */
@@ -3035,17 +2729,8 @@ typedef struct
 #define CLK_SPICTL_SPI3CKEN_Pos          (3)                                               /*!< CLK_T::SPICTL: SPI3CKEN Position       */
 #define CLK_SPICTL_SPI3CKEN_Msk          (0x1ul << CLK_SPICTL_SPI3CKEN_Pos)                /*!< CLK_T::SPICTL: SPI3CKEN Mask           */
 
-#define CLK_SPICTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::SPICTL: CLKSTB Position         */
-#define CLK_SPICTL_CLKSTB_Msk            (0x1ul << CLK_SPICTL_CLKSTB_Pos)                  /*!< CLK_T::SPICTL: CLKSTB Mask             */
-
 #define CLK_SPIMCTL_SPIM0CKEN_Pos        (0)                                               /*!< CLK_T::SPIMCTL: SPIM0CKEN Position     */
 #define CLK_SPIMCTL_SPIM0CKEN_Msk        (0x1ul << CLK_SPIMCTL_SPIM0CKEN_Pos)              /*!< CLK_T::SPIMCTL: SPIM0CKEN Mask         */
-
-#define CLK_SPIMCTL_SPIM1CKEN_Pos        (1)                                               /*!< CLK_T::SPIMCTL: SPIM1CKEN Position     */
-#define CLK_SPIMCTL_SPIM1CKEN_Msk        (0x1ul << CLK_SPIMCTL_SPIM1CKEN_Pos)              /*!< CLK_T::SPIMCTL: SPIM1CKEN Mask         */
-
-#define CLK_SPIMCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::SPIMCTL: CLKSTB Position        */
-#define CLK_SPIMCTL_CLKSTB_Msk           (0x1ul << CLK_SPIMCTL_CLKSTB_Pos)                 /*!< CLK_T::SPIMCTL: CLKSTB Mask            */
 
 #define CLK_SRAMCTL_SRAM0CKEN_Pos        (0)                                               /*!< CLK_T::SRAMCTL: SRAM0CKEN Position     */
 #define CLK_SRAMCTL_SRAM0CKEN_Msk        (0x1ul << CLK_SRAMCTL_SRAM0CKEN_Pos)              /*!< CLK_T::SRAMCTL: SRAM0CKEN Mask         */
@@ -3059,20 +2744,8 @@ typedef struct
 #define CLK_SRAMCTL_SRAM3CKEN_Pos        (3)                                               /*!< CLK_T::SRAMCTL: SRAM3CKEN Position     */
 #define CLK_SRAMCTL_SRAM3CKEN_Msk        (0x1ul << CLK_SRAMCTL_SRAM3CKEN_Pos)              /*!< CLK_T::SRAMCTL: SRAM3CKEN Mask         */
 
-#define CLK_SRAMCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::SRAMCTL: CLKSTB Position        */
-#define CLK_SRAMCTL_CLKSTB_Msk           (0x1ul << CLK_SRAMCTL_CLKSTB_Pos)                 /*!< CLK_T::SRAMCTL: CLKSTB Mask            */
-
 #define CLK_STCTL_ST0CKEN_Pos            (0)                                               /*!< CLK_T::STCTL: ST0CKEN Position         */
 #define CLK_STCTL_ST0CKEN_Msk            (0x1ul << CLK_STCTL_ST0CKEN_Pos)                  /*!< CLK_T::STCTL: ST0CKEN Mask             */
-
-#define CLK_STCTL_CLKSTB_Pos             (31)                                              /*!< CLK_T::STCTL: CLKSTB Position          */
-#define CLK_STCTL_CLKSTB_Msk             (0x1ul << CLK_STCTL_CLKSTB_Pos)                   /*!< CLK_T::STCTL: CLKSTB Mask              */
-
-#define CLK_TAMPERCTL_TAMPER0CKEN_Pos    (0)                                               /*!< CLK_T::TAMPERCTL: TAMPER0CKEN Position */
-#define CLK_TAMPERCTL_TAMPER0CKEN_Msk    (0x1ul << CLK_TAMPERCTL_TAMPER0CKEN_Pos)          /*!< CLK_T::TAMPERCTL: TAMPER0CKEN Mask     */
-
-#define CLK_TAMPERCTL_CLKSTB_Pos         (31)                                              /*!< CLK_T::TAMPERCTL: CLKSTB Position      */
-#define CLK_TAMPERCTL_CLKSTB_Msk         (0x1ul << CLK_TAMPERCTL_CLKSTB_Pos)               /*!< CLK_T::TAMPERCTL: CLKSTB Mask          */
 
 #define CLK_TMRCTL_TMR0CKEN_Pos          (0)                                               /*!< CLK_T::TMRCTL: TMR0CKEN Position       */
 #define CLK_TMRCTL_TMR0CKEN_Msk          (0x1ul << CLK_TMRCTL_TMR0CKEN_Pos)                /*!< CLK_T::TMRCTL: TMR0CKEN Mask           */
@@ -3086,23 +2759,14 @@ typedef struct
 #define CLK_TMRCTL_TMR3CKEN_Pos          (3)                                               /*!< CLK_T::TMRCTL: TMR3CKEN Position       */
 #define CLK_TMRCTL_TMR3CKEN_Msk          (0x1ul << CLK_TMRCTL_TMR3CKEN_Pos)                /*!< CLK_T::TMRCTL: TMR3CKEN Mask           */
 
-#define CLK_TMRCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::TMRCTL: CLKSTB Position         */
-#define CLK_TMRCTL_CLKSTB_Msk            (0x1ul << CLK_TMRCTL_CLKSTB_Pos)                  /*!< CLK_T::TMRCTL: CLKSTB Mask             */
-
 #define CLK_TRNGCTL_TRNG0CKEN_Pos        (0)                                               /*!< CLK_T::TRNGCTL: TRNG0CKEN Position     */
 #define CLK_TRNGCTL_TRNG0CKEN_Msk        (0x1ul << CLK_TRNGCTL_TRNG0CKEN_Pos)              /*!< CLK_T::TRNGCTL: TRNG0CKEN Mask         */
-
-#define CLK_TRNGCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::TRNGCTL: CLKSTB Position        */
-#define CLK_TRNGCTL_CLKSTB_Msk           (0x1ul << CLK_TRNGCTL_CLKSTB_Pos)                 /*!< CLK_T::TRNGCTL: CLKSTB Mask            */
 
 #define CLK_TTMRCTL_TTMR0CKEN_Pos        (0)                                               /*!< CLK_T::TTMRCTL: TTMR0CKEN Position     */
 #define CLK_TTMRCTL_TTMR0CKEN_Msk        (0x1ul << CLK_TTMRCTL_TTMR0CKEN_Pos)              /*!< CLK_T::TTMRCTL: TTMR0CKEN Mask         */
 
 #define CLK_TTMRCTL_TTMR1CKEN_Pos        (1)                                               /*!< CLK_T::TTMRCTL: TTMR1CKEN Position     */
 #define CLK_TTMRCTL_TTMR1CKEN_Msk        (0x1ul << CLK_TTMRCTL_TTMR1CKEN_Pos)              /*!< CLK_T::TTMRCTL: TTMR1CKEN Mask         */
-
-#define CLK_TTMRCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::TTMRCTL: CLKSTB Position        */
-#define CLK_TTMRCTL_CLKSTB_Msk           (0x1ul << CLK_TTMRCTL_CLKSTB_Pos)                 /*!< CLK_T::TTMRCTL: CLKSTB Mask            */
 
 #define CLK_UARTCTL_UART0CKEN_Pos        (0)                                               /*!< CLK_T::UARTCTL: UART0CKEN Position     */
 #define CLK_UARTCTL_UART0CKEN_Msk        (0x1ul << CLK_UARTCTL_UART0CKEN_Pos)              /*!< CLK_T::UARTCTL: UART0CKEN Mask         */
@@ -3134,32 +2798,17 @@ typedef struct
 #define CLK_UARTCTL_UART9CKEN_Pos        (9)                                               /*!< CLK_T::UARTCTL: UART9CKEN Position     */
 #define CLK_UARTCTL_UART9CKEN_Msk        (0x1ul << CLK_UARTCTL_UART9CKEN_Pos)              /*!< CLK_T::UARTCTL: UART9CKEN Mask         */
 
-#define CLK_UARTCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::UARTCTL: CLKSTB Position        */
-#define CLK_UARTCTL_CLKSTB_Msk           (0x1ul << CLK_UARTCTL_CLKSTB_Pos)                 /*!< CLK_T::UARTCTL: CLKSTB Mask            */
-
 #define CLK_USBDCTL_USBD0CKEN_Pos        (0)                                               /*!< CLK_T::USBDCTL: USBD0CKEN Position     */
 #define CLK_USBDCTL_USBD0CKEN_Msk        (0x1ul << CLK_USBDCTL_USBD0CKEN_Pos)              /*!< CLK_T::USBDCTL: USBD0CKEN Mask         */
-
-#define CLK_USBDCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::USBDCTL: CLKSTB Position        */
-#define CLK_USBDCTL_CLKSTB_Msk           (0x1ul << CLK_USBDCTL_CLKSTB_Pos)                 /*!< CLK_T::USBDCTL: CLKSTB Mask            */
 
 #define CLK_USBHCTL_USBH0CKEN_Pos        (0)                                               /*!< CLK_T::USBHCTL: USBH0CKEN Position     */
 #define CLK_USBHCTL_USBH0CKEN_Msk        (0x1ul << CLK_USBHCTL_USBH0CKEN_Pos)              /*!< CLK_T::USBHCTL: USBH0CKEN Mask         */
 
-#define CLK_USBHCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::USBHCTL: CLKSTB Position        */
-#define CLK_USBHCTL_CLKSTB_Msk           (0x1ul << CLK_USBHCTL_CLKSTB_Pos)                 /*!< CLK_T::USBHCTL: CLKSTB Mask            */
-
 #define CLK_USCICTL_USCI0CKEN_Pos        (0)                                               /*!< CLK_T::USCICTL: USCI0CKEN Position     */
 #define CLK_USCICTL_USCI0CKEN_Msk        (0x1ul << CLK_USCICTL_USCI0CKEN_Pos)              /*!< CLK_T::USCICTL: USCI0CKEN Mask         */
 
-#define CLK_USCICTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::USCICTL: CLKSTB Position        */
-#define CLK_USCICTL_CLKSTB_Msk           (0x1ul << CLK_USCICTL_CLKSTB_Pos)                 /*!< CLK_T::USCICTL: CLKSTB Mask            */
-
 #define CLK_UTCPDCTL_UTCPD0CKEN_Pos      (0)                                               /*!< CLK_T::UTCPDCTL: UTCPD0CKEN Position   */
 #define CLK_UTCPDCTL_UTCPD0CKEN_Msk      (0x1ul << CLK_UTCPDCTL_UTCPD0CKEN_Pos)            /*!< CLK_T::UTCPDCTL: UTCPD0CKEN Mask       */
-
-#define CLK_UTCPDCTL_CLKSTB_Pos          (31)                                              /*!< CLK_T::UTCPDCTL: CLKSTB Position       */
-#define CLK_UTCPDCTL_CLKSTB_Msk          (0x1ul << CLK_UTCPDCTL_CLKSTB_Pos)                /*!< CLK_T::UTCPDCTL: CLKSTB Mask           */
 
 #define CLK_WDTCTL_WDT0CKEN_Pos          (0)                                               /*!< CLK_T::WDTCTL: WDT0CKEN Position       */
 #define CLK_WDTCTL_WDT0CKEN_Msk          (0x1ul << CLK_WDTCTL_WDT0CKEN_Pos)                /*!< CLK_T::WDTCTL: WDT0CKEN Mask           */
@@ -3167,17 +2816,11 @@ typedef struct
 #define CLK_WDTCTL_WDT1CKEN_Pos          (1)                                               /*!< CLK_T::WDTCTL: WDT1CKEN Position       */
 #define CLK_WDTCTL_WDT1CKEN_Msk          (0x1ul << CLK_WDTCTL_WDT1CKEN_Pos)                /*!< CLK_T::WDTCTL: WDT1CKEN Mask           */
 
-#define CLK_WDTCTL_CLKSTB_Pos            (31)                                              /*!< CLK_T::WDTCTL: CLKSTB Position         */
-#define CLK_WDTCTL_CLKSTB_Msk            (0x1ul << CLK_WDTCTL_CLKSTB_Pos)                  /*!< CLK_T::WDTCTL: CLKSTB Mask             */
-
 #define CLK_WWDTCTL_WWDT0CKEN_Pos        (0)                                               /*!< CLK_T::WWDTCTL: WWDT0CKEN Position     */
 #define CLK_WWDTCTL_WWDT0CKEN_Msk        (0x1ul << CLK_WWDTCTL_WWDT0CKEN_Pos)              /*!< CLK_T::WWDTCTL: WWDT0CKEN Mask         */
 
 #define CLK_WWDTCTL_WWDT1CKEN_Pos        (1)                                               /*!< CLK_T::WWDTCTL: WWDT1CKEN Position     */
 #define CLK_WWDTCTL_WWDT1CKEN_Msk        (0x1ul << CLK_WWDTCTL_WWDT1CKEN_Pos)              /*!< CLK_T::WWDTCTL: WWDT1CKEN Mask         */
-
-#define CLK_WWDTCTL_CLKSTB_Pos           (31)                                              /*!< CLK_T::WWDTCTL: CLKSTB Position        */
-#define CLK_WWDTCTL_CLKSTB_Msk           (0x1ul << CLK_WWDTCTL_CLKSTB_Pos)                 /*!< CLK_T::WWDTCTL: CLKSTB Mask            */
 
 #define CLK_SCLKSEL_SCLKSEL_Pos          (0)                                               /*!< CLK_T::SCLKSEL: SCLKSEL Position       */
 #define CLK_SCLKSEL_SCLKSEL_Msk          (0x7ul << CLK_SCLKSEL_SCLKSEL_Pos)                /*!< CLK_T::SCLKSEL: SCLKSEL Mask           */
@@ -3208,9 +2851,6 @@ typedef struct
 
 #define CLK_EADCSEL_EADC0SEL_Pos         (0)                                               /*!< CLK_T::EADCSEL: EADC0SEL Position      */
 #define CLK_EADCSEL_EADC0SEL_Msk         (0x3ul << CLK_EADCSEL_EADC0SEL_Pos)               /*!< CLK_T::EADCSEL: EADC0SEL Mask          */
-
-#define CLK_EADCSEL_EADC1SEL_Pos         (4)                                               /*!< CLK_T::EADCSEL: EADC1SEL Position      */
-#define CLK_EADCSEL_EADC1SEL_Msk         (0x3ul << CLK_EADCSEL_EADC1SEL_Pos)               /*!< CLK_T::EADCSEL: EADC1SEL Mask          */
 
 #define CLK_EPWMSEL_EPWM0SEL_Pos         (0)                                               /*!< CLK_T::EPWMSEL: EPWM0SEL Position      */
 #define CLK_EPWMSEL_EPWM0SEL_Msk         (0x1ul << CLK_EPWMSEL_EPWM0SEL_Pos)               /*!< CLK_T::EPWMSEL: EPWM0SEL Mask          */
@@ -3285,7 +2925,7 @@ typedef struct
 #define CLK_SPISEL_SPI3SEL_Msk           (0x7ul << CLK_SPISEL_SPI3SEL_Pos)                 /*!< CLK_T::SPISEL: SPI3SEL Mask            */
 
 #define CLK_STSEL_ST0SEL_Pos             (0)                                               /*!< CLK_T::STSEL: ST0SEL Position          */
-#define CLK_STSEL_ST0SEL_Msk             (0x7ul << CLK_STSEL_ST0SEL_Pos)                   /*!< CLK_T::STSEL: ST0SEL Mask              */
+#define CLK_STSEL_ST0SEL_Msk             (0x3ul << CLK_STSEL_ST0SEL_Pos)                   /*!< CLK_T::STSEL: ST0SEL Mask              */
 
 #define CLK_TMRSEL_TMR0SEL_Pos           (0)                                               /*!< CLK_T::TMRSEL: TMR0SEL Position        */
 #define CLK_TMRSEL_TMR0SEL_Msk           (0x7ul << CLK_TMRSEL_TMR0SEL_Pos)                 /*!< CLK_T::TMRSEL: TMR0SEL Mask            */
@@ -3339,22 +2979,19 @@ typedef struct
 #define CLK_USBSEL_USBSEL_Msk            (0x1ul << CLK_USBSEL_USBSEL_Pos)                  /*!< CLK_T::USBSEL: USBSEL Mask             */
 
 #define CLK_WDTSEL_WDT0SEL_Pos           (0)                                               /*!< CLK_T::WDTSEL: WDT0SEL Position        */
-#define CLK_WDTSEL_WDT0SEL_Msk           (0x3ul << CLK_WDTSEL_WDT0SEL_Pos)                 /*!< CLK_T::WDTSEL: WDT0SEL Mask            */
+#define CLK_WDTSEL_WDT0SEL_Msk           (0x1ul << CLK_WDTSEL_WDT0SEL_Pos)                 /*!< CLK_T::WDTSEL: WDT0SEL Mask            */
 
 #define CLK_WDTSEL_WDT1SEL_Pos           (4)                                               /*!< CLK_T::WDTSEL: WDT1SEL Position        */
-#define CLK_WDTSEL_WDT1SEL_Msk           (0x3ul << CLK_WDTSEL_WDT1SEL_Pos)                 /*!< CLK_T::WDTSEL: WDT1SEL Mask            */
+#define CLK_WDTSEL_WDT1SEL_Msk           (0x1ul << CLK_WDTSEL_WDT1SEL_Pos)                 /*!< CLK_T::WDTSEL: WDT1SEL Mask            */
+
+#define CLK_DLLSEL_DLL0SEL_Pos           (0)                                               /*!< CLK_T::DLLSEL: DLL0SEL Position        */
+#define CLK_DLLSEL_DLL0SEL_Msk           (0x1ul << CLK_DLLSEL_DLL0SEL_Pos)                 /*!< CLK_T::DLLSEL: DLL0SEL Mask            */
 
 #define CLK_WWDTSEL_WWDT0SEL_Pos         (0)                                               /*!< CLK_T::WWDTSEL: WWDT0SEL Position      */
 #define CLK_WWDTSEL_WWDT0SEL_Msk         (0x1ul << CLK_WWDTSEL_WWDT0SEL_Pos)               /*!< CLK_T::WWDTSEL: WWDT0SEL Mask          */
 
 #define CLK_WWDTSEL_WWDT1SEL_Pos         (4)                                               /*!< CLK_T::WWDTSEL: WWDT1SEL Position      */
 #define CLK_WWDTSEL_WWDT1SEL_Msk         (0x1ul << CLK_WWDTSEL_WWDT1SEL_Pos)               /*!< CLK_T::WWDTSEL: WWDT1SEL Mask          */
-
-#define CLK_DLLSEL_DLL0SEL_Pos           (0)                                               /*!< CLK_T::DLLSEL: DLL0SEL Position        */
-#define CLK_DLLSEL_DLL0SEL_Msk           (0x1ul << CLK_DLLSEL_DLL0SEL_Pos)                 /*!< CLK_T::DLLSEL: DLL0SEL Mask            */
-
-#define CLK_DLLSEL_DLL1SEL_Pos           (4)                                               /*!< CLK_T::DLLSEL: DLL1SEL Position        */
-#define CLK_DLLSEL_DLL1SEL_Msk           (0x1ul << CLK_DLLSEL_DLL1SEL_Pos)                 /*!< CLK_T::DLLSEL: DLL1SEL Mask            */
 
 #define CLK_SCLKDIV_SCLKDIV_Pos          (0)                                               /*!< CLK_T::SCLKDIV: SCLKDIV Position       */
 #define CLK_SCLKDIV_SCLKDIV_Msk          (0xful << CLK_SCLKDIV_SCLKDIV_Pos)                /*!< CLK_T::SCLKDIV: SCLKDIV Mask           */
@@ -3388,9 +3025,6 @@ typedef struct
 
 #define CLK_EADCDIV_EADC0DIV_Pos         (0)                                               /*!< CLK_T::EADCDIV: EADC0DIV Position      */
 #define CLK_EADCDIV_EADC0DIV_Msk         (0xfful << CLK_EADCDIV_EADC0DIV_Pos)              /*!< CLK_T::EADCDIV: EADC0DIV Mask          */
-
-#define CLK_EADCDIV_EADC1DIV_Pos         (8)                                               /*!< CLK_T::EADCDIV: EADC1DIV Position      */
-#define CLK_EADCDIV_EADC1DIV_Msk         (0xfful << CLK_EADCDIV_EADC1DIV_Pos)              /*!< CLK_T::EADCDIV: EADC1DIV Mask          */
 
 #define CLK_I2SDIV_I2S0DIV_Pos           (0)                                               /*!< CLK_T::I2SDIV: I2S0DIV Position        */
 #define CLK_I2SDIV_I2S0DIV_Msk           (0xfful << CLK_I2SDIV_I2S0DIV_Pos)                /*!< CLK_T::I2SDIV: I2S0DIV Mask            */

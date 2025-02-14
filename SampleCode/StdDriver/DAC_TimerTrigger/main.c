@@ -36,13 +36,17 @@ NVT_ITCM void DAC01_IRQHandler(void)
             g_u32Index = 0;
         else
         {
+            uint32_t u32TimeOutCnt = 1000;
             /* Clear the DAC conversion complete finish flag */
             DAC_CLR_INT_FLAG(DAC0, 0);
-
             DAC_WRITE_DATA(DAC0, 0, g_au16Sine[g_u32Index++]);
 
             /* Sync-up STATUS register of DAC. */
-            M32(&DAC0->STATUS);
+            while (DAC_GET_INT_FLAG(DAC0, 0) != 0)
+            {
+                if ((--u32TimeOutCnt) == 0)
+                    break;
+            }
         }
     }
 
@@ -69,8 +73,8 @@ void SYS_Init(void)
     /* Waiting for External RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
     /* Set PCLK1 divide 4 */
     CLK_SET_PCLK1DIV(4);
 

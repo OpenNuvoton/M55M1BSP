@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use bencher::Bencher;
+use bencher::{benchmark_group, benchmark_main, Bencher};
 use flexbuffers::*;
 
 fn push_vec_u64_to_map(b: &mut Bencher) {
@@ -224,7 +224,7 @@ fn serialize_monsters(b: &mut Bencher) {
     b.iter(go);
     b.bytes = n as u64;
 }
-fn validate_monster(r: MapReader) {
+fn validate_monster(r: MapReader<&[u8]>) {
     assert_eq!(r.idx("type").as_str(), "great orc");
     assert_eq!(r.idx("age").as_u8(), 100);
     assert_eq!(r.idx("name").as_str(), "Mr. Orc");

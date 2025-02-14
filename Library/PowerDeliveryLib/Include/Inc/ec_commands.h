@@ -7475,9 +7475,9 @@ enum pchg_state
                                                                                [PCHG_STATE_DETECTED] = "DETECTED", \
                                                                                                        [PCHG_STATE_CHARGING] = "CHARGING", \
                                                                                                                                [PCHG_STATE_FULL] = "FULL", \
-                                                                                                                                       [PCHG_STATE_DOWNLOAD] = "DOWNLOAD", \
-                                                                                                                                               [PCHG_STATE_DOWNLOADING] = "DOWNLOADING", \
-                                                                                                                                                       [PCHG_STATE_CONNECTED] = "CONNECTED", \
+                                                                                                                                   [PCHG_STATE_DOWNLOAD] = "DOWNLOAD", \
+                                                                                                                                       [PCHG_STATE_DOWNLOADING] = "DOWNLOADING", \
+                                                                                                                                           [PCHG_STATE_CONNECTED] = "CONNECTED", \
     }
 
 /**

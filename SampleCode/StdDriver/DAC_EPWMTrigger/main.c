@@ -37,13 +37,17 @@ NVT_ITCM void DAC01_IRQHandler(void)
             g_u32Index = 0;
         else
         {
-
+            uint32_t u32TimeOutCnt = 1000;
             /* Clear the DAC conversion complete finish flag */
             DAC_CLR_INT_FLAG(DAC0, 0);
             DAC_WRITE_DATA(DAC0, 0, g_au16Sine[g_u32Index++]);
 
             /* Sync-up STATUS register of DAC. */
-            M32(&DAC0->STATUS);
+            while (DAC_GET_INT_FLAG(DAC0, 0) != 0)
+            {
+                if ((--u32TimeOutCnt) == 0)
+                    break;
+            }
         }
     }
 
@@ -57,20 +61,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -87,6 +79,7 @@ void SYS_Init(void)
 
     /* Enable GPB peripheral clock */
     CLK_EnableModuleClock(GPIOB_MODULE);
+
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 

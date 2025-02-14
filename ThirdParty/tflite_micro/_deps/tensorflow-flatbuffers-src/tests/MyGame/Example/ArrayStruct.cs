@@ -7,7 +7,7 @@ namespace MyGame.Example
 
 using global::System;
 using global::System.Collections.Generic;
-using global::FlatBuffers;
+using global::Google.FlatBuffers;
 
 public struct ArrayStruct : IFlatbufferObject
 {
@@ -97,7 +97,7 @@ public struct ArrayStruct : IFlatbufferObject
       _o.E,
       _f);
   }
-};
+}
 
 public class ArrayStructT
 {

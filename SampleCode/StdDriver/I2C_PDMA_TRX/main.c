@@ -19,10 +19,19 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-static uint8_t g_u8MasterTx_Buffer[PDMA_TEST_LENGTH];
-static uint8_t g_u8MasterRx_Buffer[PDMA_TEST_LENGTH];
-static uint8_t g_u8SlaveTx_Buffer[PDMA_TEST_LENGTH];
-static uint8_t g_u8SlaveRx_Buffer[PDMA_TEST_LENGTH];
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    uint8_t g_u8MasterTx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_u8MasterRx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_u8SlaveTx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t g_u8SlaveRx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    __attribute__((aligned)) static uint8_t g_u8MasterTx_Buffer[PDMA_TEST_LENGTH];
+    __attribute__((aligned)) static uint8_t g_u8MasterRx_Buffer[PDMA_TEST_LENGTH];
+    __attribute__((aligned)) static uint8_t g_u8SlaveTx_Buffer[PDMA_TEST_LENGTH];
+    __attribute__((aligned)) static uint8_t g_u8SlaveRx_Buffer[PDMA_TEST_LENGTH];
+#endif
+
 volatile uint32_t PDMA_DONE = 0;
 
 volatile uint8_t g_u8DeviceAddr = 0x16;
@@ -348,24 +357,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -467,6 +461,14 @@ void I2C_PDMA(void)
     g_u8MasterTx_Buffer[0] = ((g_u8DeviceAddr << 1) | 0x00);   //1 byte SLV + W
     g_u8MasterTx_Buffer[1] = 0x00;                             //2 bytes Data address
     g_u8MasterTx_Buffer[2] = 0x00;
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the source buffer will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr(g_u8MasterTx_Buffer, sizeof(g_u8MasterTx_Buffer));
+    SCB_CleanDCache_by_Addr(g_u8SlaveRx_Buffer, sizeof(g_u8SlaveRx_Buffer));
+#endif  // (NVT_DCACHE_ON == 1)
     PDMA_Init();
     /* I2C enter no address SLV mode */
     I2C_SET_CONTROL_REG(I2C1, I2C_CTL_SI | I2C_CTL_AA);
@@ -496,6 +498,13 @@ void I2C_PDMA(void)
     I2C0->CTL1 &= ~I2C_CTL1_TXPDMAEN_Msk;
     /* Disable I2C1 PDMA RX mode */
     I2C1->CTL1 &= ~I2C_CTL1_RXPDMAEN_Msk;
+#if (NVT_DCACHE_ON == 1)
+    /*
+       Invalidate the CPU Data cache after the DMA transfer.
+       As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+    */
+    SCB_InvalidateDCache_by_Addr(g_u8SlaveRx_Buffer, sizeof(g_u8SlaveRx_Buffer));
+#endif  // (NVT_DCACHE_ON == 1)
 
     for (i = 0; i < PDMA_TEST_LENGTH; i++)
     {
@@ -514,6 +523,13 @@ void I2C_PDMA(void)
         }
     }
 
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the source buffer will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr(g_u8SlaveTx_Buffer, sizeof(g_u8SlaveTx_Buffer));
+#endif  // (NVT_DCACHE_ON == 1)
     /* Test Master RX and Slave TX with PDMA function */
     /* I2C0 function to Master receive data */
     s_I2C0HandlerFn = (I2C_FUNC)I2C_PDMA_MasterRx;
@@ -534,6 +550,13 @@ void I2C_PDMA(void)
         }
     }
 
+#if (NVT_DCACHE_ON == 1)
+    /*
+       Invalidate the CPU Data cache after the DMA transfer.
+       As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+    */
+    SCB_InvalidateDCache_by_Addr(g_u8MasterRx_Buffer, sizeof(g_u8MasterRx_Buffer));
+#endif  // (NVT_DCACHE_ON == 1)
     /* Disable I2C0 PDMA RX mode */
     I2C0->CTL1 &= ~I2C_CTL1_RXPDMAEN_Msk;
     /* Disable I2C1 PDMA TX mode */

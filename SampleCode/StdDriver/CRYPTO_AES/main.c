@@ -22,23 +22,29 @@ static uint32_t au32MyAESIV[4] =
     0x00000000, 0x00000000, 0x00000000, 0x00000000
 };
 
-#ifdef __ICCARM__
-#pragma data_alignment=4
-uint8_t au8InputData[] =
-{
+
+#define AES_INPUT_DATA_SIZE         (16 * 1)
+#define AES_OUTPUT_DATA_SIZE        (1024)
+
+//------------------------------------------------------------------------------
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    uint8_t au8InputData[DCACHE_ALIGN_LINE_SIZE(AES_INPUT_DATA_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE))) =
 #else
-__attribute__((aligned(4))) static uint8_t au8InputData[] =
-{
+    // Standard buffer alignment when DCache is disabled
+    __attribute__((aligned(4))) static uint8_t au8InputData[AES_INPUT_DATA_SIZE] =
 #endif
+{
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
     0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff
 };
 
-#ifdef __ICCARM__
-    #pragma data_alignment=4
-    uint8_t au8OutputData[1024];
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for improved performance when DCache is enabled
+    uint8_t au8OutputData[DCACHE_ALIGN_LINE_SIZE(AES_OUTPUT_DATA_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
 #else
-    __attribute__((aligned(4))) static uint8_t au8OutputData[1024];
+    // Standard buffer alignment when DCache is disabled
+    __attribute__((aligned(4))) static uint8_t au8OutputData[AES_OUTPUT_DATA_SIZE];
 #endif
 
 static volatile int32_t  g_AES_done;
@@ -113,8 +119,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -169,6 +175,9 @@ int32_t main(void)
 
     printf("+---------------------------------------+\n");
     printf("|     Crypto AES Driver Sample Code     |\n");
+#if (NVT_DCACHE_ON == 1)
+    printf("|             NVT_DCACHE_ON             |\n");
+#endif
     printf("+---------------------------------------+\n");
 
     NVIC_EnableIRQ(CRYPTO_IRQn);
@@ -178,10 +187,13 @@ int32_t main(void)
      *  AES-128 ECB mode encrypt
      *---------------------------------------*/
     AES_Open(CRYPTO, 0, 1, AES_MODE_ECB, AES_KEY_SIZE_128, AES_IN_OUT_SWAP);
+    /*Load Key and IV to AES register*/
     AES_SetKey(CRYPTO, 0, au32MyAESKey, AES_KEY_SIZE_128);
     AES_SetInitVect(CRYPTO, 0, au32MyAESIV);
-    AES_SetDMATransfer(CRYPTO, 0, (uint32_t)au8InputData, (uint32_t)au8OutputData, sizeof(au8InputData));
 
+    //au8InputData  Dcache is cleaned at startup
+    /*Trigger AES DMA*/
+    AES_SetDMATransfer(CRYPTO, 0, (uint32_t)au8InputData, (uint32_t)au8OutputData, sizeof(au8InputData));
     g_AES_done = 0;
     /* Start AES Encrypt */
     AES_Start(CRYPTO, 0, CRYPTO_DMA_ONE_SHOT);
@@ -193,18 +205,22 @@ int32_t main(void)
     {
         if (--u32TimeOutCnt == 0)
         {
-            printf("Wait for AES encrypt done time-out!\n");
+            //printf("Wait for AES encrypt done time-out!\n");
             return -1;
         }
     }
 
     printf("AES encrypt done.\n\n");
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(au8OutputData, sizeof(au8OutputData));
+#endif
     DumpBuffHex(au8OutputData, sizeof(au8InputData));
 
-    /*---------------------------------------
-     *  AES-128 ECB mode decrypt
-     *---------------------------------------*/
+    /*-------------------------------------------------------------
+     *  AES-128 ECB mode decrypt, exchange inputdata and outputdata
+     *-------------------------------------------------------------*/
     AES_Open(CRYPTO, 0, 0, AES_MODE_ECB, AES_KEY_SIZE_128, AES_IN_OUT_SWAP);
+    /*Load Key and IV to AES register*/
     AES_SetKey(CRYPTO, 0, au32MyAESKey, AES_KEY_SIZE_128);
     AES_SetInitVect(CRYPTO, 0, au32MyAESIV);
     AES_SetDMATransfer(CRYPTO, 0, (uint32_t)au8OutputData, (uint32_t)au8InputData, sizeof(au8InputData));
@@ -226,6 +242,9 @@ int32_t main(void)
     }
 
     printf("AES decrypt done.\n\n");
+#if (NVT_DCACHE_ON == 1)
+    SCB_InvalidateDCache_by_Addr(au8InputData, sizeof(au8InputData));
+#endif
     DumpBuffHex(au8InputData, sizeof(au8InputData));
 
     while (1);

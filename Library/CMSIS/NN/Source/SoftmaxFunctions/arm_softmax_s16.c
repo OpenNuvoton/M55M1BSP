@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Arm Limited or its affiliates.
+ * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -21,10 +21,10 @@
  * Title:        arm_softmax_s16.c
  * Description:  S16 softmax function
  *
- * $Date:        9 March 2022
- * $Revision:    V.1.0.0
+ * $Date:        5 January 2023
+ * $Revision:    V.2.1.0
  *
- * Target Processor:  Cortex-M cores
+ * Target :  Arm(R) M-Profile Architecture
  *
  * -------------------------------------------------------------------- */
 
@@ -36,20 +36,20 @@
  * @{
  */
 
-arm_status arm_softmax_s16(const int16_t *input,
-                           const int32_t num_rows,
-                           const int32_t row_size,
-                           const int32_t mult,
-                           const int32_t shift,
-                           const cmsis_nn_softmax_lut_s16 *softmax_params,
-                           int16_t *output)
+arm_cmsis_nn_status arm_softmax_s16(const int16_t *input,
+                                    const int32_t num_rows,
+                                    const int32_t row_size,
+                                    const int32_t mult,
+                                    const int32_t shift,
+                                    const cmsis_nn_softmax_lut_s16 *softmax_params,
+                                    int16_t *output)
 {
     int32_t col = 0;
     int32_t row_idx;
 
     if (softmax_params->exp_lut == NULL || softmax_params->one_by_one_lut == NULL)
     {
-        return ARM_MATH_ARGUMENT_ERROR;
+        return ARM_CMSIS_NN_ARG_ERROR;
     }
 
     for (row_idx = 0; row_idx < num_rows; ++row_idx)
@@ -84,7 +84,7 @@ arm_status arm_softmax_s16(const int16_t *input,
             sum += cached_exp_results[col];
         }
 
-        const int32_t headroom = __CLZ(sum);
+        const int32_t headroom = CLZ(sum);
 
         // Compute the reciprocal 1/sum
         const int32_t shifted_sum = (((sum) << (headroom - 1)) + (1 << 13)) >> 14;
@@ -114,7 +114,7 @@ arm_status arm_softmax_s16(const int16_t *input,
         input += row_size;
     }
 
-    return ARM_MATH_SUCCESS;
+    return ARM_CMSIS_NN_SUCCESS;
 }
 
 /**

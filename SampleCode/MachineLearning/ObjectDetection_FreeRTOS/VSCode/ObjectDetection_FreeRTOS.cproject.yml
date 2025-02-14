@@ -1,0 +1,167 @@
+project:
+  packs:
+    - pack: Nuvoton::NuMicro_DFP
+  setups:
+    - output:
+        # bin, elf, hex, lib
+        type: bin
+    - setup: Options for Project
+      processor:
+        fpu: dp
+        mve: fp
+        endian: little
+        trustzone: "off"
+      add-path:
+        - ../../../../Library/CMSIS/Core/Include
+        - ../../../../Library/Device/Nuvoton/M55M1/Include
+        - ../../../../Library/CMSIS/DSP/Include
+        - ../../../../Library/StdDriver/inc
+        - ../../../../Library/StdDriver/inc/npu
+        - ../../../../ThirdParty/openmv/omv/imlib
+        - ../../../../ThirdParty/openmv/omv/alloc
+        - ../../../../ThirdParty/openmv/omv/common
+        - ../../../../ThirdParty/openmv/omv/Lib
+        - ../../../../ThirdParty/tflite_micro
+        - ../../../../ThirdParty/tflite_micro/_deps/tensorflow-flatbuffers-src/include
+        - ../../../../ThirdParty/tflite_micro/_deps/tensorflow-gemlowp-src
+        - ../../../../ThirdParty/ml-embedded-evaluation-kit/source/application/api/common/include
+        - ../../../../ThirdParty/ml-embedded-evaluation-kit/source/log/include
+        - ../../../../ThirdParty/ml-embedded-evaluation-kit/source/math/include
+        - ../../../../ThirdParty/ml-embedded-evaluation-kit/source/application/main/include
+        - ../../../../ThirdParty/ml-embedded-evaluation-kit/source/profiler/include
+        - ../Device/include
+        - ../Model/include
+        - ../NPU/include
+        - ../Pattern/include
+        - ../ProfilerCounter/include
+        - ../../../../ThirdParty/FreeRTOS/Source/include
+        - ../../../../ThirdParty/FreeRTOS/Lib
+        - ../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55_NTZ/non_secure
+        - ..
+      define:
+        - NVT_VECTOR_ON_FLASH
+        - TF_LITE_STATIC_MEMORY
+        - ARM_MATH_DSP
+        - ARM_NPU
+        - ACTIVATION_BUF_SZ: "0x00130000"
+      misc:
+        - for-compiler: AC6
+          C:
+            - -std=c11
+          C-CPP:
+            - -fno-exceptions -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+          CPP:
+            - -xc++
+            - -std=c++14
+          ASM:
+            - -masm=auto
+          Link:
+            - --map --load_addr_map_info --xref --callgraph --symbols
+            - --info sizes --info totals --info unused --info veneers
+            - --strict --summary_stderr --info summarysizes
+            - --diag_suppress 6314
+        - for-compiler: GCC
+          C:
+            - -std=gnu11
+          C-CPP:
+            - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+          CPP:
+            - -Wno-subobject-linkage
+            - -std=c++14
+          Link:
+            - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
+            - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -L"../../../../ThirdParty/tflite_micro/Lib"
+            - -L"../../../../Library/CMSIS/Lib/GCC"
+            - -L"../../../../ThirdParty/openmv/omv/Lib"
+            - -L"../../../../ThirdParty/FreeRTOS/Lib"
+          Library:
+            - -ltflu
+            - -lcmsis_dsp
+            - -lcmsis_nn
+            - -lomv
+            - -lFreeRTOS
+  linker:
+    - script: ../KEIL/M55M1.scatter
+      for-compiler: AC6
+    - script: ../GCC/M55M1.ld
+      for-compiler: GCC
+  groups:
+    - group: CMSIS
+      files:
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+    - group: Driver
+      files:
+        - file: ../../../../Library/StdDriver/src/uart.c
+        - file: ../../../../Library/StdDriver/src/retarget.c
+        - file: ../../../../Library/StdDriver/src/ccap.c
+        - file: ../../../../Library/StdDriver/src/clk.c
+        - file: ../../../../Library/StdDriver/src/sys.c
+        - file: ../../../../Library/StdDriver/src/gpio.c
+        - file: ../../../../Library/StdDriver/src/npu/ethosu_device_u55_u65.c
+        - file: ../../../../Library/StdDriver/src/npu/ethosu_driver.c
+        - file: ../../../../Library/StdDriver/src/npu/ethosu_pmu.c
+        - file: ../../../../Library/StdDriver/src/spim_hyper.c
+        - file: ../../../../Library/StdDriver/src/ebi.c
+        - file: ../../../../Library/StdDriver/src/hsusbd.c
+        - file: ../../../../Library/StdDriver/src/pdma.c
+    - group: Application
+      files:
+        - file: ../BoardInit.cpp
+        - file: ../main.cpp
+        - file: ../DetectorPostProcessing.cpp
+        - file: ../InferenceTask.cpp
+        - file: ../mpu_config_M55M1.h
+    - group: Model
+      files:
+        - file: ../Model/Labels.cpp
+        - file: ../Model/yolo-fastest_int8_vela_H256.tflite.cpp
+        - file: ../Model/YoloFastestModel.cpp
+    - group: Pattern
+      files:
+        - file: ../Pattern/InputFiles.cpp
+        - file: ../Pattern/car.cpp
+        - file: ../Pattern/dinner.cpp
+    - group: ArmMLApi
+      files:
+        - file: ../../../../ThirdParty/ml-embedded-evaluation-kit/source/application/api/common/source/Model.cc
+        - file: ../../../../ThirdParty/ml-embedded-evaluation-kit/source/application/api/common/source/TensorFlowLiteMicro.cc
+        - file: ../../../../ThirdParty/ml-embedded-evaluation-kit/source/application/api/common/source/Classifier.cc
+        - file: ../../../../ThirdParty/ml-embedded-evaluation-kit/source/math/PlatformMath.cc
+        - file: ../../../../ThirdParty/ml-embedded-evaluation-kit/source/profiler/Profiler.cc
+        - file: ../../../../ThirdParty/ml-embedded-evaluation-kit/source/application/api/common/source/ImageUtils.cc
+    - group: NPU
+      files:
+        - file: ../NPU/ethosu_cpu_cache.c
+        - file: ../NPU/ethosu_npu_init.c
+        - file: ../NPU/ethosu_profiler.c
+    - group: ProfilerCounter
+      files:
+        - file: ../ProfilerCounter/pmu_counter.c
+    - group: Device
+      files:
+        - file: ../Device/HyperRAM/hyperram_code.c
+        - file: ../Device/ImageSensor/ImageSensor.c
+        - file: ../Device/ImageSensor/Sensor/Sensor_HM1055.c
+        - file: ../Device/ImageSensor/Sensor/SWI2C.c
+        - file: ../Device/Display/Display.c
+        - file: ../Device/Display/drv_pdma.c
+        - file: ../Device/Display/Font8_16.c
+        - file: ../Device/Display/LCD/LCD_FSA506.c
+        - file: ../Device/Display/LCD/LCD_LT7381.c
+        - file: ../Device/Display/LCD/LCD_ILI9341.c
+        - file: ../Device/UVC/descriptors.c
+        - file: ../Device/UVC/UVC.c
+    - group: libs
+      files:
+        - file: ../../../../ThirdParty/tflite_micro/Lib/tflu.lib
+          for-compiler: AC6    
+        - file: ../../../../Library/CMSIS/Lib/KEIL/cmsis_dsp.lib
+          for-compiler: AC6    
+        - file: ../../../../Library/CMSIS/Lib/KEIL/cmsis_nn.lib
+          for-compiler: AC6    
+        - file: ../../../../ThirdParty/openmv/omv/Lib/omv.lib
+          for-compiler: AC6    
+        - file: ../../../../ThirdParty/FreeRTOS/Lib/FreeRTOS.lib
+          for-compiler: AC6    

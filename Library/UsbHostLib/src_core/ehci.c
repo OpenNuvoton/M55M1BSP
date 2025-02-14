@@ -30,10 +30,21 @@ extern int ehci_iso_xfer(UTR_T *utr);       /* EHCI isochronous transfer functio
 extern int ehci_quit_iso_xfer(UTR_T *utr, EP_INFO_T *ep);
 
 #ifdef __ICCARM__
-    #pragma data_alignment=4096
-    uint32_t  _PFList[FL_SIZE];                 /* Periodic frame list (IAR)                  */
+    #if (NVT_DCACHE_ON == 1)
+        /* Periodic frame list are placed in a non-cacheable region */
+        #pragma data_alignment=4096
+        NVT_NONCACHEABLE uint32_t  _PFList[FL_SIZE];                 /* Periodic frame list (IAR)                  */
+    #else
+        #pragma data_alignment=4096
+        uint32_t  _PFList[FL_SIZE];                 /* Periodic frame list (IAR)                  */
+    #endif
 #else
-    uint32_t _PFList[FL_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #if (NVT_DCACHE_ON == 1)
+        /* Periodic frame list are placed in a non-cacheable region */
+        NVT_NONCACHEABLE uint32_t _PFList[FL_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #else
+        uint32_t _PFList[FL_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+    #endif
 #endif
 
 QH_T   *_Iqh[NUM_IQH];
@@ -336,14 +347,20 @@ static int  ehci_init(void)
 
 static void ehci_suspend(void)
 {
-    if (_ehci->UPSCR[0] & 0x1)
+    if (_ehci->UPSCR[0] & HSUSBH_UPSCR_PE_Msk)
         _ehci->UPSCR[0] |= HSUSBH_UPSCR_SUSPEND_Msk;
 }
 
 static void ehci_resume(void)
 {
-    if (_ehci->UPSCR[0] & 0x1)
-        _ehci->UPSCR[0] = (_ehci->UPSCR[0] & ~HSUSBH_UPSCR_SUSPEND_Msk) | HSUSBH_UPSCR_FPR_Msk;
+    if (_ehci->UPSCR[0] & HSUSBH_UPSCR_PE_Msk)
+    {
+        _ehci->UPSCR[0] |= HSUSBH_UPSCR_FPR_Msk;
+        delay_us(25000);                         /* keep resume signal for 20 ms */
+        _ehci->UPSCR[0] &= ~HSUSBH_UPSCR_FPR_Msk;
+    }
+
+    delay_us(1000);
 }
 
 static void ehci_shutdown(void)

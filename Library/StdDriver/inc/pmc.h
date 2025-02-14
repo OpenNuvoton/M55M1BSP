@@ -51,26 +51,14 @@ enum
 /*---------------------------------------------------------------------------------------------------------*/
 /*  PLCTL constant definitions. (Write-Protection Register)                                                */
 /*---------------------------------------------------------------------------------------------------------*/
-#define PMC_PLCTL_PLSEL_PL0     (0x0UL<<PMC_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 0. Supports system clock up to 96MHz. */
-#define PMC_PLCTL_PLSEL_PL1     (0x1UL<<PMC_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 1. Supports system clock up to 84MHz. */
+#define PMC_PLCTL_PLSEL_PL0     (0x0UL<<PMC_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 0. Supports system clock up to 220MHz. */
+#define PMC_PLCTL_PLSEL_PL1     (0x1UL<<PMC_PLCTL_PLSEL_Pos)   /*!< Set power level to power level 1. Supports system clock up to 200MHz. */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  PLSTS constant definitions. (Write-Protection Register)                                                */
 /*---------------------------------------------------------------------------------------------------------*/
-#define PMC_PLSTS_PLSTATUS_PL0  (0x0UL<<PMC_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 0. Supports system clock up to 96MHz. */
-#define PMC_PLSTS_PLSTATUS_PL1  (0x1UL<<PMC_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 1. Supports system clock up to 84MHz. */
-
-/*---------------------------------------------------------------------------------------------------------*/
-/*  VRCTL constant definitions. (Write-Protection Register)                                                */
-/*---------------------------------------------------------------------------------------------------------*/
-#define PMC_VRCTL_MVRS_LDO      (0x0UL<<PMC_VRCTL_MVRS_Pos)    /*!< Set main voltage regulator type to LDO */
-#define PMC_VRCTL_MVRS_DCDC     (0x1UL<<PMC_VRCTL_MVRS_Pos)    /*!< Set main voltage regulator type to DCDC */
-
-/*---------------------------------------------------------------------------------------------------------*/
-/*  VRSTS constant definitions. (Write-Protection Register)                                                */
-/*---------------------------------------------------------------------------------------------------------*/
-#define PMC_VRSTS_CURMVR_LDO    (0x0UL<<PMC_VRSTS_CURMVR_Pos)   /*!< Main voltage regulator type is LDO */
-#define PMC_VRSTS_CURMVR_DCDC   (0x1UL<<PMC_VRSTS_CURMVR_Pos)   /*!< Main voltage regulator type is DCDC */
+#define PMC_PLSTS_PLSTATUS_PL0  (0x0UL<<PMC_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 0. Supports system clock up to 220MHz. */
+#define PMC_PLSTS_PLSTATUS_PL1  (0x1UL<<PMC_PLSTS_PLSTATUS_Pos) /*!< Power level is power level 1. Supports system clock up to 200MHz. */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  SYSRB constant definitions. (Write-Protection Register)                                             */
@@ -92,23 +80,24 @@ enum
 #define PMC_LPSYSRPC_SRAM_POWER_SHUT_DOWN   0x40000002UL   /*!< Select SRAM power mode to power shut down mode */
 
 /*---------------------------------------------------------------------------------------------------------*/
+/*  SRAM power mode constant definitions. (Write-Protection Register)                                             */
+/*---------------------------------------------------------------------------------------------------------*/
+#define PMC_SRAM_NORMAL            0x00000000UL   /*!< Select SRAM power mode to normal mode */
+#define PMC_SRAM_RETENTION         0x00000001UL   /*!< Select SRAM power mode to retention mode */
+#define PMC_SRAM_POWER_SHUT_DOWN   0x00000002UL   /*!< Select SRAM power mode to power shut down mode */
+
+/*---------------------------------------------------------------------------------------------------------*/
 /*  Power mode constant definitions.                                                                       */
 /*---------------------------------------------------------------------------------------------------------*/
 #define PMC_NPD0        0x0UL   /*!< Select NPD0 as power down mode */
 #define PMC_NPD1        0x1UL   /*!< Select NPD1 as power down mode */
-#if 0   // TESTCHIP_ONLY not support
 #define PMC_NPD2        0x2UL   /*!< Select NPD2 as power down mode */
 #define PMC_NPD3        0x3UL   /*!< Select NPD3 as power down mode */
 #define PMC_NPD4        0x4UL   /*!< Select NPD4 as power down mode */
-#endif
 #define PMC_SPD0        0x5UL   /*!< Select SPD0 as power down mode */
-#if 0   // TESTCHIP_ONLY not support
 #define PMC_SPD1        0x6UL   /*!< Select SPD1 as power down mode */
-#endif
-#define PMC_DPD0        0x7UL   /*!< Select DPD0 as power down mode */
-#if 0   // TESTCHIP_ONLY not support
-#define PMC_DPD1        0x8UL   /*!< Select DPD1 as power down mode */
-#endif
+#define PMC_DPD         0x7UL   /*!< Select DPD as power down mode */
+
 /*---------------------------------------------------------------------------------------------------------*/
 /*  TG Pin Rising/Falling Edge Wake-up Enable constant definitions.                                        */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -130,14 +119,19 @@ enum
 #define PMC_PWRCTL_BUSY_FLAG        (PMC_BASE+0x000UL)  /*!< Select PWRCTL busy flag \hideinitializer */
 #define PMC_PLCTL_BUSY_FLAG         (PMC_BASE+0x010UL)  /*!< Select PLCTL busy flag \hideinitializer */
 #define PMC_PLSTS_BUSY_FLAG         (PMC_BASE+0x014UL)  /*!< Select PLSTS busy flag \hideinitializer */
-#define PMC_VRCTL_BUSY_FLAG         (PMC_BASE+0x018UL)  /*!< Select VRCTL busy flag \hideinitializer */
-#define PMC_VRSTS_BUSY_FLAG         (PMC_BASE+0x01CUL)  /*!< Select VRSTS busy flag \hideinitializer */
+#define PMC_IOTGDBCTL_BUSY_FLAG     (PMC_BASE+0x030UL)  /*!< Select IOTGDBCTL busy flag \hideinitializer */
+#define PMC_GPATGCTL_BUSY_FLAG      (PMC_BASE+0x034UL)  /*!< Select GPATGCTL busy flag \hideinitializer */
+#define PMC_GPBTGCTL_BUSY_FLAG      (PMC_BASE+0x038UL)  /*!< Select GPBTGCTL busy flag \hideinitializer */
+#define PMC_GPCTGCTL_BUSY_FLAG      (PMC_BASE+0x03CUL)  /*!< Select GPCTGCTL busy flag \hideinitializer */
+#define PMC_GPDTGCTL_BUSY_FLAG      (PMC_BASE+0x040UL)  /*!< Select GPDTGCTL busy flag \hideinitializer */
 #define PMC_STMRWKCTL_BUSY_FLAG     (PMC_BASE+0x050UL)  /*!< Select STMRWKCTL busy flag \hideinitializer */
 #define PMC_SYSRB0PC_BUSY_FLAG      (PMC_BASE+0x100UL)  /*!< Select SYSRB0PC busy flag \hideinitializer */
 #define PMC_SYSRB1PC_BUSY_FLAG      (PMC_BASE+0x104UL)  /*!< Select SYSRB1PC busy flag \hideinitializer */
 #define PMC_SYSRB2PC_BUSY_FLAG      (PMC_BASE+0x108UL)  /*!< Select SYSRB2PC busy flag \hideinitializer */
 #define PMC_SYSRB3PC_BUSY_FLAG      (PMC_BASE+0x10CUL)  /*!< Select SYSRB3PC busy flag \hideinitializer */
 #define PMC_LPSYSRPC_BUSY_FLAG      (PMC_BASE+0x110UL)  /*!< Select LPSYSRPC busy flag \hideinitializer */
+#define PMC_CCAPRPC_BUSY_FLAG       (PMC_BASE+0x124UL)  /*!< Select CCAPRPC busy flag \hideinitializer */
+#define PMC_DMICRPC_BUSY_FLAG       (PMC_BASE+0x128UL)  /*!< Select DMICRPC busy flag \hideinitializer */
 #define PMC_KSRPC_BUSY_FLAG         (PMC_BASE+0x140UL)  /*!< Select KSRPC busy flag \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -157,6 +151,26 @@ enum
 #define PMC_STMRWKCTL_STMRIS_1048576      (0xbUL << PMC_STMRWKCTL_STMRIS_Pos)     /*!< Select Wake-up Timer Time-out Interval is 1048576 LIRC clocks (32768ms) \hideinitializer */
 #define PMC_STMRWKCTL_STMRIS_2097152      (0xcUL << PMC_STMRWKCTL_STMRIS_Pos)     /*!< Select Wake-up Timer Time-out Interval is 2097152 LIRC clocks (65536ms) \hideinitializer */
 #define PMC_STMRWKCTL_STMRIS_4194304      (0xdUL << PMC_STMRWKCTL_STMRIS_Pos)     /*!< Select Wake-up Timer Time-out Interval is 4194304 LIRC clocks (131072ms) \hideinitializer */
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*  GPIO trigger pin debounce constant definitions.                                                                           */
+/*---------------------------------------------------------------------------------------------------------*/
+#define PMC_IOTGDBCTL_IOTGDBSEL_1          (0x0UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 1 LIRC clock \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_2          (0x1UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 2 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_4          (0x2UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 4 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_8          (0x3UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 8 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_16         (0x4UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 16 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_32         (0x5UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 32 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_64         (0x6UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 64 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_128        (0x7UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 128 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_256        (0x8UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 256 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_512        (0x9UL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 512 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_1024       (0xaUL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 1024 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_2048       (0xbUL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 2048 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_4096       (0xcUL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 4096 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_8192       (0xdUL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 8192 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_16384      (0xeUL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 16384 LIRC clocks \hideinitializer */
+#define PMC_IOTGDBCTL_IOTGDBSEL_32768      (0xfUL << PMC_IOTGDBCTL_IOTGDBSEL_Pos)     /*!< Select GPIO Trigger Pin De-bounce Sampling Cycle is 32768 LIRC clocks \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Pin Rising/Falling Edge Wake-up Enable constant definitions.                                           */
@@ -184,6 +198,12 @@ enum
 #define PMC_WKPIN5_RISING     (0x1UL << PMC_PINWKCTL_WKPINEN5_Pos)    /*!< Enable Wake-up pin4 (GPA.12) rising edge at Deep Power-down mode \hideinitializer */
 #define PMC_WKPIN5_FALLING    (0x2UL << PMC_PINWKCTL_WKPINEN5_Pos)    /*!< Enable Wake-up pin4 (GPA.12) falling edge at Deep Power-down mode \hideinitializer */
 #define PMC_WKPIN5_BOTHEDGE   (0x3UL << PMC_PINWKCTL_WKPINEN5_Pos)    /*!< Enable Wake-up pin4 (GPA.12) both edge at Deep Power-down mode \hideinitializer */
+
+/** @} end of group PMC_EXPORTED_CONSTANTS */
+
+/** @addtogroup PMC_EXPORTED_FUNCTIONS PMC Exported Functions
+  @{
+*/
 
 /**
   * @brief      Disable Wake-up Pin 0
@@ -222,58 +242,53 @@ enum
 #define PMC_DISABLE_WKPIN5()   (PMC->PINWKCTL &= ~PMC_PINWKCTL_WKPINEN5_Msk)
 
 /**
-  * @brief      Disable GPA Trigger Pin
-  * @details    This macro disables GPA trigger and wake-up function
-  */
-#define PMC_DISABLE_TGPIN_GPA()   (PMC->GPATGCTL &= ~(PMC_GPATGCTL_TGPFEN_Msk | PMC_GPATGCTL_TGPREN_Msk))
-
-/**
-  * @brief      Disable GPB Trigger Pin
-  * @details    This macro disables GPB trigger and wake-up function
-  */
-#define PMC_DISABLE_TGPIN_GPB()   (PMC->GPBTGCTL &= ~(PMC_GPBTGCTL_TGPFEN_Msk | PMC_GPBTGCTL_TGPREN_Msk))
-
-/**
-  * @brief      Disable GPC Trigger Pin
-  * @details    This macro disables GPC trigger and wake-up function
-  */
-#define PMC_DISABLE_TGPIN_GPC()   (PMC->GPCTGCTL &= ~(PMC_GPCTGCTL_TGPFEN_Msk | PMC_GPCTGCTL_TGPREN_Msk))
-
-/**
-  * @brief      Disable GPD Trigger Pin
-  * @details    This macro disables GPD trigger and wake-up function
-  */
-#define PMC_DISABLE_TGPIN_GPD()   (PMC->GPDTGCTL &= ~(PMC_GPDTGCTL_TGPFEN_Msk | PMC_GPDTGCTL_TGPREN_Msk))
-
-/**
   * @brief      Release GPIO Hold Status
   * @details    This macro releases GPIO hold status from power-down wake-up
   */
 #define PMC_RELEASE_GPIO()    (PMC->IOSHCTL |= PMC_IOSHCTL_IOHR_Msk)
 
 /**
-  * @brief      Enable PMC Interrupt
+  * @brief      Enable PMC Wake-up Interrupt
   * @details    This macro enables PMC interrtup
   */
-#define PMC_ENABLE_INT()    (PMC->INTEN |= PMC_INTEN_PDWKIEN_Msk)
+#define PMC_ENABLE_WKINT()    (PMC->INTEN |= PMC_INTEN_PDWKIEN_Msk)
 
 /**
-  * @brief      Disable PMC Interrupt
-  * @details    This macro disables PMC interrtup
+  * @brief      Disable PMC Wake-up Interrupt
+  * @details    This macro disables PMC wake-up interrtup
   */
-#define PMC_DISABLE_INT()    (PMC->INTEN &= ~PMC_INTEN_PDWKIEN_Msk)
+#define PMC_DISABLE_WKINT()    (PMC->INTEN &= ~PMC_INTEN_PDWKIEN_Msk)
+
+/**
+  * @brief      Enable Auto Operation Clock in Power-down Mode
+  * @details    MIRC and HIRC disable in power down mode under normal circumstances,
+                but MIRC and HIRC will be enable via a trigger from auto operation mode
+  */
+#define PMC_ENABLE_AOCKPD()    (PMC->PWRCTL |= PMC_PWRCTL_AOCKPDEN_Msk)
+
+/**
+  * @brief      Disable Auto Operation Clock in Power-down Mode
+  * @details    MIRC and HIRC enable in power down mode
+  */
+#define PMC_DISABLE_AOCKPD()    (PMC->PWRCTL &= ~PMC_PWRCTL_AOCKPDEN_Msk)
+
 
 int32_t PMC_SetPowerLevel(uint32_t u32PowerLevel);
 int32_t PMC_SetPowerRegulator(uint32_t u32PowerRegulator);
 int32_t PMC_SetSRAMPowerMode(uint32_t u32SRAMSel, uint32_t u32PowerMode);
+int32_t PMC_SetCCAP_SRAMPowerMode(uint32_t u32PowerMode);
+int32_t PMC_SetDMIC_SRAMPowerMode(uint32_t u32PowerMode);
+int32_t PMC_SetKS_SRAMPowerMode(uint32_t u32PowerMode);
 void PMC_PowerDown(void);
 void PMC_Idle(void);
 int32_t PMC_SetPowerDownMode(uint32_t u32PDMode, uint32_t u32PowerLevel);
 void PMC_EnableWKPIN(uint32_t u32TriggerType);
 uint32_t PMC_GetPMCWKSrc(void);
-void PMC_EnableTGPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType, uint32_t u32DebounceEn, uint32_t u32WakeupEn);
+int32_t PMC_EnableTGPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType, uint32_t u32DebounceEn, uint32_t u32WakeupEn);
+int32_t PMC_DisableTGPin(uint32_t u32Port);
 int32_t PMC_EnableSTMR(uint32_t u32Interval);
 int32_t PMC_DisableSTMR(void);
+int32_t PMC_SetTGPinDebounce(uint32_t u32Sel);
 int32_t PMC_Wait_BusyFlag(uint32_t PMCBusyFlagAddr);
 
 /** @} end of group PMC_EXPORTED_FUNCTIONS */

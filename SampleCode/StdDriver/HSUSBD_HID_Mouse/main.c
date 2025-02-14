@@ -15,25 +15,12 @@ static uint8_t volatile s_u8RemouteWakeup = 0;
 /*--------------------------------------------------------------------------*/
 void SYS_Init(void)
 {
-    uint32_t volatile i;
-
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -54,18 +41,19 @@ void SYS_Init(void)
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 
-    /* Enable HSOTG0_ module clock */
+    /* Enable HSOTG module clock */
     CLK_EnableModuleClock(HSOTG0_MODULE);
 
-    SYS->USBPHY &= ~SYS_USBPHY_HSUSBROLE_Msk;    /* select HSUSBD */
-    /* Enable USB PHY */
-    SYS->USBPHY = (SYS->USBPHY & ~(SYS_USBPHY_HSUSBROLE_Msk | SYS_USBPHY_HSUSBACT_Msk)) | SYS_USBPHY_HSOTGPHYEN_Msk;
+    /* Select HSOTG PHY Reference clock frequency which is from HXT */
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
-    for (i = 0; i < 0x1000; i++);  // delay > 10 us
+    /* Set HSUSB role to HSUSBD */
+    SET_HSUSBDROLE();
 
-    SYS->USBPHY |= SYS_USBPHY_HSUSBACT_Msk;
+    /* Enable HSUSB PHY */
+    SYS_Enable_HSUSB_PHY();
 
-    /* Enable IP clock */
+    /* Enable HSUSBD peripheral clock */
     CLK_EnableModuleClock(HSUSBD0_MODULE);
 
     /*---------------------------------------------------------------------------------------------------------*/
@@ -74,7 +62,6 @@ void SYS_Init(void)
 
     /* Set multi-function pins for UART RXD and TXD */
     SetDebugUartMFP();
-
 }
 
 void GPIO_Init(void)
@@ -117,9 +104,6 @@ void PowerDown(void)
     while (!(HSUSBD->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
         if (--u32TimeOutCnt == 0) break;
 
-    /* Clear PWR_DOWN_EN if it is not clear by itself */
-    if (PMC->PWRCTL & PMC_PWRCTL_PDEN_Msk)
-        PMC->PWRCTL ^= PMC_PWRCTL_PDEN_Msk;
 
     /* Note HOST to resume USB tree if it is suspended and remote wakeup enabled */
     if (g_hsusbd_RemoteWakeupEn && s_u8RemouteWakeup)
@@ -135,7 +119,6 @@ void PowerDown(void)
 
 int32_t main(void)
 {
-
     /* Unlock protected registers */
     SYS_UnlockReg();
     /* Init System, peripheral clock and multi-function I/O */

@@ -88,6 +88,11 @@
 			<name>User/ebi_sram.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/ebi_sram.c</locationURI>
-		</link>		
+		</link>
+		<link>
+			<name>User/mpu_config_M55M1.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/mpu_config_M55M1.h</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>

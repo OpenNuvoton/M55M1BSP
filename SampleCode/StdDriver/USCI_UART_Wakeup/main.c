@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
-/* UUART can support NPD0 ~ NDP1 power-down mode */
+/* UUART can support NPD0 ~ NPD1 power-down mode */
 #define TEST_POWER_DOWN_MODE    PMC_NPD0
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -49,20 +49,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -144,10 +132,6 @@ int32_t main(void)
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void USCI0_IRQHandler(void)
 {
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(USCI0_MODULE);
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);
 
     uint32_t u32IntSts = UUART_GET_PROT_STATUS(UUART0);
     uint32_t u32WkSts = UUART_GET_WAKEUP_FLAG(UUART0);
@@ -308,10 +292,6 @@ void USCI_UART_PowerDownWakeUpTest(void)
     /* Switch SCLK clock source to APLL0 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
 
-    /* Wait the USCI0 peripheral clock  */
-    CLK_WaitModuleClockReady(USCI0_MODULE);
-    /* Wait the UART0 peripheral clock  */
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);
     /* Lock protected registers */
     SYS_LockReg();
 

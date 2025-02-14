@@ -26,9 +26,11 @@
 static FIL    wavFileObject;
 static size_t ReturnSize;
 
-#ifdef __ICCARM__
-    signed int aiPCMBuffer[2][PCM_BUFFER_SIZE] @0x20003000;
+#if (NVT_DCACHE_ON == 1)
+    // If DCACHE is enabled, use a cache-line aligned buffer for the I2S PCM DMA
+    signed int aiPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
 #else
+    // If DCACHE is not enabled, use a standard buffer for the I2S PCM DMA
     signed int aiPCMBuffer[2][PCM_BUFFER_SIZE];
 #endif
 volatile uint8_t g_u8PCMBufferFull[2] = {0, 0};
@@ -69,6 +71,12 @@ void WAVPlayer(void)
 
     while (1)
     {
+#if (NVT_DCACHE_ON == 1)
+        // If DCACHE is enabled, make sure the I2S PCM DMA buffer is cleaned and invalidated
+        // This is to ensure that the data written to the cache is actually written to the memory
+        SCB_CleanInvalidateDCache_by_Addr((int *)&aiPCMBuffer, sizeof(aiPCMBuffer));
+#endif
+
         if ((g_u8PCMBufferFull[0] == 1) && (g_u8PCMBufferFull[1] == 1))         //all buffers are full, wait
         {
             if (!u8AudioPlaying)
@@ -86,7 +94,11 @@ void WAVPlayer(void)
 
         res = f_read(&wavFileObject, &aiPCMBuffer[u8PCMBufferTargetIdx][0], PCM_BUFFER_SIZE * 4, &ReturnSize);
 
-        if (f_eof(&wavFileObject))   break;
+        if (ReturnSize < PCM_BUFFER_SIZE * 4)
+            memset(&aiPCMBuffer[u8PCMBufferTargetIdx][ReturnSize], 0, PCM_BUFFER_SIZE * 4 - ReturnSize);
+
+        if (f_eof(&wavFileObject) && (ReturnSize == 0))
+            break;
 
         g_u8PCMBufferFull[u8PCMBufferTargetIdx] = 1;
 
@@ -105,4 +117,8 @@ void WAVPlayer(void)
     I2S_DISABLE_TX(I2S0);
     I2S_DISABLE_TXDMA(I2S0);
     f_close(&wavFileObject);
+
+    u8AudioPlaying = 0;
+    g_u8PCMBufferFull[0] = 0;
+    g_u8PCMBufferFull[1] = 0;
 }

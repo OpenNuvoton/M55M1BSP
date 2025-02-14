@@ -41,7 +41,6 @@ extern "C"
 #define CANFD_MAX_TX_EVNT_FIFO_ELEMS  32ul   /*!<  maximum is  32 Tx Event FIFO elements */
 
 /* CAN FD sram address  */
-
 #define CANFD_SRAM_OFFSET             0x200ul
 
 /* CAN FD sram address  */
@@ -82,6 +81,13 @@ extern "C"
 
 /* CANFD Rx FIFO 1 extended Mask helper macro - high. */
 #define CANFD_RX_FIFO1_EXT_MASK_HIGH(mask)           ((2UL << 30) | (mask & 0x1FFFFFFF))
+
+
+/** @} end of group CANFD_EXPORTED_CONSTANTS */
+
+/** @addtogroup CANFD_EXPORTED_FUNCTIONS CAN_FD Exported Functions
+  @{
+*/
 
 /**
  *    @brief        Get Monitors the Module’s CAN Communication State Flag

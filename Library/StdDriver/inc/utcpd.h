@@ -55,7 +55,7 @@ extern "C"
 #define UTCPD_ALERTM_RXHRSTIE        UTCPD_IE_RXHRSTIE_Msk                            /*!< UTCPD_T::ALERTM: RXHRSTIE Mask        */
 #define UTCPD_ALERTM_TXFAILIE        UTCPD_IE_TXFAILIE_Msk                            /*!< UTCPD_T::ALERTM: TXFAILIE Mask        */
 #define UTCPD_ALERTM_TXDCUIE         UTCPD_IE_TXDCUDIE_Msk                            /*!< UTCPD_T::ALERTM: TXDCUIE Mask         */
-#define UTCPD_ALERTM_TXOKIE          UTCPD_IE_TXOKIE_Msk                              /*!< UTCPD_T::ALERTM: TXOKIE Mask          */
+#define UTCPD_ALERTM_TXSOKIE         UTCPD_IE_TXSOKIE_Msk                             /*!< UTCPD_T::ALERTM: TXSOKIE Mask          */
 #define UTCPD_ALERTM_VBAMHIE         UTCPD_IE_VBAMHIE_Msk                             /*!< UTCPD_T::ALERTM: VBAMHIE Mask         */
 #define UTCPD_ALERTM_VBAMLIE         UTCPD_IE_VBAMLIE_Msk                             /*!< UTCPD_T::ALERTM: VBAMLIE Mask         */
 #define UTCPD_ALERTM_FUTIE           UTCPD_IE_FUTIE_Msk                               /*!< UTCPD_T::ALERTM: FUTIE Mask           */
@@ -350,6 +350,7 @@ void UTCPD_power_enable_auto_discharge(int port);
 void UTCPD_frs_tx_polarity_active_low(int port);
 void UTCPD_frs_tx_polarity_active_high(int port);
 void UTCPD_frs_mux_selection(int port, uint32_t cc1frssel, uint32_t cc2frssel);
+void UTCPD_GetVoltagInfo(int port, uint16_t *pu16VbusVol, uint16_t *pu16VconnVol);
 uint32_t UTCPD_Open(int port);
 
 

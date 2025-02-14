@@ -1,0 +1,13 @@
+"--endian=little" 
+
+"--cpu=Cortex-M55.no_se" 
+
+"--fpu=VFPv5_d16helium" 
+
+"--semihosting=none" 
+
+"--device=M55M1" 
+
+
+
+

@@ -72,6 +72,11 @@ extern "C"
 #define SPI_CLKSEL_HIRC                   (0x4UL)
 #define SPI_CLKSEL_HIRC48M                (0x5UL)
 
+/* SPI Run Time Status */
+#define SPI_OK                            0
+#define SPI_ERR_FAIL                      -1
+#define SPI_ERR_TIMEOUT                   -2
+
 //------------------------------------------------------------------------------
 // I2S define
 //------------------------------------------------------------------------------

@@ -42,7 +42,7 @@
 		<link>
 			<name>CMSIS/startup_M55M1.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/startup_M55M1.c</locationURI>
 		</link>
 		<link>
 			<name>CMSIS/system_M55M1.c</name>
@@ -53,6 +53,16 @@
 			<name>Library/clk.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/clk.c</locationURI>
+		</link>
+		<link>
+			<name>Library/fmc.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/fmc.c</locationURI>
+		</link>
+		<link>
+			<name>Library/pmc.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/pmc.c</locationURI>
 		</link>
 		<link>
 			<name>Library/retarget.c</name>
@@ -70,29 +80,14 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/uart.c</locationURI>
 		</link>
 		<link>
-			<name>Library/fmc.c</name>
+			<name>User/UserImageBase.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/fmc.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/UserImageBase.c</locationURI>
 		</link>
-		<link>
-			<name>Library/pmc.c</name>
-			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/pmc.c</locationURI>
-		</link>		
 		<link>
 			<name>User/main.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/main.c</locationURI>
 		</link>
-		<link>
-			<name>User/LoadUserImage.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/LoadUserImage.c</locationURI>
-		</link>
-		<link>
-			<name>User/UserImageBase.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/UserImageBase.c</locationURI>
-		</link>		
 	</linkedResources>
 </projectDescription>

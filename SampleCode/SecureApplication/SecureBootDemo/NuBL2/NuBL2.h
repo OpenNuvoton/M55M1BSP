@@ -11,11 +11,12 @@
 #include "NuMicro.h"
 #include "../image.h"
 
-#define NUBL2_FW_IMG_SIZE           (0x00040000)                        // 256 KB
-#define NUBL32_FW_IMG_BASE          (FMC_APROM_BASE + 0x00040000ul)     // 256 KB
-#define NUBL32_FW_IMG_SIZE          (0x00040000)                        // 256 KB
-#define NUBL33_FW_IMG_BASE          FMC_NON_SECURE_BASE                 // Non-secure flash base address
-#define NUBL33_FW_IMG_SIZE          (0x00040000)                        // 256 KB
+#define NUBL2_FW_IMG_BASE           (FMC_APROM_BASE)                    // NuBL2 base bddress
+#define NUBL2_FW_IMG_SIZE           (0x00040000)                        // NuBL2 size (256 KB)
+#define NUBL32_FW_IMG_BASE          (FMC_APROM_BASE + 0x00040000ul)     // NuBL32 base bddress
+#define NUBL32_FW_IMG_SIZE          (0x00040000)                        // NuBL32 size (256 KB)
+#define NUBL33_FW_IMG_BASE          FMC_NON_SECURE_BASE                 // NuBL33 base bddress (Non-secure flash base address)
+#define NUBL33_FW_IMG_SIZE          (0x00040000)                        // NuBL33 size (256 KB)
 
 #ifdef __cplusplus
 extern "C"

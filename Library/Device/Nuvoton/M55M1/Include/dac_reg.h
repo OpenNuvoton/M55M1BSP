@@ -27,6 +27,8 @@
 
 typedef struct
 {
+
+
     /**
      * @var DAC_T::CTL
      * Offset: 0x00  DAC Control Register
@@ -34,11 +36,11 @@ typedef struct
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[0]     |DACEN     |DAC Enable Bit
-     * |        |          |0 = DAC is Disabled.
-     * |        |          |1 = DAC is Enabled.
+     * |        |          |0 = DAC Disabled.
+     * |        |          |1 = DAC Enabled.
      * |[1]     |DACIEN    |DAC Interrupt Enable Bit
-     * |        |          |0 = Interrupt is Disabled.
-     * |        |          |1 = Interrupt is Enabled.
+     * |        |          |0 = DAC interrupt Disabled.
+     * |        |          |1 = DAC interrupt Enabled.
      * |[2]     |DMAEN     |DMA Mode Enable Bit
      * |        |          |0 = DMA mode Disabled.
      * |        |          |1 = DMA mode Enabled.
@@ -57,7 +59,7 @@ typedef struct
      * |        |          |101 = Timer 3 trigger.
      * |        |          |110 = EPWM0 trigger.
      * |        |          |111 = EPWM1 trigger.
-     * |[10]    |LALIGN    |DAC Data Left-aligned Enabled Control
+     * |[10]    |LALIGN    |DAC Data Left-aligned Enabled Bit
      * |        |          |0 = Right alignment.
      * |        |          |1 = Left alignment.
      * |[13:12] |ETRGSEL   |External Pin Trigger Selection
@@ -69,7 +71,7 @@ typedef struct
      * |        |          |00 = data is 12 bits.
      * |        |          |01 = data is 8 bits.
      * |        |          |Others = reserved.
-     * |[16]    |GRPEN     |DAC Group Mode Enable Bit (Not support in TESTCHIP_ONLY)
+     * |[16]    |GRPEN     |DAC Group Mode Enable Bit
      * |        |          |0 = DAC0 and DAC1 are not grouped.
      * |        |          |1 = DAC0 and DAC1 are grouped.
      * |[17]    |GPIOEN    |GPIO Mode Enable Bit
@@ -86,7 +88,7 @@ typedef struct
      * |[0]     |SWTRG     |Software Trigger
      * |        |          |0 = Software trigger Disabled.
      * |        |          |1 = Software trigger Enabled.
-     * |        |          |User writes this bit to generate one shot pulse and it is cleared to 0 by hardware automatically; Reading this bit will always get 0.
+     * |        |          |Note: User writes this bit to generate one shot pulse and it is cleared to 0 by hardware automatically; reading this bit will always get 0.
      * @var DAC_T::DAT
      * Offset: 0x08  DAC Data Holding Register
      * ---------------------------------------------------------------------------------------------------
@@ -113,17 +115,16 @@ typedef struct
      * |[0]     |FINISH    |DAC Conversion Complete Finish Flag
      * |        |          |0 = DAC is in conversion state.
      * |        |          |1 = DAC conversion finish.
-     * |        |          |This bit set to 1 when conversion time counter counts to SETTLET
+     * |        |          |Note: This bit is set to 1 when conversion time counter counts to SETTLET
      * |        |          |It is cleared to 0 when DAC starts a new conversion
      * |        |          |User writes 1 to clear this bit to 0.
      * |[1]     |DMAUDR    |DMA Under-run Interrupt Flag
      * |        |          |0 = No DMA under-run error condition occurred.
      * |        |          |1 = DMA under-run error condition occurred.
-     * |        |          |User writes 1 to clear this bit.
+     * |        |          |Note: User writes 1 to clear this bit.
      * |[8]     |BUSY      |DAC Busy Flag (Read Only)
      * |        |          |0 = DAC is ready for next conversion.
      * |        |          |1 = DAC is busy in conversion.
-     * |        |          |This is read only bit.
      * @var DAC_T::TCTL
      * Offset: 0x14  DAC Timing Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -131,36 +132,41 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[9:0]   |SETTLET   |DAC Output Settling Time
      * |        |          |User software needs to write appropriate value to these bits to meet DAC conversion settling time base on PCLK (APB clock) speed.
-     * |        |          |For example, DAC controller clock speed is 80MHz and DAC conversion settling time is 1 us, SETTLETvalue must be greater than 0x50.
+     * |        |          |For example, DAC controller clock speed is 80 MHz and DAC conversion settling time is 1 us, SETTLETvalue must be greater than 0x50.
      * |        |          |SELTTLET = DAC controller clock speed x settling time.
      * @var DAC_T::GRPDAT
      * Offset: 0x30  DAC Group Mode Data Holding Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[15:0]  |DAC0DAT   |DAC0 12-bit Holding Data
+     * |[15:0]  |DAC0DAT   |DAC0 12-bit Holding Data or DAC01 8-bit Holding Data
      * |        |          |These bits are written by user software which specifies 12-bit conversion data for DAC output
      * |        |          |The unused bits (DAC_GRPDAT[3:0] in left-alignment mode and DAC_GRPDAT[15:12] in right alignment mode) are ignored by DAC controller hardware.
-     * |        |          |12 bit left alignment: user has to load data into DAC_GRPDAT[15:4] bits.
-     * |        |          |12 bit right alignment: user has to load data into DAC_GRPDAT[11:0] bits.
-     * |        |          |Note: In group mode, the advantage of writing 12-bit conversion data in DAC_GRPDAT[15:0] is that can share one PDMA transfer mechanism.
-     * |        |          |Note: After set GRPEN(DAC0_CTL[16]), user can write 12-bit conversion data for DAC0 in DAC_GRPDAT[15:0]
-     * |[31:16] |DAC1DAT   |DAC1 12-bit Holding Data (DAC1 is not support in TESTCHIP_ONLY)
+     * |        |          |12 bit left alignment: user has to load data into DAC_GRPDAT[15:4] bits for DAC0.
+     * |        |          |12 bit right alignment: user has to load data into DAC_GRPDAT[11:0] bits for DAC0.
+     * |        |          |For 8-bit mode, DAC1 data is at DAC_GRPDAT[15:8] and DAC0 data is at DAC_GRPDAT[7:0]
+     * |        |          |Note: In group mode, user can write 12-bit conversion data for DAC0 in DAC_GRPDAT[15:0] or DAC0_DAT[15:0]
+     * |        |          |The advantage of writing 12-bit conversion data in DAC_GRPDAT[15:0] is that can share one PDMA transfer mechanism.
+     * |        |          |Note: After set GRPEN(DAC0_CTL[16]), user can write 12-bit conversion data for DAC0 in DAC_GRPDAT[15:0].
+     * |        |          |Note: On the other hand, write 12-bit conversion data in DAC0_DAT[15:0] or DAC1_DAT[15:0] have individual PDMA transfer mechanism between two DACs
+     * |[31:16] |DAC1DAT   |DAC1 12-bit Holding Data
      * |        |          |In group mode, user can write these bits for DAC1 12-bit conversion data
-     * |        |          |The unused bits (DAC_GRPDAT[3:0] in left-alignment mode and DAC_GRPDAT[15:12] in right alignment mode) are ignored by DAC controller hardware.
-     * |        |          |12 bit left alignment: user has to load data into DAC_GRPDAT[15:4] bits.
-     * |        |          |12 bit right alignment: user has to load data into DAC_GRPDAT[11:0] bits.
-     * |        |          |Note: In group mode, the advantage of writing 12-bit conversion data in DAC_GRPDAT[31:16] is that can share one PDMA transfer mechanism.
+     * |        |          |The unused bits (DAC_GRPDAT[19:16] in left-alignment mode and DAC_GRPDAT[31:28] in right alignment mode) are ignored by DAC controller hardware.
+     * |        |          |12 bit left alignment: user has to load data into DAC_GRPDAT[31:20] bits.
+     * |        |          |12 bit right alignment: user has to load data into DAC_GRPDAT[27:16] bits.
+     * |        |          |Note: In group mode, user can write 12-bit conversion data for DAC1 in DAC_GRPDAT[31:16] or DAC1_DAT[15:0]
+     * |        |          |The advantage of writing 12-bit conversion data in DAC_GRPDAT[31:16] is that can share one PDMA transfer mechanism.
      * |        |          |Note: After set GRPEN(DAC0_CTL[16]), user can write 12-bit conversion data for DAC1 in DAC_GRPDAT[31:16]
-     */
+     * |        |          |Note: On the other hand, Write 12-bit conversion data in DAC0_DAT[15:0] or DAC1_DAT[15:0] have individual PDMA transfer mechanism between two DACs
+    */
     __IO uint32_t CTL;                   /*!< [0x0000] DAC Control Register                                             */
     __IO uint32_t SWTRG;                 /*!< [0x0004] DAC Software Trigger Control Register                            */
     __IO uint32_t DAT;                   /*!< [0x0008] DAC Data Holding Register                                        */
     __I  uint32_t DATOUT;                /*!< [0x000c] DAC Data Output Register                                         */
     __IO uint32_t STATUS;                /*!< [0x0010] DAC Status Register                                              */
     __IO uint32_t TCTL;                  /*!< [0x0014] DAC Timing Control Register                                      */
-    __I  uint32_t RESERVE[6];
-    __IO uint32_t GRPDAT;                /*!< [0x0030] DAC Timing Control Register                                      */
+    __I  uint32_t RESERVE0[6];
+    __IO uint32_t GRPDAT;                /*!< [0x0030] DAC Group Mode Data Holding Register                             */
 
 } DAC_T;
 
@@ -187,9 +193,6 @@ typedef struct
 #define DAC_CTL_TRGSEL_Pos               (5)                                               /*!< DAC_T::CTL: TRGSEL Position            */
 #define DAC_CTL_TRGSEL_Msk               (0x7ul << DAC_CTL_TRGSEL_Pos)                     /*!< DAC_T::CTL: TRGSEL Mask                */
 
-#define DAC_CTL_BYPASS_Pos               (8)                                               /*!< DAC_T::CTL: BYPASS Position            */
-#define DAC_CTL_BYPASS_Msk               (0x1ul << DAC_CTL_BYPASS_Pos)                     /*!< DAC_T::CTL: BYPASS Mask                */
-
 #define DAC_CTL_LALIGN_Pos               (10)                                              /*!< DAC_T::CTL: LALIGN Position            */
 #define DAC_CTL_LALIGN_Msk               (0x1ul << DAC_CTL_LALIGN_Pos)                     /*!< DAC_T::CTL: LALIGN Mask                */
 
@@ -204,6 +207,9 @@ typedef struct
 
 #define DAC_CTL_GPIOEN_Pos               (17)                                              /*!< DAC_T::CTL: GPIOEN Position            */
 #define DAC_CTL_GPIOEN_Msk               (0x1ul << DAC_CTL_GPIOEN_Pos)                     /*!< DAC_T::CTL: GPIOEN Mask                */
+
+#define DAC_CTL_BYPASS_Pos               (18)                                              /*!< DAC_T::CTL: BYPASS Position            */
+#define DAC_CTL_BYPASS_Msk               (0x1ul << DAC_CTL_BYPASS_Pos)                     /*!< DAC_T::CTL: BYPASS Mask                */
 
 #define DAC_SWTRG_SWTRG_Pos              (0)                                               /*!< DAC_T::SWTRG: SWTRG Position           */
 #define DAC_SWTRG_SWTRG_Msk              (0x1ul << DAC_SWTRG_SWTRG_Pos)                    /*!< DAC_T::SWTRG: SWTRG Mask               */
@@ -226,13 +232,11 @@ typedef struct
 #define DAC_TCTL_SETTLET_Pos             (0)                                               /*!< DAC_T::TCTL: SETTLET Position          */
 #define DAC_TCTL_SETTLET_Msk             (0x3fful << DAC_TCTL_SETTLET_Pos)                 /*!< DAC_T::TCTL: SETTLET Mask              */
 
-#define DAC_GRPDAT_DAC0DAT_Pos           (0)                                               /*!< DAC_T::GRPDAT: DAC0DAT Position          */
-#define DAC_GPRDAT_DAC0DAT_Msk           (0xfffful << DAC_GRPDAT_DAC0DAT_Pos)              /*!< DAC_T::GRPDAT: DAC0DAT Mask              */
+#define DAC_GRPDAT_DAC0DAT_Pos           (0)                                               /*!< DAC_T::GRPDAT: DAC0DAT Position        */
+#define DAC_GRPDAT_DAC0DAT_Msk           (0xfffful << DAC_GRPDAT_DAC0DAT_Pos)              /*!< DAC_T::GRPDAT: DAC0DAT Mask            */
 
-#if ! defined (TESTCHIP_ONLY)
-    #define DAC_GRPDAT_DAC1DAT_Pos           (16)                                              /*!< DAC_T::GRPDAT: DAC1DAT Position          */
-    #define DAC_GPRDAT_DAC1DAT_Msk           (0xfffful << DAC_GRPDAT_DAC1DAT_Pos)              /*!< DAC_T::GRPDAT: DAC1DAT Mask              */
-#endif
+#define DAC_GRPDAT_DAC1DAT_Pos           (16)                                              /*!< DAC_T::GRPDAT: DAC1DAT Position        */
+#define DAC_GRPDAT_DAC1DAT_Msk           (0xfffful << DAC_GRPDAT_DAC1DAT_Pos)              /*!< DAC_T::GRPDAT: DAC1DAT Mask            */
 
 /** @} DAC_CONST */
 /** @} end of DAC register group */

@@ -25,11 +25,12 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/softmax.h"
 #include "tensorflow/lite/micro/kernels/xtensa/xtensa.h"
 #include "tensorflow/lite/micro/kernels/xtensa/xtensa_softmax.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 namespace {
 
-#if defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
+#if defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
 TfLiteStatus PrepareHifi(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE_OK(context, SoftmaxPrepare(context, node));
 
@@ -85,27 +86,38 @@ TfLiteStatus EvalHifi(const XtensaSoftmaxOpData* op_data,
   }
   return kTfLiteOk;
 }
-#endif  // defined(HIFI4) || defined (HIFI4_INTERNAL) || defined(HIFI5)
+#endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
 
 }  // namespace
 
 void* XtensaInitSoftmax(TfLiteContext* context, const char* buffer,
                         size_t length) {
-#if defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
+#if defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
   TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
+  return context->AllocatePersistentBuffer(context,
+                                           sizeof(XtensaSoftmaxOpData));
+#elif defined(VISION_P6)
+  TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
+  if (InitXtensaContext()) {
+    return nullptr;
+  }
   return context->AllocatePersistentBuffer(context,
                                            sizeof(XtensaSoftmaxOpData));
 #else
   return SoftmaxInit(context, buffer, length);
-#endif  // defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
+#endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
 }
 
 TfLiteStatus XtensaPrepareSoftmax(TfLiteContext* context, TfLiteNode* node) {
-#if defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
+#if defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
   return PrepareHifi(context, node);
 #else
-  return SoftmaxPrepare(context, node);
-#endif  // defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
+  TF_LITE_ENSURE_OK(context, SoftmaxPrepare(context, node));
+#if defined(VISION_P6)
+  TF_LITE_ENSURE_OK(context, SoftmaxPrepareVision(context, node));
+#endif
+  return kTfLiteOk;
+#endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
 }
 
 TfLiteStatus XtensaEvalSoftmaxInt8Int16(TfLiteContext* context,
@@ -115,7 +127,7 @@ TfLiteStatus XtensaEvalSoftmaxInt8Int16(TfLiteContext* context,
   TFLITE_DCHECK(node->user_data != nullptr);
 
   if (input->type == kTfLiteInt8 && output->type == kTfLiteInt16) {
-#if defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
+#if defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
     return EvalHifi(static_cast<XtensaSoftmaxOpData*>(node->user_data), input,
                     output, context);
 #else
@@ -126,23 +138,17 @@ TfLiteStatus XtensaEvalSoftmaxInt8Int16(TfLiteContext* context,
         tflite::micro::GetTensorShape(output),
         tflite::micro::GetTensorData<int16_t>(output));
     return kTfLiteOk;
-#endif  // defined(HIFI4) || defined(HIFI4_INTERNAL) || defined(HIFI5)
+#endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
   } else {
-    TF_LITE_KERNEL_LOG(context, "Type %s (%d) not supported.",
-                       TfLiteTypeGetName(input->type), input->type);
+    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+                input->type);
     return kTfLiteError;
   }
 }
 
-TfLiteRegistration Register_SOFTMAX_INT8_INT16() {
-  return {/*init=*/XtensaInitSoftmax,
-          /*free=*/nullptr,
-          /*prepare=*/XtensaPrepareSoftmax,
-          /*invoke=*/XtensaEvalSoftmaxInt8Int16,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+TFLMRegistration Register_SOFTMAX_INT8_INT16() {
+  return tflite::micro::RegisterOp(XtensaInitSoftmax, XtensaPrepareSoftmax,
+                                   XtensaEvalSoftmaxInt8Int16);
 }
 
 }  // namespace tflite

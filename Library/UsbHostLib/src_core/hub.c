@@ -22,7 +22,12 @@
 //#define HUB_DBGMSG     printf
 #define HUB_DBGMSG(...)
 
-static HUB_DEV_T  g_hub_dev[MAX_HUB_DEVICE];
+#if (NVT_DCACHE_ON == 1)
+    /* Hub device arrary are placed in a non-cacheable region */
+    NVT_NONCACHEABLE static HUB_DEV_T  g_hub_dev[MAX_HUB_DEVICE];
+#else
+    static HUB_DEV_T  g_hub_dev[MAX_HUB_DEVICE];
+#endif
 
 static int do_port_reset(HUB_DEV_T *hub, int port);
 

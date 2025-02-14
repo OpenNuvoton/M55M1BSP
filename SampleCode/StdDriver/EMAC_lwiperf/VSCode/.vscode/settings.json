@@ -1,0 +1,23 @@
+{
+    "cmsis-csolution.actions": [
+        {
+            "path": "EMAC_lwiperf.csolution.yml",
+            "target": "ARMCLANG",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        },
+        {
+            "path": "EMAC_lwiperf.csolution.yml",
+            "target": "GNUC",
+            "config": {
+                "run": "Flash Device",
+                "debug": "Embedded Debug"
+            }
+        }
+    ],
+    "clangd.arguments": [
+        "--compile-commands-dir=z:\\lv_port_nuvoton\\bsp\\m55m1\\SampleCode\\StdDriver\\EMAC_lwiperf\\VSCode\\out\\EMAC_lwiperf\\ARMCLANG\\Release"
+    ]
+}

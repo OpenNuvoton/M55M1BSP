@@ -16,127 +16,6 @@
 volatile uint32_t  g_tick_cnt;
 
 extern int ed25519_test();
-int data_compare(uint8_t *answer, uint8_t *cmp_data, int len)
-{
-    int  i, err;
-
-    err = 0;
-
-    for (i = 0; i < len; i++)
-    {
-        if (answer[i] != cmp_data[i])
-        {
-            if (err == 0)
-                printf("Data compare error dump:\n");
-
-            printf("[%d]: Answer %02x ! %02x\n", i, answer[i], cmp_data[i]);
-
-            if (err++ > 5)
-                break;
-
-        }
-    }
-
-    if (err)
-    {
-        printf("Answer dump ==>\n");
-        dump_buff_hex(answer, len);
-        printf("Wring data dump ==>\n");
-        dump_buff_hex(cmp_data, len);
-
-        //chacha_dump();
-        while (1);
-    }
-
-    printf("PASS.\n");
-    return 0;
-}
-
-
-void do_swap(uint8_t *buff, int len)
-{
-    int       i;
-    uint8_t   val8;
-
-    len = (len + 3) & 0xfffffffc;
-
-    for (i = 0; i < len; i += 4)
-    {
-        val8 = buff[i];
-        buff[i] = buff[i + 3];
-        buff[i + 3] = val8;
-        val8 = buff[i + 1];
-        buff[i + 1] = buff[i + 2];
-        buff[i + 2] = val8;
-    }
-}
-
-void do_swap_to(uint8_t *out, uint8_t *buff, int len)
-{
-    int       i;
-
-    for (i = 0; i < len; i += 4)
-    {
-        out[i]   = buff[i + 3];
-        out[i + 1] = buff[i + 2];
-        out[i + 2] = buff[i + 1];
-        out[i + 3] = buff[i];
-    }
-}
-
-uint64_t EL0_GetCurrentPhysicalValue(void)
-{
-    return 100;/*Dummy Implementation*/
-}
-
-
-static volatile uint64_t  _start_time = 0;
-static volatile int  g_PRNG_done;
-extern volatile int  g_CHAPOLY_done;
-
-void random_gen_mass(uint8_t *buff, int count)
-{
-    uint32_t    *prng_data = (uint32_t *)((uint64_t)CRYPTO_BASE + 0x10);
-    int   clen;
-
-    while (count > 0)
-    {
-
-        /* Trigger PRNG to generate 32 bytes random data */
-        g_PRNG_done = 0;
-        CRYPTO->PRNG_CTL = (PRNG_KEY_SIZE_256 << CRYPTO_PRNG_CTL_KEYSZ_Pos) | CRYPTO_PRNG_CTL_START_Msk;
-
-        while (!g_PRNG_done);
-
-        if (count >= 32)
-            clen = 32;
-        else
-            clen = count;
-
-        memcpy(buff, prng_data, clen);
-
-        buff += clen;
-        count -= clen;
-    }
-}
-
-int comapre_hex_dump_err(uint8_t *answer, uint8_t *compare, int len, int err_max)
-{
-    int  err = 0, k;
-
-    for (k = 0; k < len; k++)
-    {
-        if (answer[k] != compare[k])
-        {
-            printf("%d: 0x%02x (Ans) - 0x%02x (Dat)\n", k, answer[k], compare[k]);
-
-            if (err++ > err_max)
-                break;
-        }
-    }
-
-    return err;
-}
 
 void SYS_Init(void)
 {
@@ -158,8 +37,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);

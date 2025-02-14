@@ -33,7 +33,7 @@
           <SLE66CMisc></SLE66CMisc>
           <SLE66AMisc></SLE66AMisc>
           <SLE66LinkerMisc></SLE66LinkerMisc>
-          <SFDFile></SFDFile>
+          <SFDFile>$$Device:M55M1H2LJAE$SVD\Nuvoton\M55M1.svd</SFDFile>
           <bCustSvd>0</bCustSvd>
           <UseEnv>0</UseEnv>
           <BinPath></BinPath>
@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\StdDriver\inc;..\..\common\inc;..\</IncludePath>
+              <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\StdDriver\inc;..\</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>

@@ -42,11 +42,12 @@ NVT_ITCM void CANFD00_IRQHandler(void)
 void CANFD0_TEST_HANDLE(void)
 {
     printf("IR =0x%08X \n", CANFD0->IR);
-    /*Clear the Interrupt flag */
+    /* Clear the Interrupt flag */
     CANFD_ClearStatusFlag(CANFD0, CANFD_IR_TOO_Msk | CANFD_IR_RF0N_Msk);
     CANFD_ReadRxFifoMsg(CANFD0, 0, &g_sRxMsgFrame);
     g_u8RxFifo0CompleteFlag = 1;
 }
+
 
 void SYS_Init(void)
 {
@@ -66,8 +67,8 @@ void SYS_Init(void)
     /* Waiting for External RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -75,16 +76,17 @@ void SYS_Init(void)
 
     /* Select CAN FD0 clock source is APLL0/2 */
     CLK_SetModuleClock(CANFD0_MODULE, CLK_CANFDSEL_CANFD0SEL_APLL0_DIV2, CLK_CANFDDIV_CANFD0DIV(1));
+
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
-
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -94,17 +96,17 @@ void CAN_TxRx_Test(CANFD_FD_MSG_T *psTxMsg, E_CANFD_ID_TYPE eFrameIdType, uint32
 {
     uint8_t u8Cnt;
 
-    /*Set the ID Number*/
+    /* Set the ID Number */
     psTxMsg->u32Id = u32Id;
-    /*Set the ID Type*/
+    /* Set the ID Type */
     psTxMsg->eIdType = eFrameIdType;
-    /*Set the frame type*/
+    /* Set the frame type */
     psTxMsg->eFrmType = eCANFD_DATA_FRM;
-    /*Set FD frame format attribute */
+    /* Set FD frame format attribute */
     psTxMsg->bFDFormat = 0;
-    /*Set the bitrate switch attribute*/
+    /* Set the bitrate switch attribute */
     psTxMsg->bBitRateSwitch = 0;
-    /*Set data length*/
+    /* Set data length */
     psTxMsg->u32DLC = u8Len;
 
     for (u8Cnt = 0; u8Cnt < psTxMsg->u32DLC; u8Cnt++) psTxMsg->au8Data[u8Cnt] = u8Cnt;
@@ -122,7 +124,7 @@ void CAN_TxRx_Test(CANFD_FD_MSG_T *psTxMsg, E_CANFD_ID_TYPE eFrameIdType, uint32
         printf("Failed to transmit message\n");
     }
 
-    /*Wait the Rx FIFO0 received message*/
+    /* Wait the Rx FIFO0 received message */
     while (!g_u8RxFifo0CompleteFlag)
     {
     }
@@ -145,16 +147,17 @@ void CAN_TxRx_Test(CANFD_FD_MSG_T *psTxMsg, E_CANFD_ID_TYPE eFrameIdType, uint32
 void CAN_Loopback(void)
 {
     uint8_t u8Loop;
+
     CANFD_FD_T sCANFD_Config;
-    /*Use defined configuration */
+    /* Use defined configuration */
     sCANFD_Config.sElemSize.u32UserDef = 0;
-    /*Get the CAN configuration value*/
+    /* Get the CAN configuration value */
     CANFD_GetDefaultConfig(&sCANFD_Config, CANFD_OP_CAN_MODE);
-    /*Enable internal loopback mode*/
+    /* Enable internal loopback mode */
     sCANFD_Config.sBtConfig.bEnableLoopBack = TRUE;
     sCANFD_Config.sBtConfig.sNormBitRate.u32BitRate = 1000000;
     sCANFD_Config.sBtConfig.sDataBitRate.u32BitRate = 0;
-    /*Open the CAN FD feature*/
+    /* Open the CAN FD feature */
     CANFD_Open(CANFD0, &sCANFD_Config);
 
     /* receive 0x110~0x11F in CAN rx fifo0 buffer by setting mask 0 */
@@ -170,13 +173,14 @@ void CAN_Loopback(void)
     CANFD_SetXIDFltr(CANFD0, 1, CANFD_RX_FIFO0_EXT_MASK_LOW(0x3333), CANFD_RX_FIFO0_EXT_MASK_HIGH(0x1FFFFFFF));
     /* receive 0x44444 (29-bit id) in CAN rx fifo0 buffer by setting mask 2 */
     CANFD_SetXIDFltr(CANFD0, 2, CANFD_RX_FIFO0_EXT_MASK_LOW(0x44444), CANFD_RX_FIFO0_EXT_MASK_HIGH(0x1FFFFFFF));
-    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo0)*/
+
+    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo0) */
     CANFD_SetGFC(CANFD0, eCANFD_REJ_NON_MATCH_FRM, eCANFD_REJ_NON_MATCH_FRM, 1, 1);
     /* Enable RX fifo0 new message interrupt using interrupt line 0. */
     CANFD_EnableInt(CANFD0, (CANFD_IE_TOOE_Msk | CANFD_IE_RF0NE_Msk), 0, 0, 0);
-    /* Enable CANFD0 IRQ00 Handler*/
+    /* Enable CANFD0 IRQ00 Handler */
     NVIC_EnableIRQ(CANFD00_IRQn);
-    /* CAN FD0 Run to Normal mode  */
+    /* CAN FD0 Run to Normal mode */
     CANFD_RunToNormal(CANFD0, TRUE);
 
     for (u8Loop = 1 ; u8Loop < 8; u8Loop++)
@@ -213,13 +217,16 @@ int32_t main(void)
 
     /* Init Debug UART for printf */
     InitDebugUart();
+
     /* Lock protected registers */
     SYS_LockReg();
 
     /* print a note to terminal */
     printf("\n CAN Mode Loopback example\r\n");
+
     /* CAN Loopback Test */
     CAN_Loopback();
+
     printf("\n CAN Mode Loopback Test Done\r\n");
 
     while (1) {}

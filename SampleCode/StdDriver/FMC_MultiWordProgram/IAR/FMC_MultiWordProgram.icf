@@ -17,7 +17,7 @@ define symbol __ICFEDIT_size_cstack__ = 0x00000800;
 define symbol __ICFEDIT_size_heap__   = 0x00000800;
 /**** End of ICF editor section. ###ICF###*/
 
-define symbol ITCM_start = 0x00000010;
+define symbol ITCM_start = 0x00000000;
 define symbol ITCM_end   = 0x0000FFFF;
 define symbol DTCM_start = 0x20000000;
 define symbol DTCM_end   = 0x2001FFFF;

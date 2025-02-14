@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@ limitations under the License.
 
 #include <string.h>
 
+#include "python/tflite_micro/python_ops_resolver.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/integration_tests/seanet/quantize/quantize0_golden_int16_test_data.h"
 #include "tensorflow/lite/micro/integration_tests/seanet/quantize/quantize0_input0_int32_test_data.h"
 #include "tensorflow/lite/micro/integration_tests/seanet/quantize/quantize0_model_data.h"
 #include "tensorflow/lite/micro/integration_tests/seanet/quantize/quantize1_golden_int32_test_data.h"
 #include "tensorflow/lite/micro/integration_tests/seanet/quantize/quantize1_input0_int16_test_data.h"
 #include "tensorflow/lite/micro/integration_tests/seanet/quantize/quantize1_model_data.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_profiler.h"
 #include "tensorflow/lite/micro/recording_micro_allocator.h"
 #include "tensorflow/lite/micro/recording_micro_interpreter.h"
@@ -32,6 +32,7 @@ limitations under the License.
 
 constexpr size_t kTensorArenaSize = 1024 * 100;
 uint8_t tensor_arena[kTensorArenaSize];
+bool print_log = false;
 
 namespace tflite {
 namespace micro {
@@ -43,11 +44,10 @@ void RunModel(const uint8_t* model, const inputT* input0,
               const uint32_t golden_size, const char* name) {
   InitializeTarget();
   MicroProfiler profiler;
-  AllOpsResolver op_resolver;
+  PythonOpsResolver op_resolver;
 
   MicroInterpreter interpreter(GetModel(model), op_resolver, tensor_arena,
-                               kTensorArenaSize, GetMicroErrorReporter(),
-                               nullptr, &profiler);
+                               kTensorArenaSize, nullptr, &profiler);
   interpreter.AllocateTensors();
   TfLiteTensor* input_tensor0 = interpreter.input(0);
   TF_LITE_MICRO_EXPECT_EQ(input_tensor0->bytes, input0_size * sizeof(inputT));
@@ -56,12 +56,14 @@ void RunModel(const uint8_t* model, const inputT* input0,
     TF_LITE_MICRO_EXPECT(false);
     return;
   }
-  profiler.Log();
+  if (print_log == true) {
+    profiler.Log();
+  }
   MicroPrintf("");
 
   TfLiteTensor* output_tensor = interpreter.output(0);
   TF_LITE_MICRO_EXPECT_EQ(output_tensor->bytes, golden_size * sizeof(outputT));
-  outputT* output = GetTensorData<outputT>(output_tensor);
+  outputT* output = ::tflite::GetTensorData<outputT>(output_tensor);
   for (uint32_t i = 0; i < golden_size; i++) {
     // TODO(b/205046520): Better understand why TfLite and TFLM can sometimes be
     // off by 1.
@@ -74,6 +76,15 @@ void RunModel(const uint8_t* model, const inputT* input0,
 }  // namespace tflite
 
 TF_LITE_MICRO_TESTS_BEGIN
+
+if (argc > 2) {
+  MicroPrintf("wrong number of command line args!\n");
+  MicroPrintf("Correct way to run the test is :\n");
+  MicroPrintf("if you want to print logs -> ./{PATH TO BINARY} print_logs\n");
+  MicroPrintf("if don't want to print logs -> ./{PATH TO BINARY}\n");
+} else if ((argc == 2) && (strcmp(argv[1], "print_logs") == 0)) {
+  print_log = true;
+}
 
 TF_LITE_MICRO_TEST(quantize0_test) {
   tflite::micro::RunModel(

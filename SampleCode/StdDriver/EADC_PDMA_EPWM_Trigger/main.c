@@ -14,7 +14,12 @@
 /*----------------------------------------------------------------------*/
 volatile uint32_t g_u32AdcIntFlag;
 volatile uint32_t g_u32IsTestOver = 0;
-int16_t  g_i32ConversionData[6] = {0};
+#if (NVT_DCACHE_ON == 1)
+/* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+int16_t g_i32ConversionData[DCACHE_ALIGN_LINE_SIZE(6)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+#else
+int16_t g_i32ConversionData[6] __attribute__((aligned)) = {0};
+#endif
 uint32_t g_u32SampleModuleNum = 0;
 
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
@@ -28,7 +33,6 @@ NVT_ITCM void EADC00_IRQHandler(void)
 {
     g_u32AdcIntFlag = 1;
     EADC_CLR_INT_FLAG(EADC0, EADC_STATUS2_ADIF0_Msk);      /* Clear the A/D ADINT0 interrupt flag */
-
 }
 
 NVT_ITCM void PDMA0_IRQHandler(void)
@@ -51,6 +55,8 @@ NVT_ITCM void PDMA0_IRQHandler(void)
     }
     else
         printf("unknown interrupt !!\n");
+
+    __NOP();
 }
 
 void SYS_Init(void)
@@ -59,31 +65,15 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
     SystemCoreClockUpdate();
 
-    /* Workaround(TESTCHIP_ONLY)  */
-    /* If the ADC clock is divided, the conversion result value will deviate, so only the PCLK0 clock can be divided. */
-    /* PCLK0 clock divider 15 */
-    CLK_SET_PCLK0DIV(15);
     /* Enable EADC peripheral clock */
-    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_PCLK0, CLK_EADCDIV_EADC0DIV(1));
+    CLK_SetModuleClock(EADC0_MODULE, CLK_EADCSEL_EADC0SEL_PCLK0, CLK_EADCDIV_EADC0DIV(15));
 
     /* Enable EADC module clock */
     CLK_EnableModuleClock(EADC0_MODULE);
@@ -123,8 +113,6 @@ void SYS_Init(void)
     SET_EADC0_CH9_PB9();
     /* Disable the PB.8 - PB.9 digital input path to avoid the leakage current. */
     GPIO_DISABLE_DIGITAL_PATH(PB, BIT8 | BIT9);
-
-
 }
 
 
@@ -198,6 +186,10 @@ void EADC_FunctionTest()
 
     while (1)
     {
+#if (NVT_DCACHE_ON == 1)
+        /* Clean the data cache for the destination buffer of EADC PDMA RX channel */
+        SCB_InvalidateDCache_by_Addr(&g_i32ConversionData, sizeof(g_i32ConversionData));
+#endif
         /* reload PDMA configuration for next transmission */
         ReloadPDMA();
 

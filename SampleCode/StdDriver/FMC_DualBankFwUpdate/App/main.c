@@ -56,8 +56,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -78,19 +78,26 @@ static void SYS_Init(void)
 
 void StartTimer0(void)
 {
-    CLK_EnableModuleClock(TMR0_MODULE);     /* Enable TIMER0 clock          */
-    CLK_SetModuleClock(TMR0_MODULE, CLK_TMRSEL_TMR0SEL_HXT, MODULE_NoMsk);
-    TIMER0->CTL = 0;                        /* Disable timer                */
-    TIMER0->INTSTS = (TIMER_INTSTS_TWKF_Msk | TIMER_INTSTS_TIF_Msk);  /* Clear interrupt status */
-    TIMER0->CMP = 0xFFFFFE;                 /* Set maximum time             */
-    TIMER0->CNT = 0;                        /* Clear timer counter          */
-    /* Start TIMER0 */
-    TIMER0->CTL = (11 << TIMER_CTL_PSC_Pos) | TIMER_ONESHOT_MODE | TIMER_CTL_CNTEN_Msk;
-}
+    volatile int32_t i32Timeout = 1000;
 
-uint32_t  GetTimer0Counter(void)
-{
-    return (TIMER0->CNT & TIMER_CNT_CNT_Msk);
+    CLK_EnableModuleClock(TMR0_MODULE);     /* Enable TIMER0 clock          */
+    CLK_SetModuleClock(TMR0_MODULE, CLK_TMRSEL_TMR0SEL_HIRC, MODULE_NoMsk);
+
+    TIMER_Stop(TIMER0);
+    TIMER_ClearIntFlag(TIMER0);
+    TIMER_SET_CMP_VALUE(TIMER0, 0xFFFFFF);
+    TIMER_SET_PRESCALE_VALUE(TIMER0, ((__HIRC / 1000000) << TIMER_CTL_PSC_Pos));
+    TIMER_ResetCounter(TIMER0);
+    TIMER_Start(TIMER0);
+
+    while (TIMER_IS_ACTIVE(TIMER0) == 0)
+    {
+        if (i32Timeout-- < 0)
+        {
+            printf("Timer0 active timeout !\n");
+            break;
+        }
+    }
 }
 
 int main()
@@ -123,8 +130,12 @@ int main()
         printf("+------------------------+\n");
 
         u32ExecBank = (uint32_t)((FMC->ISPSTS & FMC_ISPSTS_FBS_Msk) >> FMC_ISPSTS_FBS_Pos);
-        printf("\n BANK%d APP processing \n", u32ExecBank);
-        printf("\n Download new FW ? [y/n]\n");
+#ifdef NEW_APP
+        printf("\n [New Firmware] BANK%d APP processing ...\n", u32ExecBank);
+#else
+        printf("\n BANK%d APP processing ...\n", u32ExecBank);
+#endif
+        printf("\n Download new FW to Bank%d ? [y/n]\n", u32ExecBank ^ 1);
         u32ch = (uint32_t)getchar();
 
         if (u32ch == 'y')

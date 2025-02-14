@@ -21,8 +21,16 @@
 #define I3C0_MID       (0x8123UL)
 #define I3C0_PID       (0xA13573C0UL)
 
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    uint32_t g_RxBuf[DCACHE_ALIGN_LINE_SIZE(I3C_DEVICE_RX_BUF_CNT * 4) / 4] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint32_t g_TxBuf[DCACHE_ALIGN_LINE_SIZE(I3C_DEVICE_TX_BUF_CNT * 4) / 4] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    __attribute__((aligned)) static uint32_t g_RxBuf[I3C_DEVICE_RX_BUF_CNT];
+    __attribute__((aligned)) static uint32_t g_TxBuf[I3C_DEVICE_TX_BUF_CNT];
+#endif
+
 volatile uint32_t   g_RespQ[I3C_DEVICE_RESP_QUEUE_CNT];
-volatile uint32_t   g_RxBuf[I3C_DEVICE_RX_BUF_CNT], g_TxBuf[I3C_DEVICE_RX_BUF_CNT];
 volatile uint32_t   g_u32IntSelMask = 0, g_u32IntOccurredMask = 0;
 volatile uint32_t   g_u32RespStatus = I3C_STS_NO_ERR;
 
@@ -200,7 +208,7 @@ int32_t I3C_ProcessRespError(I3C_T *i3c, uint32_t u32RespStatus)
 }
 
 /**
-  * @brief  The I3C0 default IRQ, declared in startup_NUC1263.s.
+  * @brief  The I3C0 default IRQ, declared in startup_M55M1.c.
   */
 NVT_ITCM void I3C0_IRQHandler(void)
 {
@@ -307,24 +315,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -332,8 +325,6 @@ static void SYS_Init(void)
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
-    /* Enable PLL1 100MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_100MHZ, CLK_APLL1_SELECT);
     /* Enable peripheral clock */
     CLK_EnableModuleClock(I3C0_MODULE);
     CLK_EnableModuleClock(PDMA0_MODULE);
@@ -341,9 +332,15 @@ static void SYS_Init(void)
     SET_I3C0_SCL_PB1();
     SET_I3C0_SDA_PB0();
     SYS_ResetModule(SYS_I3C0RST);
+    /* Enable GPIO Module clock */
+    CLK_EnableModuleClock(GPIOB_MODULE);
+    /* Set SCL slew rate to GPIO_SLEWCTL_FAST0, SDA slew rate to GPIO_SLEWCTL_HIGH */
+    GPIO_SetSlewCtl(PB, BIT1, GPIO_SLEWCTL_FAST0);
+    GPIO_SetSlewCtl(PB, BIT0, GPIO_SLEWCTL_HIGH);
     /* Lock protected registers */
     SYS_LockReg();
 }
+
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Main Function                                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -414,6 +411,13 @@ int32_t main(void)
                             /* Master write request */
                             u16Len = I3C_GET_RESP_DATA_LEN(g_RespQ[qn]);
                             printf("Slave receives %d-bytes:\n\thex: ", u16Len);
+#if (NVT_DCACHE_ON == 1)
+                            /*
+                               Invalidate the CPU Data cache after the DMA transfer.
+                               As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+                            */
+                            SCB_InvalidateDCache_by_Addr(g_RxBuf, sizeof(g_RxBuf));
+#endif  // (NVT_DCACHE_ON == 1)
                             /* Get Rx data by DMA */
                             pu8Data = (uint8_t *)(&g_RxBuf[0]);
 
@@ -425,6 +429,13 @@ int32_t main(void)
                             printf("\n\n");
                             /* Set CmdQ and response data for a Master read request */
                             memcpy((uint8_t *)(&g_TxBuf[0]), (uint8_t *)(&g_RxBuf[0]), u16Len);
+#if (NVT_DCACHE_ON == 1)
+                            /*
+                                Clean the CPU Data cache before starting the DMA transfer.
+                                This guarantees that the source buffer will be up to date before starting the transfer.
+                            */
+                            SCB_CleanDCache_by_Addr(g_TxBuf, sizeof(g_TxBuf));
+#endif  // (NVT_DCACHE_ON == 1)
                             u8TID = (pu8Data[0] % 8);
                             iErrCode = I3C_SetCmdQueueAndData(I3C0, u8TID, NULL, u16Len);
 

@@ -30,7 +30,6 @@ extern __NO_RETURN void __PROGRAM_START(void);
 uint32_t g_u32ReturnAddr   = 0;
 uint32_t g_bReturnToAddr = FALSE;
 __NO_RETURN void Reset_Handler(void);
-__NO_RETURN void Reset_Handler_Main(void);
 void Default_Handler(void);
 
 /*----------------------------------------------------------------------------
@@ -94,7 +93,6 @@ void EQEI0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void EQEI1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void EQEI2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void EQEI3_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void ETI_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 
 void GDMACH0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void GDMACH1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
@@ -144,7 +142,11 @@ void RTCTAMPER_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SC0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SC1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SC2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void SCU_IRQHandler(void) __attribute__((weak));
+#if defined (__ARM_FEATURE_CMSE) &&  (__ARM_FEATURE_CMSE == 3U)
+    void SCU_IRQHandler(void);
+#else
+    void SCU_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+#endif
 void SDH0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SDH1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SPI0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
@@ -398,7 +400,7 @@ const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[] NVT_DTCM_VTOR =
     AWF_IRQHandler,                           /*!< 149 AWF Interrupt Handler                            */
 
     UTCPD_IRQHandler,                         /*!< 150 UTCPD Interrupt Handler                          */
-    ETI_IRQHandler,                           /*!< 151 ETI Interrupt Handler                            */
+    0,                                        /*!<     Reserved                                         */
     0,                                        /*!<     Reserved                                         */
     0,                                        /*!<     Reserved                                         */
     0,                                        /*!<     Reserved                                         */
@@ -418,9 +420,32 @@ const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[] NVT_DTCM_VTOR =
 
 void SYS_Init(void);
 
+/* If some peripherals (e.g. Hyper RAM) must be initialized before startup routine
+ *   user can implement its own Reset_Handler_PreInit to do early initialization.
+ *
+ * All code in Reset_Handler_PreInit must have the same load address and execution address;
+ * otherwise, users need to provide their own implementation of Reset_Handler_PreInit.
+ */
+__WEAK void Reset_Handler_PreInit(void)
+{
+    /* Prevent using C runtime library functions (e.g. printf)
+     * or global variables in this function.
+     */
+#ifndef NVT_CMSE_NON_SECURE
+    /* Clock Setting is only available in secure mode */
+    /* Enable the default APLL0 frequency and switch the SCLK clock source to APLL0. */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, __HSI);
+
+    /* Update System Core Clock */
+    SystemCoreClockUpdate();
+#endif
+}
+
 /*----------------------------------------------------------------------------
   Reset Handler called on controller reset
  *----------------------------------------------------------------------------*/
+static int32_t i32TimeOutCnt = __HIRC;
+
 __NO_RETURN void Reset_Handler(void)
 {
     // Copy __set_PSP/__set_MSPLIM/__set_PSPLIM from cmsis_armclang.h
@@ -428,14 +453,8 @@ __NO_RETURN void Reset_Handler(void)
     __ASM volatile("MSR msplim, %0" : : "r"((uint32_t)(&__STACK_LIMIT)));
     __ASM volatile("MSR psplim, %0" : : "r"((uint32_t)(&__STACK_LIMIT)));
 
-    // Move other code to Reset_Handler_Main to prevent compiler generate stack access code.
-    // Move stack pointer before setting MSPLIM might cause hard fault due to MSPLIM violation.
-    Reset_Handler_Main();
-}
-
-__NO_RETURN void Reset_Handler_Main(void)
-{
-    if ((__PC() & NS_OFFSET) == 0)
+    // Enable SRAM1/2 functions are only available in secure mode
+    if (SCU_IS_CPU_NS(SCU_NS) == 0)
     {
         // Unlock protected registers
         do
@@ -445,30 +464,51 @@ __NO_RETURN void Reset_Handler_Main(void)
             SYS->REGLCTL = 0x88UL;
         } while (SYS->REGLCTL == 0UL);
 
-        // Switch SRAM0 to normal power mode
-        if (PMC->SYSRB0PC != 0)
-        {
-            PMC->SYSRB0PC = 0;
-
-            while (PMC->SYSRB0PC & PMC_SYSRB0PC_PCBUSY_Msk)
-                ;
-        }
-
-        // Enable SRAM0 clock
-        CLK->SRAMCTL |= CLK_SRAMCTL_SRAM0CKEN_Msk;
-
         // Switch SRAM1 to normal power mode
         if (PMC->SYSRB1PC != 0)
         {
             PMC->SYSRB1PC = 0;
-
-            while (PMC->SYSRB1PC & PMC_SYSRB1PC_PCBUSY_Msk)
-                ;
         }
 
-        // Enable SRAM1 clock
-        CLK->SRAMCTL |= CLK_SRAMCTL_SRAM1CKEN_Msk;
+        // Switch SRAM2 to normal power mode
+        if (PMC->SYSRB2PC != 0)
+        {
+            PMC->SYSRB2PC = 0;
+        }
+
+        // Wait SRAM1/2 power mode change finish
+        while (1)
+        {
+            if ((PMC->SYSRB1PC & PMC_SYSRB1PC_PCBUSY_Msk) == 0 &&
+                    (PMC->SYSRB2PC & PMC_SYSRB2PC_PCBUSY_Msk) == 0)
+                break;
+
+            if (i32TimeOutCnt-- == 0)
+                break;
+        }
+
+        // Enable SRAM1/2 clock
+        CLK->SRAMCTL |= (CLK_SRAMCTL_SRAM1CKEN_Msk | CLK_SRAMCTL_SRAM2CKEN_Msk);
     }
+
+#if (defined (__FPU_USED) && (__FPU_USED == 1U)) || \
+    (defined (__ARM_FEATURE_MVE) && (__ARM_FEATURE_MVE > 0U))
+    SCB->CPACR |= ((3U << 10U * 2U) |         /* Enable CP10 Full Access */
+                   (3U << 11U * 2U));         /* Enable CP11 Full Access */
+
+    /* Set low-power state for PDEPU                */
+    /*  0b00  | ON, PDEPU is not in low-power state */
+    /*  0b01  | ON, but the clock is off            */
+    /*  0b10  | RET(ention)                         */
+    /*  0b11  | OFF                                 */
+
+    /* Clear ELPSTATE, value is 0b11 on Cold reset */
+    PWRMODCTL->CPDLPSTATE &= ~(PWRMODCTL_CPDLPSTATE_ELPSTATE_Msk << PWRMODCTL_CPDLPSTATE_ELPSTATE_Pos);
+
+    /* Favor best FP/MVE performance by default, avoid EPU switch-ON delays */
+    /* PDEPU ON, Clock OFF */
+    PWRMODCTL->CPDLPSTATE |= 0x1 << PWRMODCTL_CPDLPSTATE_ELPSTATE_Pos;
+#endif
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
     __TZ_set_STACKSEAL_S((uint32_t *)(&__STACK_SEAL));
@@ -477,14 +517,17 @@ __NO_RETURN void Reset_Handler_Main(void)
     SCB_InvalidateICache();
     SCB_EnableICache();
 
-#ifdef NVT_DCACHE_ON
+#if (NVT_DCACHE_ON == 1)
     SCB_InvalidateDCache();
     SCB_EnableDCache();
-#endif  // NVT_DCACHE_ON
+#endif  // (NVT_DCACHE_ON == 1)
 
     if (PMC->INTSTS & PMC_INTSTS_PDWKIF_Msk)
     {
         /* Power-down wake-up is set => Try to return to address before power-down */
+
+        /* Clear all wake-up flag */
+        PMC->INTSTS |= PMC_INTSTS_CLRWK_Msk;
 
         /* Clear return flag */
         g_bReturnToAddr = FALSE;
@@ -495,10 +538,9 @@ __NO_RETURN void Reset_Handler_Main(void)
     }
     else
     {
-        /* Return flag is not set => Normal boot */
+        Reset_Handler_PreInit();
         __PROGRAM_START();      // Enter PreMain (C library entry point)
     }
-
 
     /* To avoid warning: function declared 'noreturn' should not return */
     while (1) ;
@@ -518,6 +560,11 @@ void SPDMode_WakeupAndReturn(uint32_t bReturn)
 
         /* Save return address in g_u32ReturnAddr to return after reset */
         __ASM volatile("mov %0, lr\n" : "=r"(g_u32ReturnAddr));
+
+#if (NVT_DCACHE_ON == 1)
+        /* Clear the data cache and write back data to the main memory */
+        SCB_CleanDCache();
+#endif
 
         printf("[Before Power-down] LR: 0x%08X\n", g_u32ReturnAddr);
         g_bReturnToAddr = TRUE;
@@ -557,6 +604,7 @@ void SPDMode_WakeupAndReturn(uint32_t bReturn)
         printf("Continue execution ...\n");
     }
 }
+
 /*----------------------------------------------------------------------------
   Hard Fault Handler
  *----------------------------------------------------------------------------*/
@@ -576,7 +624,7 @@ struct StackFrame
 
 void HardFault_Handler(void)
 {
-    uint32_t u32IRQ;
+    uint32_t u32IRQ = 0;
     struct StackFrame *psStackFrame = NULL;
 
     (void)u32IRQ;

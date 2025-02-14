@@ -14,8 +14,6 @@
 /*--------------------------------------------------------------------------*/
 void SYS_Init(void)
 {
-    uint32_t volatile i;
-
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
@@ -25,14 +23,10 @@ void SYS_Init(void)
 
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
 
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 192MHz clock */
+    /* The system frequency needs to be set to a multiple of the 48Khz sampling rate, for example, it can be set to 192 MHz.*/
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_192MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -53,18 +47,19 @@ void SYS_Init(void)
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 
-    /* Enable HSOTG0_ module clock */
+    /* Enable HSOTG module clock */
     CLK_EnableModuleClock(HSOTG0_MODULE);
 
-    SYS->USBPHY &= ~SYS_USBPHY_HSUSBROLE_Msk;    /* select HSUSBD */
-    /* Enable USB PHY */
-    SYS->USBPHY = (SYS->USBPHY & ~(SYS_USBPHY_HSUSBROLE_Msk | SYS_USBPHY_HSUSBACT_Msk)) | SYS_USBPHY_HSOTGPHYEN_Msk;
+    /* Select HSOTG PHY Reference clock frequency which is from HXT */
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
-    for (i = 0; i < 0x1000; i++);  // delay > 10 us
+    /* Set HSUSB role to HSUSBD */
+    SET_HSUSBDROLE();
 
-    SYS->USBPHY |= SYS_USBPHY_HSUSBACT_Msk;
+    /* Enable HSUSB PHY */
+    SYS_Enable_HSUSB_PHY();
 
-    /* Enable IP clock */
+    /* Enable HSUSBD peripheral clock */
     CLK_EnableModuleClock(HSUSBD0_MODULE);
 
     /* Enable TIMER0 module clock */
@@ -151,9 +146,9 @@ int32_t main(void)
     I2S_Open(I2S0, I2S_MODE_SLAVE, 192000, I2S_DATABIT_16, I2S_STEREO, I2S_FORMAT_I2S);
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
 
     /* Set MCLK and enable MCLK */
     I2S_EnableMCLK(I2S0, 12000000);

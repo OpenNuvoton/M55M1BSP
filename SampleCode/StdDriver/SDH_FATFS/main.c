@@ -412,8 +412,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -502,9 +502,9 @@ void SYS_Init(void)
 /* the system does not support an RTC.                     */
 /* This function is not required in read-only cfg.         */
 
-unsigned long get_fattime(void)
+DWORD get_fattime(void)
 {
-    unsigned long tmr;
+    DWORD tmr;
 
     tmr = 0x00000;
 
@@ -700,8 +700,8 @@ int32_t main(void)
                         }
 
                         printf("FAT type = FAT%u\nBytes/Cluster = %lu\nNumber of FATs = %u\n"
-                               "Root DIR entries = %u\nSectors/FAT = %lu\nNumber of clusters = %lu\n"
-                               "FAT start (lba) = %lu\nDIR start (lba,cluster) = %lu\nData start (lba) = %lu\n\n...",
+                               "Root DIR entries = %u\nSectors/FAT = %u\nNumber of clusters = %u\n"
+                               "FAT start (lba) = %u\nDIR start (lba,cluster) = %u\nData start (lba) = %u\n\n...",
                                ft[fs->fs_type & 3], fs->csize * 512UL, fs->n_fats,
                                fs->n_rootdir, fs->fsize, fs->n_fatent - 2,
                                fs->fatbase, fs->dirbase, fs->database
@@ -719,8 +719,8 @@ int32_t main(void)
                             break;
                         }
 
-                        printf("\r%u files, %lu bytes.\n%u folders.\n"
-                               "%lu KB total disk space.\n%lu KB available.\n",
+                        printf("\r%u files, %u bytes.\n%u folders.\n"
+                               "%u KB total disk space.\n%lu KB available.\n",
                                acc_files, acc_size, acc_dirs,
                                (fs->n_fatent - 2) * (fs->csize / 2), p2 * (fs->csize / 2)
                               );
@@ -755,7 +755,7 @@ int32_t main(void)
                                 p1 += Finfo.fsize;
                             }
 
-                            printf("%c%c%c%c%c %d/%02d/%02d %02d:%02d    %9lu  %s",
+                            printf("%c%c%c%c%c %d/%02d/%02d %02d:%02d    %9u  %s",
                                    (Finfo.fattrib & AM_DIR) ? 'D' : '-',
                                    (Finfo.fattrib & AM_RDO) ? 'R' : '-',
                                    (Finfo.fattrib & AM_HID) ? 'H' : '-',
@@ -801,7 +801,7 @@ int32_t main(void)
                         put_rc(res);
 
                         if (res == FR_OK)
-                            printf("fptr=%lu(0x%lX)\n", file1.fptr, file1.fptr);
+                            printf("fptr=%u(0x%X)\n", file1.fptr, file1.fptr);
 
                         break;
 

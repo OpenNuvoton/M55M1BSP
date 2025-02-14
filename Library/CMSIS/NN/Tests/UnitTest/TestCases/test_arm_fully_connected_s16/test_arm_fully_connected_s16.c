@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2022 Arm Limited or its affiliates.
+ * SPDX-FileCopyrightText: Copyright 2010-2022 Arm Limited and/or its affiliates <open-source-office@arm.com>
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -27,8 +27,8 @@
 
 void fully_connected_int16_arm_fully_connected_s16(void)
 {
-    const arm_status expected = ARM_MATH_SUCCESS;
-    q15_t output[FULLY_CONNECTED_INT16_DST_SIZE] = {0};
+    const arm_cmsis_nn_status expected = ARM_CMSIS_NN_SUCCESS;
+    int16_t output[FULLY_CONNECTED_INT16_DST_SIZE] = {0};
 
     cmsis_nn_context ctx;
     cmsis_nn_fc_params fc_params;
@@ -38,10 +38,10 @@ void fully_connected_int16_arm_fully_connected_s16(void)
     cmsis_nn_dims bias_dims;
     cmsis_nn_dims output_dims;
 
-    const q63_t *bias_data = fully_connected_int16_biases;
-    const q7_t *kernel_data = fully_connected_int16_weights;
-    const q15_t *input_data = fully_connected_int16_input;
-    const q15_t *output_ref = fully_connected_int16_output_ref;
+    const int64_t *bias_data = fully_connected_int16_biases;
+    const int8_t *kernel_data = fully_connected_int16_weights;
+    const int16_t *input_data = fully_connected_int16_input;
+    const int16_t *output_ref = fully_connected_int16_output_ref;
     const int32_t output_ref_size = FULLY_CONNECTED_INT16_DST_SIZE;
 
     input_dims.n = FULLY_CONNECTED_INT16_INPUT_BATCHES;
@@ -68,27 +68,32 @@ void fully_connected_int16_arm_fully_connected_s16(void)
     ctx.buf = malloc(buf_size);
     ctx.size = buf_size;
 
-    arm_status result = arm_fully_connected_s16(&ctx,
-                                                &fc_params,
-                                                &quant_params,
-                                                &input_dims,
-                                                input_data,
-                                                &filter_dims,
-                                                kernel_data,
-                                                &bias_dims,
-                                                bias_data,
-                                                &output_dims,
-                                                output);
+    arm_cmsis_nn_status result = arm_fully_connected_s16(&ctx,
+                                                         &fc_params,
+                                                         &quant_params,
+                                                         &input_dims,
+                                                         input_data,
+                                                         &filter_dims,
+                                                         kernel_data,
+                                                         &bias_dims,
+                                                         bias_data,
+                                                         &output_dims,
+                                                         output);
 
-    free(ctx.buf);
+    if (ctx.buf)
+    {
+        // The caller is responsible to clear the scratch buffers for security reasons if applicable.
+        memset(ctx.buf, 0, buf_size);
+        free(ctx.buf);
+    }
     TEST_ASSERT_EQUAL(expected, result);
     TEST_ASSERT_TRUE(validate_s16(output, output_ref, output_ref_size));
 }
 
 void fully_connected_int16_big_arm_fully_connected_s16(void)
 {
-    const arm_status expected = ARM_MATH_SUCCESS;
-    q15_t output[FULLY_CONNECTED_INT16_BIG_DST_SIZE] = {0};
+    const arm_cmsis_nn_status expected = ARM_CMSIS_NN_SUCCESS;
+    int16_t output[FULLY_CONNECTED_INT16_BIG_DST_SIZE] = {0};
 
     cmsis_nn_context ctx;
     cmsis_nn_fc_params fc_params;
@@ -98,10 +103,10 @@ void fully_connected_int16_big_arm_fully_connected_s16(void)
     cmsis_nn_dims bias_dims;
     cmsis_nn_dims output_dims;
 
-    const q63_t *bias_data = fully_connected_int16_big_biases;
-    const q7_t *kernel_data = fully_connected_int16_big_weights;
-    const q15_t *input_data = fully_connected_int16_big_input;
-    const q15_t *output_ref = fully_connected_int16_big_output_ref;
+    const int64_t *bias_data = fully_connected_int16_big_biases;
+    const int8_t *kernel_data = fully_connected_int16_big_weights;
+    const int16_t *input_data = fully_connected_int16_big_input;
+    const int16_t *output_ref = fully_connected_int16_big_output_ref;
     const int32_t output_ref_size = FULLY_CONNECTED_INT16_BIG_DST_SIZE;
 
     input_dims.n = FULLY_CONNECTED_INT16_BIG_INPUT_BATCHES;
@@ -128,27 +133,31 @@ void fully_connected_int16_big_arm_fully_connected_s16(void)
     ctx.buf = malloc(buf_size);
     ctx.size = buf_size;
 
-    arm_status result = arm_fully_connected_s16(&ctx,
-                                                &fc_params,
-                                                &quant_params,
-                                                &input_dims,
-                                                input_data,
-                                                &filter_dims,
-                                                kernel_data,
-                                                &bias_dims,
-                                                bias_data,
-                                                &output_dims,
-                                                output);
+    arm_cmsis_nn_status result = arm_fully_connected_s16(&ctx,
+                                                         &fc_params,
+                                                         &quant_params,
+                                                         &input_dims,
+                                                         input_data,
+                                                         &filter_dims,
+                                                         kernel_data,
+                                                         &bias_dims,
+                                                         bias_data,
+                                                         &output_dims,
+                                                         output);
 
-    free(ctx.buf);
+    if (ctx.buf)
+    {
+        memset(ctx.buf, 0, buf_size);
+        free(ctx.buf);
+    }
     TEST_ASSERT_EQUAL(expected, result);
     TEST_ASSERT_TRUE(validate_s16(output, output_ref, output_ref_size));
 }
 
 void fc_int16_slow_arm_fully_connected_s16(void)
 {
-    const arm_status expected = ARM_MATH_SUCCESS;
-    q15_t output[FC_INT16_SLOW_DST_SIZE] = {0};
+    const arm_cmsis_nn_status expected = ARM_CMSIS_NN_SUCCESS;
+    int16_t output[FC_INT16_SLOW_DST_SIZE] = {0};
 
     cmsis_nn_context ctx;
     cmsis_nn_fc_params fc_params;
@@ -158,10 +167,10 @@ void fc_int16_slow_arm_fully_connected_s16(void)
     cmsis_nn_dims bias_dims;
     cmsis_nn_dims output_dims;
 
-    const q63_t *bias_data = fc_int16_slow_biases;
-    const q7_t *kernel_data = fc_int16_slow_weights;
-    const q15_t *input_data = fc_int16_slow_input;
-    const q15_t *output_ref = fc_int16_slow_output_ref;
+    const int64_t *bias_data = fc_int16_slow_biases;
+    const int8_t *kernel_data = fc_int16_slow_weights;
+    const int16_t *input_data = fc_int16_slow_input;
+    const int16_t *output_ref = fc_int16_slow_output_ref;
     const int32_t output_ref_size = FC_INT16_SLOW_DST_SIZE;
 
     input_dims.n = FC_INT16_SLOW_INPUT_BATCHES;
@@ -188,19 +197,23 @@ void fc_int16_slow_arm_fully_connected_s16(void)
     ctx.buf = malloc(buf_size);
     ctx.size = buf_size;
 
-    arm_status result = arm_fully_connected_s16(&ctx,
-                                                &fc_params,
-                                                &quant_params,
-                                                &input_dims,
-                                                input_data,
-                                                &filter_dims,
-                                                kernel_data,
-                                                &bias_dims,
-                                                bias_data,
-                                                &output_dims,
-                                                output);
+    arm_cmsis_nn_status result = arm_fully_connected_s16(&ctx,
+                                                         &fc_params,
+                                                         &quant_params,
+                                                         &input_dims,
+                                                         input_data,
+                                                         &filter_dims,
+                                                         kernel_data,
+                                                         &bias_dims,
+                                                         bias_data,
+                                                         &output_dims,
+                                                         output);
 
-    free(ctx.buf);
+    if (ctx.buf)
+    {
+        memset(ctx.buf, 0, buf_size);
+        free(ctx.buf);
+    }
     TEST_ASSERT_EQUAL(expected, result);
     TEST_ASSERT_TRUE(validate_s16(output, output_ref, output_ref_size));
 }

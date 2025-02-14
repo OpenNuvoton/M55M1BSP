@@ -39,6 +39,11 @@ extern "C"
 #define AWF_BOTHWK_DISABLE      (0x0UL)
 #define AWF_CLOSE               (0x0UL)
 
+/** @} end of group AWF_EXPORTED_CONSTANTS */
+
+/** @addtogroup AWF_EXPORTED_FUNCTIONS AWF Exported Functions
+  @{
+*/
 
 /**
   * @brief      This macro is used to set accumulation count.
@@ -113,57 +118,81 @@ extern "C"
 
 
 /* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
-__STATIC_INLINE void AWF_EnableInt(uint32_t u32IntMask);
-__STATIC_INLINE void AWF_DisableInt(uint32_t u32IntMask);
-__STATIC_INLINE void AWF_EnableWakeup(uint32_t u32TWKMask);
-__STATIC_INLINE void AWF_DisableWakeup(uint32_t u32TWKMask);
+__STATIC_INLINE void AWF_EnableInt(uint32_t u32Mask);
+__STATIC_INLINE void AWF_DisableInt(uint32_t u32Mask);
+__STATIC_INLINE void AWF_EnableWakeup(uint32_t u32Mask);
+__STATIC_INLINE void AWF_DisableWakeup(uint32_t u32Mask);
+__STATIC_INLINE void AWF_EnableLPPDMA(uint32_t u32Mask);
+__STATIC_INLINE void AWF_DisableLPPDMA(uint32_t u32Mask);
 
 /**
   * @brief      Enable AWF Interrupt
-  * @param[in]  u32IntMask Specify the interrupt source. Including:
+  * @param[in]  u32Mask Specify the interrupt source. Including:
   *             - \ref AWF_CTL_HTIEN_Msk
   *             - \ref AWF_CTL_LTIEN_Msk
   * @details    This API is used to enable the specify AWF interrupt function.
   */
-__STATIC_INLINE void AWF_EnableInt(uint32_t u32IntMask)
+__STATIC_INLINE void AWF_EnableInt(uint32_t u32Mask)
 {
-    AWF->CTL |= u32IntMask;
+    AWF->CTL |= u32Mask;
 }
 
 /**
   * @brief      Disable AWF Interrupt
-  * @param[in]  u32IntMask Specify the interrupt source. Including:
+  * @param[in]  u32Mask Specify the interrupt source. Including:
   *             - \ref AWF_CTL_HTIEN_Msk
   *             - \ref AWF_CTL_LTIEN_Msk
   * @details    This API is used to disable the specify AWF interrupt function.
   */
-__STATIC_INLINE void AWF_DisableInt(uint32_t u32IntMask)
+__STATIC_INLINE void AWF_DisableInt(uint32_t u32Mask)
 {
-    AWF->CTL &= ~u32IntMask;
+    AWF->CTL &= ~u32Mask;
 }
 
 /**
   * @brief      Enable Threshold Wake-up
-  * @param[in]  u32TWKMask Specify the threshold. Including:
+  * @param[in]  u32Mask Specify the wake-up source. Including:
   *             - \ref AWF_CTL_HTWKEN_Msk
   *             - \ref AWF_CTL_LTWKEN_Msk
   * @details    This API is used to enable high threshold or low threshold Wake-up function.
   */
-__STATIC_INLINE void AWF_EnableWakeup(uint32_t u32TWKMask)
+__STATIC_INLINE void AWF_EnableWakeup(uint32_t u32Mask)
 {
-    AWF->CTL |= u32TWKMask;
+    AWF->CTL |= u32Mask;
 }
 
 /**
   * @brief      Disable Threshold Wake-up
-  * @param[in]  u32TWKMask Specify the threshold. Including:
+  * @param[in]  u32Mask Specify the wake-up source. Including:
   *             - \ref AWF_CTL_HTWKEN_Msk
   *             - \ref AWF_CTL_LTWKEN_Msk
-  * @details    This API is used to enable high threshold or low threshold Wake-up function.
+  * @details    This API is used to disable high threshold or low threshold Wake-up function.
   */
-__STATIC_INLINE void AWF_DisableWakeup(uint32_t u32TWKMask)
+__STATIC_INLINE void AWF_DisableWakeup(uint32_t u32Mask)
 {
-    AWF->CTL &= ~u32TWKMask;
+    AWF->CTL &= ~u32Mask;
+}
+
+/**
+  * @brief      Enable Threshold Wake-up
+  * @param[in]  u32Mask Specify the LPPDMA. Including:
+  *             - \ref AWF_CTL_LPPDMA_EN_Msk
+  * @details    This API is used to enable LPPDMA to access AWF when chip is in NPD0/1/3.
+  */
+__STATIC_INLINE void AWF_EnableLPPDMA(uint32_t u32Mask)
+{
+    AWF->CTL |= u32Mask;
+}
+
+/**
+  * @brief      Disable Threshold Wake-up
+  * @param[in]  u32Mask Specify the LPPDMA. Including:
+  *             - \ref AWF_CTL_LPPDMA_EN_Msk
+  * @details    This API is used to disable LPPDMA to access AWF when chip is in NPD0/1/3.
+  */
+__STATIC_INLINE void AWF_DisableLPPDMA(uint32_t u32Mask)
+{
+    AWF->CTL &= ~u32Mask;
 }
 
 void AWF_Open(uint32_t u32IntEn, uint32_t u32WakeupEn, uint32_t u32HTH, uint32_t u32LTH, uint32_t u32WBINIT, uint32_t u32ACCCount);

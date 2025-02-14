@@ -49,6 +49,11 @@
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/ecdsa_alt.c</locationURI>
 		</link>
+		<link>
+			<name>crypto_accelerator/hkdf_alt.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/hkdf_alt.c</locationURI>
+		</link>
         <link>
 			<name>crypto_accelerator/ecp_internal_alt.c</name>
 			<type>1</type>

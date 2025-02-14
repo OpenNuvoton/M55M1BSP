@@ -233,7 +233,6 @@ extern "C"
   */
 #define DAC_CLR_DMAUDR_FLAG(dac) ((dac)->STATUS = DAC_STATUS_DMAUDR_Msk)
 
-#if ! defined (TESTCHIP_ONLY)
 /**
   * @brief Enable DAC group mode
   * @param[in] dac Base address of DAC module.
@@ -260,7 +259,6 @@ extern "C"
   * \hideinitializer
   */
 #define DAC_GROUP_WRITE_DATA(u32Data0, u32Data1) (DAC0->GRPDAT = ((u32Data1 << DAC_GRPDAT_DAC1DAT_Pos) | u32Data0))
-#endif
 
 void DAC_Open(DAC_T *dac, uint32_t u32Ch, uint32_t u32TrgSrc);
 void DAC_Close(DAC_T *dac, uint32_t u32Ch);

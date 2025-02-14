@@ -23,7 +23,7 @@
 #define NON_SECURE_SRAM_BASE        (0x20100000 + 0x10000000 + SCU_SECURE_SRAM_SIZE)
 
 /*
-// Non-secure Base Address (NSCBA)
+// <h> Non-secure Base Address (NSCBA)
 */
 #define FMC_INIT_NSCBA              1
 /*
@@ -35,49 +35,18 @@
 #define FMC_NON_SECURE_BASE         (FMC_SECURE_END + NS_OFFSET)
 
 /*
+// <q>Enable Mirror Boundary (Bank Remap Function)
+*/
+#define FMC_INIT_MIRROR_BOUND       0x0
+/*
+// </h>
+*/
+
+/*
 //    <o> Secure SPI Flash Size <0x20000-0x2000000:0x20000>
 */
 #define SCU_SECURE_SPIFLASH_SIZE    0x20000
 
-/*--------------------------------------------------------------------------------------------------------*/
-
-/* Total TCM Size */
-#define ITCM_SIZE                   0x00010000
-#define DTCM_SIZE                   0x00020000
-
-/*
-// <h> TCM Secure Attribution
-*/
-
-/* Secure ITCM Size */
-/*
-//   <o> Secure ITCM Size
-//      <0x0=>      0 KB
-//      <0x4000=>  16 KB
-//      <0x8000=>  32 KB
-//      <0xC000=>  48 KB
-//      <0x10000=> 64 KB
-*/
-#define SECURE_ITCM_SIZE            0x10000
-
-/* Secure DTCM Size */
-/*
-//   <o> Secure DTCM Size
-//      <0x0=>       0 KB
-//      <0x4000=>   16 KB
-//      <0x8000=>   32 KB
-//      <0xC000=>   48 KB
-//      <0x10000=>  64 KB
-//      <0x14000=>  80 KB
-//      <0x18000=>  96 KB
-//      <0x1C000=> 112 KB
-//      <0x20000=> 128 KB
-*/
-#define SECURE_DTCM_SIZE            0x20000
-
-/*
-// </h>
-*/
 /*----------------------------------------------------------------------------*/
 
 /*
@@ -183,7 +152,7 @@
 
 #define SCU_INIT_D1PNS0_VAL         0x0
 #define SCU_INIT_D1PNS1_VAL         0x0
-#define SCU_INIT_D1PNS2_VAL         0x10000
+#define SCU_INIT_D1PNS2_VAL         0x02000
 #define SCU_INIT_D1PNS4_VAL         0x0000
 
 /*
@@ -246,7 +215,7 @@
 // </h>
 
 */
-#define SCU_INIT_IONS0_VAL          0x00000C00
+#define SCU_INIT_IONS0_VAL          0x00000000
 
 /*
 // Bit 0..31
@@ -314,7 +283,7 @@
 //   <o.14>  PD14      <0=> Secure <1=> Non-secure
 // </h>
 */
-#define SCU_INIT_IONS3_VAL          0x00000000
+#define SCU_INIT_IONS3_VAL          0x00000060
 
 
 /*

@@ -26,11 +26,6 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>c/common.c</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/c/common.c</locationURI>
-		</link>
-		<link>
 			<name>core-api/error_reporter.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/core/api/error_reporter.cc</locationURI>
@@ -41,14 +36,14 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/core/api/flatbuffer_conversions.cc</locationURI>
 		</link>
 		<link>
-			<name>core-api/op_resolver.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/core/api/op_resolver.cc</locationURI>
-		</link>
-		<link>
 			<name>core-api/tensor_utils.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/core/api/tensor_utils.cc</locationURI>
+		</link>
+		<link>
+			<name>core-c/common.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/core/c/common.cc</locationURI>
 		</link>
 		<link>
 			<name>kernels/kernel_util.cc</name>
@@ -56,19 +51,39 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/kernel_util.cc</locationURI>
 		</link>
 		<link>
+			<name>kernels-internal/common.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/internal/common.cc</locationURI>
+		</link>
+		<link>
+			<name>kernels-internal/portable_tensor_utils.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/internal/portable_tensor_utils.cc</locationURI>
+		</link>
+		<link>
 			<name>kernels-internal/quantization_util.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/internal/quantization_util.cc</locationURI>
 		</link>
 		<link>
+			<name>kernels-internal/runtime_shape.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/internal/runtime_shape.cc</locationURI>
+		</link>
+		<link>
+			<name>kernels-internal/tensor_ctypes.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/internal/tensor_ctypes.cc</locationURI>
+		</link>
+		<link>
+			<name>kernels-internal/tensor_utils.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/internal/tensor_utils.cc</locationURI>
+		</link>
+		<link>
 			<name>kernels-internal-reference/portable_tensor_utils.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/kernels/internal/reference/portable_tensor_utils.cc</locationURI>
-		</link>
-		<link>
-			<name>micro/all_ops_resolver.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/all_ops_resolver.cc</locationURI>
 		</link>
 		<link>
 			<name>micro/fake_micro_context.cc</name>
@@ -86,6 +101,11 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/memory_helpers.cc</locationURI>
 		</link>
 		<link>
+			<name>micro/micro_allocation_info.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_allocation_info.cc</locationURI>
+		</link>
+		<link>
 			<name>micro/micro_allocator.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_allocator.cc</locationURI>
@@ -96,19 +116,29 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_context.cc</locationURI>
 		</link>
 		<link>
-			<name>micro/micro_error_reporter.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_error_reporter.cc</locationURI>
-		</link>
-		<link>
-			<name>micro/micro_graph.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_graph.cc</locationURI>
-		</link>
-		<link>
 			<name>micro/micro_interpreter.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_interpreter.cc</locationURI>
+		</link>
+		<link>
+			<name>micro/micro_interpreter_context.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_interpreter_context.cc</locationURI>
+		</link>
+		<link>
+			<name>micro/micro_interpreter_graph.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_interpreter_graph.cc</locationURI>
+		</link>
+		<link>
+			<name>micro/micro_log.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_log.cc</locationURI>
+		</link>
+		<link>
+			<name>micro/micro_op_resolver.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_op_resolver.cc</locationURI>
 		</link>
 		<link>
 			<name>micro/micro_profiler.cc</name>
@@ -119,11 +149,6 @@
 			<name>micro/micro_resource_variable.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_resource_variable.cc</locationURI>
-		</link>
-		<link>
-			<name>micro/micro_string.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/micro_string.cc</locationURI>
 		</link>
 		<link>
 			<name>micro/micro_utils.cc</name>
@@ -141,16 +166,6 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/recording_micro_allocator.cc</locationURI>
 		</link>
 		<link>
-			<name>micro/recording_simple_memory_allocator.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/recording_simple_memory_allocator.cc</locationURI>
-		</link>
-		<link>
-			<name>micro/simple_memory_allocator.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/simple_memory_allocator.cc</locationURI>
-		</link>
-		<link>
 			<name>micro/system_setup.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/system_setup.cc</locationURI>
@@ -164,6 +179,26 @@
 			<name>micro/test_helpers.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/test_helpers.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-arena_allocator/non_persistent_arena_buffer_allocator.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/arena_allocator/non_persistent_arena_buffer_allocator.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-arena_allocator/persistent_arena_buffer_allocator.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/arena_allocator/persistent_arena_buffer_allocator.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-arena_allocator/recording_single_arena_buffer_allocator.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/arena_allocator/recording_single_arena_buffer_allocator.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-arena_allocator/single_arena_buffer_allocator.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/arena_allocator/single_arena_buffer_allocator.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-cortex_m_generic/debug_log.cc</name>
@@ -206,9 +241,24 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/assign_variable.cc</locationURI>
 		</link>
 		<link>
+			<name>micro-kernels/batch_matmul.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/batch_matmul.cc</locationURI>
+		</link>
+		<link>
 			<name>micro-kernels/batch_to_space_nd.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/batch_to_space_nd.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/broadcast_args.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/broadcast_args.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/broadcast_to.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/broadcast_to.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-kernels/call_once.cc</name>
@@ -296,6 +346,11 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/detection_postprocess_flexbuffers_generated_data.cc</locationURI>
 		</link>
 		<link>
+			<name>micro-kernels/div.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/div.cc</locationURI>
+		</link>
+		<link>
 			<name>micro-kernels/elementwise.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/elementwise.cc</locationURI>
@@ -304,6 +359,11 @@
 			<name>micro-kernels/elu.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/elu.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/embedding_lookup.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/embedding_lookup.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-kernels/exp.cc</name>
@@ -421,9 +481,24 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/logistic_common.cc</locationURI>
 		</link>
 		<link>
+			<name>micro-kernels/lstm_eval.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/lstm_eval.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/lstm_eval_common.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/lstm_eval_common.cc</locationURI>
+		</link>
+		<link>
 			<name>micro-kernels/maximum_minimum.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/maximum_minimum.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/micro_tensor_utils.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/micro_tensor_utils.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-kernels/mirror_pad.cc</name>
@@ -486,9 +561,19 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/reduce.cc</locationURI>
 		</link>
 		<link>
+			<name>micro-kernels/reduce_common.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/reduce_common.cc</locationURI>
+		</link>
+		<link>
 			<name>micro-kernels/reshape.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/reshape.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/reshape_common.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/reshape_common.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-kernels/resize_bilinear.cc</name>
@@ -504,6 +589,11 @@
 			<name>micro-kernels/round.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/round.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/select.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/select.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-kernels/shape.cc</name>
@@ -541,6 +631,11 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/split_v.cc</locationURI>
 		</link>
 		<link>
+			<name>micro-kernels/squared_difference.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/squared_difference.cc</locationURI>
+		</link>
+		<link>
 			<name>micro-kernels/squeeze.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/squeeze.cc</locationURI>
@@ -549,6 +644,11 @@
 			<name>micro-kernels/strided_slice.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/strided_slice.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/strided_slice_common.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/strided_slice_common.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-kernels/sub.cc</name>
@@ -576,11 +676,6 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/transpose.cc</locationURI>
 		</link>
 		<link>
-			<name>micro-kernels/transpose_conv.cc</name>
-			<type>1</type>
-			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/transpose_conv.cc</locationURI>
-		</link>
-		<link>
 			<name>micro-kernels/unpack.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/unpack.cc</locationURI>
@@ -589,6 +684,11 @@
 			<name>micro-kernels/var_handle.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/var_handle.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels/while.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/while.cc</locationURI>
 		</link>
 		<link>
 			<name>micro-kernels/zeros_like.cc</name>
@@ -636,6 +736,16 @@
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc</locationURI>
 		</link>
 		<link>
+			<name>micro-kernels-cmsis_nn/transpose_conv.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/cmsis_nn/transpose_conv.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-kernels-cmsis_nn/unidirectional_sequence_lstm.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/cmsis_nn/unidirectional_sequence_lstm.cc</locationURI>
+		</link>
+		<link>
 			<name>micro-kernels-ethos_u/ethosu.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/kernels/ethos_u/ethosu.cc</locationURI>
@@ -654,6 +764,16 @@
 			<name>micro-memory_planner/non_persistent_buffer_planner_shim.cc</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/memory_planner/non_persistent_buffer_planner_shim.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-tflite_bridge/flatbuffer_conversions_bridge.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/tflite_bridge/flatbuffer_conversions_bridge.cc</locationURI>
+		</link>
+		<link>
+			<name>micro-tflite_bridge/micro_error_reporter.cc</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.cc</locationURI>
 		</link>
 		<link>
 			<name>schema/schema_utils.cc</name>

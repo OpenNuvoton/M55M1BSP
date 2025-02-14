@@ -84,8 +84,8 @@ void SYS_Init(void)
     /* Waiting for LXT clock ready */
     CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -147,7 +147,7 @@ int main(void)
     sInitTime.u32Hour       = 12;
     sInitTime.u32Minute     = 30;
     sInitTime.u32Second     = 0;
-    sInitTime.u32DayOfWeek  = RTC_MONDAY;
+    sInitTime.u32DayOfWeek  = RTC_THURSDAY;
     sInitTime.u32TimeScale  = RTC_CLOCK_24;
 
     /* check rtc reset status */

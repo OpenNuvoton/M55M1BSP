@@ -9,7 +9,7 @@ define symbol __ICFEDIT_region_ROM_start__  = 0x00100000;
 define symbol __ICFEDIT_region_ROM_end__    = 0x002FFFFF;
 
 define symbol __ICFEDIT_region_RAM_start__  = 0x20100000;
-define symbol __ICFEDIT_region_RAM_end__    = 0x2022FFFF;
+define symbol __ICFEDIT_region_RAM_end__    = 0x2024FFFF;
 
 /*-Sizes-*/
 define symbol __ICFEDIT_size_cstack__ = 0x00000800;
@@ -23,11 +23,8 @@ define symbol DTCM_end   = 0x2001FFFF;
 define symbol DTCM_intvec_start__ = DTCM_start;
 define symbol LPSRAM_start  = 0x20310000;
 define symbol LPSRAM_end    = 0x20311FFF;
-define symbol SPIM0_start  = 0x80000000;
+define symbol SPIM0_start  = 0x82000000;
 define symbol SPIM0_end    = 0x00100000;
-define symbol SPIM1_start  = 0x82000000;
-define symbol SPIM1_end    = 0x00100000;
-
 define memory mem with size = 4G;
 define region ROM_region  = mem:[from __ICFEDIT_region_ROM_start__  to __ICFEDIT_region_ROM_end__ ];
 define region RAM_region  = mem:[from __ICFEDIT_region_RAM_start__  to __ICFEDIT_region_RAM_end__ ];
@@ -35,14 +32,13 @@ define region ITCM_region = mem:[from ITCM_start to ITCM_end];
 define region DTCM_region = mem:[from DTCM_start to DTCM_end];
 define region LPSRAM_region = mem:[from LPSRAM_start to LPSRAM_end];
 define region SPIM0_region = mem:[from SPIM0_start to SPIM0_end];
-define region SPIM1_region = mem:[from SPIM1_start to SPIM1_end];
 
 define block CSTACK with alignment = 8, size = __ICFEDIT_size_cstack__ { };
 define block HEAP   with alignment = 8, size = __ICFEDIT_size_heap__   { };
 
 initialize by copy { readwrite, section DTCM.VTOR, section ITCM, section DTCM.Init, section .spim_code };
 
-do not initialize  { section .noinit, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
+do not initialize  { section .noinit, section .bss.NoInit, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
 
 place at address mem:__ICFEDIT_intvec_start__ { readonly section .intvec };
 place at address mem:DTCM_intvec_start__      { section DTCM.VTOR };
@@ -51,6 +47,6 @@ place in ITCM_region { section ITCM };
 place in ROM_region  { readonly };
 place in DTCM_region { section .bss.DTCM.ZeroInit, section DTCM.Init };
 place at end of DTCM_region { block CSTACK };
-place in RAM_region  { readwrite, block HEAP, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
+place in RAM_region  { section .noinit, section .bss.NoInit, readwrite, block HEAP, section .bss.tensor_arena, section .bss.NoInit.activation_buf_sram };
 place in LPSRAM_region  { section .lpSram };
-place in SPIM1_region { section .spim_code };
+place in SPIM0_region { section .spim_code };

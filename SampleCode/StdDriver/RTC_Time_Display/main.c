@@ -67,8 +67,8 @@ void SYS_Init(void)
     /* Waiting for LXT clock ready */
     CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -128,7 +128,7 @@ int main(void)
     sInitTime.u32Hour       = 13;
     sInitTime.u32Minute     = 0;
     sInitTime.u32Second     = 0;
-    sInitTime.u32DayOfWeek  = RTC_MONDAY;
+    sInitTime.u32DayOfWeek  = RTC_THURSDAY;
     sInitTime.u32TimeScale  = RTC_CLOCK_24;
 
     if (RTC_Open(&sInitTime) != 0)
@@ -182,7 +182,7 @@ int main(void)
                     printf("3.) Update new date/time to 2023/6/9 13:12:11.\n");
 
                     u8IsNewDateTime = 1;
-                    RTC_SetDate(2023, 6, 9, RTC_WEDNESDAY);
+                    RTC_SetDate(2023, 6, 9, RTC_FRIDAY);
                     RTC_SetTime(13, 12, 11, RTC_CLOCK_24, RTC_AM);
                 }
             }

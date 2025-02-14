@@ -17,36 +17,12 @@
  */
 
 /*
- * This is a simplified picture of the M55A1 memory system.
- * Please refer to the M55A1 Technical Reference Manual for
- * further information.
- *
- *
- * +---------------+   +---------------+  +-------------------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM/SRAM2        |
- * |               |   |               |  +-------------------+
- * |               |   |               |
- * |               |   |               |  +-------------------+ 
- * |  M1      M0   |   |               +--+ DTCM/SRAM2        |
- * +---+-------+---+   +-------+-------+  +-------------------+
- *     |       |               |
- *     |   +---+---------------+-----+
- *     |   | AMBA AXI NIC-400-Lite   |
- *     |   +---+-----------------+---+
- *     |       |                 |
- * +---+-------+------------+ +--+-------+
- * | AMBA AHB               | | SRAM 0   |
- * +---+--------+--------+--+ | SRAM 1   |
- *     |                      +----------+
- * +---+---+ 
- * | FLASH |
- * +-------+
  *
  * +-----------------------+-------------+-------------+----+-----------------------------------------------------+
  * |  Memory region name   | Base addr   |    Size     |IDAU|  MCC load address + remarks                         |
  * +-----------------------+-------------+-------------+----+-----------------------------------------------------+
- * | ITCM                  | 0x1000_0000 | 0x0002_0000 | NS | 0x1000_0000; 128 kiB.                               |
- * | ITCM                  | 0x0000_0000 | 0x0002_0000 | S  | Secure alias for NS ITCM                            |
+ * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | 0x1000_0000; 68 kiB.                               |
+ * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | Secure alias for NS ITCM                            |
  * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | 0x1010_0000; 2 MiB                                  |
  * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | Secure alias for NS BRAM                            |
  * | SRAM01                | 0x3010_0000 | 0x0010_0000 | NS | 2 banks of 512 kiB; 3cc latency)                    |
@@ -110,14 +86,9 @@ SECTIONS
   .text.at_flash :
   {
     KEEP(*(.vectors))
+    *startup_*.o(.text*)
 
-    /**
-     * All code goes here, with one exception of
-     * all_ops_resolver object file. This code
-     * instead placed on BRAM. See comment in the
-     * BRAM section for details.
-     **/
-    *(EXCLUDE_FILE(*all_ops_resolver.o *hal.c.obj) .text*)
+    *(.text*)
 
     KEEP(*(.init))
     KEEP(*(.fini))

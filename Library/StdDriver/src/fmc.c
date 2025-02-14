@@ -18,11 +18,11 @@
   @{
 */
 
+int32_t g_FMC_i32ErrCode = FMC_OK; /*!< FMC global error code */
+
 /** @addtogroup FMC_EXPORTED_FUNCTIONS FMC Exported Functions
   @{
 */
-
-int32_t g_FMC_i32ErrCode = FMC_OK; /*!< FMC global error code */
 
 /**
   * @brief Execute FMC_ISPCMD_READ command to read a word from flash.
@@ -326,9 +326,9 @@ int32_t FMC_WriteMultiple(uint32_t u32Addr, uint32_t pu32Buf[], uint32_t u32Byte
 }
 
 /**
-  * @brief Execute FMC_ISPCMD_PAGE_ERASE command to erase a flash page. The page size is 4096 bytes.
+  * @brief Execute FMC_ISPCMD_PAGE_ERASE command to erase a flash page. The page size is 8192 bytes.
   * @param[in]  u32PageAddr Address of the flash page to be erased.
-  *             It must be a 4096 bytes aligned address.
+  *             It must be a page aligned address.
   * @return ISP page erase success or not.
   * @retval   FMC_OK                Success
   * @retval   FMC_ERR_ERASE_FAILED  Erase failed
@@ -540,6 +540,21 @@ int32_t FMC_RemapBank(uint32_t u32Bank)
         i32RetCode = FMC_ERR_PROG_FAILED;
     }
 
+    if (i32RetCode == FMC_OK)
+    {
+        /* Because bank remap takes effect immediately after FMC_ISPCMD_BANK_REMAP command is done,
+         * invalidate I-Cache after bank remap to ensure instruction consistency.
+         */
+        SCB_InvalidateICache();
+#if (NVT_DCACHE_ON == 1)
+        // Invalidate D-Cache after bank remap to ensure data consistency when D-Cache is enabled.
+        SCB_InvalidateDCache_by_Addr((void *)FMC_APROM_BASE, FMC_APROM_SIZE);
+#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
+        SCB_InvalidateDCache_by_Addr((void *)(FMC_APROM_BASE + NS_OFFSET), FMC_APROM_SIZE);
+#endif
+#endif
+    }
+
     return i32RetCode;
 }
 
@@ -606,8 +621,124 @@ int32_t FMC_Erase_Bank(uint32_t u32BankAddr)
   */
 int32_t FMC_ConfigNPUXOM(uint32_t u32XomBase, uint8_t u8XomPageCnt, uint32_t u32DRBound)
 {
-    // TESTCHIP_ONLY not support
-    return 0;
+    int32_t i32RetCode = 0;
+    int32_t i32TimeOutCnt;
+
+    g_FMC_i32ErrCode = 0;
+
+    if ((i32RetCode = FMC_GetXOMState(XOMR3)) != 0)
+        return i32RetCode;
+
+    // Set XOMR3BASE
+    FMC->ISPCMD  = FMC_ISPCMD_PROGRAM;
+    FMC->ISPADDR = FMC_XOM_BASE + (XOMR3 * 0x10u);
+    FMC->ISPDAT  = u32XomBase;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+
+    i32TimeOutCnt = FMC_TIMEOUT_WRITE;
+
+    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk)
+    {
+        if (i32TimeOutCnt-- <= 0)
+        {
+            g_FMC_i32ErrCode = -1;
+            i32RetCode = -1;
+            break;
+        }
+    }
+
+    if (FMC->ISPSTS & FMC_ISPSTS_ISPFF_Msk)
+    {
+        FMC->ISPSTS |= FMC_ISPSTS_ISPFF_Msk;
+        g_FMC_i32ErrCode = -1;
+        i32RetCode = -1;
+    }
+
+    if (i32RetCode != 0)
+        return i32RetCode;
+
+    // Set XOMR3SIZE
+    FMC->ISPCMD  = FMC_ISPCMD_PROGRAM;
+    FMC->ISPADDR = FMC_XOM_BASE + (XOMR3 * 0x10u + 0x04u);
+    FMC->ISPDAT  = u8XomPageCnt;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+
+    i32TimeOutCnt = FMC_TIMEOUT_WRITE;
+
+    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk)
+    {
+        if (i32TimeOutCnt-- <= 0)
+        {
+            g_FMC_i32ErrCode = -1;
+            i32RetCode = -1;
+            break;
+        }
+    }
+
+    if (FMC->ISPSTS & FMC_ISPSTS_ISPFF_Msk)
+    {
+        FMC->ISPSTS |= FMC_ISPSTS_ISPFF_Msk;
+        g_FMC_i32ErrCode = -1;
+        i32RetCode = -1;
+    }
+
+    if (i32RetCode != 0)
+        return i32RetCode;
+
+    // Set XOMR3DRBOUNDARY
+    FMC->ISPCMD  = FMC_ISPCMD_PROGRAM;
+    FMC->ISPADDR = FMC_XOM_BASE + (XOMR3 * 0x10u + 0x0Cu);
+    FMC->ISPDAT  = u32DRBound;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+
+    i32TimeOutCnt = FMC_TIMEOUT_WRITE;
+
+    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk)
+    {
+        if (i32TimeOutCnt-- <= 0)
+        {
+            g_FMC_i32ErrCode = -1;
+            i32RetCode = -1;
+            break;
+        }
+    }
+
+    if (FMC->ISPSTS & FMC_ISPSTS_ISPFF_Msk)
+    {
+        FMC->ISPSTS |= FMC_ISPSTS_ISPFF_Msk;
+        g_FMC_i32ErrCode = -1;
+        i32RetCode = -1;
+    }
+
+    if (i32RetCode != 0)
+        return i32RetCode;
+
+    // Write 0xA to XOMR3CTRL to active (Need chip reset to active)
+    FMC->ISPCMD  = FMC_ISPCMD_PROGRAM;
+    FMC->ISPADDR = FMC_XOM_BASE + (XOMR3 * 0x10u + 0x08u);
+    FMC->ISPDAT  = 0xA;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+
+    i32TimeOutCnt = FMC_TIMEOUT_WRITE;
+
+    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk)
+    {
+        if (i32TimeOutCnt-- <= 0)
+        {
+            g_FMC_i32ErrCode = -1;
+            i32RetCode = -1;
+            break;
+        }
+    }
+
+    if (FMC->ISPSTS & FMC_ISPSTS_ISPFF_Msk)
+    {
+        FMC->ISPSTS |= FMC_ISPSTS_ISPFF_Msk;
+        g_FMC_i32ErrCode = -1;
+        i32RetCode = -1;
+    }
+
+    return i32RetCode;
 }
 
 /**
@@ -1196,7 +1327,6 @@ int32_t  FMC_ConfigSecureConceal(uint32_t u32Base, uint32_t u32PageCnt, uint32_t
   *           FMC_ERR_TIMEOUT        Run/Read check sum time-out failed
   *           FMC_ERR_INVALID_PARAM  u32Addr or u32count must be aligned with 8 KB page alignment
   */
-#ifndef TESTCHIP_ONLY   // TESTCHIP_ONLY not support
 uint32_t  FMC_GetChkSum(uint32_t u32Addr, uint32_t u32count)
 {
     int32_t i32RetCode;
@@ -1247,7 +1377,6 @@ uint32_t  FMC_GetChkSum(uint32_t u32Addr, uint32_t u32count)
 
     return i32RetCode;
 }
-#endif  // TESTCHIP_ONLY not support
 
 /**
   * @brief Run flash all one verification and get result.
@@ -1260,15 +1389,15 @@ uint32_t  FMC_GetChkSum(uint32_t u32Addr, uint32_t u32count)
   * @note     Global error code g_FMC_i32ErrCode
   *           -1  RUN_ALL_ONE or CHECK_ALL_ONE commands time-out
   */
-#ifndef TESTCHIP_ONLY   // TESTCHIP_ONLY not support
+
 uint32_t  FMC_CheckAllOne(uint32_t u32Addr, uint32_t u32count)
 {
     int32_t i32RetCode = READ_ALLONE_CMD_FAIL;
     int32_t i32TimeOutCnt0, i32TimeOutCnt1;
 
-    g_FMC_i32ErrCode = return;
+    g_FMC_i32ErrCode = FMC_OK;
 
-    FMC->ISPSTS = 0x80UL;   /* clear check all one bit */
+    FMC->ISPSTS = FMC_ISPSTS_ALLONE_Msk;   /* Clear check all one bit */
 
     FMC->ISPCMD   = FMC_ISPCMD_RUN_ALL1;
     FMC->ISPADDR  = u32Addr;
@@ -1326,7 +1455,6 @@ uint32_t  FMC_CheckAllOne(uint32_t u32Addr, uint32_t u32count)
 
     return i32RetCode;
 }
-#endif  // TESTCHIP_ONLY not support
 
 /** @} end of group FMC_EXPORTED_FUNCTIONS */
 /** @} end of group FMC_Driver */

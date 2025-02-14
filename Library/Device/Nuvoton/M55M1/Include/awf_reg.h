@@ -45,10 +45,13 @@ typedef struct
      * |[3]     |LTWKEN    |AWF Low Threshold Wake Up Enable Bit
      * |        |          |0 = AWF low threshold wake up Disabled.
      * |        |          |1 = AWF low threshold wake up Enabled.
-     * |        |          |User needs to set both LTWKEN and LTIEN to
      * |[7:4]   |ACUCNT    |Accumulation Count
      * |        |          |The counter defines the acculated data to compare with high threshold and low threshold.The allowed maximum value is 8
      * |        |          |If the write value is larger than 8, ACUCNT will become 0.
+     * |[8]     |LPPDMA_EN |LPPDMA Enable Bit
+     * |        |          |This bit is used to enable LPPDMA to access AWF when chip is in NPD0/1/3.
+     * |        |          |0 = LPPDMA can not access AWF when chip is in NPD0/1/3.
+     * |        |          |1 = LPPDMA can access AWF when chip is in NPD0/1/3.
      * @var AWF_T::HTH
      * Offset: 0x04  AWF High Threshold Value Register
      * ---------------------------------------------------------------------------------------------------
@@ -73,13 +76,13 @@ typedef struct
      * |        |          |1 = AWF HTH interrupt event occurs.
      * |        |          |Note: This bit is set to 1 when ACUCNT is not zero and accumulation data is over than HTH
      * |        |          |User writes 1 to clear this bit to 0
-     * |        |          |This bit will keep 1 if accumulation data is over than HTH after user writes 1 clear.
+     * |        |          |This bit will keep 1 if accumulation data is over than HTH after user writes 1 to clear.
      * |[1]     |LTHIS     |AWF LTH Interupt Flag
      * |        |          |0 = AWF LTH interrupt event has not occurred.
      * |        |          |1 = AWF LTH interrupt event occurs.
      * |        |          |Note: This bit is set to 1 when ACUCNT is not zero and accumulation data is less than LTH
      * |        |          |User writes 1 to clear this bit to 0
-     * |        |          |This bit wil keep 1 if accumulation data is less than LTH after user writes 1 clear.
+     * |        |          |This bit wil keep 1 if accumulation data is less than LTH after user writes 1 to clear.
      * @var AWF_T::WBINIT
      * Offset: 0x10  AWF Word Buffer Initial Value Register
      * ---------------------------------------------------------------------------------------------------
@@ -213,6 +216,9 @@ typedef struct
 
 #define AWF_CTL_ACUCNT_Pos               (4)                                               /*!< AWF_T::CTL: ACUCNT Position            */
 #define AWF_CTL_ACUCNT_Msk               (0xful << AWF_CTL_ACUCNT_Pos)                     /*!< AWF_T::CTL: ACUCNT Mask                */
+
+#define AWF_CTL_LPPDMA_EN_Pos            (8)                                               /*!< AWF_T::CTL: LPPDMA_EN Position         */
+#define AWF_CTL_LPPDMA_EN_Msk            (0x1ul << AWF_CTL_LPPDMA_EN_Pos)                  /*!< AWF_T::CTL: LPPDMA_EN Mask             */
 
 #define AWF_HTH_AWFHTH_Pos               (0)                                               /*!< AWF_T::HTH: AWFHTH Position            */
 #define AWF_HTH_AWFHTH_Msk               (0x7fffful << AWF_HTH_AWFHTH_Pos)                 /*!< AWF_T::HTH: AWFHTH Mask                */

@@ -9,6 +9,8 @@
 #include "targetdev.h"
 #include "isp_user.h"
 
+uint32_t g_u32ApromSize;
+
 void UserMemCopy(uint8_t pu8Dest[], uint8_t pu8Src[], uint32_t u32Size)
 {
     uint32_t i = 0ul;
@@ -43,6 +45,7 @@ uint32_t GetApromSize(void)
     } while (1);
 }
 
+#if 0   /* M55M1 did not support Data Flash */
 /* Data Flash is shared with APROM.
    The size and start address are defined in CONFIG1. */
 void GetDataFlashInfo(uint32_t *pu32Addr, uint32_t *pu32Size)
@@ -72,5 +75,7 @@ void GetDataFlashInfo(uint32_t *pu32Addr, uint32_t *pu32Size)
         *pu32Size = 0;
     }
 }
+#endif
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+

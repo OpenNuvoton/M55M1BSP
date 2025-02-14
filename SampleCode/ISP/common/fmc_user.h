@@ -31,13 +31,13 @@
 extern "C" {
 #endif
 
-int FMC_Write_User(uint32_t u32Addr, uint32_t u32Data);
-int FMC_Read_User(uint32_t u32Addr, uint32_t *data);
-int FMC_Erase_User(uint32_t u32Addr);
-void ReadData(uint32_t addr_start, uint32_t addr_end, uint32_t *data);
-void WriteData(uint32_t addr_start, uint32_t addr_end, uint32_t *data);
-int EraseAP(uint32_t addr_start, uint32_t size);
-void UpdateConfig(uint32_t *data, uint32_t *res);
+int  FMC_Write_User(uint32_t u32Addr, uint32_t u32Data);
+int  FMC_Read_User(uint32_t u32Addr, uint32_t *pu32Data);
+int  FMC_Erase_User(uint32_t u32PageAddr);
+void ReadData(uint32_t u32StartAddr, uint32_t u32EndAddr, uint32_t *pu32Data);
+void WriteData(uint32_t u32StartAddr, uint32_t u32EndAddr, uint32_t *pu32Data);
+int  EraseAP(uint32_t u32StartAddr, uint32_t u32EraseSize);
+void UpdateConfig(uint32_t *pu32Data, uint32_t *pu32Resp);
 
 #ifdef __cplusplus
 }

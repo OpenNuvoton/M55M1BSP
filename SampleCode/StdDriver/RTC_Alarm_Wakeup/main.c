@@ -46,8 +46,6 @@ int IsDebugFifoEmpty(void)
 NVT_ITCM void RTC_IRQHandler(void)
 {
     uint32_t intflag;
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(RTC0_MODULE);
 
     /* To check if RTC alarm interrupt occurred */
     if (RTC_GET_ALARM_INT_FLAG(RTC) == 1)
@@ -87,8 +85,8 @@ void SYS_Init(void)
     /* Waiting for LXT clock ready */
     CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -142,7 +140,7 @@ int main(void)
     sWriteRTC.u32Year       = 2023;
     sWriteRTC.u32Month      = 6;
     sWriteRTC.u32Day        = 8;
-    sWriteRTC.u32DayOfWeek  = RTC_SUNDAY;
+    sWriteRTC.u32DayOfWeek  = RTC_THURSDAY;
     sWriteRTC.u32Hour       = 23;
     sWriteRTC.u32Minute     = 59;
     sWriteRTC.u32Second     = 50;
@@ -159,7 +157,7 @@ int main(void)
     sWriteRTC.u32Year       = 2023;
     sWriteRTC.u32Month      = 6;
     sWriteRTC.u32Day        = 8;
-    sWriteRTC.u32DayOfWeek  = RTC_SUNDAY;
+    sWriteRTC.u32DayOfWeek  = RTC_THURSDAY;
     sWriteRTC.u32Hour       = 23;
     sWriteRTC.u32Minute     = 59;
     sWriteRTC.u32Second     = 55;

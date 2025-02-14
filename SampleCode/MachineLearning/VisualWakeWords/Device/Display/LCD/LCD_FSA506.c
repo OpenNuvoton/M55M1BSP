@@ -9,29 +9,38 @@
 #include "NuMicro.h"
 #include "../LCD.h"
 
+#if defined(__EBI_LCD_PANEL__) && defined(FSA506_LCD_PANEL)
+
+#define PANEL_ACTIVATE_WIDTH_PIXELS     480
+#define PANEL_ACTIVATE_HEIGHT_PIXELS    272
+
 #define FSA506_ADDR_CMD  0x0
-#define FSA506_ADDR_DATA 0x0
+#define FSA506_ADDR_DATA 0x2
 
 #define FSA506_WRITE_REG(u32RegAddr)   (*((volatile uint16_t *)(CONFIG_LCD_EBI_ADDR+(FSA506_ADDR_CMD))) = (u32RegAddr))
 #define FSA506_WRITE_DATA(u32Data)     (*((volatile uint16_t *)(CONFIG_LCD_EBI_ADDR+(FSA506_ADDR_DATA))) = (u32Data))
 
+#if defined(CONFIG_DISP_USE_PDMA)
+    #include "../drv_pdma.h"
+    #define DISP_DAT_ADDR       (CONFIG_LCD_EBI_ADDR + (FSA506_ADDR_DATA))
+#endif
+
+#if defined(CONFIG_DISP_USE_PDMA)
+
+    __attribute__((section(".bss.vram.data"), aligned(32))) uint16_t s_au16PDMALineBuf[PANEL_ACTIVATE_WIDTH_PIXELS];
+
+#endif
+
 static void fsa506_write_reg(uint16_t reg, uint16_t data)
 {
     // Register
-    CLR_RS;
     FSA506_WRITE_REG(reg & 0xFF);
-    __DSB();
-    SET_RS;
 
     // Data
     FSA506_WRITE_DATA(data & 0xFF);
-    __DSB();
 
     // Done
-    CLR_RS;
     FSA506_WRITE_REG(0x80);
-    __DSB();
-    SET_RS;
 }
 
 static void fsa506_set_column(uint16_t StartCol, uint16_t EndCol)
@@ -50,81 +59,136 @@ static void fsa506_set_page(uint16_t StartPage, uint16_t EndPage)
     fsa506_write_reg(0x7, EndPage & 0xFF);
 }
 
-static void fsa506_send_pixels(uint16_t *pixels, uint32_t fixed_color, int32_t byte_len)
+static void fsa506_send_pixels(uint16_t *pixels, uint32_t destWidth, uint32_t destHeight, uint32_t fixedColor, int32_t byteLen, int32_t scaleUpFactory)
 {
-    int count = byte_len / sizeof(uint16_t);
 
-    CLR_RS;
     FSA506_WRITE_REG(0xC1);
-    __DSB();
-    SET_RS;
 
-#if 0 //defined(CONFIG_FSA506_EBI_USE_PDMA)
+    uint32_t w, h, r_x, r_y;
+    uint16_t *pixels_y = NULL;
+    uint16_t *pixels_x = NULL;
+    uint16_t color = fixedColor;
 
-    // PDMA-M2M feed
-    if (count > 1024)
-        nu_pdma_mempush((void *)(CONFIG_FSA506_EBI_ADDR + (FSA506_ADDR_DATA)), (void *)pixels, 16, count);
+    uint32_t srcWidth = destWidth / scaleUpFactory;
+
+    pixels_y = pixels;
+
+#if defined(CONFIG_DISP_USE_PDMA)
+
+    if ((pixels) && (byteLen > 1024))
+    {
+
+        if (scaleUpFactory == 1)
+        {
+            int count = byteLen / sizeof(uint16_t);
+            // PDMA-M2M feed
+            nu_pdma_mempush((void *)DISP_DAT_ADDR, (void *)pixels, 16, count);
+        }
+        else
+        {
+            uint16_t *pu16PDMAData = s_au16PDMALineBuf;
+
+            for (h = 0; h < destHeight; h += scaleUpFactory)
+            {
+                pu16PDMAData = s_au16PDMALineBuf;
+                pixels_x = pixels_y;
+
+                for (w = 0; w < destWidth; w += scaleUpFactory)
+                {
+                    color = *pixels_x;
+                    pixels_x ++;
+
+                    for (r_x = 0; r_x < scaleUpFactory; r_x++)
+                    {
+                        *pu16PDMAData = color;
+                        pu16PDMAData ++;
+                    }
+                }
+
+                for (r_y = 0; r_y < scaleUpFactory; r_y++)
+                {
+                    nu_pdma_mempush((void *)DISP_DAT_ADDR, (void *)s_au16PDMALineBuf, 16, destWidth);
+                }
+
+                pixels_y += srcWidth;
+            }
+        }
+    }
     else
 #endif
     {
-        // CPU feed
-        int i = 0;
-
-        while (i < count)
+        for (h = 0; h < destHeight; h += scaleUpFactory)
         {
-            if (pixels)
-                FSA506_WRITE_DATA(pixels[i]);
-            else
-                FSA506_WRITE_DATA(fixed_color);
+            for (r_y = 0; r_y < scaleUpFactory; r_y++)
+            {
+                if (pixels_y)
+                {
+                    pixels_x = pixels_y;
+                }
 
-            i++;
+                for (w = 0; w < destWidth; w += scaleUpFactory)
+                {
+                    if (pixels_x)
+                    {
+                        color = *pixels_x;
+                        pixels_x ++;
+                    }
+
+                    for (r_x = 0; r_x < scaleUpFactory; r_x++)
+                    {
+                        FSA506_WRITE_DATA(color);
+                    }
+                }
+            }
+
+            if (pixels_y)
+            {
+                pixels_y += srcWidth;
+            }
         }
     }
 
-    __DSB();
-    CLR_RS;
     FSA506_WRITE_REG(0x80);
-    __DSB();
-    SET_RS;
 }
 
-void fsa506_put_char8x16(uint16_t x, uint16_t y, uint8_t c, uint32_t fColor, uint32_t bColor)
+void fsa506_put_char8x16(uint16_t x, uint16_t y, uint8_t c, uint32_t fColor, uint32_t bColor, int32_t scaleUpFactory)
 {
     uint32_t i, j;
     uint8_t m;
 
-    fsa506_set_column(x, x + 8 - 1);
-    fsa506_set_page(y, y + 16 - 1);
+    fsa506_set_column(x, x + (8 * scaleUpFactory)  - 1);
+    fsa506_set_page(y, y + (16 * scaleUpFactory) - 1);
 
-    CLR_RS;
     FSA506_WRITE_REG(0xC1);
-    __DSB();
-    SET_RS;
+
+    int r_x, r_y;
 
     for (i = 0; i < 16; i++)
     {
-        m = Font8x16[c * 16 + i];
-
-        for (j = 0; j < 8; j++)
+        for (r_y = 0; r_y < scaleUpFactory; r_y++)
         {
-            if ((m & 0x80) == 0x80)
-            {
-                FSA506_WRITE_DATA(fColor);
-            }
-            else
-            {
-                FSA506_WRITE_DATA(bColor);
-            }
+            m = Font8x16[c * 16 + i];
 
-            m <<= 1;
+            for (j = 0; j < 8; j++)
+            {
+                for (r_x = 0; r_x < scaleUpFactory; r_x++)
+                {
+                    if ((m & 0x80) == 0x80)
+                    {
+                        FSA506_WRITE_DATA(fColor);
+                    }
+                    else
+                    {
+                        FSA506_WRITE_DATA(bColor);
+                    }
+                }
+
+                m <<= 1;
+            }
         }
     }
 
-    __DSB();
-    CLR_RS;
     FSA506_WRITE_REG(0x80);
-    __DSB();
-    SET_RS;
 }
 
 
@@ -212,8 +276,8 @@ S_LCD_INFO g_s_WQVGA_FSA506 =
 {
     .m_strName      = "FSA506",
     .m_eInputFormat = eLCD_INPUT_RGB565,
-    .m_u16Width     = 480,
-    .m_u16Height    = 272,
+    .m_u16Width     = PANEL_ACTIVATE_WIDTH_PIXELS,
+    .m_u16Height    = PANEL_ACTIVATE_HEIGHT_PIXELS,
     .m_pfnInit      = fsa506_init,
     .m_pfnWriteReg  = fsa506_write_reg,
     .m_pfnSetColumn = fsa506_set_column,
@@ -221,6 +285,8 @@ S_LCD_INFO g_s_WQVGA_FSA506 =
     .m_pfnSentPixel = fsa506_send_pixels,
     .m_pfnPutChar   = fsa506_put_char8x16,
 };
+
+#endif
 
 
 

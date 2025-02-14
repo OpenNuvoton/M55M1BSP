@@ -1,0 +1,90 @@
+project:
+  packs:
+    - pack: Nuvoton::NuMicro_DFP
+  setups:
+    - output:
+        # bin, elf, hex, lib
+        type: bin
+    - setup: Options for Project
+      processor:
+        fpu: dp
+        mve: fp
+        endian: little
+        trustzone: non-secure
+      add-path:
+        - ../../../../../Library/CMSIS/Core/Include
+        - ../../../../../Library/Device/Nuvoton/M55M1/Include
+        - ../../../../../Library/StdDriver/inc
+        - ../..
+        - ../../tz_demo
+        - ../../../../../ThirdParty/FreeRTOS/Source/include
+        - ../../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55/non_secure
+        - ../../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55/secure
+        - ../../../../../ThirdParty/FreeRTOS/Demo/Common/include
+      define:
+        - NVT_VECTOR_ON_FLASH
+        - DEBUG_PORT: UART1_NS
+        - NVT_DBG_UART_OFF
+        - SYSTEM_CORE_CLOCK: "220000000"
+        - NVT_CMSE_NON_SECURE
+      misc:
+        - for-compiler: AC6
+          C:
+            - -std=c11
+          C-CPP:
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -D__MICROLIB
+          CPP:
+            - -xc++
+            - -std=c++11
+          ASM:
+            - -masm=auto
+          Link:
+            - --library_type=microlib --map --load_addr_map_info --xref --callgraph --symbols
+            - --info sizes --info totals --info unused --info veneers
+            - --strict --summary_stderr --info summarysizes
+        - for-compiler: GCC
+          C:
+            - -std=gnu11
+          C-CPP:
+            - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+          Link:
+            - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
+            - -Wl,--gc-sections,-Map="$elf()$.map"
+  linker:
+    - script: ../KEIL/NonSecure.scatter
+      for-compiler: AC6
+    - script: ../GCC/M55M1_ns.ld
+      for-compiler: GCC
+  groups:
+    - group: CMSIS
+      files:
+        - file: ../../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
+        - file: ../../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+    - group: Library
+      files:
+        - file: ../../../../../Library/StdDriver/src/retarget.c
+        - file: ../../../../../Library/StdDriver/src/gpio.c
+    - group: User
+      files:
+        - file: ../main_ns.c
+    - group: CMSELib
+      files:
+        - file: ../../CMSELib/nsclib_gcc.o
+          for-compiler: GCC
+        - file: ../../CMSELib/nsclib_keil.o
+          for-compiler: AC6
+    - group: Demos
+      files:
+        - file: ../../tz_demo/tz_demo.c
+    - group: FreeRTOS
+      files:
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/event_groups.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/list.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/queue.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/stream_buffer.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/tasks.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/timers.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/portable/MemMang/heap_3.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55/non_secure/port.c
+        - file: ../../../../../ThirdParty/FreeRTOS/Source/portable/GCC/ARM_CM55/non_secure/portasm.c

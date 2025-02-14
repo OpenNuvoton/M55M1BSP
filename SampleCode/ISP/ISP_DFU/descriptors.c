@@ -14,26 +14,25 @@
 /*!<USB Device Descriptor */
 uint8_t gu8DeviceDescriptor[] =
 {
-    18,   /* bLength */
-    0x01,   /* bDescriptorType */
-    0x10,   /* bcdUSB, version 1.10 */
-    0x01,
-    0x00,   /* bDeviceClass : See interface */
-    0x00,   /* bDeviceSubClass : See interface*/
-    0x00,   /* bDeviceProtocol : See interface */
-    EP0_MAX_PKT_SIZE, /* bMaxPacketSize0 0x40 = 64 */
+    LEN_DEVICE,         /* bLength */
+    DESC_DEVICE,        /* bDescriptorType */
+    0x10, 0x01,         /* bcdUSB (USB1.1) */
+    0x00,               /* bDeviceClass : See interface */
+    0x00,               /* bDeviceSubClass : See interface*/
+    0x00,               /* bDeviceProtocol : See interface */
+    EP0_MAX_PKT_SIZE,   /* bMaxPacketSize0 0x40 = 64 */
     /* idVendor */
-    USBD_VID & 0x00FF,
-    (USBD_VID & 0xFF00) >> 8,
-                        /* idProduct */
-                        USBD_PID & 0x00FF,
-                        (USBD_PID & 0xFF00) >> 8,
-                        0x00,   /* bcdDevice*/
-                        0x01,
-                        0x01,   /* iManufacturer : index of string Manufacturer  */
-                        0x02,   /* iProduct      : index of string descriptor of product*/
-                        0x03,   /* iSerialNumber : index of string serial number*/
-                        0x01    /*bNumConfigurations */
+    (USBD_VID & 0x00FF),
+    ((USBD_VID & 0xFF00) >> 8),
+    /* idProduct */
+    (USBD_PID & 0x00FF),
+    ((USBD_PID & 0xFF00) >> 8),
+    0x00,   /* bcdDevice*/
+    0x01,
+    0x01,   /* iManufacturer : index of string Manufacturer  */
+    0x02,   /* iProduct      : index of string descriptor of product*/
+    0x03,   /* iSerialNumber : index of string serial number*/
+    0x01    /* bNumConfigurations */
 };
 
 #define u8_usbConfigDescriptorDFU_LENGTH      (18 + (9 * 1))
@@ -63,15 +62,14 @@ uint8_t gu8ConfigDescriptor[] =
     0x00,   /* iInterface: */
 
     /******************** DFU Functional Descriptor********************/
-    0x09,   /*blength = 7 Bytes*/
+    0x09,   /* blength = 7 Bytes*/
     0x21,   /* DFU Functional Descriptor*/
-    0x0B,   /*bmAttributes, bitCanDnload | bitCanUpload */
-    0xFF,   /*DetachTimeOut= 255 ms*/
+    0x0B,   /* bmAttributes, bitCanDnload | bitCanUpload */
+    0xFF,   /* DetachTimeOut= 255 ms*/
     0x00,
     (TRANSFER_SIZE & 0x00FF),
-    (TRANSFER_SIZE & 0xFF00) >> 8, /* TransferSize = 1024 Byte*/
-                             0x10,                          /* bcdDFUVersion = 1.1 */
-                             0x01
+    ((TRANSFER_SIZE & 0xFF00) >> 8),    /* TransferSize = 1024 Byte*/
+    0x10, 0x01                          /* bcdDFUVersion = 1.1 */
 };
 
 /*!<USB Language String Descriptor */
@@ -125,3 +123,4 @@ const S_USBD_INFO_T gsInfo =
 };
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+

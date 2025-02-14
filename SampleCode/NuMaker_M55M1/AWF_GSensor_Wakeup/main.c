@@ -19,8 +19,8 @@
 #define MAX_SG_TAB_NUM              1
 #define LPPDMA_ENABLE_CHANNEL(x)    (LPPDMA->CHCTL |= (1 << x))
 #define I2C_TARGET_ADDR             (MPU6500_DEVICE_ID)
-#define DESC_SC_TX_ADRRESS          0x20310800
-#define DESC_SC_RX_ADRRESS          0x20310820
+#define DESC_SC_TX_ADDRESS          0x20310800
+#define DESC_SC_RX_ADDRESS          0x20310820
 #define GSensor_Threshold           300
 #define SrcArray_Address            0x20310100
 #define DstArray_Address            (uint32_t)(&AWF->DAT)
@@ -34,6 +34,14 @@ typedef struct dma_desc_t
     uint32_t dest;
     uint32_t offset;
 } DMA_DESC_T;
+
+#if (NVT_DCACHE_ON == 1)
+    static DMA_DESC_T *DMA_DESC_SC_TX __attribute__((aligned(DCACHE_LINE_SIZE))) = (DMA_DESC_T *)DESC_SC_TX_ADDRESS;
+    static DMA_DESC_T *DMA_DESC_SC_RX __attribute__((aligned(DCACHE_LINE_SIZE))) = (DMA_DESC_T *)DESC_SC_RX_ADDRESS;
+#else
+    static DMA_DESC_T *DMA_DESC_SC_TX = (DMA_DESC_T *)DESC_SC_TX_ADDRESS;
+    static DMA_DESC_T *DMA_DESC_SC_RX = (DMA_DESC_T *)DESC_SC_RX_ADDRESS;
+#endif
 
 uint32_t lppdma_channel_set(uint8_t ch)
 {
@@ -75,8 +83,6 @@ void BuildTxSCTab(uint32_t u32tabNum, uint32_t u32TxfSize, uint32_t pu8StarAddr)
 {
     uint32_t i;
 
-    DMA_DESC_T *DMA_DESC_SC_TX = (DMA_DESC_T *)DESC_SC_TX_ADRRESS;
-
     /* Configre TX scatter-gather table */
     for (i = 0; i < u32tabNum; i++)
     {
@@ -95,7 +101,6 @@ void BuildTxSCTab(uint32_t u32tabNum, uint32_t u32TxfSize, uint32_t pu8StarAddr)
 void BuildRxSCTab(uint32_t u32tabNum, uint32_t u32RxfSize, uint32_t pu8StarAddr)
 {
     uint32_t i;
-    DMA_DESC_T *DMA_DESC_SC_RX = (DMA_DESC_T *)DESC_SC_RX_ADRRESS;
 
     /* Configre RX scatter-gather table */
     for (i = 0; i < u32tabNum; i++)
@@ -115,8 +120,6 @@ void BuildRxSCTab(uint32_t u32tabNum, uint32_t u32RxfSize, uint32_t pu8StarAddr)
 void LPDMA_SC_trigger_init(uint32_t PDMAReq, uint8_t u8TestCh, uint32_t u8TestLen)
 {
     DSCT_T *ch_dsct;
-    DMA_DESC_T *DMA_DESC_SC_TX = (DMA_DESC_T *)DESC_SC_TX_ADRRESS;
-    DMA_DESC_T *DMA_DESC_SC_RX = (DMA_DESC_T *)DESC_SC_RX_ADRRESS;
 
     /* Enable LPPDMA channel */
     LPPDMA_ENABLE_CHANNEL(u8TestCh);
@@ -167,7 +170,11 @@ void LPPDMA_LPI2C_Init(void)
 {
     uint32_t  i;
 
+#if (NVT_DCACHE_ON == 1)
+    static uint8_t *SrcArray __attribute__((aligned(DCACHE_LINE_SIZE))) = (uint8_t *) SrcArray_Address;
+#else
     uint8_t *SrcArray = (uint8_t *) SrcArray_Address;
+#endif
 
     /* Device write command */
     for (i = 0; i < MAX_SG_TAB_NUM; i++)
@@ -260,9 +267,6 @@ NVT_ITCM void AWF_IRQHandler(void)
     uint32_t u32AccumulationValue;
     uint32_t u32HTH_Flag, u32LTH_Flag;
 
-    /* Enable AWF0 module clock */
-    CLK_EnableModuleClock(AWF0_MODULE); //TESTCHIP_ONLY
-
     u32AccumulationValue = AWF_GET_ACUVAL();
     u32HTH_Flag = AWF_GET_HTH_INTFLAG();
     u32LTH_Flag = AWF_GET_LTH_INTFLAG();
@@ -335,6 +339,12 @@ static void SYS_Init(void)
     /* Enable LPI2C module clock, for G-sensor*/
     CLK_EnableModuleClock(LPI2C0_MODULE);
 
+    /* Enable LPPDMA to access AWF when chip is in NPD0/1/3 */
+    AWF_EnableLPPDMA(AWF_CTL_LPPDMA_EN_Msk);
+
+    /* MIRC and HIRC enable in power down mode */
+    PMC_DISABLE_AOCKPD();
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
@@ -377,6 +387,11 @@ int main(void)
 
     /* Low power I2C initialize */
     LPPDMA_LPI2C_Init();
+
+#if (NVT_DCACHE_ON == 1)
+    /* Clear the data cache and write back data to the main memory */
+    SCB_CleanDCache();
+#endif
 
     /* Low power timer start */
     LPTMR_Start(LPTMR0);

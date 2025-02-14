@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2022 Arm Limited or its affiliates.
+ * SPDX-FileCopyrightText: Copyright 2010-2022 Arm Limited and/or its affiliates <open-source-office@arm.com>
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -32,7 +32,7 @@ void softmax_s16_arm_softmax_s16(void)
     const int32_t row_size = SOFTMAX_S16_ROW_SIZE;
     const int32_t mult = SOFTMAX_S16_INPUT_MULT;
     const int32_t shift = SOFTMAX_S16_INPUT_LEFT_SHIFT;
-    const q15_t *input_data = softmax_s16_input;
+    const int16_t *input_data = softmax_s16_input;
     const cmsis_nn_softmax_lut_s16 softmax_params = {.exp_lut = softmax_s16_exp_lut,
                                                      .one_by_one_lut = softmax_s16_one_by_one_lut};
     int16_t output[SOFTMAX_S16_DST_SIZE];

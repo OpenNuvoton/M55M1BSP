@@ -28,7 +28,6 @@ extern __NO_RETURN void __PROGRAM_START(void);
   Internal References
  *----------------------------------------------------------------------------*/
 __NO_RETURN void Reset_Handler(void);
-__NO_RETURN void Reset_Handler_Main(void);
 void Default_Handler(void);
 
 /*----------------------------------------------------------------------------
@@ -380,16 +379,10 @@ __NO_RETURN void Reset_Handler(void)
     __ASM volatile("MSR msplim, %0" : : "r"((uint32_t)(&__STACK_LIMIT)));
     __ASM volatile("MSR psplim, %0" : : "r"((uint32_t)(&__STACK_LIMIT)));
 
-    // Move other code to Reset_Handler_Main to prevent compiler generate stack access code.
-    // Move stack pointer before setting MSPLIM might cause hard fault due to MSPLIM violation.
-    Reset_Handler_Main();
-}
-
-__NO_RETURN void Reset_Handler_Main(void)
-{
 #if 0   // To reduce code size
 
-    if ((__PC() & NS_OFFSET) == 0)
+    // Enable SRAM1/2 functions are only available in secure mode
+    if (SCU_IS_CPU_NS(SCU_NS) == 0)
     {
         // Unlock protected registers
         do
@@ -433,10 +426,10 @@ __NO_RETURN void Reset_Handler_Main(void)
     SCB_InvalidateICache();
     SCB_EnableICache();
 
-#ifdef NVT_DCACHE_ON
+#if (NVT_DCACHE_ON == 1)
     SCB_InvalidateDCache();
     SCB_EnableDCache();
-#endif  // NVT_DCACHE_ON
+#endif  // (NVT_DCACHE_ON == 1)
 
     __PROGRAM_START();      // Enter PreMain (C library entry point)
 }

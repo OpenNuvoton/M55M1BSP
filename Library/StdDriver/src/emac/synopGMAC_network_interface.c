@@ -89,6 +89,17 @@ void synopGMAC_powerdown_mac(synopGMACdevice *gmacdev)
     //Enable the assertion of PMT interrupt
     synopGMAC_pmt_int_enable(gmacdev);
 
+    //Set transmit and receive stop command(for M55M1)
+    synopGMACWriteReg(gmacdev->DmaBase, DmaInterrupt, DmaIntRxStopped | DmaIntTxStopped);
+    synopGMAC_disable_dma_rx(gmacdev);
+    synopGMAC_disable_dma_tx(gmacdev);
+
+    //Check that reception and transmission have been completed(for M55M1)
+    while (!((synopGMACReadReg(gmacdev->DmaBase, DmaStatus) & (DmaIntTxStopped | DmaIntRxStopped))))
+    {
+        TR("Transmit or Receive Process not Stopped\n");
+    }
+
     //enter the power down mode
     synopGMAC_power_down_enable(gmacdev);
 
@@ -126,12 +137,7 @@ s32 synopGMAC_setup_tx_desc_queue(synopGMACdevice *gmacdev, DmaDesc *first_desc,
 
     gmacdev->TxDescCount = no_of_desc;
 
-#ifdef NVT_DCACHE_ON
-    //gmacdev->TxDesc      = (DmaDesc *)((u32)first_desc | UNCACHEABLE) ;
     gmacdev->TxDesc      = first_desc;
-#else
-    gmacdev->TxDesc      = first_desc;
-#endif
 
     gmacdev->TxDescDma   = (dma_addr_t)first_desc;
 
@@ -191,12 +197,9 @@ s32 synopGMAC_setup_rx_desc_queue(synopGMACdevice *gmacdev, DmaDesc *first_desc,
     TR("total size of memory required for Rx Descriptors in Ring Mode = 0x%08x\n", ((sizeof(DmaDesc) * no_of_desc)));
 
     gmacdev->RxDescCount = no_of_desc;
-#ifdef NVT_DCACHE_ON
-    //gmacdev->RxDesc      = (DmaDesc *)((u32)first_desc | UNCACHEABLE) ;
+
     gmacdev->RxDesc      = first_desc;
-#else
-    gmacdev->RxDesc      = first_desc;
-#endif
+
     gmacdev->RxDescDma   = (dma_addr_t)((u32)first_desc);
 
     for (i = 0; i < gmacdev->RxDescCount; i++)
@@ -312,6 +315,8 @@ s32 synopGMAC_xmit_frames(synopGMACdevice *gmacdev, u8 *pkt_data, u32 pkt_len, u
         TR0("%s No More Free Tx Descriptors\n", __FUNCTION__);
         return -1;
     }
+
+    __DSB();
 
     /*Now force the DMA to start transmission*/
     synopGMAC_resume_dma_tx(gmacdev);
@@ -515,25 +520,7 @@ s32 synop_handle_received_data(synopGMACdevice *gmacdev, PKT_FRAME_T **ppsPktFra
             }
 
             *ppsPktFrame = (PKT_FRAME_T *)dma_addr1;
-#if 0
-#ifdef NVT_DCACHE_ON
-            memcpy((void *)pu8rb, (void *)((u32)dma_addr1 | UNCACHEABLE), len);
-#else
-            memcpy((void *)pu8rb, (void *)((u32)dma_addr1), len);
-#endif
 
-            if (prevtx != NULL)
-            {
-#ifdef NVT_DCACHE_ON
-                memcpy((void *)pu8rb + len, (void *)((u32)(dma_addr1 | UNCACHEABLE) + len), 4);
-#else
-                memcpy((void *)pu8rb + len, (void *)((u32)dma_addr1 + len), 4);
-#endif
-            }
-
-            //            rb->rdy = 1;
-            //            rb->len = len;
-#endif
             gmacdev->synopGMACNetStats.rx_packets++;
             gmacdev->synopGMACNetStats.rx_bytes += len;
 

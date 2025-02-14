@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file    main.c
  * @version V1.00
- * @brief   Implement FMC multi word program function executed in ITCM
+ * @brief   Implement FMC multi word program function executed in SRAM
  *          to program embedded APROM.
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -24,8 +24,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -86,6 +86,12 @@ int main(void)
         }
 
         printf("    [OK] Programmed length = %d\n", i);
+
+#if  (NVT_DCACHE_ON == 1)
+        // Invalidate the D-Cache for the programmed region to ensure data consistency when D-Cache is enabled
+        SCB_InvalidateDCache_by_Addr((void *)u32Addr, FMC_FLASH_PAGE_SIZE);
+#endif
+
         printf("Verify ... \n");
 
         for (i = 0; i < FMC_FLASH_PAGE_SIZE; i += 4)

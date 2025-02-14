@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2022 Arm Limited or its affiliates. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright 2010-2024 Arm Limited and/or its affiliates <open-source-office@arm.com> All rights
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -49,3 +49,14 @@ void test_requantize_s64_arm_convolve_s16(void) { requantize_s64_arm_convolve_s1
 void test_int16xint8_dilation_1_arm_convolve_s16(void) { int16xint8_dilation_1_arm_convolve_s16(); }
 void test_int16xint8_dilation_2_arm_convolve_s16(void) { int16xint8_dilation_2_arm_convolve_s16(); }
 void test_int16xint8_dilation_3_arm_convolve_s16(void) { int16xint8_dilation_3_arm_convolve_s16(); }
+void test_buffer_size_arm_convolve_s16(void) { buffer_size_arm_convolve_s16(); }
+void test_buffer_size_mve_arm_convolve_s16(void) { buffer_size_mve_arm_convolve_s16(); }
+void test_buffer_size_dsp_arm_convolve_s16(void) { buffer_size_dsp_arm_convolve_s16(); }
+void test_int16xint8_spill_arm_convolve_s16(void) { int16xint8_spill_arm_convolve_s16(); }
+void test_int16xint8_spill2_arm_convolve_s16(void) { int16xint8_spill2_arm_convolve_s16(); }
+void test_int16xint8xint32_1_arm_convolve_s16(void) { int16xint8xint32_1_arm_convolve_s16(); }
+void test_int16xint8xint32_2_arm_convolve_s16(void) { int16xint8xint32_2_arm_convolve_s16(); }
+void test_int16xint8xint32_3_arm_convolve_s16(void) { int16xint8xint32_3_arm_convolve_s16(); }
+void test_int16xint8xint32_4_arm_convolve_s16(void) { int16xint8xint32_4_arm_convolve_s16(); }
+void test_int16xint8xint32_5_arm_convolve_s16(void) { int16xint8xint32_5_arm_convolve_s16(); }
+void test_int16xint8xint32_6_arm_convolve_s16(void) { int16xint8xint32_6_arm_convolve_s16(); }

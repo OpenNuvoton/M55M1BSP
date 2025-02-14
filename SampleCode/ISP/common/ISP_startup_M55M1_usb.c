@@ -370,10 +370,10 @@ __NO_RETURN void Reset_Handler_Main(void)
     SCB_EnableICache();
 #endif
 
-#ifdef NVT_DCACHE_ON
+#if (NVT_DCACHE_ON == 1)
     SCB_InvalidateDCache();
     SCB_EnableDCache();
-#endif  // NVT_DCACHE_ON
+#endif  // (NVT_DCACHE_ON == 1)
 
     __PROGRAM_START();      // Enter PreMain (C library entry point)
 }

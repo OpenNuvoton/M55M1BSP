@@ -1,6 +1,6 @@
 #from distutils.core import setup, Extension
 from setuptools import setup, Extension,find_packages
-from distutils.util import convert_path
+import io
 import glob
 import numpy
 import sys
@@ -9,9 +9,19 @@ import os.path
 import re
 import pathlib
 
+
 here = pathlib.Path(__file__).parent.resolve()
 ROOT = here
 ROOT=""
+
+PYTHON_MOD = os.path.join(ROOT,"cmsisdsp")
+version_path = os.path.join(PYTHON_MOD,"version.py")
+
+__version__ = re.search(
+    r'__version__\s*=\s*[\'"]([^\'"]*)[\'"]',  # It excludes inline comment too
+    io.open(version_path, encoding='utf_8_sig').read()
+    ).group(1)
+
 
 includes = [os.path.join(ROOT,"Include"),os.path.join(ROOT,"PrivateInclude"),os.path.join("PythonWrapper","cmsisdsp_pkg","src")]
 
@@ -20,128 +30,24 @@ if sys.platform == 'win32':
 else:
   cflags = ["-Wno-attributes","-Wno-unused-function","-Wno-unused-variable","-Wno-implicit-function-declaration","-DCMSISDSP","-D__GNUC_PYTHON__"]
 
-transform = glob.glob(os.path.join(ROOT,"Source","TransformFunctions","*.c"))
-
-# Files are present when creating the source distribution
-# but they are not copied to the source distribution
-# When doing pip install those files are not prevent
-# and it should not fail
-try:
-  transform.remove(os.path.join(ROOT,"Source","TransformFunctions","TransformFunctions.c"))
-  transform.remove(os.path.join(ROOT,"Source","TransformFunctions","TransformFunctionsF16.c"))
-except:
-  pass
-
-support = glob.glob(os.path.join(ROOT,"Source","SupportFunctions","*.c"))
-
-try:
-  support.remove(os.path.join(ROOT,"Source","SupportFunctions","SupportFunctions.c"))
-  support.remove(os.path.join(ROOT,"Source","SupportFunctions","SupportFunctionsF16.c"))
-except:
-  pass
-
-fastmath = glob.glob(os.path.join(ROOT,"Source","FastMathFunctions","*.c"))
-try:
-  fastmath.remove(os.path.join(ROOT,"Source","FastMathFunctions","FastMathFunctions.c"))
-except:
-  pass
-
-filtering = glob.glob(os.path.join(ROOT,"Source","FilteringFunctions","*.c"))
-try:
-  filtering.remove(os.path.join(ROOT,"Source","FilteringFunctions","FilteringFunctions.c"))
-  filtering.remove(os.path.join(ROOT,"Source","FilteringFunctions","FilteringFunctionsF16.c"))
-except:
-  pass
-
-matrix = glob.glob(os.path.join(ROOT,"Source","MatrixFunctions","*.c"))
-try:
-  matrix.remove(os.path.join(ROOT,"Source","MatrixFunctions","MatrixFunctions.c"))
-  matrix.remove(os.path.join(ROOT,"Source","MatrixFunctions","MatrixFunctionsF16.c"))
-except:
-  pass
-
-statistics = glob.glob(os.path.join(ROOT,"Source","StatisticsFunctions","*.c"))
-try:
-  statistics.remove(os.path.join(ROOT,"Source","StatisticsFunctions","StatisticsFunctions.c"))
-  statistics.remove(os.path.join(ROOT,"Source","StatisticsFunctions","StatisticsFunctionsF16.c"))
-except:
-  pass
-
-complexf = glob.glob(os.path.join(ROOT,"Source","ComplexMathFunctions","*.c"))
-try:
-  complexf.remove(os.path.join(ROOT,"Source","ComplexMathFunctions","ComplexMathFunctions.c"))
-  complexf.remove(os.path.join(ROOT,"Source","ComplexMathFunctions","ComplexMathFunctionsF16.c"))
-except:
-  pass
-
-basic = glob.glob(os.path.join(ROOT,"Source","BasicMathFunctions","*.c"))
-try:
-  basic.remove(os.path.join(ROOT,"Source","BasicMathFunctions","BasicMathFunctions.c"))
-  basic.remove(os.path.join(ROOT,"Source","BasicMathFunctions","BasicMathFunctionsF16.c"))
-except:
-  pass
-
-controller = glob.glob(os.path.join(ROOT,"Source","ControllerFunctions","*.c"))
-try:
-  controller.remove(os.path.join(ROOT,"Source","ControllerFunctions","ControllerFunctions.c"))
-except:
-  pass
-
-common = glob.glob(os.path.join(ROOT,"Source","CommonTables","*.c"))
-try:
-  common.remove(os.path.join(ROOT,"Source","CommonTables","CommonTables.c"))
-  common.remove(os.path.join(ROOT,"Source","CommonTables","CommonTablesF16.c"))
-except:
-  pass
-
-interpolation = glob.glob(os.path.join(ROOT,"Source","InterpolationFunctions","*.c"))
-try:
-  interpolation.remove(os.path.join(ROOT,"Source","InterpolationFunctions","InterpolationFunctions.c"))
-  interpolation.remove(os.path.join(ROOT,"Source","InterpolationFunctions","InterpolationFunctionsF16.c"))
-except:
-  pass
-
-quaternion = glob.glob(os.path.join(ROOT,"Source","QuaternionMathFunctions","*.c"))
-try:
-  quaternion.remove(os.path.join(ROOT,"Source","QuaternionMathFunctions","QuaternionMathFunctions.c"))
-except:
-  pass
-
-distance = glob.glob(os.path.join(ROOT,"Source","DistanceFunctions","*.c"))
-try:
-  distance.remove(os.path.join(ROOT,"Source","DistanceFunctions","DistanceFunctions.c"))
-except:
-  pass
-
-bayes = glob.glob(os.path.join(ROOT,"Source","BayesFunctions","*.c"))
-try:
-  bayes.remove(os.path.join(ROOT,"Source","BayesFunctions","BayesFunctions.c"))
-except:
-  pass
-
-svm = glob.glob(os.path.join(ROOT,"Source","SVMFunctions","*.c"))
-try:
-  svm.remove(os.path.join(ROOT,"Source","SVMFunctions","SVMFunctions.c"))
-except:
-  pass
-
 # Add dependencies
-transformMod = transform + common + basic + complexf + fastmath + matrix + statistics
-statisticsMod = statistics + common + fastmath + basic
-interpolationMod = interpolation + common
-filteringMod = filtering + common + support + fastmath + basic
-controllerMod = controller + common
+transformMod = [] # transform + common + basic + complexf + fastmath + matrix + statistics
+statisticsMod = [] # statistics + common + fastmath + basic
+interpolationMod = [] # interpolation + common
+filteringMod = [] # filtering + common + support + fastmath + basic
+controllerMod = [] # controller + common
 
-matrixMod = matrix 
-supportMod = support 
-complexfMod = complexf + fastmath + common + basic
-basicMod = basic
-quaternionMod = quaternion
-fastmathMod = basic + fastmath + common
-distanceMod = distance + common + basic + statistics + fastmath
-bayesMod = bayes + fastmath + common + statistics + basic
-svmMod = svm + fastmath + common + basic
+matrixMod = [] # matrix + basic
+supportMod = [] # support 
+complexfMod = [] # complexf + fastmath + common + basic
+basicMod = [] # basic
+quaternionMod = [] # quaternion
+fastmathMod = [] # basic + fastmath + common
+distanceMod = [] # distance + common + basic + statistics + fastmath
+bayesMod = [] # bayes + fastmath + common + statistics + basic
+svmMod = [] # svm + fastmath + common + basic
 
+windowMod = [] # window
 
 filteringMod.append(os.path.join("PythonWrapper","cmsisdsp_pkg","src","cmsisdsp_filtering.c"))
 matrixMod.append(os.path.join("PythonWrapper","cmsisdsp_pkg","src","cmsisdsp_matrix.c"))
@@ -157,6 +63,7 @@ fastmathMod.append(os.path.join("PythonWrapper","cmsisdsp_pkg","src","cmsisdsp_f
 distanceMod.append(os.path.join("PythonWrapper","cmsisdsp_pkg","src","cmsisdsp_distance.c"))
 bayesMod.append(os.path.join("PythonWrapper","cmsisdsp_pkg","src","cmsisdsp_bayes.c"))
 svmMod.append(os.path.join("PythonWrapper","cmsisdsp_pkg","src","cmsisdsp_svm.c"))
+windowMod.append(os.path.join("PythonWrapper","cmsisdsp_pkg","src","cmsisdsp_window.c"))
 
 
 
@@ -194,39 +101,58 @@ fastmath = list(filter(isnotmissing,list(filter(notf16, fastmathMod))))
 distance = list(filter(isnotmissing,list(filter(notf16, distanceMod))))
 bayes = list(filter(isnotmissing,list(filter(notf16, bayesMod))))
 svm = list(filter(isnotmissing,list(filter(notf16, svmMod))))
+window = list(filter(isnotmissing,list(filter(notf16, windowMod))))
 
 #for l in filtering:
 #  print(os.path.basename(l))
 #quit()
 
-def mkModule(name,srcs,funcDir,newCflags=[]):
+def mkModule(name,srcs,funcDir):
   localinc = os.path.join(ROOT,"Source",funcDir)
+  libdir = [os.path.join(ROOT,"PythonWrapper","build","bin_dsp")]
+  lib = ["CMSISDSP"]
+  extraobjs=[]
+  
+  if sys.platform.startswith('linux'):
+    lib = []
+    extraobjs = [os.path.join(ROOT,"PythonWrapper","build_linux","bin_dsp","libCMSISDSP.a")]
+    libdir = []
+ 
+  if sys.platform.startswith('darwin'):
+    lib = []
+    extraobjs = [os.path.join(ROOT,"PythonWrapper","build_darwin","bin_dsp","libCMSISDSP.a")]
+    libdir = []
+ 
   return(Extension(name,
                     sources = (srcs
                               )
                               ,
                     include_dirs =  [localinc] + includes + [numpy.get_include()],
-                    extra_compile_args = cflags + newCflags
+                    extra_compile_args = cflags,
+                    library_dirs = libdir,
+                    libraries=lib,
+                    extra_objects=extraobjs
                               ))
 
 flagsForCommonWithoutFFT=["-DARM_DSP_CONFIG_TABLES", 
     "-DARM_FAST_ALLOW_TABLES", 
     "-DARM_ALL_FAST_TABLES"]
 
-moduleFiltering = mkModule('cmsisdsp_filtering',filtering,"FilteringFunctions",flagsForCommonWithoutFFT)
+moduleFiltering = mkModule('cmsisdsp_filtering',filtering,"FilteringFunctions")
 moduleMatrix = mkModule('cmsisdsp_matrix',matrix,"MatrixFunctions")
 moduleSupport = mkModule('cmsisdsp_support',support,"SupportFunctions")
-moduleStatistics = mkModule('cmsisdsp_statistics',statistics,"StatisticsFunctions",flagsForCommonWithoutFFT)
+moduleStatistics = mkModule('cmsisdsp_statistics',statistics,"StatisticsFunctions")
 moduleComplexf= mkModule('cmsisdsp_complexf',complexf,"ComplexMathFunctions")
 moduleBasic = mkModule('cmsisdsp_basic',basic,"BasicMathFunctions")
-moduleController = mkModule('cmsisdsp_controller',controller,"ControllerFunctions",flagsForCommonWithoutFFT)
+moduleController = mkModule('cmsisdsp_controller',controller,"ControllerFunctions")
 moduleTransform = mkModule('cmsisdsp_transform',transform,"TransformFunctions")
-moduleInterpolation = mkModule('cmsisdsp_interpolation',interpolation,"InterpolationFunctions",flagsForCommonWithoutFFT)
+moduleInterpolation = mkModule('cmsisdsp_interpolation',interpolation,"InterpolationFunctions")
 moduleQuaternion = mkModule('cmsisdsp_quaternion',quaternion,"QuaternionMathFunctions")
-moduleFastmath = mkModule('cmsisdsp_fastmath',fastmath,"FastMathFunctions",flagsForCommonWithoutFFT)
-moduleDistance = mkModule('cmsisdsp_distance',distance,"DistanceFunctions",flagsForCommonWithoutFFT)
-moduleBayes = mkModule('cmsisdsp_bayes',bayes,"BayesFunctions",flagsForCommonWithoutFFT)
-moduleSVM = mkModule('cmsisdsp_svm',svm,"SVMFunctions",flagsForCommonWithoutFFT)
+moduleFastmath = mkModule('cmsisdsp_fastmath',fastmath,"FastMathFunctions")
+moduleDistance = mkModule('cmsisdsp_distance',distance,"DistanceFunctions")
+moduleBayes = mkModule('cmsisdsp_bayes',bayes,"BayesFunctions")
+moduleSVM = mkModule('cmsisdsp_svm',svm,"SVMFunctions")
+moduleWindow = mkModule('cmsisdsp_window',window,"WindowFunctions")
 
 
 
@@ -236,14 +162,9 @@ def build():
       print('setup.py: Error: This package only supports Python 3.', file=sys.stderr)
       sys.exit(1)
   
-  main_ns = {}
-  ver_path = convert_path(os.path.join("cmsisdsp","version.py"))
-  with open(ver_path) as ver_file:
-      exec(ver_file.read(), main_ns)
-
   setup (name = 'cmsisdsp',
-         version = main_ns['__version__'],
-         packages=["cmsisdsp","cmsisdsp.sdf","cmsisdsp.sdf.nodes","cmsisdsp.sdf.nodes.host","cmsisdsp.sdf.scheduler"],
+         version = __version__,
+         packages=["cmsisdsp"],
          description = 'CMSIS-DSP Python API',
          long_description=open("PythonWrapper_README.md").read(),
          long_description_content_type='text/markdown',
@@ -260,13 +181,14 @@ def build():
                         moduleFastmath,
                         moduleDistance,
                         moduleBayes,
-                        moduleSVM
+                        moduleSVM,
+                        moduleWindow
                         ],
          include_package_data=True,
-         author = 'Copyright (C) 2010-2022 ARM Limited or its affiliates. All rights reserved.',
+         author = 'Copyright (C) 2010-2024 ARM Limited or its affiliates. All rights reserved.',
          author_email = 'christophe.favergeon@arm.com',
-         url="https://arm-software.github.io/CMSIS_5/DSP/html/index.html",
-         python_requires='>=3.6',
+         url="https://github.com/ARM-software/CMSIS-DSP",
+         python_requires='>=3.9',
          license="License :: OSI Approved :: Apache Software License",
          platforms=['any'],
          classifiers=[
@@ -281,17 +203,13 @@ def build():
                 "Environment :: Console",
                 "Intended Audience :: Developers",
           ],
-          keywords=['development','dsp','cmsis','cmsis-dsp','Arm','signal processing','maths'],
-          install_requires=['numpy>=1.19',
-          'networkx>=2.5',
-          #'jinja2>= 2.0, <3.0',
-          'jinja2>=3.1.4',
-          'sympy>=1.6',
-          'markupsafe<2.1'
+          keywords=['development','dsp','cmsis','cmsis-dsp','Arm','signal processing','maths','ml','cortex-m','cortex-a'],
+          install_requires=[
+          'numpy>=1.23.5',
           ],
           project_urls={  # Optional
-             'Bug Reports': 'https://github.com/ARM-software/CMSIS_5/issues',
-             'Source': 'https://github.com/ARM-software/CMSIS_5/tree/develop/CMSIS/DSP',
+             'Bug Reports': 'https://github.com/ARM-software/CMSIS-DSP/issues',
+             'Source': 'https://github.com/ARM-software/CMSIS-DSP',
             }
           )
        

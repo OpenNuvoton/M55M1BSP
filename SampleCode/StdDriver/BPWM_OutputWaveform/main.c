@@ -27,8 +27,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -100,8 +100,6 @@ int main(void)
     printf("  waveform output pin: BPWM0_CH0(PE.2), BPWM0_CH1(PE.3), BPWM0_CH2(PE.4), BPWM0_CH3(PE.5), BPWM0_CH4(PE.6), BPWM0_CH5(PE.7)\n");
     printf("                       BPWM1_CH0(PB.11), BPWM1_CH1(PB.10), BPWM1_CH2(PB.9), BPWM1_CH3(PB.8), BPWM1_CH4(PB.7), BPWM1_CH5(PB.6)\n");
 
-    printf("Press any key to stop.\n");
-
     /* BPWM0 and BPWM1 channel 0~5 frequency and duty configuration are as follows */
     /* Because of BPWM0 channel 0~5 share one period, so the period value of all channels need set the same. */
     BPWM_ConfigOutputChannel(BPWM0, 0, 180000, 90);
@@ -128,6 +126,7 @@ int main(void)
     BPWM_Start(BPWM1, 0x3F);
 
     /* Wait for user press any key to stop */
+    printf("Press any key to stop.\n");
     getchar();
 
     /* Stop BPWM0 counter */

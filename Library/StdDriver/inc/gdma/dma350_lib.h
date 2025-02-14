@@ -204,6 +204,31 @@ enum dma350_lib_error_t dma350_draw_from_canvas(struct dma350_ch_dev_t *dev,
                                                 enum dma350_lib_exec_type_t exec_type);
 
 /**
+ * \brief 2D Fill destination bitmap with given fill value.
+ *
+ * \param[in] dev             DMA350 channel device struct \ref dma350_ch_dev_t
+ * \param[in] des             Destination address, top left corner
+ * \param[in] des_width       Destination width
+ * \param[in] des_height      Destination height
+ * \param[in] des_line_width  Destination line width
+ * \param[in] fill_value      fill value
+ * \param[in] pixelsize       Size of a pixel as in \ref dma350_ch_transize_t
+ * \param[in] exec_type       Execution type as in \ref dma350_lib_exec_type_t
+ *
+ * \return Result of the operation \ref dma350_lib_error_t
+ *
+ * \note Destination width and height denote the area which will be filled at
+ *       the destination address.
+ */
+enum dma350_lib_error_t dma350_fill_to_bitmap(struct dma350_ch_dev_t *dev,
+                                              void *des,
+                                              uint32_t des_width, uint16_t des_height,
+                                              uint16_t des_line_width,
+                                              uint32_t fill_value,
+                                              enum dma350_ch_transize_t pixelsize,
+                                              enum dma350_lib_exec_type_t exec_type);
+
+/**
  * \brief 2D Copy from a bitmap to within a destination bitmap, while applying
  *        various possible transformations.
  *

@@ -31,6 +31,11 @@
 			<locationURI>$%7BPARENT-5-PROJECT_LOC%7D/Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c</locationURI>
 		</link>
 		<link>
+			<name>CMSIS/system_M55M1.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-5-PROJECT_LOC%7D/Library/Device/Nuvoton/M55M1/Source/system_M55M1.c</locationURI>
+		</link>
+		<link>
 			<name>Demos/tz_demo.c</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/tz_demo/tz_demo.c</locationURI>

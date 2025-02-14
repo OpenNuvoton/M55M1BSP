@@ -14,8 +14,6 @@
     #pragma anon_unions
 #endif
 
-#define SPIM_REG_CACHE                  (0) /*!< SPIM cache on/off    \hideinitializer */
-
 /**
     @addtogroup REGISTER Control Register
   @{
@@ -42,13 +40,11 @@ typedef struct
      * |        |          |Note 1: When CIPHOFF(SPIM_CTL0[0]) is 0 and OTF AES engine outside SPIM is enabled, encryption/decryption of SPIM is enabled.
      * |        |          |Note 2: When encryption/decryption of SPIM is enabled, please set DESELTIM (SPIM_DMMCTL[23:16]) >= 0x10
      * |        |          |When encryption/decryption of SPIM is disabled, please set DESELTIM(SPIM_DMMCTL[23:16]) >= 0x8.
-     * |[2]     |BALEN     |Balance the AHB Control Time Between Cipher Enable and Disable Control
-     * |        |          |When cipher is enabled, the AHB control signal will delay some time caused by the encoding or decoding calculation
-     * |        |          |Therefore, if set BALEN to 1, it will make the AHB signal processing time with cipher disabled be equal to that with cipher enabled.
-     * |        |          |Note: Only useful when both of cipher and OTF AES are disabled.
-     * |[3]     |HYPER_EN  |HYPER RAM Mode Enable Bit
-     * |        |          |0 = SPIROM operates in SPI Flash mode.
-     * |        |          |1 = SPIROM operates in HYPER Device mode.
+     * |[3:2]   |DEVMODE   |Device Mode
+     * |        |          |0x0 = SPIROM operates in SPI Flash device mode.
+     * |        |          |0x1 = SPIROM operates in HYPER RAM device mode.
+     * |        |          |0x2 = SPIROM operates in HYPER Flash device mode.
+     * |        |          |0x3 = Reserved.
      * |[5]     |B4ADDREN  |4-byte Address Mode Enable Bit
      * |        |          |0 = 3-byte address mode Enabled.
      * |        |          |1 = 4-byte address mode Enabled.
@@ -104,19 +100,16 @@ typedef struct
      * |        |          |0x3 = Octal mode.
      * |        |          |Note: Only used for normal I/O mode.
      * |[23:22] |OPMODE    |SPI Function Operation Mode
-     * |        |          |0x0 = Normal I/O mode. (Note1) (Note3)
-     * |        |          |0x1 = DMA write mode. (Note2) (Note3)
-     * |        |          |0x2 = DMA read mode. (Note3)
-     * |        |          |0x3 = Direct Memory Mapping mode (DMM mode) (Default). (Note4)
-     * |        |          |Note 1: After using Normal I/O mode of SPI Flash/Hyper device controller to program the content of SPI Flash and Hyper device, please set CDINVAL(SPIM_CTL1[3]) to 0x1 (Set all cache data to be invalid).
-     * |        |          |Note 2: In DMA write mode, hardware will send just one page program command per operation
-     * |        |          |Users must take care of cross-page cases
-     * |        |          |After using DMA write mode to program the content of SPI Flash and Hyper device, please set CDINVAL(SPIM_CTL1[3]) to 0x1 (Set all cache data to be invalid).
-     * |        |          |Note 3: For SPI Flash/Hyper device with 32 Mbytes, access address range is from 0x00000000 to 0x01FFFFFF when using Normal I/O mode, DMA write mode, and DMA read mode to write/read SPI Flash and Hyper device
+     * |        |          |0x0 = Normal I/O mode.
+     * |        |          |0x1 = DMA write mode.
+     * |        |          |0x2 = DMA read mode.
+     * |        |          |0x3 = Direct Memory Mapping mode (DMM mode) (Default).
+     * |        |          |Note 1: In DMA write mode, hardware will send just one page program command per operation
+     * |        |          |Users must take care of cross-page cases.
+     * |        |          |Note 2: For SPI Flash and Hyper device with 32 Mbytes, access address range is from 0x00000000 to 0x01FFFFFF when using Normal I/O mode, DMA write mode, and DMA read mode to write/read SPI Flash and Hyper device
      * |        |          |Please user check size of used SPI Flash component to know access address range of SPI Flash and Hyper device.
-     * |        |          |Note 4: For SPI Flash/Hyper device with 32 Mbytes, access address range is from 0x08000000 to 0x09FFFFFF when using Direct Memory mapping mode (DMM mode) to read SPI Flash and write/read Hyper device
-     * |        |          |Please user check size of used storage components to know access address range
-     * |        |          |Mbytes Mbytes
+     * |        |          |Note 3: For SPI Flash and Hyper device with 32 Mbytes, access address range is from 0x08000000 to 0x09FFFFFF when using Direct Memory mapping mode (DMM mode) to read SPI Flash and write/read Hyper device
+     * |        |          |Please user check size of used storage components to know access address range.
      * |[24]    |DTR_NORM  |Double Transfer Rate Mode Enable Bit for Normal I/O Mode
      * |        |          |In master mode, SPI will receive data at both rising edge and falling edge of SPI bus clock.
      * |        |          |0 = DTR mode Disabled (i.e. Single Transfer Rate (STR) mode enabled).
@@ -144,8 +137,13 @@ typedef struct
      * |        |          |0x1 = Byte order of received data from SPI Flash is byte3, byte2, byte1, byte0.
      * |        |          |0x2 = Byte order of received data from SPI Flash is byte1, byte0, byte3, byte2.
      * |        |          |0x3 = Byte order of received data from SPI Flash is byte2, byte3, byte0, byte1.
+     * |[31]    |SPI_RSTN  |SPI Flash Reset Enable Bit for SPI Flash
+     * |        |          |User can set this control register to reset SPI Flash device in SPI Flash mode (i.e
+     * |        |          |DEVMODE (SPIM_CTL0[3:2]) = 0x0).
+     * |        |          |0 = Set SPIM_RESETn pin to low.
+     * |        |          |1 = Set SPIM_RESETn to high (Default).
      * @var SPIM_T::CTL1
-     * Offset: 0x04  Control Register 1
+     * Offset: 0x04  Control and Status Register 1
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
@@ -159,46 +157,21 @@ typedef struct
      * |        |          |1 = The transfer has not finished yet.
      * |        |          |Note: All registers should be set before writing 1 to the SPIMEN bit
      * |        |          |When a transfer is in progress, user should not write to any register of this peripheral.
-     * |[1]     |CACHEOFF  |Cache Memory Function Disable Bit
-     * |        |          |0 = Cache memory function Enabled. (Default)
-     * |        |          |1 = Cache memory function Disabled.
-     * |[3]     |CDINVAL   |Cache Data Invalid Enable Bit
-     * |        |          |Write Operation:
-     * |        |          |0 = No effect.
-     * |        |          |1 = Set all cache data to be invalid. This bit is cleared by hardware automatically.
-     * |        |          |Read Operation: No effect
-     * |        |          |Note: When SPI Flash memory is page erasing or whole Flash erasing, please set CDINVAL to 0x1
-     * |        |          |After using normal I/O mode to program or erase the content of SPI Flash, please set CDINVAL to 0x1.
      * |[4]     |SS        |Slave Select Active Enable Bit
      * |        |          |0 = SPIM_SS is in active level.
      * |        |          |1 = SPIM_SS is in inactive level (Default).
      * |        |          |Note: This interface can only drive one device/slave at a given time
      * |        |          |Therefore, the slave selects of the selected device must be set to its active level before starting any read or write transfer
-     * |        |          |Functional description of SSACTPOL(SPIM_CTL1[5]) and SS is shown in Table 1.1-11.11
+     * |        |          |Functional description of SSACTPOL(SPIM_CTL1[5]) and SS is shown in Table 1.1-1
      * |[5]     |SSACTPOL  |Slave Select Active Level
-     * |        |          |It defines the active level of device/slave select signal (SPIM_SS), as shown in Table 1.1-11.11
+     * |        |          |It defines the active level of device/slave select signal (SPIM_SS), as shown in Table 1.1-1
      * |        |          |0 = The SPIM_SS slave select signal is active low.
      * |        |          |1 = The SPIM_SS slave select signal is active high.
-     * |[6]     |CAWRTHEN  |Cache Write Through Enable Bit
-     * |        |          |0 = Cache write-through function is disabled.
-     * |        |          |1 = Cache write-through function is enabled.
-     * |[7]     |AUTOSCLN  |Auto Selection Updated Cache Line Number Enable Bit
-     * |        |          |0 = Auto-selection function is diabled for number of updated cache line per cache miss, and user can use UPDCLNUM (SPIM_CTL1[15:12]) to adjust number of updated cache line per cache miss manually
-     * |        |          |(default)
-     * |        |          |1 = Auto-selection function is enabled for number of updated cache line per cache miss
-     * |        |          |SPIM will load one cache data line (1x16bytes data), two cache data lines (2x16bytes data), three cache data lines (3x16bytes data), or four cache data lines (4x16bytes data) by hardware automatically with previous history of cache miss and data correlation.Reserved.
      * |[11:8]  |IDLETIME  |Idle Time Interval
      * |        |          |In DMM mode, IDLETIME is set to control the minimum idle time between two SPI Flash accesses.
      * |        |          |Minimum idle time = (IDLETIME + 1) * AHB clock cycle time.
      * |        |          |Note 1: Only used for DMM mode.
      * |        |          |Note 2: AHB clock cycle time = 1/AHB clock frequency.
-     * |[15:12] |UPDCLNUM  |Updated Cache Line Number per Cache Miss
-     * |        |          |0x1 = Update one cache line per cache miss. (default)
-     * |        |          |0x2 = Update two cache lines per cache miss.
-     * |        |          |0x3 = Update three cache lines per cache miss.
-     * |        |          |0x4 = Update four cache lines per cache miss.
-     * |        |          |Others = Reserved.
-     * |        |          |Note 1: Data size of each cache line is 16 bytes.
      * |[31:16] |DIVIDER   |Clock Divider Register
      * |        |          |The value in this field is the frequency divider of the AHB clock (HCLK) to generate the serial SPI output clock "SCLK" on the output SPIM_CLK pin
      * |        |          |The desired frequency is obtained according to the following equation:
@@ -206,14 +179,14 @@ typedef struct
      * |        |          |Note 2: SCLK is serial SPI output clock.
      * |        |          |Note 3: Each SPI Flash command has the limitation of the maximum operation frequency of SCLK
      * |        |          |Please check the specification of the used SPI Flash component to decide the frequency of SPI Flash clock for different command operations of SPI Flash.
-     * |        |          |Note 4: For DTR commands, the setting values of DIVIDER are only 1,2,4,8,16,32,...
-     * |        |          |Note 5: For commands of Hyper bus device, the setting values of DIVIDER are only 1 and 2.
+     * |        |          |Note 4: For DTR (Double Transfer Rate) commands, the setting values of DIVIDER are only 1,2,4,8,16,32,...
+     * |        |          |Note 5: For commands of HyperBus device, the setting values of DIVIDER are only 1 and 2.
      * @var SPIM_T::RXCLKDLY
      * Offset: 0x0C  RX Clock Delay Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[3:0]   |RDDLYSEL  |Sampling Clock Delay Selection for Received Data for Normal I/O Mode, DMA Read Mode, DMA Write Mode, and Direct Memory Mapping Mode Only
+     * |[3:0]   |RDDLYSEL  |Sampling Clock Delay Selection for Received Data for Normal I/O Mode, DMA Read Mode, DMA Write Mode, Direct Memory Mapping Mode, and SPI FLASH Only
      * |        |          |Determine the number of inserted delay cycles
      * |        |          |Used to adjust the sampling clock of received data to latch the correct data.
      * |        |          |0x0: No delay. (Default)
@@ -222,12 +195,14 @@ typedef struct
      * |        |          |0x3: Delay 1.5 SPI Flash clocks.
      * |        |          |....
      * |        |          |0xf: Delay 7.5 SPI Flash clocks
-     * |        |          |Note: The manufacturer or device ID of SPI Flash component can be used to determine the correct setting value of RDDLYSEL
+     * |        |          |Note 1: The manufacturer or device ID of SPI Flash component can be used to determine the correct setting value of RDDLYSEL
      * |        |          |An example is given as follows.
      * |        |          |For example, the manufacturer ID and device ID of SPI Flash for some vendor are 0xEF and 0x1234 separately
      * |        |          |First, set RDDLYSEL to 0x0, and use read manufacturer id/device id command to read the manufacturer id of SPI Flash by using normal I/O mode (the manufacturer id is 0xEF (1110_1111) in this example).
      * |        |          |If the manufacturer ID which reads from SPI Flash is 0xF7 (1111_0111), it denotes that manufacturer id is shifted the right by 1 bit and most significant bit (MSB) of manufacturer id is assigned to 1
      * |        |          |According to manufacturer id reads from SPI Flash, RDDLYSEL needs to be set to 0x1 to receive SPI Flash data correctly.
+     * |        |          |Note 2: If read command of SPI FLASH sneds out DS (Data Strobe), and we recommand to use DS and HYPERDLL to sample RX data from SPI FLASH
+     * |        |          |RDDLYSEL is only used to sample RX data when read command of SPI FLASH doesnu2019t send out DS (Data Strobe).
      * @var SPIM_T::RX[4]
      * Offset: 0x10 ~ 0x1C Data Receive Register 0
      * ---------------------------------------------------------------------------------------------------
@@ -241,7 +216,7 @@ typedef struct
      * |        |          |If DWIDTH is 16, 24, or 32, received data are held in the least significant byte of RXDAT register first.
      * |        |          |In a byte, received data are held in the most significant bit of RXDAT register first.
      * |        |          |Example1: If SPIM_CTL0[BURSTNUM] = 0x3 and SPIM_CTL1[DWIDTH] = 0x17, received data will be held in the order SPIM_RX3[23:0], SPIM_RX2[23:0], SPIM_RX1[23:0], SPIM_RX0[23:0].
-     * |        |          |Example2: If SPIM_CTL0[BURSTNUM = 0x0 and SPIM_CTL0[DWIDTH] = 0x07, received data will be held in the order SPIM_RX0[7], SPIM_RX0[6], .....,
+     * |        |          |Example2: If SPIM_CTL0[BURSTNUM] = 0x0 and SPIM_CTL0[DWIDTH] = 0x07, received data will be held in the order SPIM_RX0[7], SPIM_RX0[6], .....,
      * |        |          |SPIM_RX0[0].
      * @var SPIM_T::TX[4]
      * Offset: 0x20 ~ 0x2C Data Transmit Register 0 ~ 3
@@ -267,7 +242,7 @@ typedef struct
      * |[31:0]  |ADDR      |SRAM Memory Address
      * |        |          |For DMA Read mode, this is the destination address for DMA transfer.
      * |        |          |For DMA Write mode, this is the source address for DMA transfer.
-     * |        |          |Note : This address must be 8bytes aligned.
+     * |        |          |Note: This address must be 8bytes aligned.
      * @var SPIM_T::DMACNT
      * Offset: 0x34  DMA Transfer Byte Count Register
      * ---------------------------------------------------------------------------------------------------
@@ -276,7 +251,7 @@ typedef struct
      * |[23:0]  |DMACNT    |DMA Transfer Byte Count Register
      * |        |          |It indicates the transfer length for DMA process.
      * |        |          |Note 1: The unit for counting is byte and the number must be the multiple of 8.
-     * |        |          |Note 2: The page program instruction allows from one byte to 256 bytes (a page) of data to be programmed at previously erased (FFh) memory locations for SPI flash device.
+     * |        |          |Note 2: The page program instruction allows from one byte to 256 bytes (a page) of data to be programmed at previously erased (FFh) memory locations for SPI Flash device.
      * |        |          |Note 3: A maximum of 512 bytes can be programmed as long as an aligned 512-byte address boundary is not crossed for HYPER Flash device.
      * |        |          |Note 4: Please check specification of used SPI Flash and Hyper Flash to know maximum byte length of page program and program address boundary.
      * @var SPIM_T::FADDR
@@ -290,8 +265,7 @@ typedef struct
      * |        |          |Note 1: This address must be 8bytes aligned.
      * |        |          |Note 2: A maximum of 512 bytes can be programmed as long as an aligned 512-byte address boundary is not crossed for HYPER Flash device.
      * |        |          |Note 3: For SPI Flash and Hyper device with 32 Mbytes, the value "ADDR" is from 0x00000000 to 0x00FFFFFF when using DMA write mode and DMA read mode to write/read data of SPI Flash and Hyper device
-     * |        |          |Please check specification of used SPI Flash and Hyper Flash to know access address range and program address boundary
-     * |        |          |Mbytes
+     * |        |          |Please check specification of used SPI Flash and Hyper Flash to know access address range and program address boundary.
      * @var SPIM_T::DMMCTL
      * Offset: 0x44  Direct Memory Mapping Mode Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -309,21 +283,14 @@ typedef struct
      * |[23:16] |DESELTIM  |SPI Flash Deselect Time for Direct Memory Mapping Mode Only
      * |        |          |Set the minimum time width of SPI Flash deselect time (i.e
      * |        |          |Minimum SPIM_SS deselect time), as shown in Figure 1.1-5.
-     * |        |          |(1) Cache function disable:
      * |        |          |Minimum time width of SPIM_SS deselect time = (DESELTIM + 1) * AHB clock cycle time.
-     * |        |          |(2) Cache function enable:
-     * |        |          |Minimum time width of SPIM_SS deselect time = (DESELTIM + 4) * AHB clock cycle time.
      * |        |          |Note 1: AHB clock cycle time = 1/AHB clock frequency.
      * |        |          |Note 2: When cipher encryption/decryption is enabled, please set this register value >= 0x10
      * |        |          |When cipher encryption/decryption is disabled, please set this register value >= 0x8.
      * |        |          |Note 3: Please check the used SPI Flash specification to know the setting value of this register, and different SPI Flash vendor may use different setting values.
-     * |[24]    |BWEN      |16 Bytes Burst Wrap Mode Enable Bit for Direct Memory Mapping Mode, Cache Enable, and Read Command Code 0xEB, and 0xE7 Only
+     * |[24]    |BWEN      |16 Bytes Burst Wrap Mode Enable Bit for Direct Memory Mapping Mode, and Read Command Code 0xEB, and 0xE7 Only
      * |        |          |0 = Burst Wrap Mode Disabled. (Default)
      * |        |          |1 = Burst Wrap Mode Enabled.
-     * |        |          |In direct memory mapping mode, both of quad read commands "0xEB" and "0xE7" support burst wrap mode for cache application and performance enhance
-     * |        |          |For cache application, the burst wrap mode can be used to fill the cache line quickly (In this SPI Flash controller, use cache data line with 16 bytes size)
-     * |        |          |For performance enhance with direct memory mapping mode and cache enable, when cache data is miss, the burst wrap mode can let MCU get the required SPI Flash data quickly.
-     * |        |          |Note: In Direct Memory Mapping Mode, the cache function needs to be enabled when 16 bytes burst wrap mode is enabled.
      * |[25]    |CREN      |Continuous Read Mode Enable Bit for Direct Memory Mapping Mode, Read Command Codes 0xBB, 0xEB, 0xE7, 0x0D, 0xBD, and 0xED Only
      * |        |          |0 = Continuous Read Mode Disabled. (Default)
      * |        |          |1 = Continuous Read Mode Enabled.
@@ -335,13 +302,18 @@ typedef struct
      * |        |          |1 = Set ACTSCLKT(SPIM_DMMCTL[7:0]) by user manually.
      * |        |          |Note: When user wants to set ACTSCLKT(SPIM_DMMCTL[7:0]) manually, please set UACTSCLK to 1.
      * |[27]    |HYPDONE   |Set All Read/Write Operations Done in Direct Memory Mapping Mode for HYPER Device
-     * |        |          |Write Operation:
      * |        |          |0 = Finish process of all read/write operations is done in DMM mode for HYPER device.
      * |        |          |1 = Finish process of all read/write operations is executed in DMM mode for HYPER device
      * |        |          |This bit is cleared by hardware automatically.
-     * |        |          |Note: User must set this bit to 1 after all read/write operations are done in DMM mode for HYPER device, and wait this bit to 0 to indicate that finish process of all read/write operations is done in DMM mode for HYPER device.
+     * |        |          |Note 1: User must set this bit to 1 after all read/write operations are done in DMM mode for HYPER device, and wait this bit to 0 to indicate that finish process of all read/write operations is done in DMM mode for HYPER device.
+     * |        |          |Note 2: User must set this bit to 1 before user switches SPIM operation mode (SPIM_CTL0[23:22]) from DMM mode to Normal I/O mode, DMA write mode, or DMA read mode.
+     * |[31]    |DMMIDLE   |DMM Mode Idle State for DMM mode only
+     * |        |          |0 = DMM mode is in busy state.
+     * |        |          |1 = DMM mode is in idle state.
+     * |        |          |Note 1: User can polling this status register to know DMM mode is in idle state or busy state when user wants to change OPMODE (SPIM_CTL0[23:22]) from DMM mode to Normal I/O mode/DMA write mode/DMA read mode, SPIM cipher enable/disable switch (SPIM_CTL[0]).
+     * |        |          |Note 2: This status register keep to 1 when SPIM is in Normal I/O mode, DMA write mode, and DMA read mode.
      * @var SPIM_T::CTL2
-     * Offset: 0x48  Control Register 2
+     * Offset: 0x48  Control and Status Register 2
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
@@ -366,8 +338,7 @@ typedef struct
      * |        |          |(2) Read Command Code for DMA Read mode and DMM mode of SPIM
      * |        |          |Note 1: Quad mode of SPI Flash must be enabled first by normal I/O mode before using quad page program/quad read commands.
      * |        |          |Note 2: Please check SPI Flash specifications for support command codes.
-     * |        |          |Note 3: Please disable "continuous read mode" and "burst wrap mode" before DMA write mode of SPI Flash controller is used to program data of SPI Flash
-     * |        |          |After using DMA write mode of SPI Flash controller to program the content of SPI Flash, please set CDINVAL(SPIM_CTL1[3]) to 0x1 (Set all cache data to be invalid).
+     * |        |          |Note 3: Please disable "continuous read mode" and "burst wrap mode" before DMA write mode of SPI Flash controller is used to program data of SPI Flash.
      * @var SPIM_T::MODE
      * Offset: 0x50  Mode Data Register
      * ---------------------------------------------------------------------------------------------------
@@ -626,147 +597,148 @@ typedef struct
      * |        |          |Other = Reserved.
      * |        |          |Note: Only used for Direct Memory Mapping mode.
      * @var SPIM_T::DLL0
-     * Offset: 0x68  DLL Control and Status Register 0
+     * Offset: 0x68  HYPERDLL Control and Status Register 0
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |DLLOLDO   |DLL OLDO Enable Bit
-     * |        |          |0 = DLL OLDO is disabled, and DLL circuit is in power down mode.
-     * |        |          |1 = DLL OLDO is enabled, and DLL circuit is in power enable mode.
-     * |        |          |Note 1: DLL reference clock will start to send after user sets DLLOLDO to 0x1.
-     * |[1]     |DLLOVRST  |DLL Output Valid Counter Reset Enable
-     * |        |          |0 = DLL output valid counter is not reseted to 0x0 and it does not start to count.
-     * |        |          |1 = DLL output valid counter is reseted to 0x0 and it starts to count from 0x0 to DLLOVNUM (SPIM_DLL1[15:0]).
+     * |[0]     |DLLOLDO   |HYPERDLL OLDO Enable Bit
+     * |        |          |0 = HYPERDLL OLDO is disabled, and HYPERDLL circuit is in Power-down mode.
+     * |        |          |1 = HYPERDLL OLDO is enabled, and HYPERDLL circuit is in power enable mode.
+     * |        |          |Note 1: HYPERDLL reference clock will start to send after user sets DLLOLDO to 0x1.
+     * |        |          |Note 2: User only writes 1u2019b1 to DLLOLDO (SPIM_DLL0[0]) once before user starts to trim delay step number of HYPERDLL.
+     * |[1]     |DLLOVRST  |HYPERDLL Output Valid Counter Reset Enable
+     * |        |          |0 = HYPERDLL output valid counter is not reseted to 0x0 and it does not start to count.
+     * |        |          |1 = HYPERDLL output valid counter is reseted to 0x0 and it starts to count from 0x0 to DLLOVNUM (SPIM_DLL1[15:0]).
      * |        |          |Note 1: This bit will be cleared automatically.
-     * |        |          |Note 2: User needs to set DLLOVRST again to wait DLL output valid when the frequency of DLL reference clock is changed.
-     * |[2]     |DLLCLKON  |DLL Clock Divider Circuit Status Bit (Read Only)
-     * |        |          |0 = DLL clock divider circuit is disabled after DLL OLDO is enabled.
-     * |        |          |1 = DLL clock divider circuit is enabled after DLL OLDO is enabled.
-     * |        |          |Note: User needs to check DLL Datasheet to know time interval that DLL clock divider circuit can be enabled after DLL OLDO is enabled.
-     * |[3]     |DLLLOCK   |DLL Lock Status Bit (Read Only)
-     * |        |          |0 = DLL is not locked after DLL reference clock sends to DLL circuit.
-     * |        |          |1 = DLL is locked after DLL reference clock sends to DLL circuit.
-     * |        |          |Note: User needs to check DLL Datasheet to know DLL lock time.
-     * |[4]     |DLLREADY  |DLL Output Ready Status Bit (Read Only)
-     * |        |          |0 = DLL output is not ready, and DLL output is not ready to use.
-     * |        |          |1 = DLL output is ready, and DLL output is ready to use.
-     * |        |          |Note: User needs to check status of DLL output to ready before DLL output can be used correctly.
-     * |[5]     |DLL_REF   |DLL Refresh Status Bit (Read Only)
-     * |        |          |0 = The updating flow of new DLL delay step number DLL_DNUM (SPIM_DLL0[13:8]) of DLL circuit is finished.
-     * |        |          |1 = DLL circuit is updating the new DLL delay step number DLL_DNUM (SPIM_DLL0[13:8]).
+     * |        |          |Note 2: User only writes 1u2019b1 to DLLOVRST once before user starts to trim delay step number of HYPERDLL
+     * |        |          |User needs to set DLLOVRST again to wait HYPERDLL output valid when one of frequencies of SPI output bus clock/HyperBus clock, HYPERDLL reference clock, or RWDS/DS clock are changed.
+     * |[2]     |DLLCLKON  |HYPERDLL Clock Divider Circuit Status Bit (Read Only)
+     * |        |          |0 = HYPERDLL clock divider circuit is disabled after HYPERDLL OLDO is enabled.
+     * |        |          |1 = HYPERDLL clock divider circuit is enabled after HYPERDLL OLDO is enabled.
+     * |        |          |Note: User needs to check HYPERDLL Datasheet to know time interval that HYPERDLL clock divider circuit can be enabled after HYPERDLL OLDO is enabled.
+     * |[3]     |DLLLOCK   |HYPERDLL Lock Status Bit (Read Only)
+     * |        |          |0 = HYPERDLL is not locked after HYPERDLL reference clock sends to HYPERDLL circuit.
+     * |        |          |1 = HYPERDLL is locked after HYPERDLL reference clock sends to HYPERDLL circuit.
+     * |        |          |Note: User needs to check HYPERDLL Datasheet to know HYPERDLL lock time.
+     * |[4]     |DLLREADY  |HYPERDLL Output Ready Status Bit (Read Only)
+     * |        |          |0 = HYPERDLL output is not ready, and HYPERDLL output is not ready to use.
+     * |        |          |1 = HYPERDLL output is ready, and HYPERDLL output is ready to use.
+     * |        |          |Note: User needs to check status of HYPERDLL output to ready before HYPERDLL output can be used correctly.
+     * |[5]     |DLL_REF   |HYPERDLL Refresh Status Bit (Read Only)
+     * |        |          |0 = The updating flow of new HYPERDLL delay step number DLL_DNUM (SPIM_DLL0[13:8]) of HYPERDLL circuit is finished.
+     * |        |          |1 = HYPERDLL circuit is updating the new HYPERDLL delay step number DLL_DNUM (SPIM_DLL0[13:8]).
      * |        |          |Note 1: This bit will be cleared automatically.
-     * |        |          |Note 2: User needs to check this bit to know that the refresh flow of DLL circuit is finished or not.
-     * |[6]     |DLLATRDY  |DLL Auto Trim Ready Status Bit (Read Only)
-     * |        |          |0 = DLL auto trim function is not in ready state when DLLATEN (SPIM_DLL0[16]) is enabled and DLL output is ready.
-     * |        |          |1 = DLL auto trim function is in ready state when DLLATEN (SPIM_DLL0[16]) is enabled and DLL output is ready.
-     * |        |          |Note1: User needs to check status of DLL auto trim function before DLL output can be used for flow of DLL auto trim correctly.
-     * |        |          |Note2: This status bit is valid only when DLLATEN (SPIM_DLL0[16]) is enabled.
-     * |        |          |Note3: This status bit will be cleared to 0 when DLLATEN (SPIM_DLL0[16]) is disabled.
-     * |[12:8]  |DLL_DNUM  |DLL Delay Step Number
-     * |        |          |Set DLL delay step number.
+     * |        |          |Note 2: User needs to check this bit to know that the refresh flow of HYPERDLL circuit is finished or not.
+     * |[6]     |DLLATRDY  |HYPERDLL Auto Trim Ready Status Bit (Read Only)
+     * |        |          |0 = HYPERDLL auto trim function is not in ready state when DLLATEN (SPIM_DLL0[16]) is enabled and HYPERDLL output is ready.
+     * |        |          |1 = HYPERDLL auto trim function is in ready state when DLLATEN (SPIM_DLL0[16]) is enabled and HYPERDLL output is ready.
+     * |        |          |Note 1: User needs to check status of HYPERDLL auto trim function before HYPERDLL output can be used for flow of HYPERDLL auto trim correctly.
+     * |        |          |Note 2: This status bit is valid only when DLLATEN (SPIM_DLL0[16]) is enabled.
+     * |        |          |Note 3: This status bit will be cleared to 0 when DLLATEN (SPIM_DLL0[16]) is disabled.
+     * |[12:8]  |DLL_DNUM  |HYPERDLL Delay Step Number
+     * |        |          |Set HYPERDLL delay step number.
      * |        |          |0x0: No delay. (Default)
-     * |        |          |0x1: DLL delay read data strobe of RWDS and DQS with 1x (SPIM output bus clock period)/32
-     * |        |          |0x2: DLL delay read data strobe of RWDS and DQS with 2x (SPIM output bus clock period)/32
-     * |        |          |0x3: DLL delay read data strobe of RWDS and DQS with 3x (SPIM output bus clock period)/32
+     * |        |          |0x1: HYPERDLL delay read data strobe of RWDS and DQS with 1x (SPIM output bus clock period)/32
+     * |        |          |0x2: HYPERDLL delay read data strobe of RWDS and DQS with 2x (SPIM output bus clock period)/32
+     * |        |          |0x3: HYPERDLL delay read data strobe of RWDS and DQS with 3x (SPIM output bus clock period)/32
      * |        |          |....
-     * |        |          |0x1f: DLL delay read data strobe of RWDS and DQS with 31x (SPIM output bus clock period)/32
-     * |[16]    |DLLATEN   |DLL Auto Trim Enable Bit
-     * |        |          |0 = DLL auto trim function is disabled for DLL normal mode and DLL BIST1 mode.
-     * |        |          |1 = DLL auto trim function is enabled for DLL normal mode and DLL BIST1 mode.
-     * |        |          |Note: In DLL BIST2 mode (loop=1), this control register DLLATEN must be disabled.
-     * |[17]    |DLLLOOP   |DLL Delay Time Self-Test Enable Bit
-     * |        |          |0 = DLL Delay time self-test is disabled.
-     * |        |          |1 = DLL Delay time self-test is enabled.
-     * |[18]    |SIGINTEN  |Selection for Clock Source (RWDS ) of DLL Open Loop Delay Line
-     * |        |          |0 = DLL clock source (DQS/RWDS) of DLL open loop delay line is from SPI Flash and HYPER device.
-     * |        |          |1 = DLL clock source (DQS/RWDS) of DLL open loop delay line is from DLL internal clock divider.
-     * |[21:20] |DLLDIVER  |Divider Number Selection of DLL Internal Clock Divder
-     * |        |          |00 = Output frequency of DLL internal clock divdier equals to input frequency of DLL internal clock divdier.
-     * |        |          |01 = Output frequency of DLL internal clock divdier is (input frequency of DLL internal clock divdier)/2.
-     * |        |          |10 = Output frequency of DLL internal clock divdier is (input frequency of DLL internal clock divdier)/4.
-     * |        |          |11 = Output frequency of DLL internal clock divdier is (input frequency of DLL internal clock divdier)/8.
-     * |[23:22] |DLLFAST   |Band Selection of DLL Reference Clock
-     * |        |          |00 = When frequency of DLL reference clock equals to 100MHz.
-     * |        |          |01 = When frequency of DLL reference clock is greater than 100MHz.
+     * |        |          |0x1f: HYPERDLL delay read data strobe of RWDS and DQS with 31x (SPIM output bus clock period)/32
+     * |[16]    |DLLATEN   |HYPERDLL Auto Trim Enable Bit
+     * |        |          |0 = HYPERDLL auto trim function is disabled for HYPERDLL normal mode and HYPERDLL BIST1 mode.
+     * |        |          |1 = HYPERDLL auto trim function is enabled for HYPERDLL normal mode and HYPERDLL BIST1 mode.
+     * |        |          |Note: In HYPERDLL BIST2 mode (loop=1), this control register DLLATEN must be disabled.
+     * |[17]    |DLLLOOP   |HYPERDLL Delay Time Self-Test Enable Bit
+     * |        |          |0 = HYPERDLL Delay time self-test is disabled.
+     * |        |          |1 = HYPERDLL Delay time self-test is enabled.
+     * |[18]    |SIGINTEN  |Selection for Clock Source DQS/RWDS of HYPERDLL Open Loop Delay Line
+     * |        |          |0 = HYPERDLL clock source DQS/RWDS of HYPERDLL open loop delay line is from SPI Flash and HYPER device.
+     * |        |          |1 = HYPERDLL clock source DQS/RWDS of HYPERDLL open loop delay line is from HYPERDLL internal clock divider.
+     * |[21:20] |DLLDIVER  |Divider Number Selection of HYPERDLL Internal Clock Divder
+     * |        |          |00 = Output frequency of HYPERDLL internal clock divdier equals to input frequency of HYPERDLL internal clock divdier.
+     * |        |          |01 = Output frequency of HYPERDLL internal clock divdier is (input frequency of HYPERDLL internal clock divdier)/2.
+     * |        |          |10 = Output frequency of HYPERDLL internal clock divdier is (input frequency of HYPERDLL internal clock divdier)/4.
+     * |        |          |11 = Output frequency of HYPERDLL internal clock divdier is (input frequency of HYPERDLL internal clock divdier)/8.
+     * |[23:22] |DLLFAST   |Band Selection of HYPERDLL Reference Clock
+     * |        |          |00 = When frequency of HYPERDLL reference clock equals to 100 MHz.
+     * |        |          |01 = When frequency of HYPERDLL reference clock is greater than 100 MHz.
      * @var SPIM_T::DLL1
-     * Offset: 0x6C  DLL Control and Status Register 1
+     * Offset: 0x6C  HYPERDLL Control and Status Register 1
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[15:0]  |DLLOVNUM  |Clock Cycle Number between DLL Lock and DLL Output Valid
-     * |        |          |Set cycle number of DLL output valid
-     * |        |          |The hardware counter of DLL output valid will count from 0 to the DLLOVNUM after user sets DLLOVRST (SPIM_DLL0[1]) of DLL output valid counter to 0x1.
-     * |        |          |Note 1: User needs to check datasheet of DLL to know the time interval between DLL lock done and DLL output valid.
-     * |        |          |Note 2: The unit of this DLLOVNUM is cycle number of DLL reference clock.
-     * |        |          |Note 3: The default value is 0x1388 when frequency of DLL reference clock is 100 MHz and valid time of DLL output is 50us.
-     * |[31:16] |DLLLKNUM  |Clock Cycle Number between DLL Clock Divider Enable and DLL Lock
-     * |        |          |Sets cycle number of DLL lock time after DLL clock divider is enabled.
-     * |        |          |Note 1: User needs to check datasheet of SPIMu2019s DLL to know the time interval between DLL clock divider enable and DLL lock done.
-     * |        |          |Note 2: The unit of this DLLLKNUM is cycle number of DLL reference clock.
-     * |        |          |Note 3: The default value is 0x07D0 when frequency of DLL reference clock is 100 MHz and DLL lock time is 20us.
+     * |[15:0]  |DLLOVNUM  |Clock Cycle Number between HYPERDLL Lock and HYPERDLL Output Valid
+     * |        |          |Set cycle number of HYPERDLL output valid
+     * |        |          |The hardware counter of HYPERDLL output valid will count from 0 to the DLLOVNUM after user sets DLLOVRST (SPIM_DLL0[1]) of HYPERDLL output valid counter to 0x1.
+     * |        |          |Note 1: User needs to check datasheet of HYPERDLL to know the time interval between HYPERDLL lock done and HYPERDLL output valid.
+     * |        |          |Note 2: The unit of this DLLOVNUM is cycle number of HYPERDLL reference clock that its frequency equals to frequency of SPIM output bus clock.
+     * |        |          |Note 3: The default value is 0x1388 when frequency of HYPERDLL reference clock is 100 MHz and valid time of HYPERDLL output is 50us.
+     * |[31:16] |DLLLKNUM  |Clock Cycle Number between HYPERDLL Clock Divider Enable and HYPERDLL Lock
+     * |        |          |Sets cycle number of HYPERDLL lock time after HYPERDLL clock divider is enabled.
+     * |        |          |Note 1: User needs to check datasheet of HYPERDLL to know the time interval between HYPERDLL clock divider enable and HYPERDLL lock done.
+     * |        |          |Note 2: The unit of this DLLLKNUM is cycle number of HYPERDLL reference clock that its frequency equals to frequency of SPIM output bus clock.
+     * |        |          |Note 3: The default value is 0x07D0 when frequency of HYPERDLL reference clock is 100 MHz and HYPERDLL lock time is 20us.
      * @var SPIM_T::DLL2
-     * Offset: 0x70  DLL Control and Status Register 2
+     * Offset: 0x70  HYPERDLL Control and Status Register 2
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[15:0]  |TRIMNUM   |Clock Cycle Number between DLL Output Valid and DLL Auto Trim Enable
-     * |        |          |Sets cycle number of DLL auto trim to be enabled after DLL output is valid.
-     * |        |          |Note 1: User needs to check datasheet of SPIMu2019s DLL to know the time interval between DLL output valid and DLL auto trim enable.
-     * |        |          |Note 2: The unit of this TRIMNUM is cycle number of DLL reference clock.
-     * |        |          |Note 3: The default value is 0x07D0 when frequency of DLL reference clock is 100 MHz and DLL lock time is 20us.
-     * |[31:16] |CLKONNUM  |Clock Cycle Number between DLL OLDO Enable and DLL Clock Divider Enable
-     * |        |          |Sets cycle number of DLL divider to be enabled after DLL OLDO is enabled.
-     * |        |          |Note 1: User needs to check datasheet of SPIMu2019s DLL to know the time interval between DLL OLDO enable and DLL clock divider enable.
-     * |        |          |Note 2: The unit of this CLKONNUM is cycle number of DLL reference clock.
-     * |        |          |Note 3: The default value is 0x07D0 when frequency of DLL reference clock is 100 MHz and DLL lock time is 20us.
+     * |[15:0]  |TRIMNUM   |Clock Cycle Number between HYPERDLL Output Valid and HYPERDLL Auto Trim Enable
+     * |        |          |Sets cycle number of HYPERDLL auto trim to be enabled after HYPERDLL output is valid.
+     * |        |          |Note 1: User needs to check Datasheet of HYPERDLL to know the time interval between HYPERDLL output valid and HYPERDLL auto trim enable.
+     * |        |          |Note 2: The unit of this TRIMNUM is cycle number of HYPERDLL reference clock that its frequency equals to frequency of SPIM output bus clock.
+     * |        |          |Note 3: The default value is 0x07D0 when frequency of HYPERDLL reference clock is 100 MHz and HYPERDLL lock time is 20us.
+     * |[31:16] |CLKONNUM  |Clock Cycle Number between HYPERDLL OLDO Enable and HYPERDLL Clock Divider Enable
+     * |        |          |Sets cycle number of HYPERDLL divider to be enabled after HYPERDLL OLDO is enabled.
+     * |        |          |Note 1: User needs to check Datasheet of HYPERDLL to know the time interval between HYPERDLL OLDO enable and HYPERDLL clock divider enable.
+     * |        |          |Note 2: The unit of this CLKONNUM is cycle number of HYPERDLL reference clock that its frequency equals to frequency of SPIM output bus clock.
+     * |        |          |Note 3: The default value is 0x07D0 when frequency of HYPERDLL reference clock is 100 MHz and HYPERDLL lock time is 20us.
      * @var SPIM_T::HYPER_CMD
-     * Offset: 0x80  Hyper Bus Command and Status Register
+     * Offset: 0x80  HyperBus Command and Status Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[3:0]   |HYPCMD    |Hyper Bus Command and Status
+     * |[3:0]   |HYPCMD    |HyperBus Command and Status
      * |        |          |Write
      * |        |          |0001 = Reset Hyper RAM.
      * |        |          |0010 = Read Hyper RAM regsiter (16-Bit, Read Data[15:0].
      * |        |          |0101 = Exit From Hybrid Sleep and deep power down.
      * |        |          |0111 = Write Hyper RAM regsiter (16-Bit, Write Data[15:0].
-     * |        |          |1000 = Read 2 Bytes (Read Data[15:0]) from memory space of Hyper Bus device.
-     * |        |          |1001 = Read 4 Bytes (Read Data[31:0]) from memory space of Hyper Bus device.
-     * |        |          |1100 = Write 1 Byte (Write Data[7:0]) to memory space of Hyper Bus device.
-     * |        |          |1101 = Write 2 Bytes (Write Data[15:0]) to memory space of Hyper Bus device.
-     * |        |          |1110 = Write 3 Bytes (Write Data[23:0]) to memory space of Hyper Bus device.
-     * |        |          |1111 = Write 4 Bytes (Write Data[31:0]) to memory space of Hyper Bus device.
+     * |        |          |1000 = Read 2 Bytes (Read Data[15:0]) from memory space of HyperBus device.
+     * |        |          |1001 = Read 4 Bytes (Read Data[31:0]) from memory space of HyperBus device.
+     * |        |          |1100 = Write 1 Byte (Write Data[7:0]) to memory space of HyperBus device.
+     * |        |          |1101 = Write 2 Bytes (Write Data[15:0]) to memory space of HyperBus device.
+     * |        |          |1110 = Write 3 Bytes (Write Data[23:0]) to memory space of HyperBus device.
+     * |        |          |1111 = Write 4 Bytes (Write Data[31:0]) to memory space of HyperBus device.
      * |        |          |Other value = reserved.
      * |        |          |Read
-     * |        |          |0000 = Hyper Bus interface is Idle.
-     * |        |          |Other value = Hyper Bus interface is busy.
+     * |        |          |0000 = HyperBus interface is Idle.
+     * |        |          |Other value = HyperBus interface is busy.
      * |        |          |Note 1: When an operation is Done, the read value automatically return to 4u2019b0000.
-     * |        |          |Note 2: The encryption and decryption of cipher are not supported, and it only uses to send command to Hyper Bus device, write control register to Hyper Bus device, and read status register from Hyper Bus device.
+     * |        |          |Note 2: The encryption and decryption of cipher are not supported, and it only uses to send command to HyperBus device, write control register to HyperBus device, and read status register from HyperBus device.
      * @var SPIM_T::HYPER_CONFIG1
-     * Offset: 0x84  Hyper Bus Configuration Register 1
+     * Offset: 0x84  HyperBus Configuration Register 1
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[1:0]   |CSST      |Chip Select Setup Time to Next CK Rising Edge
+     * |[1:0]   |CSS       |Chip Select Setup Time to Next CK Rising Edge
      * |        |          |This field indicates the setup time between the chip select and the next CK rising edge
-     * |        |          |10 = 3.5 HCLK cycles.
-     * |        |          |11 = 4.5 HCLK cycles.
+     * |        |          |00 = 3.5 HCLK cycles. (default)
+     * |        |          |01 = 4.5 HCLK cycles.
      * |        |          |Others = Reserved.
      * |[5:4]   |CSH       |Chip Select Hold Time After CK Falling Edge
      * |        |          |This field indicates the hold time between the last CK falling edge and chip select
-     * |        |          |00 = 0.5 HCLK cycles.
-     * |        |          |01 = 1.5 HCLK cycles.
      * |        |          |10 = 2.5 HCLK cycles.
      * |        |          |11 = 3.5 HCLK cycles.
-     * |[11:8]  |CSHI      |Chip Select High between Transaction
-     * |        |          |This field indicates the inactive period between two Hyper Bus transactions
-     * |        |          |0010 = 2 HCLK cycles.
-     * |        |          |0011 = 3 HCLK cycles.
-     * |        |          |....
-     * |        |          |1111 = 15 HCLK cycles.
      * |        |          |Others = Reserved.
-     * |        |          |Note: This field must meet the Hyper bus deviceu2019s specification of tCSHI.
-     * |[31:16] |CSMAXLT   |Chip Select Maximum Low Time
+     * |        |          |Note: Please set this register to 2u2019b11 when user uses control register SPIM_HYPER_CMD to read register/memory data from Hyper device.
+     * |[11:8]  |CSHI      |Chip Select High between Transaction
+     * |        |          |This field indicates the inactive period between two HyperBus transactions
+     * |        |          |0011 = 4 HCLK cycles.
+     * |        |          |....
+     * |        |          |1111 = 16 HCLK cycles.
+     * |        |          |Others = Reserved.
+     * |        |          |Note: This field must meet the HyperBus deviceu2019s specification of tCSHI.
+     * |[31:12] |CSMAXLT   |Chip Select Maximum Low Time
      * |        |          |This field indicates the maximum Low period of the chip select (CS#) in one transaction
      * |        |          |0 = 1 HCLK cycle.
      * |        |          |1 = 2 HCLK cycles.
@@ -775,21 +747,22 @@ typedef struct
      * |        |          |....
      * |        |          |749 = 750 HCLK cycles (3750ns @200 MHz).
      * |        |          |....
-     * |        |          |65534 = 65535 HCLK cycles.
-     * |        |          |65535 = 65536 HCLK cycles.
-     * |        |          |(1) Setting formula of CSMAXLT when CIPHOFF (SPIM_CTL0[0]) sets to 1u2019b1 :
-     * |        |          |CSMAXLT = (tCSM/HCLK period) u2013 8*2*(DIVIDER) u2013 21
+     * |        |          |1048574 = 1048575 HCLK cycles.
+     * |        |          |1048575 = 1048576 HCLK cycles.
+     * |        |          |(1) Setting formula of CSMAXLT when CIPHOFF (SPIM_CTL0[0]) sets to 1u2019b1:
+     * |        |          |CSMAXLT = (tCSM/HCLK period) u2013 8*2*(DIVIDER) u2013 21.
      * |        |          |(2) Setting formula of CSMAXLT when CIPHOFF (SPIM_CTL0[0]) sets to 1u2019b0 :
-     * |        |          |CSMAXLT = (tCSM/HCLK period) u2013 8*2*(DIVIDER) u2013 54
-     * |        |          |Note1 : This field inidcates the timing of Hyper RAM Chip Select specification so that it has to relative the frequency of HCLK and the DIVIDER (SPIM_CTL1[31:16]).
-     * |        |          |Note2 : This register must be set to 0xFFFF for Hyper Flash device.
+     * |        |          |CSMAXLT = (tCSM/HCLK period) u2013 8*2*(DIVIDER) u2013 54.
+     * |        |          |Note1 : This field inidcates the timing of Hyper RAM Chip Select specification so that it has to relative the frequency of HCLK and the DIVIDER (SPIM_CTL1[31:16]) and the unit of the above two formulas are clock cycle number of SPIM HCLK.
+     * |        |          |Note2 : This register must be set to 0x000FFFFF for Hyper Flash device.
+     * |        |          |Note3 : User needs to check specification of used HYPER RAM device to know the value of timing parameter tCSM with unit "nano second" (ns).
      * @var SPIM_T::HYPER_CONFIG2
-     * Offset: 0x88  Hyper Bus Configuration Register 2
+     * Offset: 0x88  HyperBus Configuration Register 2
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[12:8]  |ACCTWR    |Initial Access Time for Write Data to HYPER Device
-     * |        |          |This field indicates the initial access cycles for write transaction of the Hyper Bus
+     * |        |          |This field indicates the initial access cycles for write transaction of the HyperBus
      * |        |          |00001 = 1 CK cycles.
      * |        |          |00010 = 2 CK cycles.
      * |        |          |00011 = 3 CK cycles.
@@ -802,20 +775,20 @@ typedef struct
      * |        |          |Others = Reserved.
      * |        |          |Note1 : This field must be set to the same value as "Initial Latency" for write operations in Configuration Register 0 in HYPER device.
      * |        |          |Note2 : If user sets value to 0000, the hardware will modify it to 0001 automatically.
-     * |[23:16] |RSTNLT    |HYPER Bus Device RESETN Low Time
-     * |        |          |This field indicates the low period of HYPER bus device RESETN (RESET#)
+     * |[23:16] |RSTNLT    |HyperBus Device RESETN Low Time
+     * |        |          |This field indicates the low period of HyperBus device RESETN (RESET#)
      * |        |          |1 = 2 HCLK cycles.
      * |        |          |2 = 3 HCLK cycles.
      * |        |          |3 = 4 HCLK cycles.
      * |        |          |....
      * |        |          |255 = 255 HCLK cycles.
-     * |        |          |Note: This field inidcates the timing of Hyper bus device RESET# specification so that it has to relative the frequency of HCLK.
+     * |        |          |Note: This field inidcates the timing of HyperBus device RESET# specification so that it has to relative the frequency of HCLK.
      * |[28:24] |ACCTRD    |Initial Access Time for Read Data from HYPER Device
-     * |        |          |This field indicates the initial access cycles for read transaction of the Hyper Bus
+     * |        |          |This field indicates the initial access cycles for read transaction of the HyperBus
      * |        |          |00001 = 1 CK cycles.
      * |        |          |00010 = 2 CK cycles.
      * |        |          |00011 = 3 CK cycles.
-     * |        |          |00100 = 4 CK cycles (default).
+     * |        |          |00100 = 4 CK cycles. (default)
      * |        |          |00101 = 5 CK cycles.
      * |        |          |00110 = 6 CK cycles.
      * |        |          |00111 = 7 CK cycles.
@@ -825,11 +798,11 @@ typedef struct
      * |        |          |Note1 : This field must be set to the same value as "Initial Latency" for read operations in Configuration Register 0 in HYPER device.
      * |        |          |Note2 : If user sets value to 0000, the hardware will modify it to 0001 automatically.
      * @var SPIM_T::HYPER_ADR
-     * Offset: 0x8C  Hyper Bus Address Register
+     * Offset: 0x8C  HyperBus Address Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[24:0]  |HBADDR    |Hyper Bus Register Address
+     * |[24:0]  |HBADDR    |HyperBus Register Address
      * |        |          |Memory Space Range:
      * |        |          | 0x0000_0000 ~ 0x01FF_FFFF
      * |        |          |Register Space Range:
@@ -838,81 +811,92 @@ typedef struct
      * |        |          | 0x0000_1000 = Configuration Register 0
      * |        |          | 0x0000_1002 = Configuration Register 1
      * |        |          |Note 1: It is "Byte" address.
-     * |        |          |Note 2: Up to 32MBytes of memory space is supported.
+     * |        |          |Note 2: Up to 32 Mbytesytes of memory space is supported.
      * @var SPIM_T::HYPER_WDATA
-     * Offset: 0x90  Hyper Bus 32-Bits Write Data Register
+     * Offset: 0x90  HyperBus 32-Bits Write Data Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[31:0]  |HBWDATA   |Hyper Bus 32-Bits Write Data
-     * |        |          |To write 1 Byte to Hyper bus device, Byte 0 (Data[7:0]) is used
-     * |        |          |To write 2 Bytes to Hyper bus device, Byte 1~0 (Data[15:0]) is used
-     * |        |          |To write 3 Bytes to Hyper bus device, Byte 2~0 (Data[23:0]) is used
-     * |        |          |To write 4 Bytes to Hyper bus device, Byte 3~0 (Data[31:0]) is used
+     * |[31:0]  |HBWDATA   |HyperBus 32-Bits Write Data
+     * |        |          |To write 1 Byte to HyperBus device, Byte 0 (Data[7:0]) is used
+     * |        |          |To write 2 Bytes to HyperBus device, Byte 1~0 (Data[15:0]) is used
+     * |        |          |To write 3 Bytes to HyperBus device, Byte 2~0 (Data[23:0]) is used
+     * |        |          |To write 4 Bytes to HyperBus device, Byte 3~0 (Data[31:0]) is used
      * @var SPIM_T::HYPER_RDATA
-     * Offset: 0x94  Hyper Bus 32-Bits Read Data Register
+     * Offset: 0x94  HyperBus 32-Bits Read Data Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[31:0]  |HBRDATA   |Hyper Bus 32-bits Read Data
-     * |        |          |32-Bits data read from Hyper bus device
+     * |[31:0]  |HBRDATA   |HyperBus 32-bits Read Data
+     * |        |          |32-Bits data read from HyperBus device
      * |        |          |Note 1: The byte order of read data is little endian only.
      * @var SPIM_T::HYPER_INTEN
-     * Offset: 0x98  Hyper Bus Interrupt Enable Register
+     * Offset: 0x98  HyperBus Interrupt Enable Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |OPINTEN   |Hyper Bus Operation Done Interrupt Enable
+     * |[0]     |OPINTEN   |HyperBus Operation Done Interrupt Enable
      * |        |          |0 = Operation done interrupt is Disabled.
      * |        |          |1 = Operation done interrupt is Enabled.
      * @var SPIM_T::HYPER_INTSTS
-     * Offset: 0x9C  Hyper Bus Interrupt Status Register
+     * Offset: 0x9C  HyperBus Interrupt Status Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |OPDONE    |Hyper Bus Operation Done Interrupt
-     * |        |          |0 = Hyper Bus operation is busy.
-     * |        |          |1 = Hyper Bus operation is done.
-
+     * |[0]     |OPDONE    |HyperBus Operation Done Interrupt
+     * |        |          |0 = HyperBus operation is busy.
+     * |        |          |1 = HyperBus operation is done.
+     * @var SPIM_T::DMM_TIMEOUT_INTERVAL
+     * Offset: 0xA0  SPIM DMM Time-out Interval Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[31:0]  |TOCNTDMM  |Time-Out Counter Setting Value for DMM Read Mode only
+     * |        |          |User can set this control register to know if SPIM DMM mode doesnu2019t response read data to MCU over the time interval by this time-out counter settings value, and the time-out event flag of DMM mode (SPIM_DMM_TIMEOUT_FLAG_STS[0]) will go high.
+     * |        |          |Note 1: The time interval by this time-out counter settings value equals to time-out counter settings value multiple by clock cycle period of SPIM HCLK.
+     * |        |          |Note 2: If setting value of this control register is smaller than 0x1000, then hardware will set this control register to 0x1000 automatically.
+     * @var SPIM_T::DMM_TIMEOUT_FLAG_STS
+     * Offset: 0xA4  SPIM DMM Time-out Flag Status Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |DMMTOF    |Time-out Flag for DMM Read Mode only
+     * |        |          |0 = There is no time-out event when SPIM is in DMM read mode.
+     * |        |          |1 = There is time-out event when SPIM is in DMM read mode.
+     * |        |          |Note: Write 1 to clear to zero for this time-out event flag of DMM mode.
      */
     __IO uint32_t CTL0;                  /*!< [0x0000] Control and Status Register 0                                    */
-    __IO uint32_t CTL1;                  /*!< [0x0004] Control Register 1                                               */
+    __IO uint32_t CTL1;                  /*!< [0x0004] Control and Status Register 1                                    */
     __I  uint32_t RESERVE0[1];
     __IO uint32_t RXCLKDLY;              /*!< [0x000c] RX Clock Delay Control Register                                  */
-    __I  uint32_t RX[4];                 /*!< [0x0010 ~ 0x001C] Data Receive Register 0                                          */
-    //__I  uint32_t RX0;                   /*!< [0x0010] Data Receive Register 0                                          */
-    //__I  uint32_t RX1;                   /*!< [0x0014] Data Receive Register 1                                          */
-    //__I  uint32_t RX2;                   /*!< [0x0018] Data Receive Register 2                                          */
-    //__I  uint32_t RX3;                   /*!< [0x001c] Data Receive Register 3                                          */
-    __IO uint32_t TX[4];                 /*!< [0x0020 ~ 0x002C] Data Transmit Register 0                                         */
-    //__IO uint32_t TX0;                   /*!< [0x0020] Data Transmit Register 0                                         */
-    //__IO uint32_t TX1;                   /*!< [0x0024] Data Transmit Register 1                                         */
-    //__IO uint32_t TX2;                   /*!< [0x0028] Data Transmit Register 2                                         */
-    //__IO uint32_t TX3;                   /*!< [0x002c] Data Transmit Register 3                                         */
+    __I  uint32_t RX[4];                 /*!< [0x0010 ~ 0x001C] Data Receive Register 0 ~ 3                             */
+    __IO uint32_t TX[4];                 /*!< [0x0020 ~ 0x002C] Data Transmit Register 0 ~ 3                            */
     __IO uint32_t SRAMADDR;              /*!< [0x0030] SRAM Memory Address Register                                     */
     __IO uint32_t DMACNT;                /*!< [0x0034] DMA Transfer Byte Count Register                                 */
     __IO uint32_t FADDR;                 /*!< [0x0038] Address Register for SPI Flash and Hyper Device                  */
     __I  uint32_t RESERVE1[2];
     __IO uint32_t DMMCTL;                /*!< [0x0044] Direct Memory Mapping Mode Control Register                      */
-    __IO uint32_t CTL2;                  /*!< [0x0048] Control Register 2                                               */
+    __IO uint32_t CTL2;                  /*!< [0x0048] Control and Status Register 2                                    */
     __IO uint32_t CMDCODE;               /*!< [0x004c] Command Code Register                                            */
     __IO uint32_t MODE;                  /*!< [0x0050] Mode Data Register                                               */
     __IO uint32_t PHDMAW;                /*!< [0x0054] Phase Setting Register for DMA Write Mode                        */
     __IO uint32_t PHDMAR;                /*!< [0x0058] Phase Setting Register for DMA Read Mode                         */
     __IO uint32_t PHDMM;                 /*!< [0x005c] Phase Setting Register for Direct Memory Mapping Mode            */
     __I  uint32_t RESERVE2[2];
-    __IO uint32_t DLL0;                  /*!< [0x0068] DLL Control and Status Register 0                                */
-    __IO uint32_t DLL1;                  /*!< [0x006c] DLL Control and Status Register 1                                */
-    __IO uint32_t DLL2;                  /*!< [0x0070] DLL Control and Status Register 2                                */
+    __IO uint32_t DLL0;                  /*!< [0x0068] HYPERDLL Control and Status Register 0                           */
+    __IO uint32_t DLL1;                  /*!< [0x006c] HYPERDLL Control and Status Register 1                           */
+    __IO uint32_t DLL2;                  /*!< [0x0070] HYPERDLL Control and Status Register 2                           */
     __I  uint32_t RESERVE3[3];
-    __IO uint32_t HYPER_CMD;             /*!< [0x0080] Hyper Bus Command and Status Register                            */
-    __IO uint32_t HYPER_CONFIG1;         /*!< [0x0084] Hyper Bus Configuration Register 1                               */
-    __IO uint32_t HYPER_CONFIG2;         /*!< [0x0088] Hyper Bus Configuration Register 2                               */
-    __IO uint32_t HYPER_ADR;             /*!< [0x008c] Hyper Bus Address Register                                       */
-    __IO uint32_t HYPER_WDATA;           /*!< [0x0090] Hyper Bus 32-Bits Write Data Register                            */
-    __I  uint32_t HYPER_RDATA;           /*!< [0x0094] Hyper Bus 32-Bits Read Data Register                             */
-    __IO uint32_t HYPER_INTEN;           /*!< [0x0098] Hyper Bus Interrupt Enable Register                              */
-    __IO uint32_t HYPER_INTSTS;          /*!< [0x009c] Hyper Bus Interrupt Status Register                              */
+    __IO uint32_t HYPER_CMD;             /*!< [0x0080] HyperBus Command and Status Register                             */
+    __IO uint32_t HYPER_CONFIG1;         /*!< [0x0084] HyperBus Configuration Register 1                                */
+    __IO uint32_t HYPER_CONFIG2;         /*!< [0x0088] HyperBus Configuration Register 2                                */
+    __IO uint32_t HYPER_ADR;             /*!< [0x008c] HyperBus Address Register                                        */
+    __IO uint32_t HYPER_WDATA;           /*!< [0x0090] HyperBus 32-Bits Write Data Register                             */
+    __I  uint32_t HYPER_RDATA;           /*!< [0x0094] HyperBus 32-Bits Read Data Register                              */
+    __IO uint32_t HYPER_INTEN;           /*!< [0x0098] HyperBus Interrupt Enable Register                               */
+    __IO uint32_t HYPER_INTSTS;          /*!< [0x009c] HyperBus Interrupt Status Register                               */
+    __IO uint32_t DMM_TIMEOUT_INTERVAL;  /*!< [0x00a0] SPIM DMM Time-out Interval Register                              */
+    __IO uint32_t DMM_TIMEOUT_FLAG_STS;  /*!< [0x00a4] SPIM DMM Time-out Flag Status Register                           */
 } SPIM_T;
 
 /**
@@ -923,11 +907,8 @@ typedef struct
 #define SPIM_CTL0_CIPHOFF_Pos            (0)                                               /*!< SPIM_T::CTL0: CIPHOFF Position         */
 #define SPIM_CTL0_CIPHOFF_Msk            (0x1ul << SPIM_CTL0_CIPHOFF_Pos)                  /*!< SPIM_T::CTL0: CIPHOFF Mask             */
 
-#define SPIM_CTL0_BALEN_Pos              (2)                                               /*!< SPIM_T::CTL0: BALEN Position           */
-#define SPIM_CTL0_BALEN_Msk              (0x1ul << SPIM_CTL0_BALEN_Pos)                    /*!< SPIM_T::CTL0: BALEN Mask               */
-
-#define SPIM_CTL0_HYPER_EN_Pos           (3)                                               /*!< SPIM_T::CTL0: HYPER_EN Position        */
-#define SPIM_CTL0_HYPER_EN_Msk           (0x1ul << SPIM_CTL0_HYPER_EN_Pos)                 /*!< SPIM_T::CTL0: HYPER_EN Mask            */
+#define SPIM_CTL0_DEVMODE_Pos            (2)                                               /*!< SPIM_T::CTL0: DEVMODE Position         */
+#define SPIM_CTL0_DEVMODE_Msk            (0x3ul << SPIM_CTL0_DEVMODE_Pos)                  /*!< SPIM_T::CTL0: DEVMODE Mask             */
 
 #define SPIM_CTL0_B4ADDREN_Pos           (5)                                               /*!< SPIM_T::CTL0: B4ADDREN Position        */
 #define SPIM_CTL0_B4ADDREN_Msk           (0x1ul << SPIM_CTL0_B4ADDREN_Pos)                 /*!< SPIM_T::CTL0: B4ADDREN Mask            */
@@ -965,16 +946,11 @@ typedef struct
 #define SPIM_CTL0_RBO_NORM_Pos           (26)                                              /*!< SPIM_T::CTL0: RBO_NORM Position        */
 #define SPIM_CTL0_RBO_NORM_Msk           (0x3ul << SPIM_CTL0_RBO_NORM_Pos)                 /*!< SPIM_T::CTL0: RBO_NORM Mask            */
 
+#define SPIM_CTL0_SPI_RSTN_Pos           (31)                                              /*!< SPIM_T::CTL0: SPI_RSTN Position        */
+#define SPIM_CTL0_SPI_RSTN_Msk           (0x1ul << SPIM_CTL0_SPI_RSTN_Pos)                 /*!< SPIM_T::CTL0: SPI_RSTN Mask            */
+
 #define SPIM_CTL1_SPIMEN_Pos             (0)                                               /*!< SPIM_T::CTL1: SPIMEN Position          */
 #define SPIM_CTL1_SPIMEN_Msk             (0x1ul << SPIM_CTL1_SPIMEN_Pos)                   /*!< SPIM_T::CTL1: SPIMEN Mask              */
-
-#if (SPIM_REG_CACHE == 1) //TESTCHIP_ONLY not support
-    #define SPIM_CTL1_CACHEOFF_Pos           (1)                                               /*!< SPIM_T::CTL1: CACHEOFF Position        */
-    #define SPIM_CTL1_CACHEOFF_Msk           (0x1ul << SPIM_CTL1_CACHEOFF_Pos)                 /*!< SPIM_T::CTL1: CACHEOFF Mask            */
-
-    #define SPIM_CTL1_CDINVAL_Pos            (3)                                               /*!< SPIM_T::CTL1: CDINVAL Position         */
-    #define SPIM_CTL1_CDINVAL_Msk            (0x1ul << SPIM_CTL1_CDINVAL_Pos)                  /*!< SPIM_T::CTL1: CDINVAL Mask             */
-#endif
 
 #define SPIM_CTL1_SS_Pos                 (4)                                               /*!< SPIM_T::CTL1: SS Position              */
 #define SPIM_CTL1_SS_Msk                 (0x1ul << SPIM_CTL1_SS_Pos)                       /*!< SPIM_T::CTL1: SS Mask                  */
@@ -982,21 +958,8 @@ typedef struct
 #define SPIM_CTL1_SSACTPOL_Pos           (5)                                               /*!< SPIM_T::CTL1: SSACTPOL Position        */
 #define SPIM_CTL1_SSACTPOL_Msk           (0x1ul << SPIM_CTL1_SSACTPOL_Pos)                 /*!< SPIM_T::CTL1: SSACTPOL Mask            */
 
-#if (SPIM_REG_CACHE == 1) //TESTCHIP_ONLY not support
-    #define SPIM_CTL1_CAWRTHEN_Pos           (6)                                               /*!< SPIM_T::CTL1: CAWRTHEN Position        */
-    #define SPIM_CTL1_CAWRTHEN_Msk           (0x1ul << SPIM_CTL1_CAWRTHEN_Pos)                 /*!< SPIM_T::CTL1: CAWRTHEN Mask            */
-
-    #define SPIM_CTL1_AUTOSCLN_Pos           (7)                                               /*!< SPIM_T::CTL1: AUTOSCLN Position        */
-    #define SPIM_CTL1_AUTOSCLN_Msk           (0x1ul << SPIM_CTL1_AUTOSCLN_Pos)                 /*!< SPIM_T::CTL1: AUTOSCLN Mask            */
-#endif
-
 #define SPIM_CTL1_IDLETIME_Pos           (8)                                               /*!< SPIM_T::CTL1: IDLETIME Position        */
 #define SPIM_CTL1_IDLETIME_Msk           (0xful << SPIM_CTL1_IDLETIME_Pos)                 /*!< SPIM_T::CTL1: IDLETIME Mask            */
-
-#if (SPIM_REG_CACHE == 1) //TESTCHIP_ONLY not support
-    #define SPIM_CTL1_UPDCLNUM_Pos           (12)                                              /*!< SPIM_T::CTL1: UPDCLNUM Position        */
-    #define SPIM_CTL1_UPDCLNUM_Msk           (0xful << SPIM_CTL1_UPDCLNUM_Pos)                 /*!< SPIM_T::CTL1: UPDCLNUM Mask            */
-#endif
 
 #define SPIM_CTL1_DIVIDER_Pos            (16)                                              /*!< SPIM_T::CTL1: DIVIDER Position         */
 #define SPIM_CTL1_DIVIDER_Msk            (0xfffful << SPIM_CTL1_DIVIDER_Pos)               /*!< SPIM_T::CTL1: DIVIDER Mask             */
@@ -1054,6 +1017,9 @@ typedef struct
 
 #define SPIM_DMMCTL_HYPDONE_Pos          (27)                                              /*!< SPIM_T::DMMCTL: HYPDONE Position       */
 #define SPIM_DMMCTL_HYPDONE_Msk          (0x1ul << SPIM_DMMCTL_HYPDONE_Pos)                /*!< SPIM_T::DMMCTL: HYPDONE Mask           */
+
+#define SPIM_DMMCTL_DMMIDLE_Pos          (31)                                              /*!< SPIM_T::DMMCTL: DMMIDLE Position       */
+#define SPIM_DMMCTL_DMMIDLE_Msk          (0x1ul << SPIM_DMMCTL_DMMIDLE_Pos)                /*!< SPIM_T::DMMCTL: DMMIDLE Mask           */
 
 #define SPIM_CTL2_DC_DMAR_Pos            (8)                                               /*!< SPIM_T::CTL2: DC_DMAR Position         */
 #define SPIM_CTL2_DC_DMAR_Msk            (0xfful << SPIM_CTL2_DC_DMAR_Pos)                 /*!< SPIM_T::CTL2: DC_DMAR Mask             */
@@ -1226,8 +1192,8 @@ typedef struct
 #define SPIM_HYPER_CMD_HYPCMD_Pos        (0)                                               /*!< SPIM_T::HYPER_CMD: HYPCMD Position     */
 #define SPIM_HYPER_CMD_HYPCMD_Msk        (0xful << SPIM_HYPER_CMD_HYPCMD_Pos)              /*!< SPIM_T::HYPER_CMD: HYPCMD Mask         */
 
-#define SPIM_HYPER_CONFIG1_CSST_Pos      (0)                                               /*!< SPIM_T::HYPER_CONFIG1: CSST Position   */
-#define SPIM_HYPER_CONFIG1_CSST_Msk      (0x3ul << SPIM_HYPER_CONFIG1_CSST_Pos)            /*!< SPIM_T::HYPER_CONFIG1: CSST Mask       */
+#define SPIM_HYPER_CONFIG1_CSS_Pos       (0)                                               /*!< SPIM_T::HYPER_CONFIG1: CSS Position    */
+#define SPIM_HYPER_CONFIG1_CSS_Msk       (0x3ul << SPIM_HYPER_CONFIG1_CSS_Pos)             /*!< SPIM_T::HYPER_CONFIG1: CSS Mask        */
 
 #define SPIM_HYPER_CONFIG1_CSH_Pos       (4)                                               /*!< SPIM_T::HYPER_CONFIG1: CSH Position    */
 #define SPIM_HYPER_CONFIG1_CSH_Msk       (0x3ul << SPIM_HYPER_CONFIG1_CSH_Pos)             /*!< SPIM_T::HYPER_CONFIG1: CSH Mask        */
@@ -1235,8 +1201,8 @@ typedef struct
 #define SPIM_HYPER_CONFIG1_CSHI_Pos      (8)                                               /*!< SPIM_T::HYPER_CONFIG1: CSHI Position   */
 #define SPIM_HYPER_CONFIG1_CSHI_Msk      (0xful << SPIM_HYPER_CONFIG1_CSHI_Pos)            /*!< SPIM_T::HYPER_CONFIG1: CSHI Mask       */
 
-#define SPIM_HYPER_CONFIG1_CSMAXLT_Pos   (16)                                              /*!< SPIM_T::HYPER_CONFIG1: CSMAXLT Position*/
-#define SPIM_HYPER_CONFIG1_CSMAXLT_Msk   (0xfffful << SPIM_HYPER_CONFIG1_CSMAXLT_Pos)      /*!< SPIM_T::HYPER_CONFIG1: CSMAXLT Mask    */
+#define SPIM_HYPER_CONFIG1_CSMAXLT_Pos   (12)                                              /*!< SPIM_T::HYPER_CONFIG1: CSMAXLT Position*/
+#define SPIM_HYPER_CONFIG1_CSMAXLT_Msk   (0xffffful << SPIM_HYPER_CONFIG1_CSMAXLT_Pos)     /*!< SPIM_T::HYPER_CONFIG1: CSMAXLT Mask    */
 
 #define SPIM_HYPER_CONFIG2_ACCTWR_Pos    (8)                                               /*!< SPIM_T::HYPER_CONFIG2: ACCTWR Position */
 #define SPIM_HYPER_CONFIG2_ACCTWR_Msk    (0x1ful << SPIM_HYPER_CONFIG2_ACCTWR_Pos)         /*!< SPIM_T::HYPER_CONFIG2: ACCTWR Mask     */
@@ -1261,6 +1227,12 @@ typedef struct
 
 #define SPIM_HYPER_INTSTS_OPDONE_Pos     (0)                                               /*!< SPIM_T::HYPER_INTSTS: OPDONE Position  */
 #define SPIM_HYPER_INTSTS_OPDONE_Msk     (0x1ul << SPIM_HYPER_INTSTS_OPDONE_Pos)           /*!< SPIM_T::HYPER_INTSTS: OPDONE Mask      */
+
+#define SPIM_DMM_TIMEOUT_TOCNT_Pos       (0)                                               /*!< SPIM_T::DMM_TIMEOUT_INTERVAL: TOCNTDMM Position*/
+#define SPIM_DMM_TIMEOUT_TOCNT_Msk       (0xfffffffful << SPIM_DMM_TIMEOUT_TOCNT_Pos)      /*!< SPIM_T::DMM_TIMEOUT_INTERVAL: TOCNTDMM Mask*/
+
+#define SPIM_DMM_TIMEOUT_STS_TOF_Pos     (0)                                                  /*!< SPIM_T::DMM_TIMEOUT_FLAG_STS: DMMTOF Position*/
+#define SPIM_DMM_TIMEOUT_STS_TOF_Msk     (0x1ul << SPIM_DMM_TIMEOUT_STS_TOF_Pos)               /*!< SPIM_T::DMM_TIMEOUT_FLAG_STS: DMMTOF Mask*/
 
 /** @} SPIM_CONST */
 /** @} end of SPIM register group */

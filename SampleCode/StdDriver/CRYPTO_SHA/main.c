@@ -19,10 +19,6 @@ extern int  GetNextPattern(void);
 
 
 static volatile int g_SHA_done;
-static volatile int g_SHA_error;
-
-static volatile int g_RSA_done;
-static volatile int g_RSA_error;
 void CRYPTO_IRQHandler(void);
 int  do_compare(uint8_t *output, uint8_t *expect, int cmp_len);
 int32_t RunSHA(void);
@@ -39,7 +35,6 @@ void CRYPTO_IRQHandler(void)
 
         if (SHA_GET_INT_FLAG(CRYPTO)&CRYPTO_INTSTS_HMACEIF_Msk)
         {
-            g_SHA_error = 1;
             printf("SHA error flag is set!!\n");
         }
 
@@ -67,8 +62,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
 
-    /* Enable PLL0 200MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -190,6 +185,10 @@ int main(void)
            compre the result with golden pattern */
         if (GetNextPattern() < 0)
             break;
+
+#if(NVT_DCACHE_ON == 1)
+        NVT_SCB_CleanDCache_ShaDataPool();
+#endif
 
         if (RunSHA() < 0)
             break;

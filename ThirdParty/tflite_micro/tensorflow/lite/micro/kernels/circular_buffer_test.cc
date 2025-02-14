@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/kernels/circular_buffer_flexbuffers_generated_data.h"
 #include "tensorflow/lite/micro/kernels/kernel_runner.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
@@ -27,9 +26,6 @@ namespace testing {
 namespace {
 
 constexpr int kRunPeriod = 2;
-
-// TODO(b/149795762): Add this to TfLiteStatus enum.
-constexpr TfLiteStatus kTfLiteAbort = static_cast<TfLiteStatus>(-9);
 
 }  // namespace
 }  // namespace testing
@@ -76,7 +72,7 @@ TF_LITE_MICRO_TEST(OutputTensorLength4) {
   TfLiteIntArray* outputs_array =
       tflite::testing::IntArrayFromInts(outputs_array_data);
 
-  const TfLiteRegistration* registration = tflite::Register_CIRCULAR_BUFFER();
+  const TFLMRegistration* registration = tflite::Register_CIRCULAR_BUFFER();
   tflite::micro::KernelRunner runner = tflite::micro::KernelRunner(
       *registration, tensors, tensors_size, inputs_array, outputs_array,
       /*builtin_data=*/nullptr);
@@ -103,7 +99,7 @@ TF_LITE_MICRO_TEST(OutputTensorLength4) {
     if (i % tflite::testing::kRunPeriod == tflite::testing::kRunPeriod - 1) {
       TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, status);
     } else {
-      TF_LITE_MICRO_EXPECT_EQ(tflite::testing::kTfLiteAbort, status);
+      TF_LITE_MICRO_EXPECT_EQ(tflite::kTfLiteAbort, status);
     }
   }
 }
@@ -147,7 +143,7 @@ TF_LITE_MICRO_TEST(OutputTensorOnEveryIterationLength4) {
   TfLiteIntArray* outputs_array =
       tflite::testing::IntArrayFromInts(outputs_array_data);
 
-  const TfLiteRegistration* registration = tflite::Register_CIRCULAR_BUFFER();
+  const TFLMRegistration* registration = tflite::Register_CIRCULAR_BUFFER();
   tflite::micro::KernelRunner runner = tflite::micro::KernelRunner(
       *registration, tensors, tensors_size, inputs_array, outputs_array,
       /*builtin_data=*/nullptr);
@@ -212,7 +208,7 @@ TF_LITE_MICRO_TEST(OutputTensorLength5) {
   TfLiteIntArray* outputs_array =
       tflite::testing::IntArrayFromInts(outputs_array_data);
 
-  const TfLiteRegistration* registration = tflite::Register_CIRCULAR_BUFFER();
+  const TFLMRegistration* registration = tflite::Register_CIRCULAR_BUFFER();
   tflite::micro::KernelRunner runner = tflite::micro::KernelRunner(
       *registration, tensors, tensors_size, inputs_array, outputs_array,
       /*builtin_data=*/nullptr);

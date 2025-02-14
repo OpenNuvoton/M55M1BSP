@@ -12,8 +12,14 @@
 #include "usbd_audio.h"
 
 /* DMA scatter-gather descriptor */
-static DMA_DESC_T DMA_TXDESC[PDMA_TXBUFFER_CNT];
-static DMA_DESC_T DMA_RXDESC[PDMA_RXBUFFER_CNT];
+#if (NVT_DCACHE_ON == 1)
+    /* Descriptors are placed in a non-cacheable region */
+    NVT_NONCACHEABLE static DMA_DESC_T DMA_TXDESC[PDMA_TXBUFFER_CNT];
+    NVT_NONCACHEABLE static DMA_DESC_T DMA_RXDESC[PDMA_RXBUFFER_CNT];
+#else
+    static DMA_DESC_T DMA_TXDESC[PDMA_TXBUFFER_CNT];
+    static DMA_DESC_T DMA_RXDESC[PDMA_RXBUFFER_CNT];
+#endif
 
 /* PDMA Interrupt handler */
 NVT_ITCM void PDMA0_IRQHandler(void)

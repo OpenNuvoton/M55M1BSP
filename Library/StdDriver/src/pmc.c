@@ -28,7 +28,7 @@
   *             - \ref PMC_PLCTL_PLSEL_PL1  : Supports system clock up to 200MHz.
   * @retval     PMC_OK          PMC operation OK.
   * @retval     PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
-  * @details    This function select power level.
+  * @details    This function is used to select power level.
   *             The register write-protection function should be disabled before using this function.
   */
 int32_t PMC_SetPowerLevel(uint32_t u32PowerLevel)
@@ -43,68 +43,6 @@ int32_t PMC_SetPowerLevel(uint32_t u32PowerLevel)
     if (PMC_Wait_BusyFlag(PMC_PLSTS_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
     return PMC_OK;
-}
-
-/**
-  * @brief      Set Main Voltage Regulator Type
-  * @param[in]  u32PowerRegulator is main voltage regulator type. Including :
-  *             - \ref PMC_VRCTL_MVRS_LDO
-  *             - \ref PMC_VRCTL_MVRS_DCDC
-  * @retval     PMC_ERR_FAIL    Main voltage regulator type setting is not finished.
-  * @retval     PMC_OK          Main voltage regulator type setting is finished.
-  * @retval     PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
-  * @details    This function set main voltage regulator type.
-  *             The main voltage regulator type setting to DCDC cannot finished if the inductor is not detected.
-  *             The register write-protection function should be disabled before using this function.
-  */
-int32_t PMC_SetPowerRegulator(uint32_t u32PowerRegulator)
-{
-    int32_t i32Ret = PMC_OK;
-    uint32_t u32PowerRegStatus;
-
-    /* Get main voltage regulator type status */
-    u32PowerRegStatus = PMC->VRSTS & PMC_VRSTS_CURMVR_Msk;
-
-    /* Set main voltage regulator type */
-    if ((u32PowerRegulator == PMC_VRCTL_MVRS_DCDC) && (u32PowerRegStatus == PMC_VRSTS_CURMVR_LDO))
-    {
-        /* Set main voltage regulator type to DCDC if status is LDO */
-        if (PMC_Wait_BusyFlag(PMC_VRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
-        PMC->VRCTL |= PMC_VRCTL_MVRS_Msk;
-
-        /* Wait main voltage regulator type change ready */
-        if (PMC_Wait_BusyFlag(PMC_VRSTS_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
-        if ((PMC->VRSTS & PMC_VRSTS_CURMVR_Msk) != PMC_VRSTS_CURMVR_DCDC)
-        {
-            i32Ret = PMC_ERR_FAIL;    /* Main voltage regulator type change fail */
-        }
-    }
-    else if (u32PowerRegulator == PMC_VRCTL_MVRS_LDO)
-    {
-        if (PMC_Wait_BusyFlag(PMC_VRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
-        /* Set main voltage regulator type to LDO */
-        PMC->VRCTL &= (~PMC_VRCTL_MVRS_Msk);
-
-        /* Wait main voltage regulator type change ready */
-        if (PMC_Wait_BusyFlag(PMC_VRSTS_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
-        if ((PMC->VRSTS & PMC_VRSTS_CURMVR_Msk) != PMC_VRSTS_CURMVR_LDO)
-        {
-            i32Ret = PMC_ERR_FAIL;    /* Main voltage regulator type change fail */
-        }
-    }
-
-    /* Clear main voltage regulator type change error flag */
-    if (PMC->VRSTS & PMC_VRSTS_MVRCERR_Msk)
-    {
-        PMC->VRSTS = PMC_VRSTS_MVRCERR_Msk;
-        i32Ret = PMC_ERR_FAIL;
-    }
-
-    return i32Ret;
 }
 
 /**
@@ -131,7 +69,7 @@ int32_t PMC_SetPowerRegulator(uint32_t u32PowerRegulator)
   *             - \ref PMC_SYSRB2PC_SRAM2PMS_Msk       : 0x2022_0000 - 0x2022_FFFF
   *             - \ref PMC_SYSRB2PC_SRAM3PMS_Msk       : 0x2023_0000 - 0x2023_FFFF
   *             - \ref PMC_SYSRB2PC_SRAM4PMS_Msk       : 0x2024_0000 - 0x2024_FFFF
-  *             - \\ref PMC_SYSRB3PC_SRAM0PMS_Msk       : 0x2030_0000 - 0x2030_1FFF  // TESTCHIP_ONLY not support
+  *             - \ref PMC_SYSRB3PC_SRAM0PMS_Msk       : 0x2030_0000 - 0x2030_1FFF
   *             - \ref PMC_LPSYSRPC_SRAM0PMS_Msk       : 0x2031_0000 - 0x2031_0FFF
   * @param[in]  u32PowerMode is SRAM power mode. Including :
   *             - \ref PMC_SYSRB0PC_SRAM_NORMAL
@@ -143,16 +81,16 @@ int32_t PMC_SetPowerRegulator(uint32_t u32PowerRegulator)
   *             - \ref PMC_SYSRB2PC_SRAM_NORMAL
   *             - \ref PMC_SYSRB2PC_SRAM_RETENTION
   *             - \ref PMC_SYSRB2PC_SRAM_POWER_SHUT_DOWN
-  *             - \\ref PMC_SYSRB3PC_SRAM_NORMAL             // TESTCHIP_ONLY not support
-  *             - \\ref PMC_SYSRB3PC_SRAM_RETENTION          // TESTCHIP_ONLY not support
-  *             - \\ref PMC_SYSRB3PC_SRAM_POWER_SHUT_DOWN    // TESTCHIP_ONLY not support
+  *             - \ref PMC_SYSRB3PC_SRAM_NORMAL
+  *             - \ref PMC_SYSRB3PC_SRAM_RETENTION
+  *             - \ref PMC_SYSRB3PC_SRAM_POWER_SHUT_DOWN
   *             - \ref PMC_LPSYSRPC_SRAM_NORMAL
   *             - \ref PMC_LPSYSRPC_SRAM_RETENTION
   *             - \ref PMC_LPSYSRPC_SRAM_POWER_SHUT_DOWN
   * @retval     PMC_OK          PMC operation OK.
   * @retval     PMC_ERR_FAIL    PMC operation failed.
   * @retval     PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
-  * @details    This function set system SRAM power mode.
+  * @details    This function is used to set system SRAM power mode.
   *             The register write-protection function should be disabled before using this function.
   */
 int32_t PMC_SetSRAMPowerMode(uint32_t u32SRAMSel, uint32_t u32PowerMode)
@@ -182,32 +120,45 @@ int32_t PMC_SetSRAMPowerMode(uint32_t u32SRAMSel, uint32_t u32PowerMode)
             if (PMC_Wait_BusyFlag(PMC_SYSRB0PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
             PMC->SYSRB0PC = (PMC->SYSRB0PC & (~u32SRAMSel)) | (u32PowerMode << u32SRAMSelPos);
+
+            if (PMC_Wait_BusyFlag(PMC_SYSRB0PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
             break;
 
         case SRAMNum1:
             if (PMC_Wait_BusyFlag(PMC_SYSRB1PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
             PMC->SYSRB1PC = (PMC->SYSRB1PC & (~u32SRAMSel)) | (u32PowerMode << u32SRAMSelPos);
+
+            if (PMC_Wait_BusyFlag(PMC_SYSRB1PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
             break;
 
         case SRAMNum2:
             if (PMC_Wait_BusyFlag(PMC_SYSRB2PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
             PMC->SYSRB2PC = (PMC->SYSRB2PC & (~u32SRAMSel)) | (u32PowerMode << u32SRAMSelPos);
+
+            if (PMC_Wait_BusyFlag(PMC_SYSRB2PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
             break;
-#if 0   // TESTCHIP_ONLY not support
 
         case SRAMNum3:
             if (PMC_Wait_BusyFlag(PMC_SYSRB3PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
             PMC->SYSRB3PC = (PMC->SYSRB3PC & (~u32SRAMSel)) | (u32PowerMode << u32SRAMSelPos);
+
+            if (PMC_Wait_BusyFlag(PMC_SYSRB3PC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
             break;
-#endif
 
         case SRAMNum4:
             if (PMC_Wait_BusyFlag(PMC_LPSYSRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
             PMC->LPSYSRPC = (PMC->LPSYSRPC & (~u32SRAMSel)) | (u32PowerMode << u32SRAMSelPos);
+
+            if (PMC_Wait_BusyFlag(PMC_LPSYSRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
             break;
 
         default:
@@ -218,9 +169,76 @@ int32_t PMC_SetSRAMPowerMode(uint32_t u32SRAMSel, uint32_t u32PowerMode)
 }
 
 /**
+  * @brief      Set CCAP SRAM Power Mode
+  * @param[in]  u32PowerMode is SRAM power mode. Including :
+  *             - \ref PMC_SRAM_NORMAL
+  *             - \ref PMC_SRAM_RETENTION
+  *             - \ref PMC_SRAM_POWER_SHUT_DOWN
+  * @retval     PMC_OK          PMC operation OK.
+  * @retval     PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
+  * @details    This function is used to set CCAP SRAM power mode.
+  *             The register write-protection function should be disabled before using this function.
+  */
+int32_t PMC_SetCCAP_SRAMPowerMode(uint32_t u32PowerMode)
+{
+    if (PMC_Wait_BusyFlag(PMC_CCAPRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    PMC->CCAPRPC = (PMC->CCAPRPC & (~PMC_CCAPRPC_CCAP0SRPMS_Msk)) | (u32PowerMode << PMC_CCAPRPC_CCAP0SRPMS_Pos);
+
+    if (PMC_Wait_BusyFlag(PMC_CCAPRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    return PMC_OK;
+}
+
+/**
+  * @brief      Set DMIC SRAM Power Mode
+  * @param[in]  u32PowerMode is SRAM power mode. Including :
+  *             - \ref PMC_SRAM_NORMAL
+  *             - \ref PMC_SRAM_RETENTION
+  *             - \ref PMC_SRAM_POWER_SHUT_DOWN
+  * @retval     PMC_OK          PMC operation OK.
+  * @retval     PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
+  * @details    This function is used to set DMIC SRAM power mode.
+  *             The register write-protection function should be disabled before using this function.
+  */
+int32_t PMC_SetDMIC_SRAMPowerMode(uint32_t u32PowerMode)
+{
+    if (PMC_Wait_BusyFlag(PMC_DMICRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    PMC->DMICRPC = (PMC->DMICRPC & (~PMC_DMICRPC_DMIC0SRPMS_Msk)) | (u32PowerMode << PMC_DMICRPC_DMIC0SRPMS_Pos);
+
+    if (PMC_Wait_BusyFlag(PMC_DMICRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    return PMC_OK;
+}
+
+/**
+  * @brief      Set KS SRAM Power Mode
+  * @param[in]  u32PowerMode is SRAM power mode. Including :
+  *             - \ref PMC_SRAM_NORMAL
+  *             - \ref PMC_SRAM_RETENTION
+  *             - \ref PMC_SRAM_POWER_SHUT_DOWN
+  * @retval     PMC_OK          PMC operation OK.
+  * @retval     PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
+  * @details    This function is used to set KS SRAM power mode.
+  *             The register write-protection function should be disabled before using this function.
+  */
+int32_t PMC_SetKS_SRAMPowerMode(uint32_t u32PowerMode)
+{
+    if (PMC_Wait_BusyFlag(PMC_KSRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    PMC->KSRPC = (PMC->KSRPC & (~PMC_KSRPC_KSSRPMS_Msk)) | (u32PowerMode << PMC_KSRPC_KSSRPMS_Pos);
+
+    if (PMC_Wait_BusyFlag(PMC_KSRPC_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    return PMC_OK;
+}
+
+/**
   * @brief      Enter to Power-down mode
   * @details    This function is used to let system enter to Power-down mode. \n
   *             The register write-protection function should be disabled before using this function.
+  *             Before entering powerdown, user must confirm the auto operation has been completed.
   */
 void PMC_PowerDown(void)
 {
@@ -228,9 +246,6 @@ void PMC_PowerDown(void)
 
     /* Set the processor uses deep sleep as its low power mode */
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
-
-    /* Set system Power-down enabled */
-    PMC->PWRCTL |= (PMC_PWRCTL_PDEN_Msk);
 
     /* Store SysTick interrupt and HIRC auto trim setting */
     u32SysTickTICKINT = SysTick->CTRL & SysTick_CTRL_TICKINT_Msk;
@@ -246,6 +261,9 @@ void PMC_PowerDown(void)
 
     /* Chip enter Power-down mode after CPU run WFI instruction */
     __WFI();
+
+    /* Clear deep sleep mode selection */
+    SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
 
     /* Restore SysTick interrupt and HIRC auto trim setting */
     if (u32SysTickTICKINT) SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
@@ -265,9 +283,6 @@ void PMC_Idle(void)
     /* Set the processor uses sleep as its low power mode */
     SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
 
-    /* Set chip in idle mode because of WFI command */
-    PMC->PWRCTL &= ~PMC_PWRCTL_PDEN_Msk;
-
     /* Chip enter idle mode after CPU run WFI instruction */
     __WFI();
 }
@@ -277,17 +292,16 @@ void PMC_Idle(void)
   * @param[in]  u32PowerDownMode is power down mode index. Including :
   *             - \ref PMC_NPD0
   *             - \ref PMC_NPD1
-  *             - \\ref  PMC_NPD2 // TESTCHIP_ONLY not support
-  *             - \\ref  PMC_NPD3 // TESTCHIP_ONLY not support
-  *             - \\ref  PMC_NPD4 // TESTCHIP_ONLY not support
+  *             - \ref PMC_NPD2
+  *             - \ref PMC_NPD3
+  *             - \ref PMC_NPD4
   *             - \ref PMC_SPD0
-  *             - \\ref  PMC_SPD1 // TESTCHIP_ONLY not support
-  *             - \ref PMC_DPD0
-  *             - \\ref  PMC_DPD1 // TESTCHIP_ONLY not support
+  *             - \ref PMC_SPD1
+  *             - \ref PMC_DPD
   * @param[in]  u32PowerLevel is power level setting. Including :
-  *             - \ref PMC_PLCTL_PLSEL_PL0  : Supports system clock up to 240MHz.
+  *             - \ref PMC_PLCTL_PLSEL_PL0  : Supports system clock up to 220MHz.
   *             - \ref PMC_PLCTL_PLSEL_PL1  : Supports system clock up to 200MHz.
-  *             Power level set value is ignored in PMC_NPD2/PMC_NPD4/PMC_SPD1/PMC_DPD0/PMC_DPD1 power-down mode.
+  *             The value set by u32PowerLevel is ignored in PMC_NPD2/PMC_NPD4/PMC_SPD1/PMC_DPD power-down mode.
   * @retval     PMC_OK          PMC operation OK.
   * @retval     PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
   * @details    This function is used to set power-down mode.
@@ -300,73 +314,70 @@ int32_t PMC_SetPowerDownMode(uint32_t u32PowerDownMode, uint32_t u32PowerLevel)
     PMC->PWRCTL = (PMC->PWRCTL & ~(PMC_PWRCTL_D0PGEN_Msk | PMC_PWRCTL_D1PGEN_Msk | PMC_PWRCTL_D2PGEN_Msk | PMC_PWRCTL_D3PGEN_Msk
                                    | PMC_PWRCTL_VDROPEN_Msk | PMC_PWRCTL_FWEN_Msk));
 
+    if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
     switch (u32PowerDownMode)
     {
         case PMC_NPD0:
             if (PMC_SetPowerLevel(u32PowerLevel) != 0) return PMC_ERR_TIMEOUT;
 
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
             PMC->PWRCTL |= PMC_PWRCTL_FWEN_Msk;
             break;
 
         case PMC_NPD1:
+
+            /* Workaround */
+            if (PMC_Wait_BusyFlag(SYS_BASE + 0xF4C) != 0) return PMC_ERR_TIMEOUT;
+
+            outp32(SYS_BASE + 0xF4C, inp32(SYS_BASE + 0xF4C) | BIT14);
+
+            if (PMC_Wait_BusyFlag(SYS_BASE + 0xF4C) != 0) return PMC_ERR_TIMEOUT;
+
             if (PMC_SetPowerLevel(u32PowerLevel) != 0) return PMC_ERR_TIMEOUT;
 
             break;
-#if 0   // TESTCHIP_ONLY not support
 
         case PMC_NPD2:
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
             PMC->PWRCTL |= PMC_PWRCTL_VDROPEN_Msk;
             break;
 
         case PMC_NPD3:
-            if (PMC_SetPowerLevel(u32PowerLevel) != 0) return PMC_ERR_TIMEOUT;
 
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+            /* Workaround */
+            if (PMC_Wait_BusyFlag(SYS_BASE + 0xF4C) != 0) return PMC_ERR_TIMEOUT;
+
+            outp32(SYS_BASE + 0xF4C, inp32(SYS_BASE + 0xF4C) | BIT14);
+
+            if (PMC_Wait_BusyFlag(SYS_BASE + 0xF4C) != 0) return PMC_ERR_TIMEOUT;
+
+            if (PMC_SetPowerLevel(u32PowerLevel) != 0) return PMC_ERR_TIMEOUT;
 
             PMC->PWRCTL |= (PMC_PWRCTL_D0PGEN_Msk | PMC_PWRCTL_D1PGEN_Msk);
             break;
 
         case PMC_NPD4:
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
             PMC->PWRCTL |= (PMC_PWRCTL_D0PGEN_Msk | PMC_PWRCTL_D1PGEN_Msk | PMC_PWRCTL_VDROPEN_Msk);
             break;
-#endif
 
         case PMC_SPD0:
             if (PMC_SetPowerLevel(u32PowerLevel) != 0) return PMC_ERR_TIMEOUT;
 
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
             PMC->PWRCTL |= (PMC_PWRCTL_D0PGEN_Msk | PMC_PWRCTL_D1PGEN_Msk | PMC_PWRCTL_D2PGEN_Msk);
             break;
-#if 0   // TESTCHIP_ONLY not support
 
         case PMC_SPD1:
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
             PMC->PWRCTL |= (PMC_PWRCTL_D0PGEN_Msk | PMC_PWRCTL_D1PGEN_Msk | PMC_PWRCTL_D2PGEN_Msk | PMC_PWRCTL_VDROPEN_Msk);
             break;
-#endif
 
-        case PMC_DPD0:
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
+        case PMC_DPD:
             PMC->PWRCTL |= (PMC_PWRCTL_D0PGEN_Msk | PMC_PWRCTL_D1PGEN_Msk | PMC_PWRCTL_D2PGEN_Msk | PMC_PWRCTL_D3PGEN_Msk | PMC_PWRCTL_FWEN_Msk);
             break;
-#if 0   // TESTCHIP_ONLY not support
 
-        case PMC_DPD1:
-            if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
-
-            PMC->PWRCTL |= (PMC_PWRCTL_D0PGEN_Msk | PMC_PWRCTL_D1PGEN_Msk | PMC_PWRCTL_D2PGEN_Msk | PMC_PWRCTL_D3PGEN_Msk);
+        default:
             break;
-#endif
     }
+
+    if (PMC_Wait_BusyFlag(PMC_PWRCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
     return PMC_OK;
 }
@@ -437,7 +448,7 @@ void PMC_EnableWKPIN(uint32_t u32TriggerType)
  * @brief       Get power manager wake up source
  * @param[in]   None
  * @return      Interrupt Status
- * @details     This function get power manager wake up source.
+ * @details     This function is used to get power management wake up source.
  */
 uint32_t PMC_GetPMCWKSrc(void)
 {
@@ -464,7 +475,7 @@ uint32_t PMC_GetPMCWKSrc(void)
  *              - \ref PMC_TGPIN_WAKEUP_DISABLE
  * @details     This function is used to set specified GPIO as trigger or wake up source.
  */
-void PMC_EnableTGPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType, uint32_t u32DebounceEn, uint32_t u32WakeupEn)
+int32_t PMC_EnableTGPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType, uint32_t u32DebounceEn, uint32_t u32WakeupEn)
 {
     uint32_t u32tmpAddr = 0UL;
     uint32_t u32tmpVal = 0UL;
@@ -475,9 +486,46 @@ void PMC_EnableTGPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType,
 
     u32tmpVal = inpw((uint32_t *)u32tmpAddr);
 
+    if (PMC_Wait_BusyFlag(u32tmpAddr) != 0) return PMC_ERR_TIMEOUT;
+
     u32tmpVal = (u32tmpVal & ~(PMC_GPATGCTL_TGPSEL_Msk | PMC_GPATGCTL_TGPREN_Msk | PMC_GPATGCTL_TGPFEN_Msk | PMC_GPATGCTL_TGPDBEN_Msk | PMC_GPATGCTL_TGPWKEN_Msk)) |
                 (u32Pin << PMC_GPATGCTL_TGPSEL_Pos) | u32TriggerType | u32DebounceEn | u32WakeupEn;
     outpw((uint32_t *)u32tmpAddr, u32tmpVal);
+
+    if (PMC_Wait_BusyFlag(u32tmpAddr) != 0) return PMC_ERR_TIMEOUT;
+
+    return PMC_OK;
+}
+
+/**
+ * @brief       Disable specified GPIO as wake up source or triggrt source
+ * @param[in]   u32Port GPIO port.
+ *              - \ref PMC_TGPIN_PA
+ *              - \ref PMC_TGPIN_PB
+ *              - \ref PMC_TGPIN_PC
+ *              - \ref PMC_TGPIN_PD
+ * @details     This function is used to set specified GPIO as trigger or wake up source.
+ */
+int32_t PMC_DisableTGPin(uint32_t u32Port)
+{
+    uint32_t u32tmpAddr = 0UL;
+    uint32_t u32tmpVal = 0UL;
+
+    /* GPx TG Pin Select */
+    u32tmpAddr = (uint32_t)&PMC->GPATGCTL;
+    u32tmpAddr += (0x4UL * u32Port);
+
+    u32tmpVal = inpw((uint32_t *)u32tmpAddr);
+
+    if (PMC_Wait_BusyFlag(u32tmpAddr) != 0) return PMC_ERR_TIMEOUT;
+
+    u32tmpVal = (u32tmpVal & ~(PMC_GPATGCTL_TGPSEL_Msk | PMC_GPATGCTL_TGPREN_Msk | PMC_GPATGCTL_TGPFEN_Msk | PMC_GPATGCTL_TGPDBEN_Msk | PMC_GPATGCTL_TGPWKEN_Msk));
+
+    outpw((uint32_t *)u32tmpAddr, u32tmpVal);
+
+    if (PMC_Wait_BusyFlag(u32tmpAddr) != 0) return PMC_ERR_TIMEOUT;
+
+    return PMC_OK;
 }
 
 /**
@@ -499,7 +547,7 @@ void PMC_EnableTGPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType,
  *                             - \ref PMC_STMRWKCTL_STMRIS_4194304
  * @retval      PMC_OK          PMC operation OK.
  * @retval      PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
- * @details     This function enable standby wake-up timer and set Time-out interval.
+ * @details     This function is used to enable standby wake-up timer and set Time-out interval.
                 The register write-protection function should be disabled before using this function.
  */
 int32_t PMC_EnableSTMR(uint32_t u32Interval)
@@ -512,6 +560,8 @@ int32_t PMC_EnableSTMR(uint32_t u32Interval)
 
     PMC->STMRWKCTL |= PMC_STMRWKCTL_STMREN_Msk;
 
+    if (PMC_Wait_BusyFlag(PMC_STMRWKCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
     return PMC_OK;
 }
 
@@ -519,7 +569,7 @@ int32_t PMC_EnableSTMR(uint32_t u32Interval)
  * @brief       Disable standby wake-up timer.
  * @retval      PMC_OK          PMC operation OK.
  * @retval      PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
- * @details     This function isable standby wake-up timer.
+ * @details     This function is used to disable standby wake-up timer.
                 The register write-protection function should be disabled before using this function.
  */
 int32_t PMC_DisableSTMR(void)
@@ -527,6 +577,42 @@ int32_t PMC_DisableSTMR(void)
     if (PMC_Wait_BusyFlag(PMC_STMRWKCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
     PMC->STMRWKCTL &= ~PMC_STMRWKCTL_STMREN_Msk;
+
+    if (PMC_Wait_BusyFlag(PMC_STMRWKCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    return PMC_OK;
+}
+
+/**
+ * @brief       Set GPIO Trigger Pin De-bounce Sampling Cycle.
+ * @param[in]   u32Sel   The Time-out Interval selection. It could be
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_1
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_2
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_4
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_8
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_16
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_32
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_64
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_128
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_256
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_512
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_1024
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_2048
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_4096
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_8192
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_16384
+ *                             - \ref PMC_IOTGDBCTL_IOTGDBSEL_32768
+ * @retval      PMC_OK          PMC operation OK.
+ * @retval      PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
+ * @details     This function is used to set GPIO Trigger Pin De-bounce Sampling Cycle.
+ */
+int32_t PMC_SetTGPinDebounce(uint32_t u32Sel)
+{
+    if (PMC_Wait_BusyFlag(PMC_IOTGDBCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
+
+    PMC->IOTGDBCTL = ((PMC->IOTGDBCTL & ~PMC_IOTGDBCTL_IOTGDBSEL_Msk) | u32Sel);
+
+    if (PMC_Wait_BusyFlag(PMC_IOTGDBCTL_BUSY_FLAG) != 0) return PMC_ERR_TIMEOUT;
 
     return PMC_OK;
 }
@@ -537,18 +623,23 @@ int32_t PMC_DisableSTMR(void)
  *              - \ref PMC_PWRCTL_BUSY_FLAG
  *              - \ref PMC_PLCTL_BUSY_FLAG
  *              - \ref PMC_PLSTS_BUSY_FLAG
- *              - \ref PMC_VRCTL_BUSY_FLAG
- *              - \ref PMC_VRSTS_BUSY_FLAG
+ *              - \ref PMC_IOTGDBCTL_BUSY_FLAG
+ *              - \ref PMC_GPATGCTL_BUSY_FLAG
+ *              - \ref PMC_GPBTGCTL_BUSY_FLAG
+ *              - \ref PMC_GPCTGCTL_BUSY_FLAG
+ *              - \ref PMC_GPDTGCTL_BUSY_FLAG
  *              - \ref PMC_STMRWKCTL_BUSY_FLAG
  *              - \ref PMC_SYSRB0PC_BUSY_FLAG
  *              - \ref PMC_SYSRB1PC_BUSY_FLAG
  *              - \ref PMC_SYSRB2PC_BUSY_FLAG
  *              - \ref PMC_SYSRB3PC_BUSY_FLAG
  *              - \ref PMC_LPSYSRPC_BUSY_FLAG
+ *              - \ref PMC_CCAPRPC_BUSY_FLAG
+ *              - \ref PMC_DMICRPC_BUSY_FLAG
  *              - \ref PMC_KSRPC_BUSY_FLAG
  * @retval      PMC_OK          PMC operation OK.
  * @retval      PMC_ERR_TIMEOUT PMC operation abort due to timeout error.
- * @details     This function is check PMC busy flag.
+ * @details     This function is used to check PMC busy flag.
  */
 int32_t PMC_Wait_BusyFlag(uint32_t PMCBusyFlagAddr)
 {

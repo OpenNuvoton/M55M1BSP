@@ -17,45 +17,30 @@
  */
 
 /*
- * This is a simplified picture of the M55M1 memory system.
- * Please refer to the M55M1 Technical Reference Manual for
- * further information.
- *
- *
- * +---------------+   +---------------+  +------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM |
- * |               |   |               |  +------+
- * |               |   |               |
- * |               |   |               |  +------+
- * |  M1      M0   |   |               +--+ DTCM |
- * +---+-------+---+   +-------+-------+  +------+
- *     |       |               |
- *     |   +---+---------------+-----+
- *     |   | AMBA AXI NIC-400-Lite   |
- *     |   +---+-----------------+---+
- *     |       |                 |
- * +---+-------+------------+ +--+---------+
- * | AMBA AHB               | | SRAM 0/1/2 |
- * +---+--------+--------+--+ +------------+
- *     |
- * +---+---+
- * | FLASH |
- * +-------+
- *
- * +-----------------------+-------------+-------------+----+---------------------------------+
- * |  Memory region name   | Base addr   |    Size     |IDAU|  MCC load address + remarks     |
- * +-----------------------+-------------+-------------+----+---------------------------------+
- * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | 64 kiB                          |
- * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | Non-Secure alias for ITCM       |
- * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | 2 MiB                           |
- * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash      |
- * | DTCM                  | 0x2000_0000 | 0x0002_0000 | S  | 128 kiB                         |
- * | DTCM                  | 0x3000_0000 | 0x0002_0000 | NS | Non-Secure alias for DTCM       |
- * | SRAM                  | 0x2010_0000 | 0x0015_0000 | S  | 1344 kiB                        |
- * | SRAM                  | 0x3010_0000 | 0x0015_0000 | NS | Non-Secure alias for SRAM0/1/2  |
- * | LPSRAM                | 0x2031_0000 | 0x0000_2000 | S  | 8 kiB                           |
- * | LPSRAM                | 0x3031_0000 | 0x0000_2000 | NS | Non-Secure alias for LPSRAM     |
- * +-----------------------+-------------+-------------+----+---------------------------------+
+ * +-----------------------+-------------+-------------+----+----------------------------------+
+ * |  Memory region name   | Base addr   |    Size     |IDAU| Description                      |
+ * +-----------------------+-------------+-------------+----+----------------------------------+
+ * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | 64 kiB;                          |
+ * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | Non-Secure alias for ITCM        |
+ * | DTCM                  | 0x2000_0000 | 0x0002_0000 | S  | 128 kiB;                         |
+ * | DTCM                  | 0x3000_0000 | 0x0002_0000 | NS | Non-Secure alias for DTCM        |
+ * | SRAM01                | 0x2010_0000 | 0x0010_0000 | S  | 2 banks of 512 kiB;              |
+ * | SRAM01                | 0x3010_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01      |
+ * | SRAM2                 | 0x2020_0000 | 0x0005_0000 | S  | 320 kiB                          |
+ * | SRAM2                 | 0x3020_0000 | 0x0005_0000 | NS | Non-Secure alias for SRAM2       |
+ * | SRAM3                 | 0x2030_0000 | 0x0000_2000 | S  | 8 kiB                            |
+ * | SRAM3                 | 0x3030_0000 | 0x0000_2000 | NS | Non-Secure alias for SRAM3       |
+ * | LPSRAM                | 0x2031_0000 | 0x0000_2000 | S  | 8 kiB                            |
+ * | LPSRAM                | 0x3031_0000 | 0x0000_2000 | NS | Non-Secure alias for LPSRAM      |
+ * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | 2 MiB                            |
+ * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash       |
+ * | EBI                   | 0x6000_0000 | 0x0030_0000 | S  | 3 MiB                            |
+ * | EBI                   | 0x7000_0000 | 0x0030_0000 | NS | Non-Secure alias for EBI         |
+ * | Aliased SRAM01        | 0x81F0_0000 | 0x0010_0000 | S  | 2 banks of 512 kiB;              |
+ * | Aliased SRAM01        | 0x91F0_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01      |
+ * | SPIM0                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                           |
+ * | SPIM0                 | 0x9200_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0       |
+ * +-----------------------+-------------+-------------+----+----------------------------------+
  *
  *  Note: Ethos-U55 can access FLASH, internal SRAM 0,1 => activation buffers and
  *        the model should only be placed in those regions.
@@ -70,10 +55,12 @@ __HEAP_SIZE  = 0x00000800;
 /* System memory brief */
 MEMORY
 {
-  ITCM   (rx)  : ORIGIN = 0x00000010, LENGTH = 0x00010000
+  ITCM   (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00010000
   FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x00200000
   DTCM   (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00020000
-  SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00150000
+  SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00130000
+  /* Start address and size of NonCacheable region must be 32 byte alignment */
+  SRAM_NONCACHEABLE (rw) : ORIGIN = (ORIGIN(SRAM) + LENGTH(SRAM)), LENGTH = (0x00150000 - LENGTH(SRAM))
   LPSRAM (rwx) : ORIGIN = 0x20310000, LENGTH = 0x00002000
 }
 
@@ -137,10 +124,31 @@ SECTIONS
     *(SORT(.dtors.*))
     *(.dtors)
 
-    *(.rodata*)
 
     KEEP(*(.eh_frame*))
   } > FLASH
+
+  .rodata : {
+    . = ALIGN(8);
+    *(.rodata*)
+    . = ALIGN(8);
+  } >FLASH
+
+  .rel.dyn : {
+    . = ALIGN(8);
+    __rel_dyn_start = .;
+    *(.rel*)
+    __rel_dyn_end = .;
+    . = ALIGN(8);
+   } > FLASH
+
+   .dynsym : {
+     . = ALIGN(8);
+     __dynsym_start = .;
+     *(.dynsym)
+     __dynsym_end = .;
+     . = ALIGN(8);
+    } > FLASH
 
   .ARM.extab :
   {
@@ -162,6 +170,8 @@ SECTIONS
     LONG ((__bss_end__ - __bss_start__) / 4)
     LONG (__dtcm_zi_start__)
     LONG ((__dtcm_zi_end__ - __dtcm_zi_start__) / 4)
+    LONG (__sram_noncacheable_zi_start__)
+    LONG ((__sram_noncacheable_zi_end__ - __sram_noncacheable_zi_start__) / 4)
     LONG (__lpsram_zi_start__)
     LONG ((__lpsram_zi_end__ - __lpsram_zi_start__) / 4)
     __zero_table_end__ = .;
@@ -181,11 +191,16 @@ SECTIONS
     LONG (__etext)
     LONG (__itcm_text_start__)
     LONG ((__itcm_text_end__ - __itcm_text_start__ ) / 4)
-    
+
     /* Section to be copied - part 3: RW data for DTCM */
     LONG (__esram_data)
     LONG (__dtcm_init_start__)
     LONG ((__dtcm_init_end__ - __dtcm_init_start__ ) / 4)
+
+    /* Section to be copied - part 4: RW data for SRAM NonCacheable */
+    LONG (__edtcm_init_data)
+    LONG (__sram_noncacheable_init_start__)
+    LONG ((__sram_noncacheable_init_end__ - __sram_noncacheable_init_start__) / 4)
 
     __copy_table_end__ = .;
   } > FLASH
@@ -240,7 +255,7 @@ SECTIONS
     /* All data end */
     __data_end__ = .;
   } > SRAM
-  
+
   .sram :
   {
     . = ALIGN(16);
@@ -259,7 +274,7 @@ SECTIONS
   } > SRAM AT > SRAM
 
   __esram_data = __eitcm + (__data_end__ - __data_start__);
-  
+
   .dtcm.init : AT (__esram_data)
   {
     . = ALIGN(4);
@@ -274,13 +289,33 @@ SECTIONS
   {
     . = ALIGN(4);
     __dtcm_zi_start__ = .;
-    *(.bss.DTCM.ZeroInit)
+    *(.DTCM.ZeroInit)
     . = ALIGN(4);
     __dtcm_zi_end__ = .;
   } > DTCM AT > DTCM
 
   __edtcm_init_data = __esram_data + (__dtcm_init_end__ - __dtcm_init_start__);
-  
+
+  .NonCacheable.Init : AT (__edtcm_init_data)
+  {
+    . = ALIGN(4);
+    __sram_noncacheable_start__ = .;
+    __sram_noncacheable_init_start__ = .;
+    *(NonCacheable.Init)
+    . = ALIGN(4);
+    __sram_noncacheable_init_end__ = .;
+  } > SRAM_NONCACHEABLE
+
+  .NonCacheable.zi (NOLOAD) :
+  {
+    . = ALIGN(4);
+    __sram_noncacheable_zi_start__ = .;
+    *(.NonCacheable.ZeroInit)
+    . = ALIGN(4);
+    __sram_noncacheable_zi_end__ = .;
+    __sram_noncacheable_end__ = (ORIGIN(SRAM_NONCACHEABLE) + LENGTH(SRAM_NONCACHEABLE));
+  } > SRAM_NONCACHEABLE AT > SRAM_NONCACHEABLE
+
   .lpsram (NOLOAD) :
   {
     . = ALIGN(4);

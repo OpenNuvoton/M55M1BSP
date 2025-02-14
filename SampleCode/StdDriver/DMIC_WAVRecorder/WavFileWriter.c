@@ -15,6 +15,7 @@
 static FIL     wavFileObject;
 static size_t  ReturnSize;
 static FILINFO finfo;
+static PCSTR   s_pszOutFileName;
 
 //----------------------------------------------------------------------------
 static BOOL WavFileUtil_Write_WriteHeader(
@@ -225,7 +226,7 @@ BOOL WavFileUtil_Write_Initialize(
 
     if (res != FR_OK)
     {
-        printf("Open file error!\n");
+        printf("Open file %s error!\n", pszOutFileName);
         return FALSE;
     }
 
@@ -244,6 +245,7 @@ BOOL WavFileUtil_Write_Initialize(
         return FALSE;
     }
 
+    s_pszOutFileName = pszOutFileName;
     return TRUE;
 } // WavFileUtil_Write_Initialize()
 
@@ -333,13 +335,13 @@ BOOL WavFileUtil_Write_Finish(
     if (0 != f_close(&wavFileObject))
         return FALSE;
 
-    f_stat("0:\\DMIC.wav", &finfo);
+    f_stat((const TCHAR *) s_pszOutFileName, &finfo);
 
     UINT32 u32Pos = finfo.fsize;
 
     FRESULT res;
 
-    res = f_open(&wavFileObject, (const TCHAR *)"0:\\DMIC.wav", FA_OPEN_EXISTING | FA_WRITE);      //USBH:0 , SD0: 1
+    res = f_open(&wavFileObject, (const TCHAR *) s_pszOutFileName, FA_OPEN_EXISTING | FA_WRITE);      //USBH:0 , SD0: 1
 
     if (res != FR_OK)
     {
@@ -380,9 +382,9 @@ BOOL WavFileUtil_Write_Finish(
     return TRUE;
 } // WavFileUtil_Write_Finish()
 
-unsigned long get_fattime(void)
+DWORD get_fattime(void)
 {
-    unsigned long g_u64Tmr;
+    DWORD g_u64Tmr;
 
     g_u64Tmr = 0x00000;
 

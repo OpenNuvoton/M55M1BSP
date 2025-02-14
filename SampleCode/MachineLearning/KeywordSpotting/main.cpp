@@ -48,10 +48,8 @@ extern size_t GetModelLen();
 } /* namespace app */
 } /* namespace arm */
 
-
 int main()
 {
-
     /* Initialise the UART module to allow printf related functions (if using retarget) */
     BoardInit();
 
@@ -93,7 +91,7 @@ int main()
 
     const auto mfccFrameLength = 640;
     const auto mfccFrameStride = 320;
-    const auto scoreThreshold  = 0.6;
+    const auto scoreThreshold  = 0.75;
 
     /* Get Input and Output tensors for pre/post processing. */
     TfLiteTensor *inputTensor  = model.GetInputTensor(0);
@@ -144,7 +142,7 @@ int main()
     const auto audioSlidingSamples = (numMfccFrames + 1) * mfccFrameStride; //(49+1)*320 = 16000 = 1 sec
     const auto audioStrideSamples = audioSlidingSamples / 2;
 
-    int16_t audioSlidingBuf[audioSlidingSamples];
+    int16_t *audioSlidingBuf = new int16_t[audioSlidingSamples];
     int32_t ret;
 
     ret = DMICRecord_Init(AUDIO_SAMPLE_RATE, AUDIO_CHANNEL, audioSlidingSamples, AUDIO_SAMPLE_BLOCK);
@@ -152,6 +150,7 @@ int main()
     if (ret)
     {
         printf_err("Unable init DMIC record error(%d)\n", ret);
+        delete []audioSlidingBuf;
         return 4;
     }
 
@@ -343,7 +342,9 @@ int main()
 
     }
 
-#if !defined(USE_DMIC)
+#if defined(USE_DMIC)
+    delete []audioSlidingBuf;
+#else
     return 0;
 #endif
 }

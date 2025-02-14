@@ -23,6 +23,13 @@
 /*---------------------------------------------------------------------------------------------------------*/
 static volatile uint32_t g_u32IsTestOver = 0;
 
+#if (NVT_DCACHE_ON == 1)
+    /* Data size (g_au16Period) < one cache line size (32B) => Non-cacheable should be ok. */
+    NVT_NONCACHEABLE __attribute__((aligned(4))) static uint32_t s_u32UpdatedPeriod;
+#else
+    __attribute__((aligned(4))) static uint32_t s_u32UpdatedPeriod;
+#endif
+
 /**
  * @brief       PDMA IRQ Handler
  * @param       None
@@ -71,8 +78,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -106,7 +113,7 @@ static void SYS_Init(void)
 
 int main(void)
 {
-    uint32_t u32InitPeriod, u32UpdatedPeriod, u32TimeOutCnt;
+    uint32_t u32InitPeriod, u32TimeOutCnt;
 
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();
@@ -165,10 +172,10 @@ int main(void)
     PDMA_SetTransferCnt(PDMA0, 0, PDMA_WIDTH_16, 1);
 
     /* Set updated period vaule */
-    u32UpdatedPeriod = ((u32InitPeriod + 1) * 2) - 1;
+    s_u32UpdatedPeriod = ((u32InitPeriod + 1) * 2) - 1;
 
-    /* Set source address as u32UpdatedPeriod(no increment) and destination address as Timer0 PWM period register(no increment) */
-    PDMA_SetTransferAddr(PDMA0, 0, (uint32_t)&u32UpdatedPeriod, PDMA_SAR_FIX, (uint32_t) & (TIMER0->PWMPERIOD), PDMA_DAR_FIX);
+    /* Set source address as s_u32UpdatedPeriod(no increment) and destination address as Timer0 PWM period register(no increment) */
+    PDMA_SetTransferAddr(PDMA0, 0, (uint32_t)&s_u32UpdatedPeriod, PDMA_SAR_FIX, (uint32_t) & (TIMER0->PWMPERIOD), PDMA_DAR_FIX);
 
     /* Select PDMA request source as PDMA_TMR0(Timer0 PWM accumulator interrupt) */
     PDMA_SetTransferMode(PDMA0, 0, PDMA_TMR0, FALSE, 0);

@@ -10,13 +10,23 @@
 #include "NuMicro.h"
 
 /*---------------------------------------------------------------------------------------------------------*/
+/* Macro, type and constant definitions                                                                    */
+/*---------------------------------------------------------------------------------------------------------*/
+#define LPPDMA_TEST_LENGTH 64
+
+/*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-uint32_t LPPDMA_TEST_LENGTH = 64;
-
-__attribute__((aligned)) static uint8_t au8SrcArray[256];
-__attribute__((aligned)) static uint8_t au8DestArray0[256];
-__attribute__((aligned)) static uint8_t au8DestArray1[256];
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    uint8_t au8SrcArray[DCACHE_ALIGN_LINE_SIZE(256)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t au8DestArray0[DCACHE_ALIGN_LINE_SIZE(256)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t au8DestArray1[DCACHE_ALIGN_LINE_SIZE(256)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    __attribute__((aligned)) static uint8_t au8SrcArray[256];
+    __attribute__((aligned)) static uint8_t au8DestArray0[256];
+    __attribute__((aligned)) static uint8_t au8DestArray1[256];
+#endif
 
 typedef struct dma_desc_t
 {
@@ -26,7 +36,11 @@ typedef struct dma_desc_t
     uint32_t u32Offset;
 } DMA_DESC_T;
 
-static DMA_DESC_T DMA_DESC[2]; /* Descriptor table */
+/*
+    The setting value of Descript Table is fixed, so it is placed in the non-cacheable section
+    , eliminating the need for cache operations.
+*/
+NVT_NONCACHEABLE static DMA_DESC_T DMA_DESC[2]; /* Descriptor table */
 
 /**
  * @brief       LPPDMA IRQ
@@ -48,33 +62,18 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
-    /* Enable LPPDMA clock source */
-    CLK_EnableModuleClock(LPPDMA0_MODULE);
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
+    /* Enable LPPDMA clock source */
+    CLK_EnableModuleClock(LPPDMA0_MODULE);
     /* Lock protected registers */
     SYS_LockReg();
 }
@@ -107,6 +106,15 @@ int main(void)
         au8DestArray1[i] = 0;
     }
 
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the source buffer will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr(au8SrcArray, sizeof(au8SrcArray));
+    SCB_CleanDCache_by_Addr(au8DestArray0, sizeof(au8DestArray0));
+    SCB_CleanDCache_by_Addr(au8DestArray1, sizeof(au8DestArray1));
+#endif  // (NVT_DCACHE_ON == 1)
     /* This sample will transfer data by finished two descriptor table in sequence.(descriptor table 1 -> descriptor table 2) */
     /*----------------------------------------------------------------------------------
       LPPDMA transfer configuration:
@@ -228,6 +236,14 @@ int main(void)
     }
 
     printf("test done...\n");
+#if (NVT_DCACHE_ON == 1)
+    /*
+       Invalidate the CPU Data cache after the DMA transfer.
+       As the destination buffer may be used by the CPU, this guarantees up-to-date data when CPU access
+    */
+    SCB_InvalidateDCache_by_Addr(au8DestArray0, sizeof(au8DestArray0));
+    SCB_InvalidateDCache_by_Addr(au8DestArray1, sizeof(au8DestArray1));
+#endif  // (NVT_DCACHE_ON == 1)
 
     /* Compare data */
     for (i = 0; i < 0x100; i++)

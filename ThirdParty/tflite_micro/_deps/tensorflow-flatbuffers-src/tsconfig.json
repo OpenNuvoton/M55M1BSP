@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2020",
     "module": "commonjs",
-    "lib": ["es2015"],
+    "lib": ["ES2020", "DOM"],
     "declaration": true,
     "outDir": "./js",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true, 
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "ts/*.ts"
+    "ts/**/*.ts"
   ]
 }

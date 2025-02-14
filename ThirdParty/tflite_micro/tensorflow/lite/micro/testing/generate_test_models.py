@@ -31,12 +31,14 @@ import numpy as np
 import tensorflow as tf
 
 
-def generate_conv_model():
+def generate_conv_model(write_to_file=True,
+                        filename="/tmp/tf_micro_conv_test_model.int8.tflite"):
   """Creates a basic Keras model and converts to tflite.
 
   This model does not make any relevant classifications. It only exists to
   generate a model that is designed to run on embedded devices.
   """
+  np.random.seed(0)
   input_shape = (16, 16, 1)
 
   model = tf.keras.models.Sequential()
@@ -58,6 +60,7 @@ def generate_conv_model():
   model.fit(data_x, data_y, epochs=5)
 
   def representative_dataset_gen():
+    np.random.seed(0)
     for _ in range(12):
       yield [np.random.rand(16, 16).reshape(1, 16, 16, 1).astype(np.float32)]
 
@@ -68,9 +71,16 @@ def generate_conv_model():
   converter.inference_input_type = tf.int8
   converter.inference_output_type = tf.int8
   converter.representative_dataset = representative_dataset_gen
+  # TODO(b/324385802): Disable per channel quantization in FC layers (currently
+  # default behaviour) since it's not yet supported in TFLM.
+  converter._experimental_disable_per_channel_quantization_for_dense_layers = (  # pylint: disable=protected-access
+      True)
 
   tflite_model = converter.convert()
-  open("/tmp/tf_micro_conv_test_model.int8.tflite", "wb").write(tflite_model)
+  if write_to_file:
+    open(filename, "wb").write(tflite_model)
+
+  return tflite_model
 
 
 def main(argv):

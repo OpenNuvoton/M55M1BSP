@@ -18,7 +18,7 @@ typedef int32_t (*PFN_APP_ENTRY)(uint32_t);
 int32_t NonSecure_LED_On(uint32_t u32Ticks)
 {
     printf("[%d] Non-secure LED On call by Secure\n", u32Ticks);
-    PC0_NS = 0;
+    PI11_NS = 0;
 
     return 0;
 }
@@ -26,7 +26,7 @@ int32_t NonSecure_LED_On(uint32_t u32Ticks)
 int32_t NonSecure_LED_Off(uint32_t u32Ticks)
 {
     printf("[%d] Non-secure LED Off call by Secure\n", u32Ticks);
-    PC0_NS = 1;
+    PI11_NS = 1;
 
     return 0;
 }
@@ -37,13 +37,13 @@ int32_t NonSecure_LED_Off(uint32_t u32Ticks)
 void LED_On(uint32_t u32Ticks)
 {
     printf("[%d] Non-secure LED On\n", u32Ticks);
-    PC1_NS = 0;
+    PI12_NS = 0;
 }
 
 void LED_Off(uint32_t u32Ticks)
 {
     printf("[%d] Non-secure LED Off\n", u32Ticks);
-    PC1_NS = 1;
+    PI12_NS = 1;
 }
 
 /*---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ void DEBUG_PORT_Init(void)
 {
     /* Init UART to 115200-8n1 for print message */
     DEBUG_PORT->LINE = (UART_WORD_LEN_8 | UART_PARITY_NONE | UART_STOP_BIT_1);
-    DEBUG_PORT->BAUD = (UART_BAUD_MODE2 | UART_BAUD_MODE2_DIVIDER(__HXT, 115200));
+    DEBUG_PORT->BAUD = (UART_BAUD_MODE2 | UART_BAUD_MODE2_DIVIDER(__HIRC, 115200));
 }
 
 /*---------------------------------------------------------------------------
@@ -99,8 +99,8 @@ int main(void)
 
     SecureFunc();
 
-    /* Init GPIO Port C Pin 0 & 1 for Non-secure LED control */
-    GPIO_SetMode(PC, (BIT1 | BIT0), GPIO_MODE_OUTPUT);
+    /* Init GPIO Port I Pin 11 & 12 for Non-secure LED control */
+    GPIO_SetMode(PI, (BIT11 | BIT12), GPIO_MODE_OUTPUT);
 
     /* Register Non-secure callbacks in Secure application */
     Secure_LED_On_Callback(NonSecure_LED_On);

@@ -16,7 +16,8 @@
 #
 # Called with following arguments:
 # 1 - Path to the downloads folder which is typically
-#     tensorflow/lite/micro/tools/make/downloads
+#     ${TENSORFLOW_ROOT}/tensorflow/lite/micro/tools/make/downloads
+# 2 - (optional) TENSORFLOW_ROOT: path to root of the TFLM tree (relative to directory from where the script is called).
 #
 # This script is called from the Makefile and uses the following convention to
 # enable determination of sucess/failure:
@@ -31,11 +32,8 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR=${SCRIPT_DIR}/../../../../..
-cd "${ROOT_DIR}"
-
-source tensorflow/lite/micro/tools/make/bash_helpers.sh
+TENSORFLOW_ROOT=${2}
+source ${TENSORFLOW_ROOT}tensorflow/lite/micro/tools/make/bash_helpers.sh
 
 DOWNLOADS_DIR=${1}
 if [ ! -d ${DOWNLOADS_DIR} ]; then
@@ -48,13 +46,13 @@ DOWNLOADED_RENODE_PATH=${DOWNLOADS_DIR}/renode
 if [ -d ${DOWNLOADED_RENODE_PATH} ]; then
   echo >&2 "${DOWNLOADED_RENODE_PATH} already exists, skipping the download."
 else
-  LINUX_PORTABLE_URL="https://dl.antmicro.com/projects/renode/builds/renode-1.12.0+20210816git8ea21ebd.linux-portable.tar.gz"
+  LINUX_PORTABLE_URL="https://github.com/renode/renode/releases/download/v1.13.2/renode-1.13.2.linux-portable.tar.gz"
   TEMP_ARCHIVE="/tmp/renode.tar.gz"
 
   echo >&2 "Downloading from url: ${LINUX_PORTABLE_URL}"
   wget ${LINUX_PORTABLE_URL} -O ${TEMP_ARCHIVE} >&2
 
-  EXPECTED_MD5="aff9e160f3c99edda33e15e9f87e4b1b"
+  EXPECTED_MD5="cf940256fd32597975f10f9146925d9b"
   check_md5 ${TEMP_ARCHIVE} ${EXPECTED_MD5}
 
   mkdir ${DOWNLOADED_RENODE_PATH}
@@ -62,11 +60,6 @@ else
   echo >&2 "Unpacked to directory: ${DOWNLOADED_RENODE_PATH}"
 
   pip3 install -r ${DOWNLOADED_RENODE_PATH}/tests/requirements.txt >&2
-
-  pushd ${DOWNLOADED_RENODE_PATH} > /dev/null
-  create_git_repo ./
-  apply_patch_to_folder ./ ../../renode.patch "TFLM patch"
-  popd > /dev/null
 fi
 
 echo "SUCCESS"

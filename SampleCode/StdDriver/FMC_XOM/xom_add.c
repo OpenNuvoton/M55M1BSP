@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
-int32_t Lib_XOM_ADD(uint32_t a, uint32_t b)
+__attribute__((section(".xom"))) int32_t Lib_XOM_ADD(uint32_t a, uint32_t b)
 {
     uint32_t c;
     c =  a + b;

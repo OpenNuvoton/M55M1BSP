@@ -1,4 +1,4 @@
-/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/kernels/kernel_runner.h"
 #include "tensorflow/lite/micro/test_helpers.h"
 #include "tensorflow/lite/micro/testing/micro_test.h"
@@ -43,7 +42,7 @@ void TestCast(int* input_dims_data, const inputT* input_data,
   int outputs_array_data[] = {1, 1};
   TfLiteIntArray* outputs_array = IntArrayFromInts(outputs_array_data);
 
-  const TfLiteRegistration registration = Register_CAST();
+  const TFLMRegistration registration = Register_CAST();
   micro::KernelRunner runner(registration, tensors, tensors_size, inputs_array,
                              outputs_array,
                              /*builtin_data=*/nullptr);
@@ -111,6 +110,30 @@ TF_LITE_MICRO_TEST(CastInt32ToInt16) {
   int input_dims[] = {2, 3, 2};
   const int32_t input_values[] = {123, 0, 1, 2, 3, 4};
   const int16_t golden[] = {123, 0, 1, 2, 3, 4};
+  tflite::testing::TestCast(input_dims, input_values, golden, output_data);
+}
+
+TF_LITE_MICRO_TEST(CastUInt32ToInt32) {
+  int32_t output_data[6];
+  int input_dims[] = {2, 2, 3};
+  const uint32_t input_values[] = {100, 200, 300, 400, 500, 600};
+  const int32_t golden[] = {100, 200, 300, 400, 500, 600};
+  tflite::testing::TestCast(input_dims, input_values, golden, output_data);
+}
+
+TF_LITE_MICRO_TEST(CastUInt32ToInt32) {
+  uint32_t output_data[6];
+  int input_dims[] = {2, 2, 3};
+  const int32_t input_values[] = {100, 200, 300, 400, 500, 600};
+  const uint32_t golden[] = {100, 200, 300, 400, 500, 600};
+  tflite::testing::TestCast(input_dims, input_values, golden, output_data);
+}
+
+TF_LITE_MICRO_TEST(CastBoolToFloat) {
+  float output_data[6];
+  int input_dims[] = {2, 2, 3};
+  const bool input_values[] = {true, true, false, true, false, true};
+  const float golden[] = {1.f, 1.0f, 0.f, 1.0f, 0.0f, 1.0f};
   tflite::testing::TestCast(input_dims, input_values, golden, output_data);
 }
 

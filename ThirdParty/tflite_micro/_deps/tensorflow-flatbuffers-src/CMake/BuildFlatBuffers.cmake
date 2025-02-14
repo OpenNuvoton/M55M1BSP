@@ -59,6 +59,9 @@ function(build_flatbuffers flatbuffers_schemas
   if(FLATBUFFERS_FLATC_EXECUTABLE)
     set(FLATC_TARGET "")
     set(FLATC ${FLATBUFFERS_FLATC_EXECUTABLE})
+  elseif(TARGET flatbuffers::flatc)
+    set(FLATC_TARGET flatbuffers::flatc)
+    set(FLATC flatbuffers::flatc)
   else()
     set(FLATC_TARGET flatc)
     set(FLATC flatc)
@@ -95,7 +98,7 @@ function(build_flatbuffers flatbuffers_schemas
       set(generated_include ${generated_includes_dir}/${filename}_generated.h)
       add_custom_command(
         OUTPUT ${generated_include}
-        COMMAND ${FLATC} ${FLATC_ARGS}
+        COMMAND ${FLATC} ${FLATC_SCHEMA_ARGS}
         -o ${generated_includes_dir}
         ${include_params}
         -c ${schema}
@@ -157,6 +160,10 @@ endfunction()
 # other flagc flags using the FLAGS option to change the behavior of the flatc
 # tool.
 #
+# When the target_link_libraries is done within a different directory than
+# flatbuffers_generate_headers is called, then the target should also be dependent
+# the custom generation target called GENERATE_<TARGET>.
+#
 # Arguments:
 #   TARGET: The name of the target to generate.
 #   SCHEMAS: The list of schema files to generate code for.
@@ -182,6 +189,9 @@ endfunction()
 #     target_link_libraries(MyExecutableTarget
 #         PRIVATE my_generated_headers_target
 #     )
+#
+# Optional (only needed within different directory):
+#     add_dependencies(app GENERATE_my_generated_headers_target)
 function(flatbuffers_generate_headers)
   # Parse function arguments.
   set(options)
@@ -204,6 +214,9 @@ function(flatbuffers_generate_headers)
   if(FLATBUFFERS_FLATC_EXECUTABLE)
     set(FLATC_TARGET "")
     set(FLATC ${FLATBUFFERS_FLATC_EXECUTABLE})
+  elseif(TARGET flatbuffers::flatc)
+    set(FLATC_TARGET flatbuffers::flatc)
+    set(FLATC flatbuffers::flatc)
   else()
     set(FLATC_TARGET flatc)
     set(FLATC flatc)
@@ -226,20 +239,37 @@ function(flatbuffers_generate_headers)
          "--include-prefix" ${FLATBUFFERS_GENERATE_HEADERS_INCLUDE_PREFIX})
   endif()
 
+  set(generated_custom_commands)
+
   # Create rules to generate the code for each schema.
   foreach(schema ${FLATBUFFERS_GENERATE_HEADERS_SCHEMAS})
     get_filename_component(filename ${schema} NAME_WE)
     set(generated_include "${generated_include_dir}/${filename}_generated.h")
+
+    # Generate files for grpc if needed
+    set(generated_source_file)
+    if("${FLATBUFFERS_GENERATE_HEADERS_FLAGS}" MATCHES "--grpc")
+      # Check if schema file contain a rpc_service definition
+      file(STRINGS ${schema} has_grpc REGEX "rpc_service")
+      if(has_grpc)
+        list(APPEND generated_include "${generated_include_dir}/${filename}.grpc.fb.h")
+        set(generated_source_file "${generated_include_dir}/${filename}.grpc.fb.cc")
+      endif()
+    endif()
+
     add_custom_command(
-      OUTPUT ${generated_include}
+      OUTPUT ${generated_include} ${generated_source_file}
       COMMAND ${FLATC} ${FLATC_ARGS}
       -o ${generated_include_dir}
       ${include_params}
       -c ${schema}
       ${FLATBUFFERS_GENERATE_HEADERS_FLAGS}
       DEPENDS ${FLATC_TARGET} ${schema}
-      WORKING_DIRECTORY "${working_dir}")
+      WORKING_DIRECTORY "${working_dir}"
+      COMMENT "Building ${schema} flatbuffers...")
     list(APPEND all_generated_header_files ${generated_include})
+    list(APPEND all_generated_source_files ${generated_source_file})
+    list(APPEND generated_custom_commands "${generated_include}" "${generated_source_file}")
 
     # Geneate the binary flatbuffers schemas if instructed to.
     if (NOT ${FLATBUFFERS_GENERATE_HEADERS_BINARY_SCHEMAS_DIR} STREQUAL "")
@@ -253,9 +283,16 @@ function(flatbuffers_generate_headers)
         ${schema}
         DEPENDS ${FLATC_TARGET} ${schema}
         WORKING_DIRECTORY "${working_dir}")
+      list(APPEND generated_custom_commands "${binary_schema}")
       list(APPEND all_generated_binary_files ${binary_schema})
     endif()
   endforeach()
+
+  # Create an additional target as add_custom_command scope is only within same directory (CMakeFile.txt)
+  set(generate_target GENERATE_${FLATBUFFERS_GENERATE_HEADERS_TARGET})
+  add_custom_target(${generate_target} ALL
+                    DEPENDS ${generated_custom_commands}
+                    COMMENT "Generating flatbuffer target ${FLATBUFFERS_GENERATE_HEADERS_TARGET}")
 
   # Set up interface library
   add_library(${FLATBUFFERS_GENERATE_HEADERS_TARGET} INTERFACE)
@@ -264,6 +301,7 @@ function(flatbuffers_generate_headers)
     INTERFACE
       ${all_generated_header_files}
       ${all_generated_binary_files}
+      ${all_generated_source_files}
       ${FLATBUFFERS_GENERATE_HEADERS_SCHEMAS})
   add_dependencies(
     ${FLATBUFFERS_GENERATE_HEADERS_TARGET}
@@ -278,6 +316,10 @@ function(flatbuffers_generate_headers)
     TREE "${generated_target_dir}"
     PREFIX "Flatbuffers/Generated/Headers Files"
     FILES ${all_generated_header_files})
+  source_group(
+    TREE "${generated_target_dir}"
+    PREFIX "Flatbuffers/Generated/Source Files"
+    FILES ${all_generated_source_files})
   source_group(
     TREE ${working_dir}
     PREFIX "Flatbuffers/Schemas"
@@ -346,6 +388,9 @@ function(flatbuffers_generate_binary_files)
   if(FLATBUFFERS_FLATC_EXECUTABLE)
     set(FLATC_TARGET "")
     set(FLATC ${FLATBUFFERS_FLATC_EXECUTABLE})
+  elseif(TARGET flatbuffers::flatc)
+    set(FLATC_TARGET flatbuffers::flatc)
+    set(FLATC flatbuffers::flatc)
   else()
     set(FLATC_TARGET flatc)
     set(FLATC flatc)
@@ -371,7 +416,8 @@ function(flatbuffers_generate_binary_files)
       -b ${FLATBUFFERS_GENERATE_BINARY_FILES_SCHEMA} ${json_file}
       ${FLATBUFFERS_GENERATE_BINARY_FILES_FLAGS}
       DEPENDS ${FLATC_TARGET} ${json_file}
-      WORKING_DIRECTORY "${working_dir}")
+      WORKING_DIRECTORY "${working_dir}"
+      COMMENT "Building ${json_file} binary flatbuffers...")
       list(APPEND all_generated_binary_files ${generated_binary_file})
   endforeach()
 

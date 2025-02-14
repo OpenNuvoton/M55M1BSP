@@ -245,61 +245,6 @@ static void ECC_MODOP(uint32_t *x1, uint32_t *y1,
     ECC_Start_And_Wait(ecc_ctl);
 }
 
-#if 0 // not used
-static void write_SHA512_word(uint32_t data, int swap) // SHA512 with non-DMA
-{
-    uint32_t prdata;
-    uint32_t hmac_ctl = 0;
-
-    if (swap)
-        hmac_ctl |= CRYPTO_HMAC_CTL_INSWAP_Msk;
-
-    CRYPTO->HMAC_CTL = hmac_ctl | CRYPTO_HMAC_CTL_OUTSWAP_Msk |
-                       (SHA_MODE_SHA512 << CRYPTO_HMAC_CTL_OPMODE_Pos) |
-                       CRYPTO_HMAC_CTL_START_Msk;
-
-    do
-    {
-        prdata = CRYPTO->HMAC_STS & CRYPTO_HMAC_STS_DATINREQ_Msk;
-    } while (prdata != CRYPTO_HMAC_STS_DATINREQ_Msk);
-
-    CRYPTO->HMAC_DATIN = data;
-}
-
-static void write_SHA512_data_finalword(uint32_t data, int swap) //SHA512 with non-DMA and final word
-{
-    uint32_t prdata;
-    uint32_t hmac_ctl = 0;
-    int i;
-
-    if (swap)
-        hmac_ctl |= CRYPTO_HMAC_CTL_INSWAP_Msk;
-
-    CRYPTO->HMAC_CTL = hmac_ctl | CRYPTO_HMAC_CTL_OUTSWAP_Msk |
-                       (SHA_MODE_SHA512 << CRYPTO_HMAC_CTL_OPMODE_Pos) |
-                       CRYPTO_HMAC_CTL_DMALAST_Msk |
-                       CRYPTO_HMAC_CTL_START_Msk;
-
-    do
-    {
-        prdata = CRYPTO->HMAC_STS & CRYPTO_HMAC_STS_DATINREQ_Msk;
-    } while (prdata != CRYPTO_HMAC_STS_DATINREQ_Msk);
-
-    CRYPTO->HMAC_DATIN = data;
-
-    for (i = 0; i < 10; i++)        /* prevent CPU from overtaking the BUSY flag */
-        __NOP();
-
-    do
-    {
-        prdata = CRYPTO->HMAC_STS & CRYPTO_HMAC_STS_BUSY_Msk;
-    } while (prdata != 0);
-
-    printf("SHA-512 output: ");
-    dump_word_array((uint32_t *)REG_HMAC_DGST, 16);
-}
-#endif  // not used
-
 static void do_SHA512(uint8_t *data, int data_len, int swap)
 {
     uint32_t hmac_ctl = 0;
@@ -313,6 +258,9 @@ static void do_SHA512(uint8_t *data, int data_len, int swap)
                CRYPTO_HMAC_CTL_START_Msk;
     CRYPTO->HMAC_KEYCNT = 0;
     CRYPTO->HMAC_DMACNT = data_len;
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr(data, data_len);
+#endif
     CRYPTO->HMAC_SADDR = ptr_to_u32(data);
     CRYPTO->HMAC_CTL = hmac_ctl;
     __ISB();

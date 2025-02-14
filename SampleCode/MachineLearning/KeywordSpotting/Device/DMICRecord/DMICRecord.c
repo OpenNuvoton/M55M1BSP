@@ -25,11 +25,20 @@ typedef struct
     uint32_t u32PDMABlockSamples;
 } S_BUF_CTRL;
 
-static LPDSCT_T s_sLPPDMA_DMIC_SCT[2];       // Provide LPPDMA description for ping-pong.
+// Provide LPPDMA description for ping-pong.
+// The DMA descriptor table for I2S must be aligned to 32 bytes and be placed in DCache when DCache is enabled.
+#if (NVT_DCACHE_ON == 1)
+    // Placing the DMA descriptor table in DCache to reduce the penalty of cache miss.
+    NVT_DTCM __ALIGNED(32) static LPDSCT_T s_sLPPDMA_DMIC_SCT[2];
+#else
+    // Placing the DMA descriptor table in normal SRAM.
+    static LPDSCT_T s_sLPPDMA_DMIC_SCT[2];
+#endif
+
+
 static int16_t *s_pi16PDMAPingPoneBuf[2];
 static uint32_t s_u32PDMAPingPoneBuf_Aligned[2];
 static S_BUF_CTRL s_sAudioBufCtrl;
-
 
 // Push audio data to ring buffer
 static int AudioInBuf_Push(S_BUF_CTRL *psBufCtrl, int16_t *pi16Data)
@@ -119,18 +128,18 @@ static int AudioInBuf_Read(S_BUF_CTRL *psBufCtrl, int16_t *pi16Data, int32_t i32
     {
         int32_t i32CopySamples = i32TotalSamples - i32ReadIndex;
 
-        memcpy(pi16Data, &pi16AudioInBuf[i32ReadIndex * u32Channels],  i32CopySamples * sizeof(int16_t));
+        memcpy(pi16Data, &pi16AudioInBuf[i32ReadIndex * u32Channels],  i32CopySamples * u32Channels * sizeof(int16_t));
 
         i32NextReadIndex = i32NextReadIndex - i32TotalSamples;
 
         if (i32NextReadIndex)
         {
-            memcpy(&pi16Data[i32CopySamples * u32Channels], &pi16AudioInBuf[0],  i32NextReadIndex * sizeof(int16_t));
+            memcpy(&pi16Data[i32CopySamples * u32Channels], &pi16AudioInBuf[0],  i32NextReadIndex * u32Channels * sizeof(int16_t));
         }
     }
     else
     {
-        memcpy(pi16Data, &pi16AudioInBuf[i32ReadIndex * u32Channels], i32Samples * sizeof(int16_t));
+        memcpy(pi16Data, &pi16AudioInBuf[i32ReadIndex * u32Channels], i32Samples * u32Channels * sizeof(int16_t));
     }
 
     return 0;
@@ -275,22 +284,14 @@ int32_t DMICRecord_Init(
         goto init_fail;
     }
 
+    DMIC_Open(DMIC0);
     // Set down sample rate 100 for quilty.(Suggest 96M used DMIC_CTL_DOWNSAMPLE_100_50 )
-    DMIC_SET_DOWNSAMPLE(DMIC0, DMIC_DOWNSAMPLE_100);
+    DMIC_SET_DOWNSAMPLE(DMIC0, DMIC_DOWNSAMPLE_256);
     // Set DMIC sample rate.
     printf("DMIC SampleRate is %d\n", DMIC_SetSampleRate(DMIC0, u32SampleRate));
 
-    // Set channel's latch data falling type.
-    DMIC_SET_LATCHEDGE_CH01(DMIC0, DMIC_LATCHDATA_CH01FR);
-    DMIC_SET_LATCHEDGE_CH23(DMIC0, DMIC_LATCHDATA_CH23FR);
-    // HPF control
-    DMIC_EnableHPF(DMIC0, DMIC_CTL_CH01HPFEN_Msk | DMIC_CTL_CH23HPFEN_Msk);
-    //Gain step
-    DMIC_SetGainStep(DMIC0, DMIC_GAINSTEP_1_2);
-    // MUTE control
-    //DMIC_EnableMute(DMIC0, DMIC_CTL_CH0MUTE_Msk|DMIC_CTL_CH1MUTE_Msk|DMIC_CTL_CH2MUTE_Msk|DMIC_CTL_CH3MUTE_Msk);
     // Enable DMIC FIFO threshold interrupt.
-    DMIC_ENABLE_FIFOTH_INT(DMIC0, 8);
+    DMIC_ENABLE_FIFOTH_INT(DMIC0, 16);
     // Set FIFO Width 16bits
     DMIC_SetFIFOWidth(DMIC0, DMIC_FIFOWIDTH_16);
 
@@ -301,10 +302,7 @@ int32_t DMICRecord_Init(
     DMIC_ResetDSP(DMIC0);  //SWRST
 
     //DMIC Gain Setting
-    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN0_Msk, 24);//+36db
-    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN1_Msk, 24);//+36dB
-    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN2_Msk, 24);//+36dB
-    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN3_Msk, 24);//+36dB
+    DMIC_SetDSPGainVolume(DMIC0, DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk, 36);//+36dB
 
     // Setup MIC(RX) PDMA buffer description
     s_sLPPDMA_DMIC_SCT[0].CTL = (((u32BlockSamples * u32Channels) - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_16 | PDMA_SAR_FIX | PDMA_DAR_INC | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
@@ -379,7 +377,7 @@ int32_t DMICRecord_StartRec(void)
             u32ChanMask = DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk;
         }
 
-        DMIC_ENABLE_CHANNEL(DMIC0, u32ChanMask);
+        DMIC_EnableChMsk(DMIC0, u32ChanMask);
         DMIC_ENABLE_LPPDMA(DMIC0);
     }
 
@@ -410,7 +408,8 @@ int32_t DMICRecord_StopRec(void)
         u32ChanMask = DMIC_CTL_CHEN0_Msk | DMIC_CTL_CHEN1_Msk | DMIC_CTL_CHEN2_Msk | DMIC_CTL_CHEN3_Msk;
     }
 
-    DMIC_DISABLE_CHANNEL(DMIC0, u32ChanMask);
+    DMIC_DisableChMsk(DMIC0, u32ChanMask);
+    DMIC_Close(DMIC0);
     return 0;
 }
 

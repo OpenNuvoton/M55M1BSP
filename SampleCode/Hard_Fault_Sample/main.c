@@ -38,16 +38,13 @@
   - Overwrite the default Process Hard Fault Handler
 
     The default ProcessHardFault is a weak function.
-    User can over write it by implementing their own ProcessHardFault.
+    User can override it by implementing their own ProcessHardFault.
 
  NOTE:
     Because hard fault exception will cause data stacking.
     User must make sure SP is pointing to an valid memory location.
     Otherwise, it may cause system lockup and reset when hard fault.
 */
-
-/* Select to use default process hard fault handler or not. 0: Default  1: User defined */
-#define USE_MY_HARDFAULT    1
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
@@ -56,39 +53,7 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Define functions prototype                                                                              */
 /*---------------------------------------------------------------------------------------------------------*/
-
-static void SYS_Init(void)
-{
-    /* Unlock protected registers */
-    SYS_UnlockReg();
-
-    /*---------------------------------------------------------------------------------------------------------*/
-    /* Init System Clock                                                                                       */
-    /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
-
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
-    SystemCoreClockUpdate();
-
-    /* Enable UART module clock */
-    SetDebugUartCLK();
-
-    /* Enable module clock */
-    CLK_EnableModuleClock(TMR1_MODULE);
-    CLK_SetModuleClock(TMR1_MODULE, CLK_TMRSEL_TMR1SEL_HIRC, 0);
-
-    /*---------------------------------------------------------------------------------------------------------*/
-    /* Init I/O Multi-function                                                                                 */
-    /*---------------------------------------------------------------------------------------------------------*/
-    SetDebugUartMFP();
-
-    /* Lock protected registers */
-    SYS_LockReg();
-}
-
-#if USE_MY_HARDFAULT
+#if 1   /* Set 1 to override default ProcessHardFault handler or set 0 to use default handler. */
 /**
   * @brief      User defined Process HardFault
   * @param      stack   A pointer to current stack
@@ -114,7 +79,7 @@ void ProcessHardFault(uint32_t *pu32StackFrame)
     /* Check T bit of psr */
     if ((u32PSR & (1 << 24)) == 0)
     {
-        printf("PSR T bit is 0.\nHard fault caused by changing to ARM mode!\n");
+        printf("PSR T bit is 0.\nHard fault caused by changing to ARM mode !\n");
 
         while (1);
     }
@@ -172,7 +137,38 @@ void ProcessHardFault(uint32_t *pu32StackFrame)
 
     while (1);
 }
-#endif  // USE_MY_HARDFAULT
+#endif
+
+static void SYS_Init(void)
+{
+    /* Unlock protected registers */
+    SYS_UnlockReg();
+
+    /*---------------------------------------------------------------------------------------------------------*/
+    /* Init System Clock                                                                                       */
+    /*---------------------------------------------------------------------------------------------------------*/
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+
+    /* Update System Core Clock */
+    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    SystemCoreClockUpdate();
+
+    /* Enable UART module clock */
+    SetDebugUartCLK();
+
+    /* Enable module clock */
+    CLK_EnableModuleClock(TMR1_MODULE);
+    CLK_SetModuleClock(TMR1_MODULE, CLK_TMRSEL_TMR1SEL_HIRC, 0);
+
+    /*---------------------------------------------------------------------------------------------------------*/
+    /* Init I/O Multi-function                                                                                 */
+    /*---------------------------------------------------------------------------------------------------------*/
+    SetDebugUartMFP();
+
+    /* Lock protected registers */
+    SYS_LockReg();
+}
 
 NVT_ITCM void TIMER1_IRQHandler(void)
 {

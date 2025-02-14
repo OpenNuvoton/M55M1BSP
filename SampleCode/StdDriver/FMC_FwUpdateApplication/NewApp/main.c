@@ -15,9 +15,9 @@
 static volatile uint32_t s_u32ExecBank;
 static volatile uint32_t s_u32GetSum;
 
-void SYS_Init(void);
+void     SYS_Init(void);
 int32_t  SelfTest(void);
-uint32_t  FuncCrc32(uint32_t u32Start, uint32_t u32Len);
+uint32_t FuncCrc32(uint32_t u32Start, uint32_t u32Len);
 
 uint32_t  FuncCrc32(uint32_t u32Start, uint32_t u32Len)
 {
@@ -45,29 +45,6 @@ NVT_ITCM void WDT0_IRQHandler(void)
     }
 }
 
-#ifdef TESTCHIP_ONLY
-// [Begin] TESTCHIP_ONLY - This function should be removed in M55M1.
-uint32_t FMC_GetChkSum(uint32_t u32StartAddr, uint32_t u32ByteSize)
-{
-    uint32_t u32CRC32Checksum = 0xFFFFFFFF;
-
-    /* Configure CRC controller for CRC-CRC32 mode */
-    CRC_Open(CRC_32, (CRC_WDATA_RVS | CRC_CHECKSUM_RVS | CRC_CHECKSUM_COM), 0xFFFFFFFFul, CRC_CPU_WDATA_32);
-    CRC_SET_DMA_SADDR(CRC, u32StartAddr);
-    CRC_SET_DMACNT_WORD(CRC, u32ByteSize / 4);
-    CRC_DMA_START(CRC);
-
-    while ((CRC_GET_STATUS(CRC) & CRC_DMASTS_FINISH_Msk) == 0)
-        ;
-
-    CRC->DMASTS = CRC_DMASTS_FINISH_Msk;
-    u32CRC32Checksum = CRC_GetChecksum();
-
-    return u32CRC32Checksum;
-}
-// [End] TESTCHIP_ONLY - This function should be removed in real chip.
-#endif
-
 void SYS_Init(void)
 {
     /* Unlock protected registers */
@@ -76,8 +53,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */

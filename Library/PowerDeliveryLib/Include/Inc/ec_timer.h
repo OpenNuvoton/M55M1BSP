@@ -76,6 +76,7 @@ int timestamp_expired(timestamp_t deadline, const timestamp_t *now);
  *
  * @param us        Number of microseconds to delay.
  */
+uint64_t __hw_clock_source_read64(void);
 void udelay(unsigned us);
 void delay(unsigned ms);
 void usdelay(uint32_t u32us);

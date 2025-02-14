@@ -37,24 +37,24 @@ uint8_t HID_DeviceReportDescriptor[] =
 /*!<USB Device Descriptor */
 uint8_t gu8DeviceDescriptor[] =
 {
-    LEN_DEVICE,     /* bLength */
-    DESC_DEVICE,    /* bDescriptorType */
-    0x00, 0x02,     /* bcdUSB */
-    0x00,           /* bDeviceClass */
-    0x00,           /* bDeviceSubClass */
-    0x00,           /* bDeviceProtocol */
+    LEN_DEVICE,         /* bLength */
+    DESC_DEVICE,        /* bDescriptorType */
+    0x00, 0x02,         /* bcdUSB (USB2.0) */
+    0x00,               /* bDeviceClass */
+    0x00,               /* bDeviceSubClass */
+    0x00,               /* bDeviceProtocol */
     CEP_MAX_PKT_SIZE,   /* bMaxPacketSize0 */
     /* idVendor */
-    USBD_VID & 0x00FF,
+    (USBD_VID & 0x00FF),
     ((USBD_VID & 0xFF00) >> 8),
     /* idProduct */
-    USBD_PID & 0x00FF,
+    (USBD_PID & 0x00FF),
     ((USBD_PID & 0xFF00) >> 8),
-    0x00, 0x00,     /* bcdDevice */
-    0x01,           /* iManufacture */
-    0x02,           /* iProduct */
-    0x00,           /* iSerialNumber - no serial */
-    0x01            /* bNumConfigurations */
+    0x00, 0x00,     	/* bcdDevice */
+    0x01,           	/* iManufacture */
+    0x02,           	/* iProduct */
+    0x00,           	/* iSerialNumber - no serial */
+    0x01            	/* bNumConfigurations */
 };
 
 /*!<USB Configure Descriptor */
@@ -63,7 +63,7 @@ uint8_t gu8ConfigDescriptor[] =
     LEN_CONFIG,     /* bLength */
     DESC_CONFIG,    /* bDescriptorType */
     /* wTotalLength */
-    (LEN_CONFIG + LEN_INTERFACE + LEN_HID + LEN_ENDPOINT * 2) & 0x00FF,
+    ((LEN_CONFIG + LEN_INTERFACE + LEN_HID + LEN_ENDPOINT * 2) & 0x00FF),
     (((LEN_CONFIG + LEN_INTERFACE + LEN_HID + LEN_ENDPOINT * 2) & 0xFF00) >> 8),
     0x01,           /* bNumInterfaces */
     0x01,           /* bConfigurationValue */
@@ -90,7 +90,7 @@ uint8_t gu8ConfigDescriptor[] =
     0x01,           /* Number of HID class descriptors to follow. */
     DESC_HID_RPT,   /* Descriptor type. */
     /* Total length of report descriptor. */
-    sizeof(HID_DeviceReportDescriptor) & 0x00FF,
+    (sizeof(HID_DeviceReportDescriptor) & 0x00FF),
     ((sizeof(HID_DeviceReportDescriptor) & 0xFF00) >> 8),
 
     /* EP Descriptor: interrupt in. */
@@ -99,7 +99,7 @@ uint8_t gu8ConfigDescriptor[] =
     (INT_IN_EP_NUM | EP_INPUT), /* bEndpointAddress */
     EP_INT,         /* bmAttributes */
     /* wMaxPacketSize */
-    EPA_MAX_PKT_SIZE & 0x00FF,
+    (EPA_MAX_PKT_SIZE & 0x00FF),
     ((EPA_MAX_PKT_SIZE & 0xFF00) >> 8),
     HID_DEFAULT_INT_IN_INTERVAL,        /* bInterval */
 
@@ -109,7 +109,7 @@ uint8_t gu8ConfigDescriptor[] =
     (INT_OUT_EP_NUM | EP_OUTPUT),   /* bEndpointAddress */
     EP_INT,         /* bmAttributes */
     /* wMaxPacketSize */
-    EPB_MAX_PKT_SIZE & 0x00FF,
+    (EPB_MAX_PKT_SIZE & 0x00FF),
     ((EPB_MAX_PKT_SIZE & 0xFF00) >> 8),
     HID_DEFAULT_INT_IN_INTERVAL     /* bInterval */
 };
@@ -140,3 +140,4 @@ uint8_t gu8ProductStringDesc[] =
 };
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+

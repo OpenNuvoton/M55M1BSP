@@ -1,4 +1,4 @@
-# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,19 +40,28 @@ INCLUDES := \
   -I./third_party/kissfft/tools \
   -I./third_party/ruy
 
+ifneq ($(TENSORFLOW_ROOT),)
+  INCLUDES += -I$(TENSORFLOW_ROOT)
+endif
+
+ifneq ($(EXTERNAL_DIR),)
+  INCLUDES += -I$(EXTERNAL_DIR)
+endif
+
 ifeq ($(BUILD_TYPE), cmsis_nn)
   CXX := arm-none-eabi-g++
   CC := arm-none-eabi-gcc
   AR := arm-none-eabi-ar
 
   INCLUDES += \
-  	-I./third_party/cmsis \
-    -I./third_party/cmsis/CMSIS/Core/Include \
-    -I./third_party/cmsis/CMSIS/DSP/Include \
-    -I./third_party/cmsis/CMSIS/NN/Include
+    -I./third_party/cmsis \
+    -I./third_party/cmsis_nn \
+    -I./third_party/cmsis_nn/Include \
+    -I./third_party/cmsis/CMSIS/Core/Include
 
   COMMON_FLAGS += \
     -DTF_LITE_MCU_DEBUG_LOG \
+    -DPROJECT_GENERATION \
     -mthumb \
     -mlittle-endian \
     -funsigned-char \
@@ -80,8 +89,16 @@ OBJDIR := $(GENDIR)/obj
 BINDIR := $(GENDIR)/bin
 LIB := $(GENDIR)/libtflm.a
 
-TFLM_CC_SRCS := $(shell find tensorflow -name "*.cc" -o -name "*.c")
+TFLM_CC_SRCS := $(shell find $(TENSORFLOW_ROOT)tensorflow -name "*.cc" -o -name "*.c")
+TFLM_CC_SRCS += $(shell find $(TENSORFLOW_ROOT)signal -name "*.cc" -o -name "*.c")
 OBJS := $(addprefix $(OBJDIR)/, $(patsubst %.c,%.o,$(patsubst %.cc,%.o,$(TFLM_CC_SRCS))))
+
+# if the third party printf library is present, add the include paths
+TFLM_PRINTF_PATH := $(shell find third_party -name eyalroz_printf)
+ifneq ($(TFLM_PRINTF_PATH),)
+  INCLUDES += \
+    -I./third_party
+endif
 
 $(OBJDIR)/%.o: %.cc
 	@mkdir -p $(dir $@)
@@ -100,13 +117,13 @@ clean:
 
 libtflm: $(LIB)
 
+HELLO_WORLD_SRCS := $(wildcard examples/hello_world/*.cc)
+HELLO_WORLD_SRCS += $(wildcard examples/hello_world/models/*.cc)
+HELLO_WORLD_INCLUDES := $(INCLUDES) -I./examples/hello_world
+
 hello_world: libtflm
 	@mkdir -p $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(wildcard examples/hello_world/*.cc) $(INCLUDES) $(LIB) -o $(BINDIR)/$@
-
-magic_wand: libtflm
-	@mkdir -p $(BINDIR)
-	$(CXX) $(CXXFLAGS) $(wildcard examples/magic_wand/*.cc) $(INCLUDES) $(LIB) -o $(BINDIR)/$@
+	$(CXX) $(CXXFLAGS) $(HELLO_WORLD_SRCS) $(HELLO_WORLD_INCLUDES) $(LIB) -o $(BINDIR)/$@
 
 MICRO_SPEECH_SRCS := $(wildcard examples/micro_speech/*.cc)
 MICRO_SPEECH_SRCS += $(wildcard examples/micro_speech/*/*.cc)
@@ -125,4 +142,4 @@ person_detection: libtflm
 	@mkdir -p $(BINDIR)
 	$(CXX) $(CXXFLAGS) $(PERSON_DETECTION_SRCS) $(PERSON_DETECTION_THIRD_PARTY_SRCS) $(PERSON_DETECTION_INCLUDES) $(LIB) -o $(BINDIR)/$@
 
-examples: hello_world magic_wand micro_speech person_detection
+examples: hello_world micro_speech person_detection

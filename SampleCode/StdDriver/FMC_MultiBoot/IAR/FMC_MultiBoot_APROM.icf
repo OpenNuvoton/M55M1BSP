@@ -11,7 +11,7 @@ define symbol __ICFEDIT_region_ROM_end__    = VECMAP_BASE + 0x5FFFF;
 define symbol __ICFEDIT_region_DTCM_start__ = 0x20000000;
 define symbol __ICFEDIT_region_DTCM_end__   = 0x2001FFFF;
 define symbol __ICFEDIT_region_RAM_start__  = 0x20100000;
-define symbol __ICFEDIT_region_RAM_end__    = 0x2022FFFF;
+define symbol __ICFEDIT_region_RAM_end__    = 0x2024FFFF;
 
 /* Start address and size of NonCacheable region must be 32 byte alignment */
 define symbol _region_NonCacheable_start__  = (__ICFEDIT_region_RAM_end__ + 1);

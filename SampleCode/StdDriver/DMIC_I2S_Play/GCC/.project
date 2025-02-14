@@ -85,6 +85,11 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/pdma.c</locationURI>
 		</link>
 		<link>
+			<name>Library/pmc.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/pmc.c</locationURI>
+		</link>
+		<link>
 			<name>Library/retarget.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/retarget.c</locationURI>

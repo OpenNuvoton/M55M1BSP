@@ -23,24 +23,9 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to APLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -54,6 +39,11 @@ static void SYS_Init(void)
     SET_I3C0_SCL_PB1();
     SET_I3C0_SDA_PB0();
     SYS_ResetModule(SYS_I3C0RST);
+    /* Enable GPIO Module clock */
+    CLK_EnableModuleClock(GPIOB_MODULE);
+    /* Set SCL slew rate to GPIO_SLEWCTL_FAST0, SDA slew rate to GPIO_SLEWCTL_HIGH */
+    GPIO_SetSlewCtl(PB, BIT1, GPIO_SLEWCTL_FAST0);
+    GPIO_SetSlewCtl(PB, BIT0, GPIO_SLEWCTL_HIGH);
     /* Lock protected registers */
     SYS_LockReg();
 }
@@ -80,21 +70,59 @@ int32_t main(void)
     printf("+----------------------------------------+\n\n");
     /* Initial I3C0 default settings */
     I3C_Open(I3C0, I3C_MASTER, 0, 0);
+    /* Enable I3C0 controller */
+    I3C_Enable(I3C0);
     /* Dynamic Address for Enter Dynamic Address Assignment (ENTDAA) */
     I3C_SetDeviceAddr(I3C0, 0, I3C_DEVTYPE_I3C, 0x18, 0x00);
+    printf("press any key to broadcast ENTDAA\n");
 
     while (1)
     {
-        printf("press any key to broadcast ENTDAA\n");
-        getchar();
-
-        if (1 == I3C_BroadcastENTDAA(I3C0, 1))
+        if ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk) == 0U)
         {
-            printf("I3C Device found:\n");
-            printf(" - Provisional ID = 0x%08X%02X\n", I3C0->DEV1CH[0], I3C0->DEV1CH[1]);
-            printf(" - BCR, DCR = 0x%08X\n", I3C0->DEV1CH[2]);
-            printf(" - DADR = 0x%08X\n\n", I3C0->DEV1CH[3]);
-            break;
+            char ch = (char)DEBUG_PORT->DAT;
+
+            if (1 == I3C_BroadcastENTDAA(I3C0, 1))
+            {
+                printf("I3C Device found:\n");
+                printf(" - Provisional ID = 0x%08X%02X\n", I3C0->DEV1CH[0], I3C0->DEV1CH[1]);
+                printf(" - BCR, DCR = 0x%08X\n", I3C0->DEV1CH[2]);
+                printf(" - DADR = 0x%08X\n\n", I3C0->DEV1CH[3]);
+                break;
+            }
+            else
+            {
+                printf("I3C Device not found\n");
+            }
+        }
+
+        if (I3C0->INTSTS & I3C_INTSTS_IBITH_Msk)
+        {
+            uint32_t    response, cnt, data;
+            response = I3C0->IBISTS;
+            cnt = (response & I3C_IBISTS_DATLEN_Msk);
+            cnt = (cnt + 3) / 4;
+
+            for (i = 0; i < cnt; i++)
+            {
+                data = I3C0->IBIQUE;
+                printf("IBI Data[%d] = 0x%08X\n", i, data);
+            }
+
+            /* Hot Join ID (0x02) << 1 + R/W Bit */
+            if ((response & I3C_IBISTS_IBIID_Msk) == (0x04 << I3C_IBISTS_IBIID_Pos))
+            {
+                printf("Hot Join ID (0x02) is detected\n");
+
+                if (1 == I3C_BroadcastENTDAA(I3C0, 1))
+                {
+                    printf("I3C Device found:\n");
+                    printf(" - Provisional ID = 0x%08X%02X\n", I3C0->DEV1CH[0], I3C0->DEV1CH[1]);
+                    printf(" - BCR, DCR = 0x%08X\n", I3C0->DEV1CH[2]);
+                    printf(" - DADR = 0x%08X\n\n", I3C0->DEV1CH[3]);
+                    break;
+                }
+            }
         }
     }
 
@@ -107,6 +135,7 @@ int32_t main(void)
 
     while (1)
     {
+        char ch;
         /* Single Byte Write & Read Test */
         u32Data = 0x55;
         printf("press any key to Write I3C Target \n");
@@ -120,15 +149,30 @@ int32_t main(void)
             while (1);
         }
 
-        printf("press any key to Read I3C Target \n");
-        getchar();
-        ret = I3C_Read(I3C0, 0, I3C_DEVI3C_SPEED_SDR0, (uint32_t *)&u32Data, 1);
+        printf("press w to Write I3C Target (for wakeup I3C_Slave_Wakeup), else to Read I3C Target (for I3C_SlaveRW)\n");
+        ch = getchar();
 
-        if (ret != I3C_STS_NO_ERR)
+        if (ch == 'w')
         {
-            printf("I3C_Read Fail\n");
+            ret = I3C_Write(I3C0, 0, I3C_DEVI3C_SPEED_SDR0, (uint32_t *)&u32Data, 1);
 
-            while (1);
+            if (ret != I3C_STS_NO_ERR)
+            {
+                printf("I3C_Write Fail\n");
+
+                while (1);
+            }
+        }
+        else
+        {
+            ret = I3C_Read(I3C0, 0, I3C_DEVI3C_SPEED_SDR0, (uint32_t *)&u32Data, 1);
+
+            if (ret != I3C_STS_NO_ERR)
+            {
+                printf("I3C_Read Fail\n");
+
+                while (1);
+            }
         }
 
         /* Multiple Bytes Write & Read Test */

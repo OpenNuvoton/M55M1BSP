@@ -39,7 +39,7 @@ uint32_t UI2C_Open(UI2C_T *ui2c, uint32_t u32BusClock)
     uint32_t u32Pclk;
 
 
-    u32Pclk = CLK_GetPCLK0Freq();
+    u32Pclk = CLK_GetPCLK1Freq();
     u32ClkDiv = (uint32_t)((((((u32Pclk / 2U) * 10U) / (u32BusClock)) + 5U) / 10U) - 1U); /* Compute proper divider for USCI_I2C clock */
 
     /* Enable USCI_I2C protocol */
@@ -262,7 +262,7 @@ uint32_t UI2C_GetBusClockFreq(UI2C_T *ui2c)
     uint32_t u32Divider;
     uint32_t u32Pclk;
 
-    u32Pclk = CLK_GetPCLK0Freq();
+    u32Pclk = CLK_GetPCLK1Freq();
     u32Divider = (ui2c->BRGEN & UI2C_BRGEN_CLKDIV_Msk) >> UI2C_BRGEN_CLKDIV_Pos;
 
     return (u32Pclk / ((u32Divider + 1U) << 1U));
@@ -283,7 +283,7 @@ uint32_t UI2C_SetBusClockFreq(UI2C_T *ui2c, uint32_t u32BusClock)
     uint32_t u32ClkDiv;
     uint32_t u32Pclk;
 
-    u32Pclk = CLK_GetPCLK0Freq();
+    u32Pclk = CLK_GetPCLK1Freq();
     u32ClkDiv = (uint32_t)((((((u32Pclk / 2U) * 10U) / (u32BusClock)) + 5U) / 10U) - 1U); /* Compute proper divider for USCI_I2C clock */
 
     /* Set USCI_I2C bus clock */

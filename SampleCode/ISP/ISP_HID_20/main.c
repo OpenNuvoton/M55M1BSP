@@ -12,8 +12,9 @@
  *****************************************************************************/
 #include <stdio.h>
 #include "NuMicro.h"
-#include "hid_transfer.h"
 #include "targetdev.h"
+#include "isp_user.h"
+#include "hid_transfer.h"
 
 // Empty function to reduce code size
 uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
@@ -47,8 +48,8 @@ int32_t SYS_Init(void)
 
     /* Select SCLK to HIRC before APLL setting*/
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
-    /* Enable APLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable APLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
     /* Set clock with limitations */
     CLK_SET_HCLK2DIV(2);
     CLK_SET_PCLK0DIV(2);
@@ -73,15 +74,15 @@ int32_t SYS_Init(void)
 
     /* Enable module clock */
     CLK_EnableModuleClock(HSUSBD0_MODULE);
-    CLK_EnableModuleClock(GPIOB_MODULE);
+    CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(ISP0_MODULE);
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Set PB.12 to input mode */
-    PB->MODE &= ~(GPIO_MODE_MODE12_Msk);
-    SET_GPIO_PB12();
+    /* Set DETECT_PIN to input mode */
+    PI->MODE &= ~(GPIO_MODE_MODE11_Msk);
+    SET_GPIO_PI11();
 
     return 0;
 }
@@ -93,14 +94,14 @@ int32_t main(void)
 {
     /* Unlock write-protected registers */
     SYS_UnlockReg();
-
-    /* Init System, peripheral clock and multi-function I/O */
-    if ((SYS_Init() < 0) || (DETECT_PIN != 0))
-        goto _APROM;
-
     /* Enable ISP */
     FMC_Open();
     FMC_ENABLE_AP_UPDATE();
+
+    /* Init System, peripheral clock and multi-function I/O */
+    /* Check if DETECT_PIN is low to enter ISP flow */
+    if ((SYS_Init() < 0) || (DETECT_PIN != 0))
+        goto _APROM;
 
     /* Get APROM and Data Flash size */
     g_u32ApromSize = GetApromSize();
@@ -119,7 +120,7 @@ int32_t main(void)
     HSUSBD->OPER = HSUSBD_OPER_HISPDEN_Msk;   /* high-speed */
     HSUSBD_CLR_SE0();
 
-    while (DETECT_PIN == 0)
+    while (1)
     {
         if (g_u8UsbDataReady == TRUE)
         {

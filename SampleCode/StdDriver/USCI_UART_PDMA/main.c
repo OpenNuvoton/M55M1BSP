@@ -9,14 +9,20 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
-//#define ENABLE_PDMA_INTERRUPT
+#define ENABLE_PDMA_INTERRUPT
 #define PDMA_TEST_LENGTH   128
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-uint8_t g_u8Tx_Buffer[PDMA_TEST_LENGTH] = {0};
-uint8_t g_u8Rx_Buffer[PDMA_TEST_LENGTH] = {0};
+#if (NVT_DCACHE_ON == 1)
+/* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+uint8_t g_u8Tx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+uint8_t g_u8Rx_Buffer[DCACHE_ALIGN_LINE_SIZE(PDMA_TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+#else
+uint8_t g_u8Tx_Buffer[PDMA_TEST_LENGTH] __attribute__((aligned)) = {0};
+uint8_t g_u8Rx_Buffer[PDMA_TEST_LENGTH] __attribute__((aligned)) = {0};
+#endif
 
 volatile uint32_t u32IsTestOver = 0;
 
@@ -69,20 +75,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -119,9 +113,6 @@ void PDMA_Init(void)
     /* Open PDMA Channel */
     PDMA_Open(PDMA0, 1 << 0); // Channel 0 for UART1 TX
     PDMA_Open(PDMA0, 1 << 1); // Channel 1 for UART1 RX
-    // Select basic mode
-    PDMA_SetTransferMode(PDMA0, 0, PDMA_USCI0_TX, 0, 0);
-    PDMA_SetTransferMode(PDMA0, 1, PDMA_USCI0_RX, 0, 0);
     // Set data width and transfer count
     PDMA_SetTransferCnt(PDMA0, 0, PDMA_WIDTH_8, PDMA_TEST_LENGTH);
     PDMA_SetTransferCnt(PDMA0, 1, PDMA_WIDTH_8, PDMA_TEST_LENGTH);
@@ -134,6 +125,9 @@ void PDMA_Init(void)
     //Set timeout
     //PDMA_SetTimeOut(PDMA0, 0, 0, 0x5555);
     //PDMA_SetTimeOut(PDMA0, 1, 0, 0x5555);
+    // Select basic mode
+    PDMA_SetTransferMode(PDMA0, 0, PDMA_USCI0_TX, 0, 0);
+    PDMA_SetTransferMode(PDMA0, 1, PDMA_USCI0_RX, 0, 0);
 
 #ifdef ENABLE_PDMA_INTERRUPT
     PDMA_EnableInt(PDMA0, 0, PDMA_INT_TRANS_DONE);
@@ -202,6 +196,13 @@ void USCI_UART_PDMATest(void)
         g_u8Rx_Buffer[i] = 0xff;
     }
 
+#if (NVT_DCACHE_ON == 1)
+    /* If DCACHE is enabled, clean the data cache for the two buffers before writing to them and enabling DMA */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_CleanDCache_by_Addr((uint32_t *)&g_u8Tx_Buffer, sizeof(g_u8Tx_Buffer));
+    SCB_CleanDCache_by_Addr((uint32_t *)&g_u8Rx_Buffer, sizeof(g_u8Rx_Buffer));
+#endif
+
     /* PDMA reset */
     UUART0->PDMACTL |= UUART_PDMACTL_PDMARST_Msk;
 
@@ -230,6 +231,11 @@ void USCI_UART_PDMATest(void)
     PDMA_CLR_TD_FLAG(PDMA0, PDMA_TDSTS_TDIF0_Msk | PDMA_TDSTS_TDIF1_Msk);
 #endif
 
+#if (NVT_DCACHE_ON == 1)
+    /* Clean the data cache for the destination buffer of UUART PDMA RX channel */
+    SCB_InvalidateDCache_by_Addr(&g_u8Rx_Buffer, sizeof(g_u8Rx_Buffer));
+#endif
+
     for (i = 0; i < PDMA_TEST_LENGTH; i++)
     {
         if (g_u8Rx_Buffer[i] != i)
@@ -238,7 +244,6 @@ void USCI_UART_PDMATest(void)
 
             while (1);
         }
-
     }
 
     printf("\nUART PDMA test Pass.\n");

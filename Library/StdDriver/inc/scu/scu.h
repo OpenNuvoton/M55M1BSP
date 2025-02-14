@@ -30,15 +30,13 @@ extern "C"
 #define SRAM0_BASE          (SRAM_BASE)
 #define SRAM0_SIZE          ((uint32_t) 0x00080000UL)
 #define SRAM1_BASE          (SRAM0_BASE + SRAM0_SIZE)
-#define SRAM1_SIZE          (0x00080000UL)
+#define SRAM1_SIZE          ((uint32_t) 0x00080000UL)
 #define SRAM2_BASE          (SRAM1_BASE + SRAM1_SIZE)
 #define SRAM2_SIZE          ((uint32_t) 0x00050000UL)
 #define SRAM3_SIZE          ((uint32_t) 0x00002000UL)
 #define LPSRAM_SIZE         ((uint32_t) 0x00002000UL)
 #define SPIM0_MEM_BASE      ((uint32_t) 0x80000000UL)
 #define SPIM0_MEM_SIZE      ((uint32_t) 0x02000000UL)
-#define SPIM1_MEM_BASE      ((uint32_t) 0x82000000UL)
-#define SPIM1_MEM_SIZE      ((uint32_t) 0x02000000UL)
 /* EBI memory secure/non-secure is decided by SCU_D1PNS1 and did not support MPC config */
 
 #define SRAM0MPC_BLK        (0x8000UL)        // Block size: 32 KB
@@ -47,7 +45,6 @@ extern "C"
 #define SRAM3MPC_BLK        (0x1000UL)        // Block size: 4 KB
 #define LPSRAMMPC_BLK       (0x1000UL)        // Block size: 4 KB
 #define SPIM0MPC_BLK        (0x20000UL)       // Block size: 128 KB
-#define SPIM1MPC_BLK        (0x20000UL)       // Block size: 128 KB
 
 typedef enum
 {
@@ -67,7 +64,6 @@ typedef enum
     eSCU_MASTER_ID_LPPDMA   = 14,
     eSCU_MASTER_ID_CCAP     = 15,
     eSCU_MASTER_ID_SPIM0    = 16,
-    eSCU_MASTER_ID_SPIM1    = 17,
 } E_SCU_MASTER_ID;
 
 typedef enum
@@ -83,6 +79,7 @@ typedef enum
     eSCU_INT_IDX_D1PPC1     = 10,
     eSCU_INT_IDX_D2PPC0     = 11,
     eSCU_INT_IDX_EBI        = 16,
+    eSCU_INT_IDX_FLASH      = 17,
     eSCU_INT_IDX_GDMA       = 32 +  0,
     eSCU_INT_IDX_PDMA0      = 32 +  1,
     eSCU_INT_IDX_PDMA1      = 32 +  2,
@@ -99,14 +96,12 @@ typedef enum
     eSCU_INT_IDX_NPUIF1     = 32 + 14,
     eSCU_INT_IDX_NPUIF0     = 32 + 15,
     eSCU_INT_IDX_SPIM0      = 32 + 16,
-    eSCU_INT_IDX_SPIM1      = 32 + 17,
     eSCU_INT_IDX_SRAM0_MPC  = 64 +  0,
     eSCU_INT_IDX_SRAM1_MPC  = 64 +  1,
     eSCU_INT_IDX_SRAM2_MPC  = 64 +  2,
     eSCU_INT_IDX_SRAM3_MPC  = 64 +  3,
     eSCU_INT_IDX_LPSRAM_MPC = 64 +  4,
     eSCU_INT_IDX_SPIM0_MPC  = 64 +  5,
-    eSCU_INT_IDX_SPIM1_MPC  = 64 +  6,
 } E_SCU_INT_IDX;
 
 /**
@@ -119,7 +114,6 @@ typedef enum
 
     /******  SCU_D0PNS2 **********************************************************************************/
     eSCU_PERI_IDX_SPIM0          = 64 + 2,
-    eSCU_PERI_IDX_SPIM1          = 64 + 3,
 
     /******  SCU_D1PNS0 **********************************************************************************/
     eSCU_PERI_IDX_PDMA0          = 256 +  0,
@@ -137,9 +131,6 @@ typedef enum
     eSCU_PERI_IDX_KDF            = 288 +  1,
     eSCU_PERI_IDX_CANFD0         = 288 +  2,
     eSCU_PERI_IDX_CANFD1         = 288 +  4,
-    eSCU_PERI_IDX_ETMC           = 288 +  6,
-    eSCU_PERI_IDX_SWDH           = 288 +  7,
-    eSCU_PERI_IDX_SWODEC         = 288 +  8,
     eSCU_PERI_IDX_EBI            = 288 + 16,
 
     /******  SCU_D1PNS2 **********************************************************************************/
@@ -174,7 +165,6 @@ typedef enum
 
     /******  SCU_D1PNS4 **********************************************************************************/
     eSCU_PERI_IDX_WWDT1          = 384 +  0,
-    eSCU_PERI_IDX_EADC1          = 384 +  1,
     eSCU_PERI_IDX_EPWM1          = 384 +  2,
     eSCU_PERI_IDX_BPWM1          = 384 +  3,
     eSCU_PERI_IDX_EQEI1          = 384 +  4,
@@ -308,6 +298,7 @@ typedef enum
  *              - \ref SCU_SVIEN0_D1PPC1IEN_Msk
  *              - \ref SCU_SVIEN0_D2PPC0IEN_Msk
  *              - \ref SCU_SVIEN0_EBIIEN_Msk
+ *              - \ref SCU_SVIEN0_FLASHIEN_Msk
  *
  * @return      None
  *
@@ -332,6 +323,7 @@ typedef enum
  *              - \ref SCU_SVIEN0_D1PPC1IEN_Msk
  *              - \ref SCU_SVIEN0_D2PPC0IEN_Msk
  *              - \ref SCU_SVIEN0_EBIIEN_Msk
+ *              - \ref SCU_SVIEN0_FLASHIEN_Msk
  *
  * @return      None
  *
@@ -345,14 +337,14 @@ typedef enum
   * @brief      Get secure violation interrupt status
   *
   * @param[in]  eIntIdx     Available interrupt flag status
-  *           - \ref eSCU_INT_IDX_APB0  \ref eSCU_INT_IDX_APB1  \ref eSCU_INT_IDX_APB2
-  *           - \ref eSCU_INT_IDX_APB3  \ref eSCU_INT_IDX_APB4  \ref eSCU_INT_IDX_APB5
+  *           - \ref eSCU_INT_IDX_APB0    \ref eSCU_INT_IDX_APB1   \ref eSCU_INT_IDX_APB2
+  *           - \ref eSCU_INT_IDX_APB3    \ref eSCU_INT_IDX_APB4   \ref eSCU_INT_IDX_APB5
   *           - \ref eSCU_INT_IDX_D0PPC0  \ref eSCU_INT_IDX_D1PPC0
   *           - \ref eSCU_INT_IDX_D1PPC1  \ref eSCU_INT_IDX_D2PPC0
-  *           - \ref eSCU_INT_IDX_EBI
+  *           - \ref eSCU_INT_IDX_EBI     \ref eSCU_INT_IDX_FLASH
   *           - \ref eSCU_INT_IDX_GDMA
-  *           - \ref eSCU_INT_IDX_PDMA0  \ref eSCU_INT_IDX_PDMA1
-  *           - \ref eSCU_INT_IDX_USBH0  \ref eSCU_INT_IDX_HSUSBH
+  *           - \ref eSCU_INT_IDX_PDMA0   \ref eSCU_INT_IDX_PDMA1
+  *           - \ref eSCU_INT_IDX_USBH0   \ref eSCU_INT_IDX_HSUSBH
   *           - \ref eSCU_INT_IDX_HSUSBD
   *           - \ref eSCU_INT_IDX_SDH0
   *           - \ref eSCU_INT_IDX_SDH1
@@ -364,14 +356,12 @@ typedef enum
   *           - \ref eSCU_INT_IDX_NPUIF1
   *           - \ref eSCU_INT_IDX_NPUIF0
   *           - \ref eSCU_INT_IDX_SPIM0
-  *           - \ref eSCU_INT_IDX_SPIM1
   *           - \ref eSCU_INT_IDX_SRAM0_MPC
   *           - \ref eSCU_INT_IDX_SRAM1_MPC
   *           - \ref eSCU_INT_IDX_SRAM2_MPC
   *           - \ref eSCU_INT_IDX_SRAM3_MPC
   *           - \ref eSCU_INT_IDX_LPSRAM_MPC
   *           - \ref eSCU_INT_IDX_SPIM0_MPC
-  *           - \ref eSCU_INT_IDX_SPIM1_MPC
   * @return   The value of interrupt flag status
   */
 #define SCU_GET_INT_FLAG(eIntIdx)     ((SCU->SVINTSTS[(eIntIdx) / 32] >> ((eIntIdx) & 0x1Ful)) & 0x1ul)
@@ -382,14 +372,14 @@ typedef enum
   *             The combination of the specified interrupt flags.
   *             Each bit corresponds to a interrupt source.
   *             This parameter decides which interrupt flags will be cleared.
-  *             - \ref eSCU_INT_IDX_APB0  \ref eSCU_INT_IDX_APB1  \ref eSCU_INT_IDX_APB2
-  *             - \ref eSCU_INT_IDX_APB3  \ref eSCU_INT_IDX_APB4  \ref eSCU_INT_IDX_APB5
+  *             - \ref eSCU_INT_IDX_APB0    \ref eSCU_INT_IDX_APB1   \ref eSCU_INT_IDX_APB2
+  *             - \ref eSCU_INT_IDX_APB3    \ref eSCU_INT_IDX_APB4   \ref eSCU_INT_IDX_APB5
   *             - \ref eSCU_INT_IDX_D0PPC0  \ref eSCU_INT_IDX_D1PPC0
   *             - \ref eSCU_INT_IDX_D1PPC1  \ref eSCU_INT_IDX_D2PPC0
-  *             - \ref eSCU_INT_IDX_EBI
+  *             - \ref eSCU_INT_IDX_EBI     \ref eSCU_INT_IDX_FLASH
   *             - \ref eSCU_INT_IDX_GDMA
-  *             - \ref eSCU_INT_IDX_PDMA0  \ref eSCU_INT_IDX_PDMA1
-  *             - \ref eSCU_INT_IDX_USBH0  \ref eSCU_INT_IDX_HSUSBH
+  *             - \ref eSCU_INT_IDX_PDMA0   \ref eSCU_INT_IDX_PDMA1
+  *             - \ref eSCU_INT_IDX_USBH0   \ref eSCU_INT_IDX_HSUSBH
   *             - \ref eSCU_INT_IDX_HSUSBD
   *             - \ref eSCU_INT_IDX_SDH0
   *             - \ref eSCU_INT_IDX_SDH1
@@ -401,14 +391,12 @@ typedef enum
   *             - \ref eSCU_INT_IDX_NPUIF1
   *             - \ref eSCU_INT_IDX_NPUIF0
   *             - \ref eSCU_INT_IDX_SPIM0
-  *             - \ref eSCU_INT_IDX_SPIM1
   *             - \ref eSCU_INT_IDX_SRAM0_MPC
   *             - \ref eSCU_INT_IDX_SRAM1_MPC
   *             - \ref eSCU_INT_IDX_SRAM2_MPC
   *             - \ref eSCU_INT_IDX_SRAM3_MPC
   *             - \ref eSCU_INT_IDX_LPSRAM_MPC
   *             - \ref eSCU_INT_IDX_SPIM0_MPC
-  *             - \ref eSCU_INT_IDX_SPIM1_MPC
   *
   * @return     None
   *
@@ -444,6 +432,25 @@ typedef enum
   *
   */
 #define SCU_NSM_DBG_ON(opt)    ((opt)?(SCU->NSMCTL |= SCU_NSMCTL_DBGON_Msk):(SCU->NSMCTL &= ~SCU_NSMCTL_DBGON_Msk))
+
+/**
+ * @brief       Check CPU is in secure or non-secure state
+ *
+ * @param[in]   psSCU   SCU or SCU_NS
+ *
+ * @return      The secure/non-secure state of CPU.
+ * @retval      0 CPU is secure
+ * @retval      1 CPU is non-secure
+ *
+ * @details     This macro returns CPU is in secure or non-secure state.
+ */
+#define SCU_IS_CPU_NS(psSCU)        ((psSCU->NSMSTS & SCU_NSMSTS_CURRNS_Msk) >> SCU_NSMSTS_CURRNS_Pos)
+
+/**
+ * @brief Retrieve the non-secure flash base address.
+ * @return The non-secure flash base address.
+ */
+#define SCU_GET_FLASH_NS_BASE()     (SCU->FNSADDR)
 
 
 /* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */

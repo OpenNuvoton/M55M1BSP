@@ -31,6 +31,13 @@
 
 /// @cond HIDDEN_SYMBOLS
 #define USB_XFER_TIMEOUT             100
+#if (NVT_DCACHE_ON == 1)
+    /* Declare a DCache-line aligned variable for the CDC device buffer.  */
+    #define CDC_BLOCK_SIZE           64
+    static uint8_t Tmp_Buffer[DCACHE_ALIGN_LINE_SIZE(CDC_BLOCK_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    #define DEF_ALIGNED_VALUE      DCACHE_LINE_SIZE
+#endif
+
 /// @endcond /* HIDDEN_SYMBOLS */
 
 /**
@@ -393,6 +400,8 @@ static void  cdc_bulk_out_irq(UTR_T *utr)
 
 /// @endcond /* HIDDEN_SYMBOLS */
 
+
+
 /**
  * @brief  Send a block of data via CDC device's bulk-out transfer pipe.
  *  @param[in] cdev      CDC device
@@ -467,6 +476,56 @@ int32_t usbh_cdc_send_data(CDC_DEV_T *cdev, uint8_t *buff, int buff_len)
     free_utr(utr);
     return 0;
 }
+#if (NVT_DCACHE_ON == 1)
+/**
+ * @brief  Handle dcache and cache alignment, Send a block of data via CDC device's bulk-out transfer pipe.
+ *  @param[in] cdev      CDC device
+ *  @param[in] buff      Buffer contains the data block to be send.
+ *  @param[in] buff_len  Length in byte of data to be send
+ *  @return   Success or not.
+ * @retval   0           Success
+ * @retval   Otherwise   Failed
+ */
+int32_t usbh_dcache_cdc_send_data(CDC_DEV_T *cdev, uint8_t *buff, int buff_len)
+{
+
+    int ret;
+    int temp_duff_len = buff_len;
+
+    if (temp_duff_len == 0)
+        return (-1);
+
+    while (temp_duff_len > 0)
+    {
+        memset(Tmp_Buffer, 0, CDC_BLOCK_SIZE);
+
+        if (temp_duff_len > 64)
+            memcpy(Tmp_Buffer, buff, CDC_BLOCK_SIZE);
+        else
+        {
+            memcpy(Tmp_Buffer, buff, temp_duff_len);
+            //Fill the buffer with zeros up to the remaining length.
+            memset(&Tmp_Buffer[temp_duff_len], 0, (CDC_BLOCK_SIZE - temp_duff_len));
+        }
+
+        /* clean the data cache for the Tmp buffer before writing to qTD Buffer. */
+        /* * This is to ensure that the data written to the cache is actually written to the memory. */
+        SCB_CleanDCache_by_Addr((void *)Tmp_Buffer, CDC_BLOCK_SIZE);
+
+        ret = usbh_cdc_send_data(cdev, Tmp_Buffer, CDC_BLOCK_SIZE);
+
+        if (temp_duff_len < 64)
+            break;
+        else
+            temp_duff_len = temp_duff_len - CDC_BLOCK_SIZE;
+
+        //next 64 size buffer of address...
+        buff = (buff + CDC_BLOCK_SIZE);
+    }
+
+    return (ret);
+}
+#endif
 
 /** @} end of group USBH_EXPORTED_FUNCTIONS */
 

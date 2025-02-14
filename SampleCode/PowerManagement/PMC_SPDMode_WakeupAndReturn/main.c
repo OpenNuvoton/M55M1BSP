@@ -31,8 +31,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC 12MHz clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -78,13 +78,14 @@ int main(void)
 
     if (getchar() == '0')
     {
-        uint32_t u32TimeOutCnt;
+        uint32_t u32TimeOutCnt = SystemCoreClock;
 
         g_u32ReturnAddr   = 0;
         g_bReturnToAddr = FALSE;
+
         printf("SYS_ResetChip\n");
+
         /* Check if all the debug messages are finished */
-        u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
         UART_WAIT_TX_EMPTY(DEBUG_PORT)
 
         if (--u32TimeOutCnt == 0) break;

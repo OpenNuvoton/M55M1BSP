@@ -264,7 +264,6 @@ extern "C"
 #else
 #define PB12             PB12_S       /*!< Specify PB.12 Pin Data Input/Output */
 #endif
-#if !defined(ALIGN_AF_PINS)
 #if defined (SCU_INIT_IONS1_VAL) && (SCU_INIT_IONS1_VAL & BIT13 )
 #define PB13             PB13_NS      /*!< Specify PB.13 Pin Data Input/Output */
 #else
@@ -279,7 +278,6 @@ extern "C"
 #define PB15             PB15_NS      /*!< Specify PB.15 Pin Data Input/Output */
 #else
 #define PB15             PB15_S       /*!< Specify PB.15 Pin Data Input/Output */
-#endif
 #endif
 #if defined (SCU_INIT_IONS2_VAL) && (SCU_INIT_IONS2_VAL & BIT0 )
 #define PC0              PC0_NS       /*!< Specify PC.0 Pin Data Input/Output */
@@ -356,7 +354,6 @@ extern "C"
 #else
 #define PD0              PD0_S        /*!< Specify PD.0 Pin Data Input/Output */
 #endif
-#if !defined(ALIGN_AF_PINS)
 #if defined (SCU_INIT_IONS3_VAL) && (SCU_INIT_IONS3_VAL & BIT1 )
 #define PD1              PD1_NS       /*!< Specify PD.1 Pin Data Input/Output */
 #else
@@ -376,7 +373,6 @@ extern "C"
 #define PD4              PD4_NS       /*!< Specify PD.4 Pin Data Input/Output */
 #else
 #define PD4              PD4_S        /*!< Specify PD.4 Pin Data Input/Output */
-#endif
 #endif
 #if defined (SCU_INIT_IONS3_VAL) && (SCU_INIT_IONS3_VAL & BIT5 )
 #define PD5              PD5_NS       /*!< Specify PD.5 Pin Data Input/Output */
@@ -870,11 +866,9 @@ extern "C"
 #define PB10_S           GPIO_PIN_DATA_S (1, 10 ) /*!< Specify PB.10 Pin Data Input/Output */
 #define PB11_S           GPIO_PIN_DATA_S (1, 11 ) /*!< Specify PB.11 Pin Data Input/Output */
 #define PB12_S           GPIO_PIN_DATA_S (1, 12 ) /*!< Specify PB.12 Pin Data Input/Output */
-#if !defined(ALIGN_AF_PINS)
 #define PB13_S           GPIO_PIN_DATA_S (1, 13 ) /*!< Specify PB.13 Pin Data Input/Output */
 #define PB14_S           GPIO_PIN_DATA_S (1, 14 ) /*!< Specify PB.14 Pin Data Input/Output */
 #define PB15_S           GPIO_PIN_DATA_S (1, 15 ) /*!< Specify PB.15 Pin Data Input/Output */
-#endif
 #define PC0_S            GPIO_PIN_DATA_S (2, 0  ) /*!< Specify PC.0  Pin Data Input/Output */
 #define PC1_S            GPIO_PIN_DATA_S (2, 1  ) /*!< Specify PC.1  Pin Data Input/Output */
 #define PC2_S            GPIO_PIN_DATA_S (2, 2  ) /*!< Specify PC.2  Pin Data Input/Output */
@@ -890,12 +884,10 @@ extern "C"
 #define PC12_S           GPIO_PIN_DATA_S (2, 12 ) /*!< Specify PC.12 Pin Data Input/Output */
 #define PC13_S           GPIO_PIN_DATA_S (2, 13 ) /*!< Specify PC.13 Pin Data Input/Output */
 #define PD0_S            GPIO_PIN_DATA_S (3, 0  ) /*!< Specify PD.0  Pin Data Input/Output */
-#if !defined(ALIGN_AF_PINS)
 #define PD1_S            GPIO_PIN_DATA_S (3, 1  ) /*!< Specify PD.1  Pin Data Input/Output */
 #define PD2_S            GPIO_PIN_DATA_S (3, 2  ) /*!< Specify PD.2  Pin Data Input/Output */
 #define PD3_S            GPIO_PIN_DATA_S (3, 3  ) /*!< Specify PD.3  Pin Data Input/Output */
 #define PD4_S            GPIO_PIN_DATA_S (3, 4  ) /*!< Specify PD.4  Pin Data Input/Output */
-#endif
 #define PD5_S            GPIO_PIN_DATA_S (3, 5  ) /*!< Specify PD.5  Pin Data Input/Output */
 #define PD6_S            GPIO_PIN_DATA_S (3, 6  ) /*!< Specify PD.6  Pin Data Input/Output */
 #define PD7_S            GPIO_PIN_DATA_S (3, 7  ) /*!< Specify PD.7  Pin Data Input/Output */
@@ -1020,11 +1012,9 @@ extern "C"
 #define PB10_NS          GPIO_PIN_DATA_NS(1, 10 ) /*!< Specify PB.10 Pin Data Input/Output */
 #define PB11_NS          GPIO_PIN_DATA_NS(1, 11 ) /*!< Specify PB.11 Pin Data Input/Output */
 #define PB12_NS          GPIO_PIN_DATA_NS(1, 12 ) /*!< Specify PB.12 Pin Data Input/Output */
-#if !defined(ALIGN_AF_PINS)
 #define PB13_NS          GPIO_PIN_DATA_NS(1, 13 ) /*!< Specify PB.13 Pin Data Input/Output */
 #define PB14_NS          GPIO_PIN_DATA_NS(1, 14 ) /*!< Specify PB.14 Pin Data Input/Output */
 #define PB15_NS          GPIO_PIN_DATA_NS(1, 15 ) /*!< Specify PB.15 Pin Data Input/Output */
-#endif
 #define PC0_NS           GPIO_PIN_DATA_NS(2, 0  ) /*!< Specify PC.0  Pin Data Input/Output */
 #define PC1_NS           GPIO_PIN_DATA_NS(2, 1  ) /*!< Specify PC.1  Pin Data Input/Output */
 #define PC2_NS           GPIO_PIN_DATA_NS(2, 2  ) /*!< Specify PC.2  Pin Data Input/Output */
@@ -1040,12 +1030,10 @@ extern "C"
 #define PC12_NS          GPIO_PIN_DATA_NS(2, 12 ) /*!< Specify PC.12 Pin Data Input/Output */
 #define PC13_NS          GPIO_PIN_DATA_NS(2, 13 ) /*!< Specify PC.13 Pin Data Input/Output */
 #define PD0_NS           GPIO_PIN_DATA_NS(3, 0  ) /*!< Specify PD.0  Pin Data Input/Output */
-#if !defined(ALIGN_AF_PINS)
 #define PD1_NS           GPIO_PIN_DATA_NS(3, 1  ) /*!< Specify PD.1  Pin Data Input/Output */
 #define PD2_NS           GPIO_PIN_DATA_NS(3, 2  ) /*!< Specify PD.2  Pin Data Input/Output */
 #define PD3_NS           GPIO_PIN_DATA_NS(3, 3  ) /*!< Specify PD.3  Pin Data Input/Output */
 #define PD4_NS           GPIO_PIN_DATA_NS(3, 4  ) /*!< Specify PD.4  Pin Data Input/Output */
-#endif
 #define PD5_NS           GPIO_PIN_DATA_NS(3, 5  ) /*!< Specify PD.5  Pin Data Input/Output */
 #define PD6_NS           GPIO_PIN_DATA_NS(3, 6  ) /*!< Specify PD.6  Pin Data Input/Output */
 #define PD7_NS           GPIO_PIN_DATA_NS(3, 7  ) /*!< Specify PD.7  Pin Data Input/Output */

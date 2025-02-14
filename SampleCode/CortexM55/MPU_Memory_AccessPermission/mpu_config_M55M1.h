@@ -76,7 +76,7 @@
 //   <q.2> Non-Privileged
 //   <q.3> Non-executable
 */
-#define MPU_MEM_ACC_ATTR0   0x0
+#define MPU_MEM_ACC_ATTR0   0x2
 /*
 //   </h>
 */
@@ -101,11 +101,11 @@
 /*
 //     <o>Base Address <0-0xFFFFFFE0>
 */
-#define MPU_INIT_BASE1     0x20100000       /* Base address of MPU region 0 */
+#define MPU_INIT_BASE1     0x20140000       /* Base address of MPU region 1 */
 /*
 //     <o>Region Size <0x20-0xFFFFFFFF:0x20>
 */
-#define MPU_INIT_SIZE1     0x00040000       /* Size of MPU region 1 */
+#define MPU_INIT_SIZE1     0x00020000       /* Size of MPU region 1 */
 #define MPU_INIT_LIMIT1    (MPU_INIT_BASE1 + MPU_INIT_SIZE1 - 1)
 /*
 //    <o>  Memory attribute
@@ -149,11 +149,11 @@
 /*
 //     <o>Start Address <0-0xFFFFFFE0>
 */
-#define MPU_INIT_BASE2     0x20104000       /* Base address of MPU region 2 */
+#define MPU_INIT_BASE2     0x20160000       /* Base address of MPU region 2 */
 /*
 //     <o>Region Size <0x20-0xFFFFFFFF:0x20>
 */
-#define MPU_INIT_SIZE2     0x00000400       /* Size of MPU region 2 */
+#define MPU_INIT_SIZE2     0x00004000       /* Size of MPU region 2 */
 #define MPU_INIT_LIMIT2    (MPU_INIT_BASE2 + MPU_INIT_SIZE2 - 1)
 //    <o>  Memory attribute
 //      <0=> Device-nGnRnE

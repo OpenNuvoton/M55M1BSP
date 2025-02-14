@@ -669,6 +669,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     for (i = 0; i < u32Loop; i++)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
+#if (NVT_DCACHE_ON == 1)
+        //Host to Device, so need clean data to sram.
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
     }
 
     u32Loop = u32Len % USBD_MAX_DMA_LEN;
@@ -676,6 +680,10 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     if (u32Loop)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, u32Loop);
+#if (NVT_DCACHE_ON == 1)
+        //Host to Device, so need invali data.
+        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), DCACHE_ALIGN_LINE_SIZE(u32Loop));
+#endif
     }
 }
 
@@ -698,6 +706,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
         {
             if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
             {
+#if (NVT_DCACHE_ON == 1)
+                //Device to Host , so need clean data to sram.
+                SCB_CleanDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
+#endif
                 MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
                 break;
             }
@@ -720,6 +732,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    //Device to Host , so need clean data to sram.
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), (count * g_u32EpMaxPacketSize));
+#endif
                     MSC_ActiveDMA(addr, count * g_u32EpMaxPacketSize);
                     break;
                 }
@@ -739,6 +755,10 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
+#if (NVT_DCACHE_ON == 1)
+                    //Device to Host , so need clean data to sram.
+                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), DCACHE_ALIGN_LINE_SIZE(count));
+#endif
                     MSC_ActiveDMA(addr, count);
                     break;
                 }
@@ -770,6 +790,11 @@ void MSC_ReceiveCBW(uint32_t u32Buf)
         if (!HSUSBD_IS_ATTACHED())
             break;
     }
+
+#if (NVT_DCACHE_ON == 1)
+    //Host to Device, so need clean data to sram.
+    SCB_InvalidateDCache_by_Addr((void *)(u32Buf), DCACHE_ALIGN_LINE_SIZE(32));
+#endif
 }
 
 void MSC_ProcessCmd(void)

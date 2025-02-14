@@ -27,7 +27,6 @@ NVT_ITCM void ACMP01_IRQHandler(void);
 NVT_ITCM void PMC_IRQHandler(void);
 void EnterToPowerDown(uint32_t u32PDMode);
 void SYS_Init(void);
-int IsDebugFifoEmpty(void);
 int32_t main(void);
 
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
@@ -47,15 +46,13 @@ int IsDebugFifoEmpty(void)
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void ACMP01_IRQHandler(void)
 {
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(ACMP01_MODULE);
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);
     printf("\nACMP1 interrupt!\n");
     /* Clear ACMP 1 interrupt flag */
     ACMP_CLR_INT_FLAG(ACMP01, 1);
     /* Clear wake-up interrupt flag */
     ACMP_CLR_WAKEUP_INT_FLAG(ACMP01, 1);
+
+    UART_WAIT_TX_EMPTY(DEBUG_PORT);
 }
 /*---------------------------------------------------------------------------------------------------------*/
 /*                                         PWRWU  Handle                                                   */
@@ -69,6 +66,8 @@ NVT_ITCM void PMC_IRQHandler(void)
         PMC->INTSTS |= PMC_INTSTS_CLRWK_Msk;
         g_i32WakeUp = TRUE;
     }
+
+    UART_WAIT_TX_EMPTY(DEBUG_PORT);
 
 }
 /**
@@ -93,13 +92,9 @@ void EnterToPowerDown(uint32_t u32PDMode)
         PMC_SetPowerDownMode(PMC_NPD0, PMC_PLCTL_PLSEL_PL0);   //Power down
     else if (u32PDMode == NPD1_MODE)
         PMC_SetPowerDownMode(PMC_NPD1, PMC_PLCTL_PLSEL_PL0);   //Power down
-
-#if !defined(TESTCHIP_ONLY)
     else if (u32PDMode == NPD3_MODE)
         PMC_SetPowerDownMode(PMC_NPD3, PMC_PLCTL_PLSEL_PL0);   //Power down
-
-#endif
-    else if (u32PDMode == NPD3_MODE)
+    else if (u32PDMode == SPD0_MODE)
         PMC_SetPowerDownMode(PMC_SPD0, PMC_PLCTL_PLSEL_PL0);   //Power down
 
     PMC->INTEN |= PMC_INTEN_PDWKIEN_Msk;
@@ -116,14 +111,8 @@ void EnterToPowerDown(uint32_t u32PDMode)
 void SYS_Init(void)
 {
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Set PCLK1 divide 4 */
     CLK_SET_PCLK1DIV(4);
@@ -166,8 +155,6 @@ void SYS_Init(void)
 
 int32_t main(void)
 {
-    uint32_t u32DelayCount;
-
     /* Unlock protected registers */
     SYS_UnlockReg();
     /* Init System, IP clock and multi-function I/O. */
@@ -201,11 +188,9 @@ int32_t main(void)
 
     /* Select P1 as ACMP positive input channel */
     ACMP_SELECT_P(ACMP01, 1, ACMP_CTL_POSSEL_P1);
-    __NOP();
 
-    for (u32DelayCount = 0; u32DelayCount < 100; u32DelayCount++); /* For ACMP setup time */
+    CLK_SysTickDelay(10); /* For ACMP setup time */
 
-    __NOP();
     /* Clear ACMP 0 interrupt flag */
     ACMP_CLR_INT_FLAG(ACMP01, 1);
 
@@ -220,7 +205,7 @@ int32_t main(void)
     printf("\nSystem enter power-down mode ... \n");
 
     /* To check if all the debug messages are finished */
-    while (IsDebugFifoEmpty() == 0) {};
+    UART_WAIT_TX_EMPTY(DEBUG_PORT);
 
     EnterToPowerDown(NPD0_MODE);
 

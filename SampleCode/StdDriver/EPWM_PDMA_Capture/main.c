@@ -21,7 +21,13 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-static uint16_t g_au16Count[4];
+#if (NVT_DCACHE_ON == 1)
+    /* Data size (g_au16Period) < one cache line size (32B) => Non-cacheable should be ok. */
+    NVT_NONCACHEABLE __attribute__((aligned(4))) static uint16_t g_au16Count[4];
+#else
+    __attribute__((aligned(4))) static uint16_t g_au16Count[4];
+#endif
+
 static volatile uint32_t g_u32IsTestOver = 0;
 
 /**
@@ -108,11 +114,11 @@ int32_t CalPeriodTime(EPWM_T *EPWM, uint32_t u32Ch)
 
     u16TotalPeriod = (uint16_t)(0x10000 - g_au16Count[2]);
 
-    printf("\nEPWM generate: \nHigh Period=17999 ~ 18001, Low Period=41999 ~ 42001, Total Period=59999 ~ 60001\n");
+    printf("\nEPWM generate: \nHigh Period=18856 ~ 18858, Low Period=44000 ~ 44002, Total Period=62857 ~ 62859\n");
     printf("\nCapture Result: Rising Time = %d, Falling Time = %d \nHigh Period = %d, Low Period = %d, Total Period = %d.\n\n",
            u16RisingTime, u16FallingTime, u16HighPeriod, u16LowPeriod, u16TotalPeriod);
 
-    if ((u16HighPeriod < 17999) || (u16HighPeriod > 18001) || (u16LowPeriod < 41999) || (u16LowPeriod > 42001) || (u16TotalPeriod < 59999) || (u16TotalPeriod > 60001))
+    if ((u16HighPeriod < 18856) || (u16HighPeriod > 18858) || (u16LowPeriod < 44000) || (u16LowPeriod > 44002) || (u16TotalPeriod < 62857) || (u16TotalPeriod > 62859))
     {
         printf("Capture Test Fail!!\n");
         return (-1);
@@ -132,8 +138,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -203,14 +209,14 @@ int main(void)
            duty ratio = (CMR)/(CNR+1)
            cycle time = CNR+1
            High level = CMR
-           EPWM clock source frequency = PLL/2 = 90000000
+           EPWM clock source frequency = PLL/2 = 110000000
            (CNR+1) = EPWM clock source frequency/prescaler/EPWM output frequency
-                   = 90000000/6/250 = 60000
+                   = 110000000/7/250 = 62857
            (Note: CNR is 16 bits, so if calculated value is larger than 65536, user should increase prescale value.)
            CNR = 59999
            duty ratio = 30% ==> (CMR)/(CNR+1) = 30%
-           CMR = 18000
-           Prescale value is 5 : prescaler= 6
+           CMR = 18857
+           Prescale value is 6 : prescaler= 7
         */
 
         /* Set EPWM1 channel 0 output configuration */
@@ -254,13 +260,13 @@ int main(void)
         /* If input minimum frequency is 250Hz, user can calculate capture settings by follows.
            Capture clock source frequency = PLL = 100000000 in the sample code.
            (CNR+1) = Capture clock source frequency/prescaler/minimum input frequency
-                   = 100000000/7/250 = 57142
+                   = 110000000/7/250 = 62857
            (Note: CNR is 16 bits, so if calculated value is larger than 65536, user should increase prescale value.)
            CNR = 0xFFFF
            (Note: In capture mode, user should set CNR to 0xFFFF to increase capture frequency range.)
 
-           Capture unit time = 1/Capture clock source frequency/prescaler
-           70 ns = 1/100000000/7
+           Capture unit time = 1000000000/Capture clock source frequency*prescaler
+           70 ns = 1000000000/100000000*7
         */
 
         /* Set EPWM1 channel 2 capture configuration */

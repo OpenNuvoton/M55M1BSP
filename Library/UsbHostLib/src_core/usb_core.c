@@ -79,8 +79,21 @@ void  usbh_core_init()
 
 #endif
 
-#ifdef ENABLE_OHCI1
-    //_ohci1->HcMiscControl |= USBH_HcMiscControl_OCAL_Msk; /* Over-current active low */
+#if defined ENABLE_EHCI || defined ENABLE_OHCI1
+
+    if (_ovc_active_high)
+    {
+        /* Over-current active high */
+        HSOTG_SET_VBUS_OC_POL(HSOTG_VBUS_OC_VALID_HIGH);
+        HSOTG_SET_VBUS_STS_POL(HSOTG_VBUS_ST_VALID_LOW);
+    }
+    else
+    {
+        /* Over-current active Low */
+        HSOTG_SET_VBUS_OC_POL(HSOTG_VBUS_OC_VALID_LOW);
+        HSOTG_SET_VBUS_STS_POL(HSOTG_VBUS_ST_VALID_HIGH);
+    }
+
 #endif
     //_ohci->HcMiscControl &= ~USBH_HcMiscControl_OCAL_Msk; /* Over-current active high */
 
@@ -160,6 +173,7 @@ void usbh_suspend()
 #endif
 
 #ifdef ENABLE_OHCI0
+    uint32_t ohci0_HcControl_tamp = 0;
 
     /* port is hydra */
     /* set port suspend if connected */
@@ -177,15 +191,17 @@ void usbh_suspend()
     _ohci0->HcInterruptEnable =  USBH_HcInterruptEnable_RHSC_Msk | USBH_HcInterruptEnable_RD_Msk;
 
     /* set Host Controller enter suspend state */
-    _ohci0->HcControl = (_ohci0->HcControl & ~USBH_HcControl_HCFS_Msk) | (3 << USBH_HcControl_HCFS_Pos);
+    ohci0_HcControl_tamp = _ohci0->HcControl;
+    _ohci0->HcControl = ((ohci0_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (3 << USBH_HcControl_HCFS_Pos));
 #endif
 
 #ifdef ENABLE_OHCI1
+    uint32_t ohci1_HcControl_tamp = 0;
 
     /* port is Synopsys */
     /* set port suspend if deivce has been not connected */
-    //    if (_ohci1->HcRhPortStatus[0] & USBH_HcRhPortStatus_CCS_Msk)
-    //        _ohci1->HcRhPortStatus[0] = USBH_HcRhPortStatus_PSS_Msk;    /* set port suspend    */
+    if ((_ohci1->HcRhPortStatus[0] & ~USBH_HcRhPortStatus_CCS_Msk) == 0)
+        _ohci1->HcRhPortStatus[0] = USBH_HcRhPortStatus_PSS_Msk;    /* set port suspend    */
 
     //    /* for Enhanced using */
     //    if (_ohci1->HcRhPortStatus[1] & USBH_HcRhPortStatus_CCS_Msk)
@@ -198,7 +214,8 @@ void usbh_suspend()
     _ohci1->HcInterruptEnable =  USBH_HcInterruptEnable_RHSC_Msk | USBH_HcInterruptEnable_RD_Msk;
 
     /* set Host Controller enter suspend state */
-    _ohci1->HcControl = (_ohci1->HcControl & ~USBH_HcControl_HCFS_Msk) | (3 << USBH_HcControl_HCFS_Pos);
+    ohci1_HcControl_tamp = _ohci1->HcControl;
+    _ohci1->HcControl = ((ohci1_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (3 << USBH_HcControl_HCFS_Pos));
 #endif
 
 #ifdef ENABLE_EHCI
@@ -239,8 +256,10 @@ void usbh_suspend()
 void usbh_resume(void)
 {
 #ifdef ENABLE_OHCI0
+    uint32_t ohci0_HcControl_tamp = 0;
     /*hydra*/
-    _ohci0->HcControl = (_ohci0->HcControl & ~USBH_HcControl_HCFS_Msk) | (1 << USBH_HcControl_HCFS_Pos);
+    ohci0_HcControl_tamp = _ohci0->HcControl;
+    _ohci0->HcControl = (ohci0_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (1 << USBH_HcControl_HCFS_Pos);
 
     if (_ohci0->HcRhPortStatus[0] & USBH_HcRhPortStatus_PSS_Msk)
         _ohci0->HcRhPortStatus[0] = USBH_HcRhPortStatus_POCI_Msk;   /* clear suspend status */
@@ -252,15 +271,32 @@ void usbh_resume(void)
     delay_us(30000);                       /* wait at least 20ms for Host to resume device */
 
     /* enter operational state */
-    _ohci0->HcControl = (_ohci0->HcControl & ~USBH_HcControl_HCFS_Msk) | (2 << USBH_HcControl_HCFS_Pos);
+    ohci0_HcControl_tamp = _ohci0->HcControl;
+    _ohci0->HcControl = (ohci0_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (2 << USBH_HcControl_HCFS_Pos);
+#endif
+
+#ifdef ENABLE_EHCI
+
+    _ehci->UCMDR = ehci_UCMDR;
+
+    if (_ehci->UPSCR[0] & HSUSBH_UPSCR_PE_Msk)
+    {
+        _ehci->UPSCR[0] |= HSUSBH_UPSCR_FPR_Msk;
+        delay_us(25000);                         /* keep resume signal for 20 ms */
+        _ehci->UPSCR[0] &= ~HSUSBH_UPSCR_FPR_Msk;
+    }
+
+    delay_us(1000);
 #endif
 
 #ifdef ENABLE_OHCI1
+    uint32_t ohci1_HcControl_tamp = 0;
     /*Synopsys*/
-    _ohci1->HcControl = (_ohci1->HcControl & ~USBH_HcControl_HCFS_Msk) | (1 << USBH_HcControl_HCFS_Pos);
+    ohci1_HcControl_tamp = _ohci1->HcControl;
+    _ohci1->HcControl = (ohci1_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (1 << USBH_HcControl_HCFS_Pos);
 
-    //    if (_ohci1->HcRhPortStatus[0] & USBH_HcRhPortStatus_PSS_Msk)
-    //        _ohci1->HcRhPortStatus[0] = USBH_HcRhPortStatus_POCI_Msk;   /* clear suspend status */
+    if (_ohci1->HcRhPortStatus[0] & USBH_HcRhPortStatus_PSS_Msk)
+        _ohci1->HcRhPortStatus[0] = USBH_HcRhPortStatus_POCI_Msk;   /* clear suspend status */
 
     /* for Enhanced using */
     //    if (_ohci1->HcRhPortStatus[1] & USBH_HcRhPortStatus_PSS_Msk)
@@ -269,17 +305,99 @@ void usbh_resume(void)
     delay_us(30000);                       /* wait at least 20ms for Host to resume device */
 
     /* enter operational state */
-    _ohci1->HcControl = (_ohci1->HcControl & ~USBH_HcControl_HCFS_Msk) | (2 << USBH_HcControl_HCFS_Pos);
+    ohci1_HcControl_tamp = _ohci1->HcControl;
+    _ohci1->HcControl = (ohci1_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (2 << USBH_HcControl_HCFS_Pos);
+#endif
+
+
+}
+
+void usbh_core_deinit(void)
+{
+    int   time_out = 10;   /* ms */
+
+#ifdef ENABLE_OHCI0
+    uint32_t ohci0_HcControl_tamp = 0;
+    /*hydra*/
+    //disable ohci irq
+    DISABLE_OHCI0_IRQ();
+    //disable ohci mode.
+    ohci0_HcControl_tamp = _ohci0->HcControl;
+    _ohci0->HcControl = (ohci0_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (3 << USBH_HcControl_HCFS_Pos);
+
+    while (time_out > 0)
+    {
+        if (((_ohci0->HcControl & (3 << USBH_HcControl_HCFS_Pos)) == (3 << USBH_HcControl_HCFS_Pos)) && !(_ohci0->HcCommandStatus & USBH1_HcCommandStatus_HCR_Msk))
+        {
+            printf("ohci0_deinit done\n");
+            break;
+        }
+
+        delay_us(1000);         /* wait 1 ms */
+        time_out --;
+    }
+
+    if (time_out == 0)
+    {
+        USB_error("ohci0_deinit - HCFS error!\n");
+    }
+
+    delay_us(20000);                       /* wait at least 20ms */
+#endif
+
+#ifdef ENABLE_OHCI1
+    time_out = 10; /* ms */
+    uint32_t ohci1_HcControl_tamp = 0;
+    /*Synopsys*/
+    //disable ohci irq
+    DISABLE_OHCI1_IRQ();
+    //disable ohci mode.
+    ohci1_HcControl_tamp = _ohci1->HcControl;
+    _ohci1->HcControl = ((ohci1_HcControl_tamp & ~USBH_HcControl_HCFS_Msk) | (3 << USBH_HcControl_HCFS_Pos));
+
+    while (time_out > 0)
+    {
+        if (((_ohci1->HcControl & (3 << USBH_HcControl_HCFS_Pos)) == (3 << USBH_HcControl_HCFS_Pos)) && !(_ohci1->HcCommandStatus & USBH1_HcCommandStatus_HCR_Msk))
+        {
+            printf("ohci1_deinit done\n");
+            break;
+        }
+
+        delay_us(1000);         /* wait 1 ms */
+        time_out --;
+    }
+
+    if (time_out == 0)
+    {
+        USB_error("ohci1_deinit - HCFS error!\n");
+    }
+
+    delay_us(20000);                       /* wait at least 20ms */
 #endif
 
 #ifdef ENABLE_EHCI
-    _ehci->UCMDR = ehci_UCMDR;
+    time_out = 10; /* ms */
+    /*Synopsys*/
+    //disable ehci irq
+    DISABLE_EHCI_IRQ();
+    //disable ehci mode.
+    _ehci->UCMDR &= ~(HSUSBH_UCMDR_PSEN_Msk | HSUSBH_UCMDR_ASEN_Msk | HSUSBH_UCMDR_RUN_Msk);
 
-    if (_ehci->UPSCR[0] & HSUSBH_UPSCR_PE_Msk)
+    while (time_out > 0)
     {
-        _ehci->UPSCR[0] |= HSUSBH_UPSCR_FPR_Msk;
-        delay_us(25000);                         /* keep resume signal for 20 ms */
-        _ehci->UPSCR[0] &= ~HSUSBH_UPSCR_FPR_Msk;
+        if (!(_ehci->UCMDR & HSUSBH_UCMDR_RUN_Msk) && (_ehci->USTSR & HSUSBH_USTSR_HCHalted_Msk))
+        {
+            printf("ehci_deinit done\n");
+            break;
+        }
+
+        delay_us(1000);         /* wait 1 ms */
+        time_out --;
+    }
+
+    if (time_out == 0)
+    {
+        USB_error("ehci_deinit - RUN/HCHalted error!\n");
     }
 
     delay_us(1000);

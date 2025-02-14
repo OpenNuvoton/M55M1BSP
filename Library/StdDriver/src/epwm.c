@@ -139,12 +139,7 @@ uint32_t EPWM_ConfigOutputChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t
         u32Src = CLK->EPWMSEL & CLK_EPWMSEL_EPWM1SEL_Msk;
     }
 
-    if (u32Src == 1U)
-    {
-        /* clock source is from HCLK0 clock */
-        u32EPWMClockSrc = CLK_GetHCLK0Freq();
-    }
-    else
+    if (u32Src == 0U)
     {
         /* clock source is from PCLK */
         SystemCoreClockUpdate();
@@ -157,6 +152,11 @@ uint32_t EPWM_ConfigOutputChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t
         {
             u32EPWMClockSrc = CLK_GetPCLK2Freq();
         }
+    }
+    else
+    {
+        /* clock source is from HCLK0 clock */
+        u32EPWMClockSrc = CLK_GetHCLK0Freq();
     }
 
     for (u32Prescale = 1U; u32Prescale < 0xFFFU; u32Prescale++)  /* prescale could be 0~0xFFF */

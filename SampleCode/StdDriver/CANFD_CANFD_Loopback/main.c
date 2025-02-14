@@ -77,6 +77,7 @@ void SYS_Init(void)
 
     /* Select CAN FD0 clock source is APLL0/2 */
     CLK_SetModuleClock(CANFD0_MODULE, CLK_CANFDSEL_CANFD0SEL_APLL0_DIV2, CLK_CANFDDIV_CANFD0DIV(1));
+
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
@@ -87,7 +88,6 @@ void SYS_Init(void)
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
-
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -154,7 +154,7 @@ void CANFD_CANFD_Loopback(void)
 {
     uint8_t u8Loop;
     CANFD_FD_T sCANFD_Config;
-    /*Use defined configuration */
+    /* Use defined configuration */
     sCANFD_Config.sElemSize.u32UserDef = 0;
     CANFD_GetDefaultConfig(&sCANFD_Config, CANFD_OP_CAN_FD_MODE);
     sCANFD_Config.sBtConfig.bEnableLoopBack = TRUE;
@@ -175,13 +175,13 @@ void CANFD_CANFD_Loopback(void)
     CANFD_SetXIDFltr(CANFD0, 1, CANFD_RX_FIFO1_EXT_MASK_LOW(0x3333), CANFD_RX_FIFO1_EXT_MASK_HIGH(0x1FFFFFFF));
     /* receive 0x44444 (29-bit id) in CAN FD0 rx fifo buffer by setting mask 2 */
     CANFD_SetXIDFltr(CANFD0, 2, CANFD_RX_FIFO1_EXT_MASK_LOW(0x44444), CANFD_RX_FIFO1_EXT_MASK_HIGH(0x1FFFFFFF));
-    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo1)*/
+    /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo1) */
     CANFD_SetGFC(CANFD0, eCANFD_REJ_NON_MATCH_FRM, eCANFD_REJ_NON_MATCH_FRM, 1, 1);
-    /* Enable RX fifo1 new message interrupt using interrupt line 0. */
+    /* Enable RX fifo1 new message interrupt using interrupt line 0 */
     CANFD_EnableInt(CANFD0, (CANFD_IE_TOOE_Msk | CANFD_IE_RF1NE_Msk), 0, 0, 0);
-    /* Enable CANFD0 IRQ00 Handler*/
+    /* Enable CANFD0 IRQ00 Handler */
     NVIC_EnableIRQ(CANFD00_IRQn);
-    /* CAN FD0 Run to Normal mode  */
+    /* CAN FD0 Run to Normal mode */
     CANFD_RunToNormal(CANFD0, TRUE);
 
     for (u8Loop = 0  ; u8Loop < 8; u8Loop++)
@@ -217,12 +217,14 @@ int32_t main(void)
 #endif
     /* Init Debug UART for printf */
     InitDebugUart();
+
     /* Lock protected registers */
     SYS_LockReg();
 
     printf("\n CAN FD Mode Loopback example\r\n");
     /* CAN FD Loopback Test */
     CANFD_CANFD_Loopback();
+
     printf("\n CAN FD Mode Loopback Test Done\r\n");
 
     while (1) {}

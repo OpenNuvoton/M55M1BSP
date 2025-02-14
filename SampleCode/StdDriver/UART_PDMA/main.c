@@ -20,8 +20,16 @@
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t UART_TEST_LENGTH = 64;
-uint8_t SrcArray[64];
-uint8_t DestArray[64];
+
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    uint8_t SrcArray[DCACHE_ALIGN_LINE_SIZE(64)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    uint8_t DestArray[DCACHE_ALIGN_LINE_SIZE(64)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#else
+    uint8_t SrcArray[64] __attribute__((aligned));
+    uint8_t DestArray[64] __attribute__((aligned));
+#endif
+
 volatile int32_t IntCnt;
 volatile int32_t IsTestOver;
 volatile uint32_t g_u32TwoChannelPdmaTest = 0;
@@ -86,11 +94,11 @@ void PDMA0_UART_TxTest(void)
     /* Set source/destination address and attributes */
     PDMA_SetTransferAddr(PDMA0, UART_TX_DMA_CH, (uint32_t)SrcArray, PDMA_SAR_INC, (uint32_t)&UART1->DAT, PDMA_DAR_FIX);
 
-    /* Set request source; set basic mode. */
-    PDMA_SetTransferMode(PDMA0, UART_TX_DMA_CH, PDMA_UART1_TX, FALSE, 0);
-
     /* Single request type */
     PDMA_SetBurstType(PDMA0, UART_TX_DMA_CH, PDMA_REQ_SINGLE, 0);
+
+    /* Set request source; set basic mode. */
+    PDMA_SetTransferMode(PDMA0, UART_TX_DMA_CH, PDMA_UART1_TX, FALSE, 0);
 
     /* Disable table interrupt */
     PDMA_DisableInt(PDMA0, UART_TX_DMA_CH, PDMA_INT_TEMPTY);
@@ -104,15 +112,18 @@ void PDMA0_UART_RxTest(void)
     /* UART Rx PDMA0 channel configuration */
     /* Set transfer width (8 bits) and transfer count */
     PDMA_SetTransferCnt(PDMA0, UART_RX_DMA_CH, PDMA_WIDTH_8, UART_TEST_LENGTH);
-
+#if (NVT_DCACHE_ON == 1)
+    /* Clean the data cache for the destination buffer of UART PDMA RX channel */
+    SCB_InvalidateDCache_by_Addr(&DestArray, sizeof(DestArray));
+#endif
     /* Set source/destination address and attributes */
     PDMA_SetTransferAddr(PDMA0, UART_RX_DMA_CH, (uint32_t)&UART1->DAT, PDMA_SAR_FIX, (uint32_t)DestArray, PDMA_DAR_INC);
 
-    /* Set request source; set basic mode. */
-    PDMA_SetTransferMode(PDMA0, UART_RX_DMA_CH, PDMA_UART1_RX, FALSE, 0);
-
     /* Single request type */
     PDMA_SetBurstType(PDMA0, UART_RX_DMA_CH, PDMA_REQ_SINGLE, 0);
+
+    /* Set request source; set basic mode. */
+    PDMA_SetTransferMode(PDMA0, UART_RX_DMA_CH, PDMA_UART1_RX, FALSE, 0);
 
     /* Disable table interrupt */
     PDMA_DisableInt(PDMA0, UART_RX_DMA_CH, PDMA_INT_TEMPTY);
@@ -239,6 +250,13 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
 /*---------------------------------------------------------------------------------------------------------*/
 void PDMA_UART(int32_t i32option)
 {
+#if (NVT_DCACHE_ON == 1)
+    /* If DCACHE is enabled, clean the data cache for the two buffers before writing to them and enabling DMA */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_CleanDCache_by_Addr((uint32_t *)&SrcArray, sizeof(SrcArray));
+    SCB_CleanDCache_by_Addr((uint32_t *)&DestArray, sizeof(DestArray));
+#endif
+
     /* Source data initiation */
     BuildSrcPattern((uint32_t)SrcArray, UART_TEST_LENGTH);
     ClearBuf((uint32_t)DestArray, UART_TEST_LENGTH, 0xFF);
@@ -350,14 +368,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */

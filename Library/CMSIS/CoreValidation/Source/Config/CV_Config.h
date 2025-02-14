@@ -2,13 +2,22 @@
  *      Name:         CV_Config.h
  *      Purpose:      CV Config header
  *----------------------------------------------------------------------------
- *      Copyright (c) 2017 - 2018 Arm Limited. All rights reserved.
+ *      Copyright (c) 2017 - 2024 Arm Limited. All rights reserved.
  *----------------------------------------------------------------------------*/
 #ifndef __CV_CONFIG_H
 #define __CV_CONFIG_H
 
 #include "RTE_Components.h"
 #include CMSIS_device_header
+
+#define RTE_CV_COREINSTR 1
+#define RTE_CV_COREFUNC  1
+#define RTE_CV_CORESIMD  1
+#define RTE_CV_MPUFUNC   (__MPU_PRESENT)
+#if ((defined (__ICACHE_PRESENT) && (__ICACHE_PRESENT == 1U)) || \
+     (defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)))
+#define RTE_CV_L1CACHE   (__ICACHE_PRESENT || __DCACHE_PRESENT)
+#endif
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 
@@ -68,6 +77,10 @@
 #define TC_COREINSTR_LOADSTOREACQUIRE_EN           1
 // <q0> TC_CoreInstr_LoadStoreAcquireExclusive
 #define TC_COREINSTR_LOADSTOREACQUIREEXCLUSIVE_EN  1
+// <q0> TC_CoreInstr_UnalignedUint16
+#define TC_COREINSTR_UNALIGNEDUINT16_EN            1
+// <q0> TC_CoreInstr_UnalignedUint32
+#define TC_COREINSTR_UNALIGNEDUINT32_EN            1
 
 // <q0> TC_CoreSimd_SatAddSub
 #define TC_CORESIMD_SATADDSUB_EN                   1

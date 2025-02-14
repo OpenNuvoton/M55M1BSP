@@ -21,9 +21,9 @@
 
 
 /* Standard IO device name defines. */
-const char __stdin_name[] __attribute__((aligned(4)))  = "STDIN";
-const char __stdout_name[] __attribute__((aligned(4))) = "STDOUT";
-const char __stderr_name[] __attribute__((aligned(4))) = "STDERR";
+const __ALIGNED(4) char __stdin_name [] = "STDIN";
+const __ALIGNED(4) char __stdout_name[] = "STDOUT";
+const __ALIGNED(4) char __stderr_name[] = "STDERR";
 
 FILEHANDLE RETARGET(_open)(const char *name, int openmode)
 {
@@ -197,23 +197,14 @@ char *RETARGET(_command_string)(char *cmd, int len)
 
 void RETARGET(_exit)(int return_code)
 {
-    char exit_code_buffer[64] = {0};
+    char exit_code_buffer[32] = {0};
     const char *p             = exit_code_buffer;
 
     // Print out the exit code on the uart so any reader know how we exit.
-
-    /* By appending 0x04, ASCII for end-of-transmission the FVP model exits,
-     * if the configuration parameter shutdown_on_eot on the uart is enabled.
-     * For some versions of FVP, the shutdown_on_eot is broken, but the same
-     * behaviour can be created by passing specifying a shutdown_tag= for the
-     * uart when starting the model so that is added last as well.
-     */
-
     snprintf(exit_code_buffer,
              sizeof(exit_code_buffer),
-             "Application exit code: %d.\n" // Let the readers know how we exit
-             "\04\n"                        // end-of-transmission
-             "EXITTHESIM\n",                // shutdown_tag
+             "Exit code: %d.\n"      // Let the readers know how we exit
+             "\04\n",                // end-of-transmission
              return_code);
 
     while (*p != '\0')
@@ -225,13 +216,12 @@ void RETARGET(_exit)(int return_code)
 }
 
 /**
- * @brief    C library retargetting
+ * @brief     C library retargetting
+ *            This function writes a character to the console.
  *
- * @param[in]  ch  Write a character data
+ * @param[in] ch: Write a character data
  *
- * @returns  None
- *
- * @details  Check if message finished (FIFO empty of debug port)
+ * @returns   None
  */
 
 void _ttywrch(int ch)
@@ -251,7 +241,7 @@ void abort(void)
 __attribute__((weak, noreturn))
 void __aeabi_assert(const char *expr, const char *file, int line)
 {
-    char str[12], * p;
+    char str[12], *p;
 
     fputs("*** assertion failed: ", stderr);
     fputs(expr, stderr);

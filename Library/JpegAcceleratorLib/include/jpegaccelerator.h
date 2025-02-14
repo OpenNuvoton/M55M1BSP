@@ -1,12 +1,12 @@
 /**************************************************************************//**
- * @file     simd_helium.h
+ * @file     jpegaccelerator.h
  * @version  V1.00
- * @brief    Libjpeg simd porting related header
+ * @brief    Libjpeg accelerator porting related header
  *
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
-#ifndef  __SIMD_HELIUM_H__
-#define  __SIMD_HELIUM_H__
+#ifndef  __JPEGACCELERATOR_H__
+#define  __JPEGACCELERATOR_H__
 #include <arm_mve.h>
 #include <stdlib.h>
 #include <inttypes.h>

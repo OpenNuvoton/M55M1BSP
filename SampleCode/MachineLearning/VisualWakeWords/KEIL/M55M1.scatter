@@ -22,52 +22,29 @@
  */
 
 /*
- * This is a simplified picture of the NuMicro TC8263 memory system.
- * Please refer to the NuMicro M55M1 Technical Reference Manual for
- * further information.
- *
- *
- * +---------------+   +---------------+  +--------------------------+
- * | Ethos-U55     |   | Cortex-M55    +--+ ITCM (Shared with SRAM2) |
- * |               |   |               |  +--------------------------+
- * |               |   |               |
- * |               |   |               |  +--------------------------+ 
- * |  M1      M0   |   |               +--+ DTCM (Shared with SRAM2) |
- * +---+-------+---+   +-------+-------+  +--------------------------+
- *     |       |               |
- *     |   +---+---------------+-------+
- *     |   |   AMBA AXI NIC-400-Lite   |
- *     |   +---+--------+---------+----+
- *     |       |        |         |
- * +---+-------+--+ +---+---+ +---+---+
- * | AMBA AHB     | | SRAM0 | | SRAM2 |
- * +---+----------+ | SRAM1 | +-------+
- *     |            +-------+
- * +---+---+ 
- * | FLASH |
- * +-------+
- *
  * +-----------------------+-------------+-------------+----+------------------------------------------------+
  * |  Memory region name   | Base addr   |    Size     |IDAU| Description                                    |
  * +-----------------------+-------------+-------------+----+------------------------------------------------+
- * | ITCM                  | 0x0000_0000 | 0x0002_0000 | S  | 128 kiB.                                       |
- * | ITCM                  | 0x1000_0000 | 0x0002_0000 | NS | Non-Secure alias for ITCM                      |
+ * | ITCM                  | 0x0000_0000 | 0x0001_0000 | S  | 64 kiB.                                        |
+ * | ITCM                  | 0x1000_0000 | 0x0001_0000 | NS | Non-Secure alias for ITCM                      |
  * | FLASH                 | 0x0010_0000 | 0x0020_0000 | S  | 2 MiB                                          |
  * | FLASH                 | 0x1010_0000 | 0x0020_0000 | NS | Non-Secure alias for Flash                     |
  * | DTCM                  | 0x2000_0000 | 0x0002_0000 | S  | 128 kiB                                        |
  * | DTCM                  | 0x3000_0000 | 0x0002_0000 | NS | Non-Secure alias for DTCM                      |
- * | SRAM01                | 0x2010_0000 | 0x0010_0000 | S  | 2 banks of 512 kiB; (3cc latency)              |
+ * | SRAM01                | 0x2010_0000 | 0x0010_0000 | S  | 1 MiB                                          |
  * | SRAM01                | 0x3010_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01                    |
- * | SRAM2                 | 0x2020_0000 | 0x0008_0000 | S  | 512 kiB                                        |
- * | SRAM2                 | 0x3020_0000 | 0x0008_0000 | NS | Non-Secure alias for SRAM2                     |
- * | SRAM3                 | 0x2030_0000 | 0x0002_0000 | S  | 512 kiB                                        |
+ * | SRAM2                 | 0x2020_0000 | 0x0005_0000 | S  | 320 kiB                                        |
+ * | SRAM2                 | 0x3020_0000 | 0x0005_0000 | NS | Non-Secure alias for SRAM2                     |
+ * | SRAM3                 | 0x2030_0000 | 0x0002_0000 | S  | 8 kiB                                          |
  * | SRAM3                 | 0x3030_0000 | 0x0002_0000 | NS | Non-Secure alias for SRAM3                     |
- * | LPSRAM                | 0x2031_0000 | 0x0008_0000 | S  | 512 kiB                                        |
- * | LPSRAM                | 0x3031_0000 | 0x0008_0000 | NS | Non-Secure alias for LPSRAM                    |
+ * | LPSRAM                | 0x2031_0000 | 0x0002_0000 | S  | 8 kiB                                          |
+ * | LPSRAM                | 0x3031_0000 | 0x0002_0000 | NS | Non-Secure alias for LPSRAM                    |
  * | EBI                   | 0x6000_0000 | 0x0030_0000 | S  | 3 MiB                                          |
  * | EBI                   | 0x7000_0000 | 0x0030_0000 | NS | Non-Secure alias for EBI                       |
- * | SPIM0                 | 0x8000_0000 | 0x0200_0000 | S  | 32 MiB                                         |
- * | SPIM0                 | 0x9000_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0                     |
+ * | SRAM01(aliased)       | 0x81F0_0000 | 0x0010_0000 | S  | 1 MiB                                          |
+ * | SRAM01(aliased)       | 0x91F0_0000 | 0x0010_0000 | NS | Non-Secure alias for SRAM01                    |
+ * | SPIM0                 | 0x8200_0000 | 0x0200_0000 | S  | 32 MiB                                         |
+ * | SPIM0                 | 0x9200_0000 | 0x0200_0000 | NS | Non-Secure alias for SPIM0                     |
  * +-----------------------+-------------+-------------+----+------------------------------------------------+
  *
  *  Note: Ethos-U55 can access Flash, internal SRAM 0,1 => activation buffers and
@@ -76,9 +53,6 @@
  *  Note: Alias regions means that secure and non-secure addresses are mapped to the same physical
  *        memory banks.
  */
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#include "partition_M55M1.h"
-#endif
 
 #ifndef STACK_SIZE
 #define STACK_SIZE 0xa000
@@ -89,21 +63,27 @@
 #endif
 
 #define ITCM_START      0x00000000
-#define ITCM_SIZE       0x00000000
+#define ITCM_SIZE       0x00010000
 #define DTCM_START      0x20000000
 #define DTCM_SIZE       0x00020000
 
 #define FLASH_START     0x00100000
-#define FLASH_SIZE      0x00100000
+#define FLASH_SIZE      0x00200000
 
 /* SRAM012 */
-#define SRAM012_START    0x20100000
-#define SRAM012_SIZE     0x00150000
+#define SRAM012_START	0x20100000
+#define SRAM012_SIZE	0x00150000
 
-#define SPIM0_START      0x80000000
+/* SRAM012 */
+#define SRAM2_START		0x20200000
+#define SRAM2_SIZE		0x00050000
+
+/* SRAM01 aliased */
+#define SRAM01_ALIASE_START    0x81F00000
+#define SRAM01_ALIASE_SIZE     0x00100000
+
+#define SPIM0_START      0x82000000
 #define SPIM0_SIZE       0x02000000
-#define SPIM1_START      0x82000000
-#define SPIM1_SIZE       0x02000000
 
 
 //#define STACK_HEAP       0x20180000
@@ -124,11 +104,7 @@
 /* ----------------------------------------------------------------------------
   Stack seal size definition
  *----------------------------------------------------------------------------*/
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-#define __STACKSEAL_SIZE   ( 8 )
-#else
 #define __STACKSEAL_SIZE   ( 0 )
-#endif
 
 APP_IMAGE FLASH_START FLASH_SIZE
 {
@@ -148,30 +124,19 @@ APP_IMAGE FLASH_START FLASH_SIZE
 		ethosu_*.o
 	}
 
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-    ; ITCM 128 KB shared with SRAM2
-    ; Only accessible from the Cortex-M
-    ITCM ITCM_START (ITCM_SIZE - TZ_NSC_SIZE)
-    {
-        .ANY (itcm)
-    }
-
-    NSC_ROM TZ_NSC_START TZ_NSC_SIZE
-    {
-        .ANY (Veneer$$CMSE)
-    }
-#else
     ITCM ITCM_START ITCM_SIZE
     {
-        .ANY (itcm)
+        ..\..\..\..\ThirdParty\openmv\omv\Lib\omv.lib
     }
-#endif
-    ; DTCM 128 KB shared with SRAM2
+
+	; DTCM 128 KB shared with SRAM2
     ; Only accessible from the Cortex-M
 #if (DTCM_SIZE > (STACK_SIZE + HEAP_SIZE + __STACKSEAL_SIZE))
 	DTCM DTCM_START (DTCM_SIZE - STACK_SIZE - HEAP_SIZE - __STACKSEAL_SIZE)
     {
         .ANY (+RW +ZI)
+        .ANY (DTCM.Init)
+        .ANY (.bss.DTCM.ZeroInit)
     }
 #endif
 
@@ -179,25 +144,32 @@ APP_IMAGE FLASH_START FLASH_SIZE
     ARM_LIB_HEAP  __HEAP_BASE EMPTY  HEAP_SIZE {}		; Reserve empty region for heap
 #endif
 
-    SRAM012 SRAM012_START UNINIT SRAM012_SIZE
+    SRAM_NONCACHEABLE SRAM012_START SRAM012_SIZE
+    {
+        .ANY (NonCacheable.Init)
+        .ANY (.bss.NonCacheable.ZeroInit)
+    }
+    ; Empty section to get maximum size of NonCacheable region with Image$$SRAM_NONCACHEABLE_END$$Base
+    SRAM_NONCACHEABLE_END AlignExpr(+0, 1024)
+    {
+        .ANY (SRAM_NONCACHEABLE_END)
+    }
+    SRAM012_CACHEABLE AlignExpr(+0, 32) UNINIT
     {
         .ANY (.bss.sram.data)
-        ; Place tensor arena in SRAM if we do not have a fast memory area
-        .ANY1 (.bss.NoInit.activation_buf_sram)
-    }
-
-    HYPERRAM SPIM0_START UNINIT SPIM0_SIZE
-    {
         ; Place tensor arena in SRAM if we do not have a fast memory area
         .ANY (.bss.NoInit.activation_buf_sram)
     }
 
+    ; Check SRAM size overflow here and ImageLength is uncompressed size
+    ScatterAssert((ImageLength(SRAM_NONCACHEABLE) + ImageLength(SRAM012_CACHEABLE)) < (SRAM012_SIZE))
+
+	HYPERRAM SPIM0_START UNINIT SPIM0_SIZE
+    {
+        .ANY (.bss.vram.data)
+    }
+
     ARM_LIB_STACK __STACK_TOP EMPTY - STACK_SIZE {}     ; Reserve empty region for stack
 
-#if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
-    STACKSEAL +0 EMPTY __STACKSEAL_SIZE {
-        ; Reserve empty region for stack seal immediately after stack
-    }
-#endif
 }
 	

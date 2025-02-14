@@ -15,18 +15,28 @@
 extern "C" {
 #endif
 
+#define USING_UART0    1
+
 #if defined (__ICCARM__)
 //#pragma diag_suppress=Be006
 #endif
 /*---------------------------------------------------------------------------------------------------------*/
 /* Macro Definition                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
+#ifndef NVT_DCACHE_ON
+#define NVT_DCACHE_ON       1                   /*!< Set 1 to enable data cache or 0 to disable data cache */
+#endif
+
 #ifndef DEBUG_PORT
 #if (USING_UART0 == 1)
-#define DEBUG_PORT              UART0             /*!< Set default Debug UART Port used for retarget.c to output debug message */
+#define DEBUG_PORT              UART0           /*!< Set default Debug UART Port used for retarget.c to output debug message */
 #else
-#define DEBUG_PORT              UART6             /*!< Set default Debug UART Port used for retarget.c to output debug message */
+#define DEBUG_PORT              UART6           /*!< Set default Debug UART Port used for retarget.c to output debug message */
 #endif
+#endif
+
+#ifndef CHECK_SCU_VIOLATION
+#define CHECK_SCU_VIOLATION     0               /*!< Set default SCU violation check disabled */
 #endif
 
 #if (USING_UART0 == 1)
@@ -47,21 +57,36 @@ extern "C" {
 #define DCACHE_LINE_SIZE                        (__SCB_DCACHE_LINE_SIZE)    /*!< DCache line byte size              */
 #define DCACHE_ALIGN_LINE_SIZE(u32ByteSize)     (((u32ByteSize) + (DCACHE_LINE_SIZE) - 1) & ~((DCACHE_LINE_SIZE) - 1))  /* Align to DCache line size */
 
-#define NVT_ITCM                                __attribute__((section("ITCM")))                 /*!< Placed declaration code in ITCM region */
-#define NVT_DTCM_INIT                           __attribute__((section("DTCM.Init")))            /*!< Placed declaration data in DTCM region */
-#define NVT_NONCACHEABLE_INIT                   __attribute__((section("NonCacheable.Init")))    /*!< Placed declaration data in NonCacheable region */
+#define NVT_UNUSED(x)                           (void)(x)                                               /*!< To suppress the unused parameter warnings      */
+#define NVT_ITCM                                __attribute__((section("ITCM")))                        /*!< Placed declaration code in ITCM region         */
+#define NVT_DTCM_INIT                           __attribute__((section("DTCM.Init")))                   /*!< Placed declaration data in DTCM region         */
+#define NVT_NONCACHEABLE_INIT                   __attribute__((section("NonCacheable.Init")))           /*!< Placed declaration data in NonCacheable region */
+#define NVT_DTCM_VTOR                           __attribute__((section("DTCM.VTOR")))                   /*!< Placed vector table in DTCM region             */
+
+#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (NVT_DCACHE_ON == 1)
+/* If D-Cache is enabled, placed NVT_NONCACHEABLE in predefined non-cacheable section. */
+#define NVT_NONCACHEABLE                __attribute__((section(".NonCacheable.ZeroInit")))      /*!< Placed declaration data in NonCacheable region */
+#else   // (NVT_DCACHE_ON == 0)
+/* If D-Cache is disabled, placed NVT_NONCACHEABLE in bss section. */
+#define NVT_NONCACHEABLE                __attribute__((section(".bss.NonCacheable.ZeroInit")))  /*!< Placed declaration data in bss region          */
+#endif
+
+#define NVT_DTCM                            __attribute__((section(".DTCM.ZeroInit")))              /*!< Placed declaration data in DTCM region         */
+#define NVT_NOINIT                          __attribute__((section(".noinit")))                     /*!< Placed variables in the UNINIT region          */
+#else
 /* https://developer.arm.com/documentation/ka003046 */
 /* Arm Compiler 6 only creates ZI sections, if the section name starts with ".bss". */
-#define NVT_DTCM                                __attribute__((section(".bss.DTCM.ZeroInit")))          /*!< Placed declaration data in DTCM region */
-#define NVT_NONCACHEABLE                        __attribute__((section(".bss.NonCacheable.ZeroInit")))  /*!< Placed declaration data in NonCacheable region */
-#define NVT_DTCM_VTOR                           __attribute__((section("DTCM.VTOR")))
-#define NVT_UNUSED(x)                           (void)(x)
+#define NVT_NONCACHEABLE                    __attribute__((section(".bss.NonCacheable.ZeroInit")))  /*!< Placed declaration data in NonCacheable region */
+#define NVT_DTCM                            __attribute__((section(".bss.DTCM.ZeroInit")))          /*!< Placed declaration data in DTCM region         */
+#define NVT_NOINIT                          __attribute__((section(".bss.NoInit")))                 /*!< Placed variables in the UNINIT region          */
+#endif
 
-#define __PC()                                              \
+#define __PC()                                                \
     __extension__({                                           \
-        register unsigned int current_pc;                       \
-        __asm volatile("mov %0, pc" : "=r"(current_pc) : : );   \
-        current_pc;                                             \
+        register unsigned int current_pc;                     \
+        __asm volatile("mov %0, pc" : "=r"(current_pc) : : ); \
+        current_pc;                                           \
     })    /*!< Current program counter            */
 
 /*----------------------------------------------------------------------------
@@ -69,7 +94,7 @@ extern "C" {
  *----------------------------------------------------------------------------*/
 
 #ifndef __HSI
-#define __HSI       (200000000UL)         /*!< PLL default output is 200 MHz */
+#define __HSI       (220000000UL)         /*!< PLL default output is 220 MHz */
 #endif
 
 #ifndef __HXT
@@ -149,6 +174,8 @@ extern void SetDebugUartCLK(void);
  */
 extern void InitDebugUart(void);
 
+#endif /* NVT_DBG_UART_OFF */
+
 /**
  * \brief  Initialize MPU Region according to mpu_config_M55M1.h and user defined table
  */
@@ -163,8 +190,6 @@ extern int32_t SetupMPC(
     const uint32_t u32MemBaseAddr_S,  const uint32_t u32MemByteSize_S,
     const uint32_t u32MemBaseAddr_NS, const uint32_t u32MemByteSize_NS
 );
-
-#endif /* NVT_DBG_UART_OFF */
 
 #ifdef __cplusplus
 }

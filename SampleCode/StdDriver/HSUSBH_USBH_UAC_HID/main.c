@@ -35,7 +35,12 @@ static HID_DEV_T *s_hid_list[CONFIG_HID_MAX_DEV];
 
 static volatile int s_i8AuInCnt, s_i8AuOutCnt;
 
-static uint16_t g_u16VolMax, g_u16VolMin, g_u16VolRes, g_u16VolCur;
+#if (NVT_DCACHE_ON == 1)
+    //for usbh_ctrl_xfer data block using, but data size (uint16_t) < one cache line size (32B) => Non-cacheable should be ok.
+    NVT_NONCACHEABLE static uint16_t g_u16VolMax, g_u16VolMin, g_u16VolRes, g_u16VolCur;
+#else
+    static uint16_t g_u16VolMax, g_u16VolMin, g_u16VolRes, g_u16VolCur;
+#endif
 
 extern int kbhit(void);                        /* function in retarget.c                 */
 
@@ -138,8 +143,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to PLL0 and Enable PLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
 #if (USE_USB_APLL1_CLOCK)
     /* Enable APLL1 96MHz clock */
@@ -157,6 +162,11 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOH_MODULE);
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
+
+    /* Enable HSOTG module clock */
+    CLK_EnableModuleClock(HSOTG0_MODULE);
+    /* Select HSOTG PHY Reference clock frequency which is from HXT*/
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
 
 #if (USE_USB_APLL1_CLOCK)
     /* USB Host desired input clock is 48 MHz. Set as APLL1 divided by 2 (96/2 = 48) */
@@ -190,11 +200,11 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
 
-    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.8     */
-    SET_USB_VBUS_EN_PB8();
+    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.15     */
+    SET_USB_VBUS_EN_PB15();
 
-    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.9   */
-    SET_USB_VBUS_ST_PB9();
+    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.14   */
+    SET_USB_VBUS_ST_PB14();
 
     /* HSUSB_VBUS_EN (USB 2.0 VBUS power enable pin) multi-function pin - PJ.13   */
     SET_HSUSB_VBUS_EN_PJ13();
@@ -238,6 +248,7 @@ void dump_buff_hex(uint8_t *pu8Buff, int i8Bytes)
 int is_a_new_hid_device(HID_DEV_T *hdev)
 {
     int i8Cnt;
+    printf("HID new add\n");
 
     for (i8Cnt = 0; i8Cnt < CONFIG_HID_MAX_DEV; i8Cnt++)
     {
@@ -744,6 +755,9 @@ int32_t main(void)
 
         if (uac_dev == NULL)
         {
+            //update hid
+            hdev_list = usbh_hid_get_device_list();
+            update_hid_device_list(hdev_list);
             s_i8AuInCnt = 0;
             s_i8AuOutCnt = 0;
 

@@ -145,9 +145,9 @@
 			<locationURI>PARENT-1-PROJECT_LOC/descriptors.c</locationURI>
 		</link>
 		<link>
-			<name>User/diskio.c</name>
+			<name>User/diskio_USBHost.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/diskio.c</locationURI>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/Storage/diskio_USBHost.c</locationURI>
 		</link>
 		<link>
 			<name>User/main.c</name>

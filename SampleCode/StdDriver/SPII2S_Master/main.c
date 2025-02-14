@@ -12,15 +12,21 @@
 #include <string.h>
 #include "NuMicro.h"
 
-volatile uint32_t g_u32TxValue;
-volatile uint32_t g_u32DataCount;
+static volatile uint32_t g_u32TxValue = 0;
+static volatile uint32_t g_u32DataCount = 0;
 
 NVT_ITCM void SPI0_IRQHandler()
 {
     /* Write 2 TX values to TX FIFO */
     SPII2S_WRITE_TX_FIFO(SPI0, g_u32TxValue);
+    __ISB();
+    __DSB();
     SPII2S_WRITE_TX_FIFO(SPI0, g_u32TxValue);
+    __ISB();
+    __DSB();
     g_u32DataCount += 2;
+    __ISB();
+    __DSB();
 }
 
 void SYS_Init(void)
@@ -34,8 +40,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -73,18 +79,13 @@ void SYS_Init(void)
     /* Setup SPI0 multi-function pins */
     /* PA.3 is SPI0_SS,   PA.2 is SPI0_CLK,
        PA.1 is SPI0_MISO, PA.0 is SPI0_MOSI*/
-    SYS->GPA_MFP0 = (SYS->GPA_MFP0 & ~(SYS_GPA_MFP0_PA3MFP_Msk |
-                                       SYS_GPA_MFP0_PA2MFP_Msk |
-                                       SYS_GPA_MFP0_PA1MFP_Msk |
-                                       SYS_GPA_MFP0_PA0MFP_Msk)) |
-                    (SYS_GPA_MFP0_PA3MFP_SPI0_SS |
-                     SYS_GPA_MFP0_PA2MFP_SPI0_CLK |
-                     SYS_GPA_MFP0_PA1MFP_SPI0_MISO |
-                     SYS_GPA_MFP0_PA0MFP_SPI0_MOSI);
+    SET_SPI0_SS_PA3();
+    SET_SPI0_CLK_PA2();
+    SET_SPI0_MOSI_PA0();
+    SET_SPI0_MISO_PA1();
 
     /* PA.4 is SPI0_I2SMCLK */
-    SYS->GPA_MFP1 &= ~SYS_GPA_MFP1_PA4MFP_Msk;
-    SYS->GPA_MFP1 |= SYS_GPA_MFP1_PA4MFP_SPI0_I2SMCLK;
+    SET_SPI0_I2SMCLK_PA4();
 
     /* Enable SPI0 clock pin (PA2) schmitt trigger */
     PA->SMTEN |= GPIO_SMTEN_SMTEN2_Msk;
@@ -160,7 +161,7 @@ int32_t main(void)
             }
         }
 
-        if (g_u32DataCount >= 50000)
+        if (g_u32DataCount >= 500)
         {
             g_u32TxValue = 0x55005500 | ((g_u32TxValue + 0x00020002) & 0x00FF00FF); /* g_u32TxValue: 0x55005501, 0x55025503, ..., 0x55FE55FF */
             printf("TX value: 0x%X\n", g_u32TxValue);

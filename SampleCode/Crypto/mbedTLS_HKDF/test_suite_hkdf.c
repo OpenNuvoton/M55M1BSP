@@ -38,12 +38,11 @@
 
 /*----------------------------------------------------------------------------*/
 /* Headers */
-
-//#include <test/arguments.h>
 #include <test/helpers.h>
 #include <test/macros.h>
 #include <test/random.h>
 //#include <test/bignum_helpers.h>
+//#include <test/arguments.h>
 
 #include <test/psa_crypto_helpers.h>
 
@@ -274,7 +273,7 @@ char *myfgets(char *s, int n, FILE *f)
     MYFILE *myfile;
     int32_t i;
     int32_t ofs;
-    const char *pu8Base, * pu8Limit;
+    const char *pu8Base, *pu8Limit;
 
     myfile = (MYFILE *)f;
 
@@ -366,6 +365,13 @@ FILE *myfopen(char const *fname, char const *mode)
 #if defined(MBEDTLS_HKDF_C)
 #include "mbedtls/hkdf.h"
 #include "md_wrap.h"
+void dump_data(char *chptr, uint16_t len)
+{
+    for (int n = 0; n < len; n++)
+        printf("0x%02x,", chptr[n]);
+
+    printf("\r\n");
+}
 
 void dump_tlsdata(data_t *dd)
 {
@@ -377,15 +383,7 @@ void dump_tlsdata(data_t *dd)
     printf("\r\n\r\n");
 }
 
-void dump_tlsokm(data_t *e_okm, unsigned char *ucpokm)
-{
-    int ii;
 
-    for (ii = 0; ii < e_okm->len; ii++)
-        printf("%02x", ucpokm[ii]);
-
-    printf("\r\n\r\n");
-}
 
 void test_test_hkdf(int md_alg, data_t *ikm, data_t *salt, data_t *info,
                     data_t *expected_okm)
@@ -412,12 +410,65 @@ exit:
     MD_PSA_DONE();
 }
 
+void Byte2Reg_Order(char byteInput[], uint32_t volatile u32Reg[], uint16_t u16inputlen)
+{
+    char      hex;
+    int       si, ri;
+    uint32_t  i, val32;
+
+    si = 0;
+    ri = 0;
+
+    while (si < u16inputlen)
+    {
+        val32 = 0UL;
+
+        for (i = 0UL; (i < 4UL) && (si < u16inputlen); i++)
+        {
+            hex = byteInput[si];
+            val32 |= (uint32_t)hex << ((3 - i) * 8UL);
+            //printf("hex: 0x%02X, shitf:%d\n", hex, (4 - i) * 8UL);
+            si++;
+        }
+
+        u32Reg[ri++] = val32;
+        //printf("val32: 0x%08X\n", val32);
+    }
+}
+
+void DumpKey(uint32_t *pu32KeyBuf, uint32_t u32WordCnt)
+{
+    int32_t i;
+
+    printf("Derived key: ");
+
+    for (i = 0; i < u32WordCnt; i++)
+        printf("%08X", pu32KeyBuf[i]);
+
+    printf("\n");
+}
+
+void dump_tlsokm(data_t *e_okm, unsigned char *ucpokm)
+{
+    int ii;
+
+    //printf("e_okm->len=%d\r\n",e_okm->len);
+    for (ii = 0; ii < e_okm->len; ii++)
+        printf("%02x", ucpokm[ii]);
+
+    printf("\r\n\r\n");
+}
+
+
 void test_test_hkdf_sha256(data_t *ikm, data_t *salt, data_t *info,
                            data_t *expected_okm)
 {
     int ret;
+    int32_t i32RetCode = 0;
+    uint32_t g_au32Keyout[16]  = { 0 };
     size_t mylen;
     unsigned char okm[128] = { '\0' };
+    unsigned char okm_rev[128] = { '\0' };
     MD_PSA_INIT();
 
     const mbedtls_md_info_t *md = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);//0x04 for SHA256
@@ -429,12 +480,37 @@ void test_test_hkdf_sha256(data_t *ikm, data_t *salt, data_t *info,
       Since the ikm, salt, info and expected_okm are feed without testsuit,
       unhexify the char to meet mbedtls format.(with many type casting to avoid warning)
     */
-    mbedtls_test_unhexify((unsigned char *) ikm->x, (strlen((const char *)(ikm->x))), (const char *)ikm->x, &mylen);
-    mbedtls_test_unhexify((unsigned char *) salt->x, (strlen((const char *)(salt->x))), (const char *)salt->x, &mylen) ;
-    mbedtls_test_unhexify((unsigned char *) info->x, (strlen((const char *)(info->x))), (const char *)info->x, &mylen) ;
-    mbedtls_test_unhexify((unsigned char *) expected_okm->x, (strlen((const char *)(expected_okm->x))), (const char *)expected_okm->x, &mylen) ;
+    //#define DBG_TEST_TEST_HKDF_SHA256
+    //#define DBG_TEST_TEST_HKDF_SHA256_RESULT
 
-#define DBG_TEST_TEST_HKDF_SHA256
+    /*KeyIn*/
+    mbedtls_test_unhexify((unsigned char *) ikm->x, (strlen((const char *)(ikm->x))), (const char *)ikm->x, &mylen);
+#ifdef DBG_TEST_TEST_HKDF_SHA256
+    printf("au8KeyIn mylen=%d\r\n", mylen);
+    dump_data((char *)ikm->x, mylen);
+#endif
+
+    /*Salt*/
+    mbedtls_test_unhexify((unsigned char *) salt->x, (strlen((const char *)(salt->x))), (const char *)salt->x, &mylen) ;
+#ifdef DBG_TEST_TEST_HKDF_SHA256
+    printf("au8Salt mylen=%d\r\n", mylen);
+    dump_data((char *)salt->x, mylen);
+#endif
+
+    /*Info*/
+    mbedtls_test_unhexify((unsigned char *) info->x, (strlen((const char *)(info->x))), (const char *)info->x, &mylen) ;
+#ifdef DBG_TEST_TEST_HKDF_SHA256
+    printf("au8Info mylen=%d\r\n", mylen);
+    dump_data((char *)info->x, mylen);
+#endif
+
+    /*Expected okm*/
+    mbedtls_test_unhexify((unsigned char *) expected_okm->x, (strlen((const char *)(expected_okm->x))), (const char *)expected_okm->x, &mylen) ;
+#ifdef DBG_TEST_TEST_HKDF_SHA256
+    printf("expected_okm mylen=%d\r\n", mylen);
+    dump_data((char *)expected_okm->x, mylen);
+#endif
+
 #ifdef DBG_TEST_TEST_HKDF_SHA256/*To make sure the input are in right format*/
     printf("salt:");
     dump_tlsdata(salt);
@@ -445,15 +521,39 @@ void test_test_hkdf_sha256(data_t *ikm, data_t *salt, data_t *info,
     printf("expected_okm:");
     dump_tlsdata(expected_okm);
 #endif
+
     ret = mbedtls_hkdf(md, salt->x, salt->len, ikm->x, ikm->len,
                        info->x, info->len, okm, expected_okm->len);
-    printf("okm:");
+
+#ifdef DBG_TEST_TEST_HKDF_SHA256_RESULT
+    printf("\r\nokm \r\n");
+    dump_data((char *)okm, mylen);
+#endif
+    Byte2Reg_Order((char *)okm, (uint32_t *)okm_rev, mylen);
+
+#ifdef DBG_TEST_TEST_HKDF_SHA256_RESULT
+    printf("\r\nokm_rev \r\n");
+    dump_data((char *)okm_rev, mylen);
+
+    DumpKey((uint32_t *)okm, 256 / 32); /* Word based dump, byteCnt = 256/32 = key bits/word bits */
+#endif
+
+#ifdef DBG_TEST_TEST_HKDF_SHA256
+    printf("\r\ndump expected_okm:\r\n");
     dump_tlsokm(expected_okm, okm);
+#endif
 
-    TEST_ASSERT(ret == 0);
 
-    TEST_MEMORY_COMPARE(okm, expected_okm->len,
-                        expected_okm->x, expected_okm->len);
+#ifdef NVT_HKDF_ALT
+    ret = memcmp(okm_rev, expected_okm->x, expected_okm->len);/*expected_okm->len = 32 byte, Byte based memcmp*/
+#else
+    ret = memcmp(okm, expected_okm->x, expected_okm->len);/*expected_okm->len = 32 byte, Byte based memcmp*/
+#endif
+
+    if (ret)
+        printf("\r\nTest Fail: ret=%d\r\n", ret);
+    else
+        printf("\r\nTest Pass\r\n");
 
 exit:
     MD_PSA_DONE();
@@ -1880,18 +1980,16 @@ int execute_tests(int argc, const char **argv)
 /*----------------------------------------------------------------------------*/
 /* Main Test code */
 volatile uint32_t g_u32Ticks = 0;
-#ifdef MBEDTLS_STD
-    char au8KeyIn[]   = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0bab";//22 Octects
-    char au8Salt[]       = "000102030405060708090a0b0c";//13 Octects
-    char au8Info[]        = "f0f1f2f3f4f5f6f7f8f9";//10 Octects
-    char au8KeyOut[] = "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865";//42 Octects
-#else
-
-    char au8KeyIn[]   = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
-    char au8Salt[]       = "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f";
-    char au8Info[]        = "b0b1b2b3b4b5b6b7b8b9babb00bdbebfc0c1c2c3c4c5c6c7c8c9cacbcc0200";
-    char au8KeyOut[] = "805e0bf8fb46941dcbfdab0819afae98bd57e0c5dea15c6772907cb86714ac69504b982aed43f66c64e92ccc4b998b9144759139868e7959e58d9a63252d5788";
-
+#ifdef NVT_HKDF_ALT
+    char au8KeyIn[]   = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";//64 Octects
+    char au8Salt[]    = "606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f";//64 Octects
+    char au8Info[]    = "b0b1b2b3b4b5b6b7b8b9babb00bdbebfc0c1c2c3c4c5c6c7c8c9cacbcc0100";//62 Octects
+    char au8KeyOut[]  = "a8873e7992d2d5ce6a816451fd64ac39eae82814946adefe4809ec42125f3687";//64 Octects
+#else//MBEDTLS_STD
+    char au8KeyIn[]   = "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b";//22 Octects
+    char au8Salt[]    = "000102030405060708090a0b0c";//13 Octects
+    char au8Info[]    = "f0f1f2f3f4f5f6f7f8f9";//10 Octects
+    char au8KeyOut[]  = "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865";//42+6 Octects
 #endif
 
 void SYS_Init(void)
@@ -1904,7 +2002,7 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -1934,6 +2032,8 @@ void SysTick_Handler()
 {
     g_u32Ticks++;
 }
+
+
 
 /**
  * \brief       Program main. Invokes platform specific execute_tests().
@@ -1968,45 +2068,33 @@ int main()
 #endif
 #endif
 
-    int ret = mbedtls_test_platform_setup();
+#ifdef NVT_HKDF_ALT
+    printf("NVT HKDF accelerator is running.\n");
+#else
+    printf("mbedtls SW library HKDF is running.\n");
+#endif
 
-    if (ret != 0)
-    {
-        mbedtls_fprintf(stderr,
-                        "FATAL: Failed to initialize platform - error %d\n",
-                        ret);
-        return (-1);
-    }
-
-    printf("Pure software crypto running.\n");
-
+    printf("#define DBG_TEST_TEST_HKDF_SHA256_RESULT to see details.\n");
     SysTick_Config(SystemCoreClock / 1000);
 
     g_u32Ticks = 0;
 
-    //ret = execute_tests( argc, argv );
-    mbedtls_test_info_reset();
-#ifdef MBEDTLS_STD
+
+#ifdef NVT_HKDF_ALT
+    data_t nvt_ikm  = {.x = (uint8_t *) &au8KeyIn[0],  .len = strlen(au8KeyIn) / 2 };
+    data_t nvt_salt = {.x = (uint8_t *) &au8Salt[0],   .len = strlen(au8Salt) / 2};
+    data_t nvt_info = {.x = (uint8_t *) &au8Info[0],   .len = strlen(au8Info) / 2};
+    data_t nvt_okm  = {.x = (uint8_t *) &au8KeyOut[0], .len = strlen(au8KeyOut) / 2 };
+#else//MBEDTLS_STD
     data_t nvt_ikm = {.x = (uint8_t *) &au8KeyIn[0], .len = 22 };
     data_t nvt_salt = {.x = (uint8_t *) &au8Salt[0], .len = 13 };
     data_t nvt_info = {.x = (uint8_t *) &au8Info[0], .len = 10 };
-    data_t nvt_okm = {.x = (uint8_t *) &au8KeyOut[0], .len = 42 };
-#else//NVT HKDF format
-    data_t nvt_ikm = {.x = (uint8_t *) &au8KeyIn[0], .len = strlen(au8KeyIn) / 2 };
-    data_t nvt_salt = {.x = (uint8_t *) &au8Salt[0], .len = strlen(au8Salt) / 2};
-    data_t nvt_info = {.x = (uint8_t *) &au8Info[0], .len = strlen(au8Info) / 2};
-    data_t nvt_okm = {.x = (uint8_t *) &au8KeyOut[0], .len = 64 };
+    data_t nvt_okm = {.x = (uint8_t *) &au8KeyOut[0], .len = 42};
+
 #endif
     test_test_hkdf_sha256(&nvt_ikm,  &nvt_salt, &nvt_info, &nvt_okm);
 
-    if (mbedtls_test_info.result == MBEDTLS_TEST_RESULT_SUCCESS)
-        mbedtls_fprintf(stdout, "PASS\n");
-    else
-        mbedtls_fprintf(stdout, "FAILED\n");
-
     printf("Total elapsed time is %d ms\n", g_u32Ticks);
-
-    mbedtls_test_platform_teardown();
 
     for (;;) {}
 }

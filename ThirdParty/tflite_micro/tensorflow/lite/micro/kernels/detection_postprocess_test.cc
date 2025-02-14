@@ -17,6 +17,7 @@ limitations under the License.
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/kernel_runner.h"
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/test_helpers.h"
 #include "tensorflow/lite/micro/testing/micro_test.h"
 
@@ -105,10 +106,11 @@ void TestDetectionPostprocess(int* input_dims_data1, const float* input_data1,
   tensors[5] = CreateTensor(output_data3, output_dims3);
   tensors[6] = CreateTensor(output_data4, output_dims4);
 
-  ::tflite::AllOpsResolver resolver;
-  const TfLiteRegistration* registration =
+  MicroMutableOpResolver<1> resolver;
+  TF_LITE_MICRO_EXPECT_EQ(resolver.AddDetectionPostprocess(), kTfLiteOk);
+  const TFLMRegistration* registration =
       resolver.FindOp("TFLite_Detection_PostProcess");
-  TF_LITE_MICRO_EXPECT_NE(nullptr, registration);
+  TF_LITE_MICRO_EXPECT(registration != nullptr);
 
   int inputs_array_data[] = {3, 0, 1, 2};
   TfLiteIntArray* inputs_array = IntArrayFromInts(inputs_array_data);

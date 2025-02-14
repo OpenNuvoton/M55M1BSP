@@ -13,13 +13,9 @@
 #include "config.h"
 
 //------------------------------------------------------------------------------
-#define NAU8822     1
+#define NAU8822         1
+#define I2C_PORT        I2C3
 
-#if defined(ALIGN_AF_PINS)
-    #define I2C_PORT                        I2C3
-#else
-    #define I2C_PORT                        I2C2
-#endif
 //------------------------------------------------------------------------------
 uint32_t volatile g_u32BuffPos = 0;
 
@@ -261,8 +257,8 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Enable all GPIO clock */
     CLK_EnableModuleClock(GPIOA_MODULE);
@@ -279,13 +275,8 @@ void SYS_Init(void)
     /* Enable I2S0 module clock */
     CLK_EnableModuleClock(I2S0_MODULE);
 
-#if defined(ALIGN_AF_PINS)
     /* Enable I2C3 module clock */
     CLK_EnableModuleClock(I2C3_MODULE);
-#else
-    /* Enable I2C2 module clock */
-    CLK_EnableModuleClock(I2C2_MODULE);
-#endif
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -305,22 +296,12 @@ void SYS_Init(void)
     /* Enable I2S0 clock pin (PI6) schmitt trigger */
     PI->SMTEN |= GPIO_SMTEN_SMTEN6_Msk;
 
-#if defined(ALIGN_AF_PINS)
     /* Set I2C3 multi-function pins */
     SET_I2C3_SDA_PG1();
     SET_I2C3_SCL_PG0();
 
     /* Enable I2C3 clock pin (PG0) schmitt trigger */
     PG->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
-#else
-    /* Set I2C3 multi-function pins */
-    SET_I2C2_SDA_PD0();
-    SET_I2C2_SCL_PD1();
-
-    /* Enable I2C2 clock pin (PD1) schmitt trigger */
-    PD->SMTEN |= GPIO_SMTEN_SMTEN1_Msk;
-#endif
-
 }
 
 void I2C_Init(void)
@@ -372,15 +353,9 @@ int32_t main(void)
     NVIC_EnableIRQ(I2S0_IRQn);
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-#if defined(ALIGN_AF_PINS)
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
-#else
-    SET_GPIO_PD4();
-    GPIO_SetMode(PD, BIT4, GPIO_MODE_OUTPUT);
-    PD4 = 0;
-#endif
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
 
     /* Select source from HIRC(12MHz) */
     CLK_SetModuleClock(I2S0_MODULE, CLK_I2SSEL_I2S0SEL_HIRC, MODULE_NoMsk);

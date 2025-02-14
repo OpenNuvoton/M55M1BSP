@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/kernels/kernel_runner.h"
 #include "tensorflow/lite/micro/micro_arena_constants.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -56,7 +55,7 @@ void TestIf(int* input1_dims_data, const bool* input1_data,
   params.then_subgraph_index = 1;
   params.else_subgraph_index = 2;
 
-  const TfLiteRegistration registration = tflite::Register_IF();
+  const TFLMRegistration registration = tflite::Register_IF();
   micro::KernelRunner runner(registration, tensors, tensors_size, inputs_array,
                              outputs_array, &params);
 
@@ -114,12 +113,10 @@ TF_LITE_MICRO_TEST(IfShouldInvokeSubgraphConditionTrue) {
   const tflite::Model* model =
       tflite::testing::GetSimpleModelWithSubgraphsAndIf();
   tflite::MicroMutableOpResolver<3> resolver;
-  tflite::MicroErrorReporter reporter;
   resolver.AddIf();
   resolver.AddAdd();
   resolver.AddMul();
-  tflite::MicroInterpreter interpreter(model, resolver, arena, kArenaSize,
-                                       &reporter);
+  tflite::MicroInterpreter interpreter(model, resolver, arena, kArenaSize);
   TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, interpreter.AllocateTensors());
   TfLiteTensor* condition = interpreter.input(0);
   TfLiteTensor* input1 = interpreter.input(1);
@@ -144,12 +141,10 @@ TF_LITE_MICRO_TEST(IfShouldInvokeSubgraphConditionFalse) {
   const tflite::Model* model =
       tflite::testing::GetSimpleModelWithSubgraphsAndIf();
   tflite::MicroMutableOpResolver<3> resolver;
-  tflite::MicroErrorReporter reporter;
   resolver.AddIf();
   resolver.AddAdd();
   resolver.AddMul();
-  tflite::MicroInterpreter interpreter(model, resolver, arena, kArenaSize,
-                                       &reporter);
+  tflite::MicroInterpreter interpreter(model, resolver, arena, kArenaSize);
   TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, interpreter.AllocateTensors());
   TfLiteTensor* condition = interpreter.input(0);
   TfLiteTensor* input1 = interpreter.input(1);
@@ -174,11 +169,11 @@ TF_LITE_MICRO_TEST(IfShouldNotOverwriteTensorAcrossSubgraphs) {
   const tflite::Model* model =
       tflite::testing::GetModelWithIfAndSubgraphInputTensorOverlap();
 
-  tflite::AllOpsResolver op_resolver = tflite::testing::GetOpResolver();
-  op_resolver.AddIf();
-  tflite::MicroErrorReporter reporter;
-  tflite::MicroInterpreter interpreter(model, op_resolver, arena, kArenaSize,
-                                       &reporter);
+  tflite::testing::TestingOpResolver op_resolver;
+  TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk,
+                          tflite::testing::GetTestingOpResolver(op_resolver));
+
+  tflite::MicroInterpreter interpreter(model, op_resolver, arena, kArenaSize);
   TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, interpreter.AllocateTensors());
 
   TfLiteTensor* condition = interpreter.input(0);

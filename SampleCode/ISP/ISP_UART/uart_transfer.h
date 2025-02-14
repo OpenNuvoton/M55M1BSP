@@ -10,6 +10,7 @@
 #define __UART_TRANS_H__
 #include <stdint.h>
 
+#define ISP_UART_PORT           UART0
 /*-------------------------------------------------------------*/
 /* Define maximum packet size */
 #define MAX_PKT_SIZE            64
@@ -22,7 +23,7 @@ extern uint8_t volatile g_u8bufhead;
 
 /*-------------------------------------------------------------*/
 void UART_Init(void);
-void UART6_IRQHandler(void);
+void UART0_IRQHandler(void);
 void PutString(void);
 
 #endif  /* __UART_TRANS_H__ */

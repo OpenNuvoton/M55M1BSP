@@ -13,10 +13,6 @@
 /*--------------------------------------------------------------------------*/
 /* Define global variables and constants                                    */
 /*--------------------------------------------------------------------------*/
-volatile uint32_t g_u32WakeupCount = 0;
-volatile uint32_t g_u32LPPdmaIntFlag;
-volatile uint32_t g_u32Ifr = 0;
-
 #define DATA_COUNT                  32
 #define LPTMR0_FREQ                 1000
 #define LPSPI_MASTER_TX_DMA_CH      0
@@ -29,16 +25,25 @@ volatile uint32_t g_u32Ifr = 0;
 #undef LPPDMA0
 #define LPPDMA0                     LPPDMA
 
-uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
-uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
+//------------------------------------------------------------------------------
+#if (NVT_DCACHE_ON == 1)
+    // DCache-line aligned buffer for LPSPI Auto Operation mode test
+    uint32_t g_au32MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+    uint32_t g_au32MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+#else
+    // Buffer for LPSPI Auto Operation mode test
+    uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
+    uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
+#endif
+volatile uint32_t g_u32WakeupCount = 0;
+volatile uint32_t g_u32LPPdmaIntFlag;
+volatile uint32_t g_u32Ifr = 0;
 
+//------------------------------------------------------------------------------
 NVT_ITCM void LPSPI0_IRQHandler(void)
 {
     volatile uint32_t u32Status = 0;
     volatile int32_t i32Timeout = 0xFFFFFF;
-
-    // TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(LPSPI0_MODULE);
 
     /* for Auto Operation mode test */
     g_u32Ifr = LPSPI0->AUTOSTS;
@@ -59,8 +64,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -109,19 +114,17 @@ void SYS_Init(void)
     /* Setup SPI0 multi-function pins */
     /* PA.3 is SPI0_SS,   PA.2 is SPI0_CLK,
        PA.1 is SPI0_MISO, PA.0 is SPI0_MOSI*/
-    SYS->GPA_MFP0 = (SYS->GPA_MFP0 & ~(SYS_GPA_MFP0_PA3MFP_Msk |
-                                       SYS_GPA_MFP0_PA2MFP_Msk |
-                                       SYS_GPA_MFP0_PA1MFP_Msk |
-                                       SYS_GPA_MFP0_PA0MFP_Msk)) |
-                    (SYS_GPA_MFP0_PA3MFP_LPSPI0_SS |
-                     SYS_GPA_MFP0_PA2MFP_LPSPI0_CLK |
-                     SYS_GPA_MFP0_PA1MFP_LPSPI0_MISO |
-                     SYS_GPA_MFP0_PA0MFP_LPSPI0_MOSI);
+    SET_LPSPI0_SS_PA3();
+    SET_LPSPI0_CLK_PA2();
+    SET_LPSPI0_MISO_PA1();
+    SET_LPSPI0_MOSI_PA0();
 
     /* Clock output HCLK to PD.13 */
-    SYS->GPD_MFP3 = (SYS->GPD_MFP3 & ~(SYS_GPD_MFP3_PD13MFP_Msk)) |
-                    (SYS_GPD_MFP3_PD13MFP_CLKO);
+    SET_CLKO_PD13();
     CLK_EnableCKO(CLK_CLKOSEL_CLKOSEL_HIRC, 0, CLK_CLKOCTL_DIV1EN_DIV_1);
+
+    /* Disable Auto Operation Clock in Power-down Mode */
+    PMC_DISABLE_AOCKPD();
 }
 
 void LPTMR0_Init(void)
@@ -180,6 +183,10 @@ void LPPDMA_Init(void)
         Destination Address = Increasing
         Burst Type = Single Transfer
     =========================================================================*/
+#if (NVT_DCACHE_ON == 1)
+    /* Clean the data cache for the destination buffer of SPI master PDMA RX channel */
+    SCB_InvalidateDCache_by_Addr((uint32_t *)&g_au32MasterRxBuffer, sizeof(g_au32MasterRxBuffer));
+#endif
     /* Set transfer width (32 bits) and transfer count */
     LPPDMA_SetTransferCnt(LPPDMA0, LPSPI_MASTER_RX_DMA_CH, LPPDMA_WIDTH_32, DATA_COUNT);
     /* Set source/destination address and attributes */
@@ -238,7 +245,7 @@ void LPSPI_Init(void)
 
 void AutoOperation_FunctionTest()
 {
-    uint32_t i, u32DataCount, u32TotalRxCount, *ptr;
+    uint32_t u32i, u32DataCount, u32TotalRxCount;
     uint32_t u32PdmaDoneFlag, u32Status;
 
     g_u32WakeupCount = 0;
@@ -251,10 +258,17 @@ void AutoOperation_FunctionTest()
 
     while (1)
     {
+#if (NVT_DCACHE_ON == 1)
+        /* If DCACHE is enabled, clean the data cache for the two buffers before writing to them and enabling DMA */
+        /* This is to ensure that the data written to the cache is actually written to the memory */
+        SCB_CleanDCache_by_Addr((uint32_t *)&g_au32MasterToSlaveTestPattern, sizeof(g_au32MasterToSlaveTestPattern));
+        SCB_CleanDCache_by_Addr((uint32_t *)&g_au32MasterRxBuffer, sizeof(g_au32MasterRxBuffer));
+#endif
+
         /* Source data initiation */
         for (u32DataCount = 0; u32DataCount < DATA_COUNT; u32DataCount++)
         {
-            g_au32MasterToSlaveTestPattern[u32DataCount] = ((TEST_PATTERN | (u32DataCount + 1)) + g_u32WakeupCount) ;
+            g_au32MasterToSlaveTestPattern[u32DataCount] = ((TEST_PATTERN | (u32DataCount + 1)) + g_u32WakeupCount);
             g_au32MasterRxBuffer[u32DataCount] = 0x00;
         }
 
@@ -315,12 +329,10 @@ void AutoOperation_FunctionTest()
 
         /* u32TotalRxCount is the total received data number in both TX phase (by FULLRX enabled) and RX phase */
         u32TotalRxCount = DATA_COUNT;
-        ptr = g_au32MasterRxBuffer;
 
-        for (i = 0; i < u32TotalRxCount; i++)
+        for (u32i = 0; u32i < u32TotalRxCount; u32i++)
         {
-            printf("    [%2d]: %08X\n", i, *ptr);
-            ptr++;
+            printf("    [%2d]: %08X\n", u32i, g_au32MasterRxBuffer[u32i]);
         }
     }   /* end of while(1) */
 }

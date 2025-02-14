@@ -12,13 +12,8 @@
 //------------------------------------------------------------------------------
 #include "NuMicro.h"
 
-#if defined(ALIGN_AF_PINS)
-    #define I2C_PORT         I2C3
-#else
-    #define I2C_PORT         I2C2
-#endif
-
-#define NAU8822                 1
+#define I2C_PORT            I2C3
+#define NAU8822             1
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */

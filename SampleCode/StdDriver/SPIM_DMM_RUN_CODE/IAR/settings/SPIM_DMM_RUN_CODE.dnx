@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<settings>
+    <DebugChecksum>
+        <Checksum>3110643736</Checksum>
+    </DebugChecksum>
+    <PlDriver>
+        <FirstRun>0</FirstRun>
+        <MemConfigValue />
+    </PlDriver>
+    <PlCacheRanges>
+        <CustomRanges0>0 0 536870912 1 0</CustomRanges0>
+        <CustomRangesText0>Code</CustomRangesText0>
+        <CustomRanges1>0 536870912 33554432 0 0</CustomRanges1>
+        <CustomRangesText1>SRAM</CustomRangesText1>
+        <CustomRanges2>0 1073741824 33554432 2 0</CustomRanges2>
+        <CustomRangesText2>Peripheral</CustomRangesText2>
+        <CustomRanges3>0 2181038080 33554432 1 2048</CustomRanges3>
+        <CustomRangesText3 />
+        <CustomRanges4>0 3758096384 536870912 2 0</CustomRanges4>
+        <CustomRangesText4>Private peripheral</CustomRangesText4>
+    </PlCacheRanges>
+    <Exceptions>
+        <StopOnUncaught>_ 0</StopOnUncaught>
+        <StopOnThrow>_ 0</StopOnThrow>
+    </Exceptions>
+    <Disassembly>
+        <MixedMode>1</MixedMode>
+    </Disassembly>
+    <Trace1>
+        <Enabled>0</Enabled>
+        <ShowSource>1</ShowSource>
+    </Trace1>
+    <Trace2>
+        <Enabled>0</Enabled>
+        <ShowSource>0</ShowSource>
+    </Trace2>
+    <Stack>
+        <FillEnabled>0</FillEnabled>
+        <OverflowWarningsEnabled>1</OverflowWarningsEnabled>
+        <WarningThreshold>90</WarningThreshold>
+        <SpWarningsEnabled>1</SpWarningsEnabled>
+        <WarnLogOnly>1</WarnLogOnly>
+        <UseTrigger>1</UseTrigger>
+        <TriggerName>main</TriggerName>
+        <LimitSize>0</LimitSize>
+        <ByteLimit>50</ByteLimit>
+    </Stack>
+    <TermIOLog>
+        <LoggingEnabled>_ 0</LoggingEnabled>
+        <LogFile>_ ""</LogFile>
+    </TermIOLog>
+    <CallStack>
+        <ShowArgs>0</ShowArgs>
+    </CallStack>
+    <NuLinkDriver>
+        <LeaveTargetRunning>_ 0</LeaveTargetRunning>
+        <CStepIntDis>_ 0</CStepIntDis>
+    </NuLinkDriver>
+    <ArmDriver>
+        <EnableCache>0</EnableCache>
+        <EnforceMemoryConfiguration>1</EnforceMemoryConfiguration>
+    </ArmDriver>
+    <DisassembleMode>
+        <mode>0</mode>
+    </DisassembleMode>
+    <Breakpoints2>
+        <Count>0</Count>
+    </Breakpoints2>
+    <Aliases>
+        <Count>0</Count>
+        <SuppressDialog>0</SuppressDialog>
+    </Aliases>
+</settings>

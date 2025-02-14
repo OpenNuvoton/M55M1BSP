@@ -1690,7 +1690,7 @@ typedef struct _HIDP_KEYBOARD_MODIFIER_STATE
         ULONG ul;
     };
 
-} HIDP_KEYBOARD_MODIFIER_STATE, * PHIDP_KEYBOARD_MODIFIER_STATE;
+} HIDP_KEYBOARD_MODIFIER_STATE, *PHIDP_KEYBOARD_MODIFIER_STATE;
 
 //
 // A call back function to give the i8042 scan codes to the caller of

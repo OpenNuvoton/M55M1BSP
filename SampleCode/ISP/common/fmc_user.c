@@ -12,12 +12,12 @@
 int32_t g_FMC_i32ErrCode = 0;
 #define FMC_BLOCK_SIZE           (FMC_FLASH_PAGE_SIZE * 4UL)
 
-int FMC_Proc(uint32_t u32Cmd, uint32_t u32AddrStart, uint32_t u32AddrEnd, uint32_t *pu32Data)
+int FMC_Proc(uint32_t u32Cmd, uint32_t u32StartAddr, uint32_t u32EndAddr, uint32_t *pu32Data)
 {
     uint32_t u32Addr, Reg;
     uint32_t u32TimeOutCount = SystemCoreClock;
 
-    for (u32Addr = u32AddrStart; u32Addr < u32AddrEnd;)
+    for (u32Addr = u32StartAddr; u32Addr < u32EndAddr;)
     {
         FMC->ISPCMD = u32Cmd;
         FMC->ISPADDR = u32Addr;
@@ -109,53 +109,53 @@ int FMC_Read_User(uint32_t u32Addr, uint32_t *pu32Data)
  * @param[in]  u32Addr  Flash address including APROM, LDROM, Data Flash, and CONFIG
  *
  * @details    To do flash page erase. The target address could be APROM, LDROM, Data Flash, or CONFIG.
- *             The page size is 512 bytes.
+ *             The page size is FMC_FLASH_PAGE_SIZE.
  *
  * @note
  *             Please make sure that Register Write-Protection Function has been disabled
  *             before using this function. User can check the status of
  *             Register Write-Protection Function with SYS_IsRegLocked().
  */
-int FMC_Erase_User(uint32_t u32Addr)
+int FMC_Erase_User(uint32_t u32PageAddr)
 {
-    return FMC_Proc(FMC_ISPCMD_PAGE_ERASE, u32Addr, u32Addr + 4, 0);
+    return FMC_Proc(FMC_ISPCMD_PAGE_ERASE, u32PageAddr, u32PageAddr + 4, 0);
 }
 
-void ReadData(uint32_t u32AddrStart, uint32_t u32AddrEnd, uint32_t *pu32Data)    // Read data from flash
+void ReadData(uint32_t u32StartAddr, uint32_t u32EndAddr, uint32_t *pu32Data)    // Read data from flash
 {
-    FMC_Proc(FMC_ISPCMD_READ, u32AddrStart, u32AddrEnd, pu32Data);
+    FMC_Proc(FMC_ISPCMD_READ, u32StartAddr, u32EndAddr, pu32Data);
     return;
 }
 
-void WriteData(uint32_t u32AddrStart, uint32_t u32AddrEnd, uint32_t *pu32Data)  // Write data into flash
+void WriteData(uint32_t u32StartAddr, uint32_t u32EndAddr, uint32_t *pu32Data)  // Write data into flash
 {
-    FMC_Proc(FMC_ISPCMD_PROGRAM, u32AddrStart, u32AddrEnd, pu32Data);
+    FMC_Proc(FMC_ISPCMD_PROGRAM, u32StartAddr, u32EndAddr, pu32Data);
     return;
 }
 
 
-int EraseAP(uint32_t u32AddrStart, uint32_t size)
+int EraseAP(uint32_t u32StartAddr, uint32_t u32EraseSize)
 {
     uint32_t u32Addr, u32Cmd, u32Size;
     uint32_t u32TimeOutCount = FMC_TIMEOUT_ERASE;
-    u32Addr = u32AddrStart;
+    u32Addr = u32StartAddr;
 
-    while (size > 0)
+    while (u32EraseSize > 0)
     {
-        if ((size >= FMC_APROM_BANK_SIZE) && !(u32Addr & (FMC_APROM_BANK_SIZE - 1)))
+        if ((u32EraseSize >= FMC_APROM_BANK_SIZE) && !(u32Addr & (FMC_APROM_BANK_SIZE - 1)))
         {
-            u32Cmd = FMC_ISPCMD_BANK_ERASE;
+            u32Cmd  = FMC_ISPCMD_BANK_ERASE;
             u32Size = FMC_APROM_BANK_SIZE;
         }
         else
         {
-            u32Cmd = FMC_ISPCMD_PAGE_ERASE;
+            u32Cmd  = FMC_ISPCMD_PAGE_ERASE;
             u32Size = FMC_FLASH_PAGE_SIZE;
         }
 
-        FMC->ISPCMD = u32Cmd;
+        FMC->ISPCMD  = u32Cmd;
         FMC->ISPADDR = u32Addr;
-        FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
+        FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
         __ISB();
 
         while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk)   /* Wait for ISP command done. */
@@ -171,7 +171,7 @@ int EraseAP(uint32_t u32AddrStart, uint32_t size)
         }
 
         u32Addr += u32Size;
-        size -= u32Size;
+        u32EraseSize -= u32Size;
     }
 
     return 0;

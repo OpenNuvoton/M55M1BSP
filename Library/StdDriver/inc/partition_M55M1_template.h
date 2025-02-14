@@ -21,7 +21,7 @@
 #define NON_SECURE_SRAM_BASE        (0x20100000 + 0x10000000 + SCU_SECURE_SRAM_SIZE)
 
 /*
-// Non-secure Base Address (NSCBA)
+// <h> Non-secure Base Address (NSCBA)
 */
 #define FMC_INIT_NSCBA              1
 /*
@@ -33,49 +33,19 @@
 #define FMC_NON_SECURE_BASE         (FMC_SECURE_END + NS_OFFSET)
 
 /*
-//    <o> Secure SPI Flash Size <0x20000-0x2000000:0x20000>
+// <q>Enable Mirror Boundary (Bank Remap Function)
 */
-#define SCU_SECURE_SPIFLASH_SIZE    0x20000
-
-/*--------------------------------------------------------------------------------------------------------*/
-
-/* Total TCM Size */
-#define ITCM_SIZE                   0x00010000
-#define DTCM_SIZE                   0x00020000
-
-/*
-// <h> TCM Secure Attribution
-*/
-
-/* Secure ITCM Size */
-/*
-//   <o> Secure ITCM Size
-//      <0x0=>      0 KB
-//      <0x4000=>  16 KB
-//      <0x8000=>  32 KB
-//      <0xC000=>  48 KB
-//      <0x10000=> 64 KB
-*/
-#define SECURE_ITCM_SIZE            0x10000
-
-/* Secure DTCM Size */
-/*
-//   <o> Secure DTCM Size
-//      <0x0=>       0 KB
-//      <0x4000=>   16 KB
-//      <0x8000=>   32 KB
-//      <0xC000=>   48 KB
-//      <0x10000=>  64 KB
-//      <0x14000=>  80 KB
-//      <0x18000=>  96 KB
-//      <0x1C000=> 112 KB
-//      <0x20000=> 128 KB
-*/
-#define SECURE_DTCM_SIZE            0x20000
-
+#define FMC_INIT_MIRROR_BOUND       0x0
 /*
 // </h>
 */
+
+/*
+//    <o> Secure SPI Flash Size <0x0-0x2000000:0x20000>
+//    <i> 0x0: Whole SPI Flash is secure
+*/
+#define SCU_SECURE_SPIFLASH_SIZE    0x0
+
 /*----------------------------------------------------------------------------*/
 
 /*
@@ -287,6 +257,7 @@
 //   <o.11>  PC11      <0=> Secure <1=> Non-secure
 //   <o.12>  PC12      <0=> Secure <1=> Non-secure
 //   <o.13>  PC13      <0=> Secure <1=> Non-secure
+//   <o.14>  PC14      <0=> Secure <1=> Non-secure
 // </h>
 */
 #define SCU_INIT_IONS2_VAL          0x00000000
@@ -367,6 +338,8 @@
 //   <o.4 >  PG4       <0=> Secure <1=> Non-secure
 //   <o.5 >  PG5       <0=> Secure <1=> Non-secure
 //   <o.6 >  PG6       <0=> Secure <1=> Non-secure
+//   <o.7 >  PG7       <0=> Secure <1=> Non-secure
+//   <o.8 >  PG8       <0=> Secure <1=> Non-secure
 //   <o.9 >  PG9       <0=> Secure <1=> Non-secure
 //   <o.10>  PG10      <0=> Secure <1=> Non-secure
 //   <o.11>  PG11      <0=> Secure <1=> Non-secure

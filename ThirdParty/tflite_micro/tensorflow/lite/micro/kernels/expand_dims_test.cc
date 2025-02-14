@@ -13,9 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include <cstdint>
+
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/kernels/kernel_runner.h"
 #include "tensorflow/lite/micro/test_helpers.h"
 #include "tensorflow/lite/micro/testing/micro_test.h"
@@ -41,9 +42,9 @@ micro::KernelRunner CreateExpandDimsKernelRunner(
     const int32_t* axis_data, int* output_dims, T* output_data) {
   // Some targets do not support dynamic memory (i.e., no malloc or new), thus,
   // the test need to place non-transitent memories in static variables. This is
-  // safe because tests are guarateed to run serially.
+  // safe because tests are guaranteed to run serially.
   // Both below structures are trivially destructible.
-  static TfLiteRegistration registration;
+  static TFLMRegistration registration;
   static TfLiteTensor tensors[kTensorsSize];
 
   TfLiteIntArray* in_dims = IntArrayFromInts(input_dims);
@@ -137,6 +138,20 @@ TF_LITE_MICRO_TEST(ExpandDimsPositiveAxisTest2) {
   tflite::testing::TestExpandDims<int8_t>(input_dims, input_data, axis_dims,
                                           axis_data, golden_dims, output_dims,
                                           golden_data, output_data);
+}
+
+TF_LITE_MICRO_TEST(ExpandDimsPositiveAxisTest3) {
+  int16_t output_data[6];
+  int input_dims[] = {3, 3, 1, 2};
+  const int16_t input_data[] = {-1, 1, 2, -2, 0, 3};
+  const int16_t golden_data[] = {-1, 1, 2, -2, 0, 3};
+  int axis_dims[] = {1, 1};
+  const int32_t axis_data[] = {3};
+  int golden_dims[] = {1, 3, 1, 2};
+  int output_dims[] = {4, 3, 1, 2, 1};
+  tflite::testing::TestExpandDims<int16_t>(input_dims, input_data, axis_dims,
+                                           axis_data, golden_dims, output_dims,
+                                           golden_data, output_data);
 }
 
 TF_LITE_MICRO_TEST(ExpandDimsNegativeAxisTest4) {

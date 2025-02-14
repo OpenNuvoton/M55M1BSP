@@ -28,7 +28,6 @@ extern __NO_RETURN void __PROGRAM_START(void);
   Internal References
  *----------------------------------------------------------------------------*/
 __NO_RETURN void Reset_Handler(void);
-__NO_RETURN void Reset_Handler_Main(void);
 void Default_Handler(void);
 
 /*----------------------------------------------------------------------------
@@ -92,7 +91,6 @@ void EQEI0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void EQEI1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void EQEI2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void EQEI3_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void ETI_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 
 void GDMACH0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void GDMACH1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
@@ -142,7 +140,11 @@ void RTCTAMPER_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SC0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SC1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SC2_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
-void SCU_IRQHandler(void) __attribute__((weak));
+#if defined (__ARM_FEATURE_CMSE) &&  (__ARM_FEATURE_CMSE == 3U)
+    void SCU_IRQHandler(void);
+#else
+    void SCU_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
+#endif
 void SDH0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SDH1_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void SPI0_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
@@ -378,7 +380,6 @@ const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[] NVT_DTCM_VTOR =
     0,                                        /*!<     Reserved                                         */
     0,                                        /*!<     Reserved                                         */
     LPADC0_IRQHandler,                        /*!< 134 Low Power ADC 0 Interrupt Handler                */
-    // DAC1 is not support in TESTCHIP_ONLY
     DAC01_IRQHandler,                         /*!< 135 DAC0 and DAC1 Interrupt Handler                  */
     0,                                        /*!<     Reserved                                         */
     EQEI0_IRQHandler,                         /*!< 137 EQEI0 Interrupt Handler                          */
@@ -397,7 +398,7 @@ const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[] NVT_DTCM_VTOR =
     AWF_IRQHandler,                           /*!< 149 AWF Interrupt Handler                            */
 
     UTCPD_IRQHandler,                         /*!< 150 UTCPD Interrupt Handler                          */
-    ETI_IRQHandler,                           /*!< 151 ETI Interrupt Handler                            */
+    0,                                        /*!<     Reserved                                         */
     0,                                        /*!<     Reserved                                         */
     0,                                        /*!<     Reserved                                         */
     0,                                        /*!<     Reserved                                         */
@@ -417,12 +418,24 @@ const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[] NVT_DTCM_VTOR =
 
 /* If some peripherals (e.g. Hyper RAM) must be initialized before startup routine
  *   user can implement its own Reset_Handler_PreInit to do early initialization.
+ *
+ * All code in Reset_Handler_PreInit must have the same load address and execution address;
+ * otherwise, users need to provide their own implementation of Reset_Handler_PreInit.
  */
 __WEAK void Reset_Handler_PreInit(void)
 {
     /* Prevent using C runtime library functions (e.g. printf)
      * or global variables in this function.
      */
+#ifndef NVT_CMSE_NON_SECURE
+
+    /* Clock Setting is only available in secure mode */
+    /* Enable the default APLL0 frequency and switch the SCLK clock source to APLL0. */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, __HSI);
+
+    /* Update System Core Clock */
+    SystemCoreClockUpdate();
+#endif
 }
 
 /*----------------------------------------------------------------------------
@@ -430,21 +443,17 @@ __WEAK void Reset_Handler_PreInit(void)
  *----------------------------------------------------------------------------*/
 __NO_RETURN void Reset_Handler(void)
 {
-    // Copy __set_PSP/__set_MSPLIM/__set_PSPLIM from cmsis_armclang.h
+    /* Copy __set_PSP/__set_MSPLIM/__set_PSPLIM from cmsis_armclang.h */
     __ASM volatile("MSR psp, %0" : : "r"((uint32_t)(&__INITIAL_SP)) :);
     __ASM volatile("MSR msplim, %0" : : "r"((uint32_t)(&__STACK_LIMIT)));
     __ASM volatile("MSR psplim, %0" : : "r"((uint32_t)(&__STACK_LIMIT)));
 
-    // Move other code to Reset_Handler_Main to prevent compiler generate stack access code.
-    // Move stack pointer before setting MSPLIM might cause hard fault due to MSPLIM violation.
-    Reset_Handler_Main();
-}
-
-__NO_RETURN void Reset_Handler_Main(void)
-{
-    if ((__PC() & NS_OFFSET) == 0)
+    /* Enable SRAM1/2 functions are only available in secure mode */
+    if (SCU_IS_CPU_NS(SCU_NS) == 0)
     {
-        // Unlock protected registers
+        int32_t i32TimeOutCnt = __HIRC;
+
+        /* Unlock protected registers */
         do
         {
             SYS->REGLCTL = 0x59UL;
@@ -452,39 +461,40 @@ __NO_RETURN void Reset_Handler_Main(void)
             SYS->REGLCTL = 0x88UL;
         } while (SYS->REGLCTL == 0UL);
 
-#ifdef TESTCHIP_ONLY
+        /* Workaround */
+        while (SYS->VREFCTL & SYS_VREFCTL_WRBUSY_Msk) {};
 
-        if (!(SYS->RSTSTS & SYS_RSTSTS_PORF_Msk))
-        {
-            SYS_ResetChip();
-        }
+        SYS->VREFCTL = 0;
 
-#endif
-
-        // Switch SRAM0 to normal power mode
-        if (PMC->SYSRB0PC != 0)
-        {
-            PMC->SYSRB0PC = 0;
-
-            while (PMC->SYSRB0PC & PMC_SYSRB0PC_PCBUSY_Msk)
-                ;
-        }
-
-        // Enable SRAM0 clock
-        CLK->SRAMCTL |= CLK_SRAMCTL_SRAM0CKEN_Msk;
-
-        // Switch SRAM1 to normal power mode
+        /* Switch SRAM1 to normal power mode */
         if (PMC->SYSRB1PC != 0)
         {
             PMC->SYSRB1PC = 0;
-
-            while (PMC->SYSRB1PC & PMC_SYSRB1PC_PCBUSY_Msk)
-                ;
         }
 
-        // Enable SRAM1 clock
-        CLK->SRAMCTL |= CLK_SRAMCTL_SRAM1CKEN_Msk;
+        /* Switch SRAM2 to normal power mode */
+        if (PMC->SYSRB2PC != 0)
+        {
+            PMC->SYSRB2PC = 0;
+        }
+
+        /* Wait SRAM1/2 power mode change finish */
+        while (1)
+        {
+            if ((PMC->SYSRB1PC & PMC_SYSRB1PC_PCBUSY_Msk) == 0 &&
+                    (PMC->SYSRB2PC & PMC_SYSRB2PC_PCBUSY_Msk) == 0)
+                break;
+
+            if (i32TimeOutCnt-- == 0)
+                break;
+        }
+
+        /* Enable SRAM1/2 clock */
+        CLK->SRAMCTL |= (CLK_SRAMCTL_SRAM1CKEN_Msk | CLK_SRAMCTL_SRAM2CKEN_Msk);
     }
+
+    /* To assign __HIRC value directly before BSS initialization. */
+    SystemCoreClock = __HIRC;
 
 #if (defined (__FPU_USED) && (__FPU_USED == 1U)) || \
     (defined (__ARM_FEATURE_MVE) && (__ARM_FEATURE_MVE > 0U))
@@ -512,12 +522,15 @@ __NO_RETURN void Reset_Handler_Main(void)
     SCB_InvalidateICache();
     SCB_EnableICache();
 
-#ifdef NVT_DCACHE_ON
+#if (NVT_DCACHE_ON == 1)
     SCB_InvalidateDCache();
     SCB_EnableDCache();
-#endif  // NVT_DCACHE_ON
+#endif  // (NVT_DCACHE_ON == 1)
 
     Reset_Handler_PreInit();
+    /* All global variables will be initialized by __PROGRAM_START,
+     * therefore any global variables assignment will be overwritten after __PROGRAM_START.
+     */
     __PROGRAM_START();      // Enter PreMain (C library entry point)
 }
 
@@ -544,9 +557,9 @@ struct StackFrame
     uint32_t xPsr;
 };
 
-void HardFault_Handler(void)
+__WEAK void HardFault_Handler(void)
 {
-    uint32_t u32IRQ;
+    uint32_t u32IRQ = 0;
     struct StackFrame *psStackFrame = NULL;
 
     (void)u32IRQ;
@@ -567,6 +580,13 @@ void HardFault_Handler(void)
  *----------------------------------------------------------------------------*/
 void Default_Handler(void)
 {
+#if 0   // Uncomment to check unhandle IRQ
+    uint32_t u32IPSR;
+
+    u32IPSR = __get_IPSR();
+    printf("\nUnexpected IRQ: %d\n", u32IPSR - 16);
+#endif
+
     while (1);
 }
 

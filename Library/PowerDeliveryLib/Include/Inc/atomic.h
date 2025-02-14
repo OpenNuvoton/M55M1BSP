@@ -94,7 +94,7 @@ static inline void atomic_clear_bits(atomic_t *addr, atomic_val_t bits)
 {
     ATOMIC_OP(bic, addr, bits);
 }
-static inline void atomic_clear_64bits(atomic_64_t *addr, atomic_val_t bits)
+static inline void atomic_clear_64bits(atomic_64_t *addr, atomic_val_64_t bits)
 {
     ATOMIC_OP64(bic, addr, bits);
 }
@@ -103,7 +103,7 @@ static inline atomic_val_t atomic_or(atomic_t *addr, atomic_val_t bits)
 {
     return ATOMIC_OP(orr, addr, bits);
 }
-static inline atomic_val_t atomic_or64(atomic_64_t *addr, atomic_val_t bits)
+static inline atomic_val_t atomic_or64(atomic_64_t *addr, atomic_val_64_t bits)
 {
     return ATOMIC_OP64(orr, addr, bits);
 }

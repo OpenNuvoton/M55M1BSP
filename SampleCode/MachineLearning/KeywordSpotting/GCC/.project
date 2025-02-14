@@ -181,6 +181,11 @@
 			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/uart.c</locationURI>
 		</link>
 		<link>
+			<name>Driver/pmc.c</name>
+			<type>1</type>
+			<locationURI>$%7BPARENT-4-PROJECT_LOC%7D/Library/StdDriver/src/pmc.c</locationURI>
+		</link>
+		<link>
 			<name>Model/KwsModel.cpp</name>
 			<type>1</type>
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/Model/KwsModel.cpp</locationURI>

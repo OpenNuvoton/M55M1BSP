@@ -4,7 +4,7 @@
  * @brief    SYS register definition header file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright Copyright (C) 2022 Nuvoton Technology Corp. All rights reserved.
+ * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #ifndef __SYS_REG_H__
 #define __SYS_REG_H__
@@ -26,6 +26,8 @@
 
 typedef struct
 {
+
+
     /**
      * @var SYS_T::PDID
      * Offset: 0x00  Part Device Identification Number Register
@@ -75,13 +77,13 @@ typedef struct
      * |        |          |0 = No reset from nRESET pin.
      * |        |          |1 = Pin nRESET had issued the reset signal to reset the system.
      * |        |          |Note 1: Write 1 to clear this bit to 0.
-     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * |        |          |Note 2: This bit is not retained when D4 power is turned off.
      * |[2]     |WDTRF     |WDT Reset Flag
      * |        |          |The WDT reset flag is set by the u201CReset Signalu201D from the Watchdog Timer or Window Watchdog Timer to indicate the previous reset source.
      * |        |          |0 = No reset from watchdog timer or window watchdog timer.
      * |        |          |1 = The watchdog timer or window watchdog timer had issued the reset signal to reset the system.
      * |        |          |Note 1: Write 1 to clear this bit to 0.
-     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * |        |          |Note 2: This bit is not retained when D2 power is turned off.
      * |        |          |Note 3: Watchdog Timer register RSTF(WDT_CTL[2]) bit is set if the system has been reset by WDT time-out reset
      * |        |          |Window Watchdog Timer register WWDTRF(WWDT_STATUS[1]) bit is set if the system has been reset by WWDT time-out reset.
      * |        |          |Note 4: Extra Watchdog Timer register RSTF(EWDT_CTL[2]) bit is set if the system has been reset by EWDT time-out reset
@@ -91,13 +93,13 @@ typedef struct
      * |        |          |0 = No reset from LVR.
      * |        |          |1 = The LVR controller had issued the reset signal to reset the system.
      * |        |          |Note 1: Write 1 to clear this bit to 0.
-     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * |        |          |Note 2: This bit is not retained when D3 power is turned off.
      * |[4]     |BODRF     |BOD Reset Flag
      * |        |          |The BOD reset flag is set by the u201CReset Signalu201D from the Brown-out Detector to indicate the previous reset source.
      * |        |          |0 = No reset from BOD.
      * |        |          |1 = The BOD had issued the reset signal to reset the system.
      * |        |          |Note 1: Write 1 to clear this bit to 0.
-     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * |        |          |Note 2: This bit is not retained when D3 power is turned off.
      * |[5]     |SYSRF     |System Reset Flag
      * |        |          |The system reset flag is set by the u201CReset Signalu201D from the Cortex-M55 core to indicate the previous reset source.
      * |        |          |0 = No reset from the Cortex-M55.
@@ -125,7 +127,110 @@ typedef struct
      * |[31:7]  |VTORSET   |VTOR Setting After SPD Wakeup (Write Protect)
      * |        |          |The value will be loaded to Vector Table Offset Register, which is at the address 0xE000ED08, when chip wake up and Perfomace Domain be turn off.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: These bits are not retained when D3 power is turned off.
+     * |        |          |Note 2: These bits are not retained when D4 power is turned off.
+     * @var SYS_T::SRAMICTL
+     * Offset: 0x10  System SRAM Parity Error Interrupt Enable Control Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |PERRIEN   |SRAM Parity Check Error Interrupt Enable Bit
+     * |        |          |0 = SRAM parity check error interrupt Disabled.
+     * |        |          |1 = SRAM parity check error interrupt Enabled.
+     * |        |          |Note: This bit is not retained when D0 power is turned off.
+     * @var SYS_T::SRAMSTS
+     * Offset: 0x14  System SRAM Parity Check Status Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |PERRIF    |SRAM Parity Check Error Flag
+     * |        |          |This bit indicates the System SRAM byte 0 parity error occurred.
+     * |        |          |0 = No System SRAM parity error.
+     * |        |          |1 = System SRAM parity error occured.
+     * |        |          |Note 1: Write 1 to clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[8]     |B0PERRIF  |SRAM Byte 0 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 0 parity error occurred.
+     * |        |          |0 = No System SRAM byte 0 parity error.
+     * |        |          |1 = System SRAM byte 0 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0..
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[9]     |B1PERRIF  |SRAM Byte 1 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 1 parity error occurred.
+     * |        |          |0 = No System SRAM byte 1 parity error.
+     * |        |          |1 = System SRAM byte 1 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[10]    |B2PERRIF  |SRAM Byte 2 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 2 parity error occurred.
+     * |        |          |0 = No System SRAM byte 2 parity error.
+     * |        |          |1 = System SRAM byte 2 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[11]    |B3PERRIF  |SRAM Byte 3 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 3 parity error occurred.
+     * |        |          |0 = No System SRAM byte 3 parity error.
+     * |        |          |1 = System SRAM byte 3 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[12]    |B4PERRIF  |SRAM Byte 4 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 4 parity error occurred.
+     * |        |          |0 = No System SRAM byte 4 parity error.
+     * |        |          |1 = System SRAM byte 4 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[13]    |B5PERRIF  |SRAM Byte 5 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 5 parity error occurred.
+     * |        |          |0 = No System SRAM byte 5 parity error.
+     * |        |          |1 = System SRAM byte 5 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[14]    |B6PERRIF  |SRAM Byte 6 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 6 parity error occurred.
+     * |        |          |0 = No System SRAM byte 6 parity error.
+     * |        |          |1 = System SRAM byte 6 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * |[15]    |B7PERRIF  |SRAM Byte 7 Parity Check Error Flag (Read Only)
+     * |        |          |This bit indicates the System SRAM byte 7 parity error occurred.
+     * |        |          |0 = No System SRAM byte 7 parity error.
+     * |        |          |1 = System SRAM byte 7 parity error occured.
+     * |        |          |Note 1: Write 1 to PERRIF for clear this bit to 0.
+     * |        |          |Note 2: The default value depends on the content of SRAM
+     * |        |          |It is better to check this value before use it
+     * |        |          |If the default value is 1, it shall be cleared first.
+     * |        |          |Note 3: This bit is not retained when D0 power is turned off.
+     * @var SYS_T::SRAMEADR
+     * Offset: 0x18  System SRAM Parity Error Address Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[31:0]  |ERRADDR   |System SRAM Parity Error Address (Read Only)
+     * |        |          |This register shows system SRAM parity error byte offset.
+     * |        |          |Note: These bits are not retained when D0 power is turned off.
      * @var SYS_T::BODCTL
      * Offset: 0x20  Brown-out Detector Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -139,7 +244,14 @@ typedef struct
      * |        |          |Note 2: Write operation is ignored when WRBUSY is high.
      * |        |          |Note 3: This bit is not retained when D3 power is turned off.
      * |        |          |Note 4: The default value is set by inverse UCFG0[19].
-     * |[3]     |BODRSTEN  |Brown-out Reset Enable Bit (Write Protect)
+     * |[1]     |BODLPM    |Brown-out Detector Low Power Mode (Write Protect)
+     * |        |          |0 = BOD operated in normal mode (default).
+     * |        |          |1 = BOD Low Power mode Enabled.
+     * |        |          |Note 1: The BOD consumes about 10uA in normal mode, the low power mode can reduce the current to about 1/10 but slow the BOD response.
+     * |        |          |Note 2: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 3: Write operation is ignored when WRBUSY is high.
+     * |        |          |Note 4: This bit is not retained when D3 power is turned off.
+     * |[2]     |BODRSTEN  |Brown-out Reset Enable Bit (Write Protect)
      * |        |          |The default value is set by Flash controller user configuration register CBORST(CONFIG0[20]) bit.
      * |        |          |0 = Brown-out u201CINTERRUPTu201D function Enabled.
      * |        |          |1 = Brown-out u201CRESETu201D function Enabled.
@@ -150,34 +262,8 @@ typedef struct
      * |        |          |Note 3: This bit is not retained when D3 power is turned off.
      * |        |          |Note 4: Write operation is ignored when WRBUSY is high.
      * |        |          |Note 5: The default value is set by inverse UCFG0[20]
-     * |[4]     |BODIF     |Brown-out Detector Interrupt Flag
-     * |        |          |0 = Brown-out Detector does not detect any voltage draft at VDD down through or up through the voltage of BODVL setting.
-     * |        |          |1 = When Brown-out Detector detects the VDD is dropped down through the voltage of BODVL setting or the VDD is raised up through the voltage of BODVL setting, this bit is set to 1 and the brown-out interrupt is requested if brown-out interrupt is enabled.
-     * |        |          |Note 1: Write 1 to clear this bit to 0.
-     * |        |          |Note 2: This bit is not retained when D1 power is turned off.
-     * |[5]     |BODLPM    |Brown-out Detector Low Power Mode (Write Protect)
-     * |        |          |0 = BOD operate in normal mode (default).
-     * |        |          |1 = BOD Low Power mode Enabled.
-     * |        |          |Note 1: The BOD consumes about 10uA in normal mode, the low power mode can reduce the current to about 1/10 but slow the BOD response.
-     * |        |          |Note 2: This bit is write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 3: Write operation is ignored when WRBUSY is high.
-     * |        |          |Note 4: This bit is not retained when D3 power is turned off.
-     * |[6]     |BODOUT    |Brown-out Detector Output Status (Read Only)
-     * |        |          |0 = Brown-out Detector output status is 0.
-     * |        |          |It means the detected voltage is higher than BODVL setting or BODEN is 0.
-     * |        |          |1 = Brown-out Detector output status is 1.
-     * |        |          |It means the detected voltage is lower than BODVL setting
-     * |        |          |If the BODEN is 0, BOD function disabled, this bit always responds 0.
-     * |[7]     |LVREN     |Low Voltage Reset Enable Bit (Write Protect)
-     * |        |          |The LVR function resets the chip when the input power voltage is lower than LVR circuit setting
-     * |        |          |LVR function is enabled by default.
-     * |        |          |0 = Low Voltage Reset function Disabled.
-     * |        |          |1 = Low Voltage Reset function Enabled.
-     * |        |          |Note 1: After enabling the bit, the LVR function will be active with 200us delay for LVR output stable (default).
-     * |        |          |Note 2: This bit is write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 3: Write operation is ignored when WRBUSY is high.
-     * |        |          |Note 4: This bit is not retained when D3 power is turned off.
-     * |[10:8]  |BODDGSEL  |Brown-out Detector Output De-glitch Time Select (Write Protect)
+     * |        |          |Note 6: If D2PGEN(PMC_PWRCTL[2]) is 1 and enters Power-down mode, the brown-out reset function always keeps enabled even if BODRSTEN is 0.
+     * |[6:4]   |BODDGSEL  |Brown-out Detector Output De-glitch Time Select (Write Protect)
      * |        |          |000 = BOD output is sampled by LIRC clock.
      * |        |          |001 = 4 system clock (SCLK).
      * |        |          |010 = 8 system clock (SCLK).
@@ -187,19 +273,11 @@ typedef struct
      * |        |          |110 = 128 system clock (SCLK).
      * |        |          |111 = 256 system clock (SCLK).
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: These bits are not retained when D2 power is turned off.
-     * |[14:12] |LVRDGSEL  |LVR Output De-glitch Time Select (Write Protect)
-     * |        |          |000 = Without de-glitch function.
-     * |        |          |001 = 4 system clock (SCLK).
-     * |        |          |010 = 8 system clock (SCLK).
-     * |        |          |011 = 16 system clock (SCLK).
-     * |        |          |100 = 32 system clock (SCLK).
-     * |        |          |101 = 64 system clock (SCLK).
-     * |        |          |110 = 128 system clock (SCLK).
-     * |        |          |111 = 256 system clock (SCLK).
-     * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
-     * |        |          |Note 2: These bits are not retained when D2 power is turned off.
-     * |[18:16] |BODVL     |Brown-out Detector Threshold Voltage Selection (Write Protect)
+     * |        |          |Note 2: Write operation is ignored when WRBUSY is high.
+     * |        |          |Note 3: These bits are not retained when D0 power is turned off.
+     * |        |          |Note 4: Because SCLK is invalid in Power-down mode, the de-glitch time must change to LIRC before system enters Power-down mode.
+     * |        |          |Note 5: If BODLPM(SYS_BODCTL[1]) is 1, the Brown-out Detector Output de-glitch circuit always uses LIRC clock even if BODDGSEL is not 000.
+     * |[10:8]  |BODVL     |Brown-out Detector Threshold Voltage Selection (Write Protect)
      * |        |          |The default value is set by Flash controller user configuration register CBOV (CONFIG0 [23:21]).
      * |        |          |000 = Brown-out Detector threshold voltage is 1.6V.
      * |        |          |001 = Brown-out Detector threshold voltage is 1.8V.
@@ -211,15 +289,59 @@ typedef struct
      * |        |          |111 = Brown-out Detector threshold voltage is 3.0V.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: Write operation is ignored when WRBUSY is high.
-     * |        |          |Note 3: Write operation is ignored when BODEN is high.
-     * |        |          |Note 4: These bits are not retained when D3 power is turned off.
-     * |        |          |Note 5: The default value is set by UCFG0[23:21].
+     * |        |          |Note 3: These bits are not retained when D3 power is turned off.
+     * |        |          |Note 4: The default value is set by UCFG0[23:21].
+     * |[13:12] |BODWKEN   |Brown-out Detector Wake-Up Selection (Write Protect)
+     * |        |          |00 = Brown-out Detector wake-up function Disable.
+     * |        |          |01 = Brown-out Detector power rise wake-up function Enable.
+     * |        |          |10 = Brown-out Detector power drop wake-up function Enable.
+     * |        |          |11 = Brown-out Detector power rise and drop wake-up function Enable.
+     * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: Write operation is ignored when WRBUSY is high.
+     * |        |          |Note 3: These bits are not retained when D3 power is turned off.
+     * |[16]    |LVREN     |Low Voltage Reset Enable Bit (Write Protect)
+     * |        |          |The LVR function resets the chip when the input power voltage is lower than LVR circuit setting
+     * |        |          |LVR function is enabled by default.
+     * |        |          |0 = Low Voltage Reset function Disabled.
+     * |        |          |1 = Low Voltage Reset function Enabled.
+     * |        |          |Note 1: After enabling the bit, the LVR function will be active with 200us delay for LVR output stable (default).
+     * |        |          |Note 2: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 3: Write operation is ignored when WRBUSY is high.
+     * |        |          |Note 4: This bit is not retained when D3 power is turned off.
+     * |[22:20] |LVRDGSEL  |LVR Output De-glitch Time Select (Write Protect)
+     * |        |          |000 = Without de-glitch function.
+     * |        |          |001 = 4 system clock (SCLK).
+     * |        |          |010 = 8 system clock (SCLK).
+     * |        |          |011 = 16 system clock (SCLK).
+     * |        |          |100 = 32 system clock (SCLK).
+     * |        |          |101 = 64 system clock (SCLK).
+     * |        |          |110 = 128 system clock (SCLK).
+     * |        |          |111 = 256 system clock (SCLK).
+     * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: These bits are not retained when D0 power is turned off.
+     * |        |          |Note 3: Because SCLK is invalid in Power-down mode, the de-glitch time must change to without de-glitch before system enters Power-down mode.
      * |[31]    |WRBUSY    |Write Busy Flag (Read Only)
      * |        |          |If SYS_BODCTL is written, this bit is asserted automatically by hardware, and is de-asserted when write procedure is finished.
      * |        |          |0 = SYS_BODCTL register is ready for write operation.
      * |        |          |1 = SYS_BODCTL register is busy on the last write operation. Other write operations are ignored.
+     * @var SYS_T::BODSTS
+     * Offset: 0x24  Brown-out Detector Status Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |BODOUT    |Brown-out Detector Output Status (Read Only)
+     * |        |          |0 = Brown-out Detector output status is 0.
+     * |        |          |It means the detected voltage is higher than BODVL(SYS_BODCTL[10:8]) setting or BODEN is 0.
+     * |        |          |1 = Brown-out Detector output status is 1.
+     * |        |          |It means the detected voltage is lower than BODVL(SYS_BODCTL[10:8]) setting
+     * |        |          |If the BODEN is 0, BOD function disabled, this bit always responds 0.
+     * |[1]     |BODIF     |Brown-out Detector Interrupt Flag
+     * |        |          |0 = Brown-out Detector does not detect any voltage draft at VDD down through or up through the voltage of BODVL(SYS_BODCTL[10:8]) setting.
+     * |        |          |1 = When Brown-out Detector detects the VDD is dropped down through the voltage of BODVL(SYS_BODCTL[10:8]) setting or the VDD is raised up through the voltage of BODVL(SYS_BODCTL[10:8]) setting, this bit is set to 1 and the brown-out interrupt is requested if brown-out interrupt is enabled.
+     * |        |          |Note 1: Write 1 to clear this bit to 0.
+     * |        |          |Note 2: This bit is not retained when D1 power is turned off.
      * @var SYS_T::PORCTL
-     * Offset: 0x24  Power-on Reset Controller Register
+     * Offset: 0x28  Power-on Reset Controller Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
@@ -238,16 +360,16 @@ typedef struct
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: These bits are not retained when D3 power is turned off.
      * @var SYS_T::VREFCTL
-     * Offset: 0x28  VREF Control Register
+     * Offset: 0x2C  VREF Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
      * |[4:0]   |VREFCTL   |VREF Control Bits (Write Protect)
      * |        |          |00000 = VREF is from external pin.
-     * |        |          |00011 = VREF is internal 2.048V.
-     * |        |          |00111 = VREF is internal 2.500V.
-     * |        |          |01011 = VREF is internal 3.072V.
-     * |        |          |01111 = VREF is internal 1.6V.
+     * |        |          |00011 = VREF is internal 1.6V.
+     * |        |          |00111 = VREF is internal 2.048V.
+     * |        |          |01011 = VREF is internal 2.500V.
+     * |        |          |01111 = VREF is internal 3.072V.
      * |        |          |10000 = VREF is from AVDD.
      * |        |          |Others = Reserved.
      * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
@@ -274,7 +396,7 @@ typedef struct
      * |        |          |0 = SYS_VREFCTL register is ready for write operation.
      * |        |          |1 = SYS_VREFCTL register is busy on the last write operation. Other write operations are ignored.
      * @var SYS_T::IVSCTL
-     * Offset: 0x2C  Internal Voltage Source Control Register
+     * Offset: 0x30  Internal Voltage Source Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
@@ -302,7 +424,7 @@ typedef struct
      * |        |          |1 = Temperature sensor PTAT slope.
      * |        |          |Note 2: These bits are not retained when D0 power is turned off.
      * @var SYS_T::USBPHY
-     * Offset: 0x30  USB PHY Control Register
+     * Offset: 0x34  USB PHY Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
@@ -333,13 +455,13 @@ typedef struct
      * |        |          |1 = HSUSB OTG PHY function Enabled.
      * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: This bit is not retained when D1 power is turned off.
-     * |[25]    |HSUSBACT  |HSUSB PHY Active Control
-     * |        |          |This bit is used to control HSUSB PHY at reset state or active state.
-     * |        |          |0 = HSUSB PHY at reset state.
-     * |        |          |1 = HSUSB PHY at active state.
-     * |        |          |Note: After setting HSUSBEN (SYS_USBPHY[24]) to enable HSUSB PHY, user should keep HSUSB PHY at reset mode at lease 10us before changing to active mode.
+     * |[25]    |HSUSBACT  |HSOTG PHY Active Control
+     * |        |          |This bit is used to control HSOTG PHY at reset state or active state.
+     * |        |          |0 = HSOTG PHY at reset state.
+     * |        |          |1 = HSOTG PHY at active state.
+     * |        |          |Note: After setting HSOTGPHYEN (SYS_USBPHY[24]) to enable HSOTG PHY, user should keep HSOTG PHY at reset mode at lease 10us before changing to active mode.
      * @var SYS_T::UTCPDCTL
-     * Offset: 0x34  UTCPD Control Register
+     * Offset: 0x38  UTCPD Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
@@ -355,7 +477,7 @@ typedef struct
      * |        |          |Note 2: This bit is not retained when D4 power is turned off.
      * |[10:8]  |PD0VBDSS  |UTCPD0 VBUS Detect Source Select
      * |        |          |UTCPD0 controller need a VBUS detect result to note if VBUS is connected
-     * |        |          |For SPD0~2 usage, ACMP can be another voltage detect method to detect VBUS pulg in or out
+     * |        |          |For NPD0~2 usage, ACMP can be another voltage detect method to detect VBUS pulg in or out
      * |        |          |This bit field is used to select UTCPD0 VBUS detect source
      * |        |          |And the selected result is VBDETSW0
      * |        |          |000 = UTCPD0 VBUS detect source from UTCPD0 PHY.
@@ -363,13 +485,23 @@ typedef struct
      * |        |          |010 = UTCPD0 VBUS detect source from ACMP1 output.
      * |        |          |011 = UTCPD0 VBUS detect source from ACMP2 output.
      * |        |          |Others = Reserved.
-     * |        |          |Note 1: Before use UTCPD0 function, PDVBDETS should be set and cannot change during UTCPD0 operating.
+     * |        |          |Note 1: Before use UTCPD0 function, UDVBDETS should be set and cannot change during UTCPD0 operating.
      * |        |          |Note 2: This bit is not retained when D3 power is turned off.
      * |[12]    |UDVBDETS  |UDC11 VBUS Detect Source Select
      * |        |          |0 = UDC11 VBUS detect source from OTGPHY.
      * |        |          |1 = UDC11 VBUS detect source from VBDETSW0.
      * |        |          |Note 1: Before use UDC11 function, UDVBDETS should be set and cannot change during UDC11 operating.
      * |        |          |Note 2: This bit is not retained when D3 power is turned off.
+     * @var SYS_T::DBUSCTL
+     * Offset: 0x40  Data Bus Control Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |H2XBSTEN  |Burst AHB2AXI Bridge access Enable Bit (Write Protect)
+     * |        |          |0 = Normal operating.
+     * |        |          |1 = Force the attribute of all access from AHB to AXI modifiable.
+     * |        |          |Note 1: These bits are write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
      * @var SYS_T::GPA_MFOS
      * Offset: 0x80  GPIOA Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -464,82 +596,82 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[14]    |MFOS14    |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[15]    |MFOS15    |GPIOB Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PB.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPC_MFOS
      * Offset: 0x88  GPIOC Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -549,77 +681,77 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[14]    |MFOS14    |GPIOC Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PC.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPD_MFOS
      * Offset: 0x8C  GPIOD Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -629,77 +761,77 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[14]    |MFOS14    |GPIOD Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PD.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPE_MFOS
      * Offset: 0x90  GPIOE Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -709,82 +841,82 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[14]    |MFOS14    |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[15]    |MFOS15    |GPIOE Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PE.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPF_MFOS
      * Offset: 0x94  GPIOF Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -794,62 +926,62 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOF Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PF.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPG_MFOS
      * Offset: 0x98  GPIOG Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -859,82 +991,82 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[14]    |MFOS14    |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[15]    |MFOS15    |GPIOG Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PG.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPH_MFOS
      * Offset: 0x9C  GPIOH Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -944,82 +1076,82 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[14]    |MFOS14    |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[15]    |MFOS15    |GPIOH Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PH.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPI_MFOS
      * Offset: 0xA0  GPIOI Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -1029,52 +1161,52 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[14]    |MFOS14    |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[15]    |MFOS15    |GPIOI Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PI.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPJ_MFOS
      * Offset: 0xA4  GPIOJ Multiple Function Output Select Register
      * ---------------------------------------------------------------------------------------------------
@@ -1084,72 +1216,72 @@ typedef struct
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[1]     |MFOS1     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[2]     |MFOS2     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[3]     |MFOS3     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[4]     |MFOS4     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[5]     |MFOS5     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[6]     |MFOS6     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[7]     |MFOS7     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[8]     |MFOS8     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[9]     |MFOS9     |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[10]    |MFOS10    |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[11]    |MFOS11    |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12]    |MFOS12    |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[13]    |MFOS13    |GPIOJ Pin[x] Multiple Function Pin Output Mode Select
      * |        |          |This bit used to select multiple function pin output mode type for PJ.x pin.
      * |        |          |0 = Multiple function pin output mode type is Push-pull mode.
      * |        |          |1 = Multiple function pin output mode type is Open-drain mode.
-     * |        |          |Note 1: These bits are not retained when D2 power is turned off.
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::REGLCTL
      * Offset: 0x100  Register Lock Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1193,23 +1325,23 @@ typedef struct
      * |[7:6]   |RETRYCNT  |Trim Value Update Limitation Count
      * |        |          |This field defines that how many times the auto trim circuit will try to update the HIRC48M trim value before the frequency of HIRC48M locked.
      * |        |          |Once the HIRC48M locked, the internal trim value update counter will be reset.
-     * |        |          |If the trim value update counter reached this limitation value and frequency of HIRC48M still doesnu2019t lock, the auto trim operation will be disabled and FREQSEL will be cleared to 00.
+     * |        |          |If the trim value update counter reached this limitation value and frequency of HIRC48M is still not locked, the auto trim operation will be disabled and FREQSEL will be cleared to 00.
      * |        |          |00 = Trim retry count limitation is 64 loops.
      * |        |          |01 = Trim retry count limitation is 128 loops.
      * |        |          |10 = Trim retry count limitation is 256 loops.
      * |        |          |11 = Trim retry count limitation is 512 loops.
      * |[8]     |CESTOPEN  |Clock Error Stop Enable Bit
-     * |        |          |0 = The trim operation is keep going if clock is inaccuracy.
-     * |        |          |1 = The trim operation is stopped if clock is inaccuracy.
+     * |        |          |0 = Trim operation is kept going if clock is inaccurate.
+     * |        |          |1 = Trim operation is stopped if clock is inaccurate.
      * |[9]     |BOUNDEN   |Boundary Enable Bit
-     * |        |          |0 = Boundary function is disable.
-     * |        |          |1 = Boundary function is enable.
+     * |        |          |0 = Boundary function Disabled.
+     * |        |          |1 = Boundary function Enabled.
      * |[10]    |REFCKSEL  |Reference Clock Selection
      * |        |          |0 = HIRC48M trim reference clock is from external 32.768 kHz crystal oscillator.
      * |        |          |1 = HIRC48M trim reference clock is from internal USB synchronous mode.
      * |[20:16] |BOUNDARY  |Boundary Selection
-     * |        |          |Fill the boundary range from 0x1 to 0x31, 0x0 is reserved.
-     * |        |          |Note: This field is effective only when the BOUNDEN(SYS_TCTL48M [9]) is enable.
+     * |        |          |Fill the boundary range from 0x1 to 0x1F, 0x0 is reserved.
+     * |        |          |Note: This field is effective only when the BOUNDEN(SYS_TCTL48M [9]) is enabled.
      * @var SYS_T::TIEN48M
      * Offset: 0x114  HIRC 48M Trim Interrupt Enable Register
      * ---------------------------------------------------------------------------------------------------
@@ -1232,9 +1364,9 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[0]     |FREQLOCK  |HIRC48M Frequency Lock Status
      * |        |          |This bit indicates the HIRC48M frequency is locked.
-     * |        |          |This is a status bit and doesnu2019t trigger any interrupt.
+     * |        |          |This is a status bit and does not trigger any interrupt.
      * |        |          |This bit will be set automatically, if the frequency is lock and the RC_TRIM is enabled.
-     * |        |          |0 = The internal high-speed oscillator frequency doesnu2019t lock at 48 MHz yet.
+     * |        |          |0 = The internal high-speed oscillator frequency is not locked at 48 MHz.
      * |        |          |1 = The internal high-speed oscillator frequency locked at 48 MHz.
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[1]     |TFAILIF   |Trim Failure Interrupt Status
@@ -1253,6 +1385,7 @@ typedef struct
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[3]     |OVBDIF    |Over Boundary Status
      * |        |          |When the over boundary function is set, if there occurs the over boundary condition, this flag will be set.
+     * |        |          |This is a status bit and does not trigger any interrupt.
      * |        |          |0 = Over boundary condition did not occur.
      * |        |          |1 = Over boundary condition occurred.
      * |        |          |Note: Write 1 to clear this bit to 0.
@@ -1284,7 +1417,7 @@ typedef struct
      * |[7:6]   |RETRYCNT  |Trim Value Update Limitation Count
      * |        |          |This field defines that how many times the auto trim circuit will try to update the HIRC trim value before the frequency of HIRC locked.
      * |        |          |Once the HIRC locked, the internal trim value update counter will be reset.
-     * |        |          |If the trim value update counter reached this limitation value and frequency of HIRC still doesnu2019t lock, the auto trim operation will be disabled and FREQSEL will be cleared to 00.
+     * |        |          |If the trim value update counter reached this limitation value and frequency of HIRC is still not locked, the auto trim operation will be disabled and FREQSEL will be cleared to 00.
      * |        |          |00 = Trim retry count limitation is 64 loops.
      * |        |          |01 = Trim retry count limitation is 128 loops.
      * |        |          |10 = Trim retry count limitation is 256 loops.
@@ -1299,7 +1432,7 @@ typedef struct
      * |        |          |0 = HIRC trim reference clock is from external 32.768 kHz crystal oscillator.
      * |        |          |1 = HIRC trim reference clock is from internal USB synchronous mode.
      * |[20:16] |BOUNDARY  |Boundary Selection
-     * |        |          |Fill the boundary range from 0x1 to 0x31, 0x0 is reserved.
+     * |        |          |Fill the boundary range from 0x1 to 0x1F, 0x0 is reserved.
      * |        |          |Note: This field is effective only when the BOUNDEN(SYS_TCTL12M[9]) is enabled.
      * @var SYS_T::TIEN12M
      * Offset: 0x124  HIRC 12M Trim Interrupt Enable Register
@@ -1323,16 +1456,16 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[0]     |FREQLOCK  |HIRC Frequency Lock Status
      * |        |          |This bit indicates the HIRC frequency is locked.
-     * |        |          |This is a status bit and doesnu2019t trigger any interrupt.
+     * |        |          |This is a status bit and does not trigger any interrupt.
      * |        |          |This bit will be set automatically, if the frequency is lock and the RC_TRIM is enabled.
      * |        |          |0 = The internal high-speed oscillator frequency is not locked at 12 MHz yet.
      * |        |          |1 = The internal high-speed oscillator frequency locked at 12 MHz.
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[1]     |TFAILIF   |Trim Failure Interrupt Status
-     * |        |          |This bit indicates that HIRC trim value update limitation count reached and the HIRC clock frequency still doesnu2019t be locked
+     * |        |          |This bit indicates that HIRC trim value update limitation count reached and the HIRC clock frequency is still not locked
      * |        |          |Once this bit is set, the auto trim operation stopped and FREQSEL(SYS_TCTL12M[1:0]) will be cleared to 00 by hardware automatically.
      * |        |          |If this bit is set and TFAILIEN(SYS_TIEN12M[1]) is high, an interrupt will be triggered to notify that HIRC trim value update limitation count was reached.
-     * |        |          |0 = Trim value update limitation count does not reach.
+     * |        |          |0 = Trim value update limitation count did not reach.
      * |        |          |1 = Trim value update limitation count reached and HIRC frequency still not locked.
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[2]     |CLKERRIF  |Clock Error Interrupt Status
@@ -1344,6 +1477,7 @@ typedef struct
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[3]     |OVBDIF    |Over Boundary Status
      * |        |          |When the over boundary function is set, if there occurs the over boundary condition, this flag will be set.
+     * |        |          |This is a status bit and does not trigger any interrupt.
      * |        |          |0 = Over boundary condition did not occur.
      * |        |          |1 = Over boundary condition occurred.
      * |        |          |Note: Write 1 to clear this bit to 0.
@@ -1375,23 +1509,23 @@ typedef struct
      * |[7:6]   |RETRYCNT  |Trim Value Update Limitation Count
      * |        |          |This field defines that how many times the auto trim circuit will try to update the MIRC trim value before the frequency of MIRC locked.
      * |        |          |Once the MIRC locked, the internal trim value update counter will be reset.
-     * |        |          |If the trim value update counter reached this limitation value and frequency of MIRC still doesnu2019t lock, the auto trim operation will be disabled and FREQSEL will be cleared to 00.
+     * |        |          |If the trim value update counter reached this limitation value and frequency of MIRC is still not locked, the auto trim operation will be disabled and FREQSEL will be cleared to 00.
      * |        |          |00 = Trim retry count limitation is 64 loops.
      * |        |          |01 = Trim retry count limitation is 128 loops.
      * |        |          |10 = Trim retry count limitation is 256 loops.
      * |        |          |11 = Trim retry count limitation is 512 loops.
      * |[8]     |CESTOPEN  |Clock Error Stop Enable Bit
-     * |        |          |0 = The trim operation is keep going if clock is inaccuracy.
-     * |        |          |1 = The trim operation is stopped if clock is inaccuracy.
+     * |        |          |0 = The trim operation is kept going if clock is inaccurate.
+     * |        |          |1 = The trim operation is stopped if clock is inaccurate.
      * |[9]     |BOUNDEN   |Boundary Enable Bit
-     * |        |          |0 = Boundary function is disable.
-     * |        |          |1 = Boundary function is enable.
+     * |        |          |0 = Boundary function Disabled.
+     * |        |          |1 = Boundary function Enabled.
      * |[10]    |REFCKSEL  |Reference Clock Selection
      * |        |          |0 = MIRC trim reference clock is from external 32.768 kHz crystal oscillator.
      * |        |          |1 = MIRC trim reference clock is from internal USB synchronous mode.
      * |[20:16] |BOUNDARY  |Boundary Selection
-     * |        |          |Fill the boundary range from 0x1 to 0x31, 0x0 is reserved.
-     * |        |          |Note: This field is effective only when the BOUNDEN(SYS_TCTLMIRC [9]) is enable.
+     * |        |          |Fill the boundary range from 0x1 to 0x1F, 0x0 is reserved.
+     * |        |          |Note: This field is effective only when the BOUNDEN(SYS_TCTLMIRC [9]) is enabled.
      * @var SYS_T::TIENMIRC
      * Offset: 0x134  MIRC Trim Interrupt Enable Register
      * ---------------------------------------------------------------------------------------------------
@@ -1414,9 +1548,9 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[0]     |FREQLOCK  |MIRC Frequency Lock Status
      * |        |          |This bit indicates the MIRC frequency is locked.
-     * |        |          |This is a status bit and doesnu2019t trigger any interrupt.
+     * |        |          |This is a status bit and does not trigger any interrupt.
      * |        |          |This bit will be set automatically, if the frequency is lock and the RC_TRIM is enabled.
-     * |        |          |0 = The internal high-speed oscillator frequency doesnu2019t lock at 1 MHz yet.
+     * |        |          |0 = The internal high-speed oscillator frequency is not locked at 1 MHz.
      * |        |          |1 = The internal high-speed oscillator frequency locked at 1 MHz.
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[1]     |TFAILIF   |Trim Failure Interrupt Status
@@ -1435,6 +1569,7 @@ typedef struct
      * |        |          |Note: Write 1 to clear this bit to 0.
      * |[3]     |OVBDIF    |Over Boundary Status
      * |        |          |When the over boundary function is set, if there occurs the over boundary condition, this flag will be set.
+     * |        |          |This is a status bit and does not trigger any interrupt.
      * |        |          |0 = Over boundary condition did not occur.
      * |        |          |1 = Over boundary condition occurred.
      * |        |          |Note: Write 1 to clear this bit to 0.
@@ -1572,6 +1707,13 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
+     * |[0]     |EADC0RST  |EADCx Controller Reset (Write Protect)
+     * |        |          |Setting this bit to 1 will generate a reset signal to the EADCx
+     * |        |          |User needs to set this bit to 0 to release from reset state.
+     * |        |          |0 = EADCx controller normal operation.
+     * |        |          |1 = EADCx controller reset.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
      * @var SYS_T::EBIRST
      * Offset: 0x228  EBI Reset Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1949,6 +2091,13 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
+     * |[0]     |OTFC0RST  |OTFCx Controller Reset (Write Protect)
+     * |        |          |Setting this bit to 1 will generate a reset signal to the OTFCx
+     * |        |          |User needs to set this bit to 0 to release from reset state.
+     * |        |          |0 = OTFCx controller normal operation.
+     * |        |          |1 = OTFCx controller reset.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
      * @var SYS_T::OTGRST
      * Offset: 0x28C  OTG Reset Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -2118,6 +2267,13 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
+     * |[0]     |SPIM0RST  |SPIMx Controller Reset (Write Protect)
+     * |        |          |Setting this bit to 1 will generate a reset signal to the SPIMx
+     * |        |          |User needs to set this bit to 0 to release from reset state.
+     * |        |          |0 = SPIMx controller normal operation.
+     * |        |          |1 = SPIMx controller reset.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
      * @var SYS_T::TMRRST
      * Offset: 0x2C0  Timer Reset Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -2305,6 +2461,25 @@ typedef struct
      * |        |          |1 = UTCPDx controller reset.
      * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
      * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * @var SYS_T::WWDTRST
+     * Offset: 0x2E0  WWDT Reset Control Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |WWDT0RST  |WWDTx Controller Reset (Write Protect)
+     * |        |          |Setting this bit to 1 will generate a reset signal to the WWDTx
+     * |        |          |User needs to set this bit to 0 to release from reset state.
+     * |        |          |0 = WWDTx controller normal operation.
+     * |        |          |1 = WWDTx controller reset.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
+     * |[1]     |WWDT1RST  |WWDTx Controller Reset (Write Protect)
+     * |        |          |Setting this bit to 1 will generate a reset signal to the WWDTx
+     * |        |          |User needs to set this bit to 0 to release from reset state.
+     * |        |          |0 = WWDTx controller normal operation.
+     * |        |          |1 = WWDTx controller reset.
+     * |        |          |Note 1: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |        |          |Note 2: This bit is not retained when D0 power is turned off.
      * @var SYS_T::GPA_MFP0
      * Offset: 0x300  GPIOA Multiple Function Control Register 0
      * ---------------------------------------------------------------------------------------------------
@@ -2456,6 +2631,8 @@ typedef struct
      * |[4:0]   |PC12MFP   |PC.12 Multi-function Pin Selection
      * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12:8]  |PC13MFP   |PC.13 Multi-function Pin Selection
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
+     * |[20:16] |PC14MFP   |PC.14 Multi-function Pin Selection
      * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPD_MFP0
      * Offset: 0x330  GPIOD Multiple Function Control Register 0
@@ -2622,11 +2799,15 @@ typedef struct
      * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[20:16] |PG6MFP    |PG.6 Multi-function Pin Selection
      * |        |          |Note: These bits are not retained when D2 power is turned off.
+     * |[28:24] |PG7MFP    |PG.7 Multi-function Pin Selection
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * @var SYS_T::GPG_MFP2
      * Offset: 0x368  GPIOG Multiple Function Control Register 2
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
+     * |[4:0]   |PG8MFP    |PG.8 Multi-function Pin Selection
+     * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[12:8]  |PG9MFP    |PG.9 Multi-function Pin Selection
      * |        |          |Note: These bits are not retained when D2 power is turned off.
      * |[20:16] |PG10MFP   |PG.10 Multi-function Pin Selection
@@ -2927,19 +3108,274 @@ typedef struct
      * |[17]    |UART1INT  |UART1 Interrupt Flag (Read Only)
      * |        |          |0 = UART1 interrupt is deasserted.
      * |        |          |1 = UART1 interrupt is asserted.
+     * @var SYS_T::SRAMBCTL
+     * Offset: 0xE90  System SRAM BIST Control Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |SR0BIST   |System SRAM 0 BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables System SRAM 0 BIST function.
+     * |        |          |0 = System SRAM 0 BIST Disabled.
+     * |        |          |1 = System SRAM 0 BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[1]     |SR1BIST   |System SRAM 1 BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables System SRAM 1 BIST function.
+     * |        |          |0 = System SRAM 1 BIST Disabled.
+     * |        |          |1 = System SRAM 1 BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[2]     |SR2BIST   |System SRAM 2 BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables System SRAM 2 BIST function.
+     * |        |          |0 = System SRAM 2 BIST Disabled.
+     * |        |          |1 = System SRAM 2 BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[3]     |SR3BIST   |System SRAM 3 BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables System SRAM 3 BIST function.
+     * |        |          |0 = System SRAM 3 BIST Disabled.
+     * |        |          |1 = System SRAM 3 BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[4]     |LPSRBIST  |Low Power System SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables Low Power System SRAM BIST function.
+     * |        |          |0 = Low Power System SRAM BIST Disabled.
+     * |        |          |1 = Low Power System SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[8]     |CAN0BIST  |CAN0 SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables CAN0 SRAM BIST function.
+     * |        |          |0 = CAN0 SRAM BIST Disabled.
+     * |        |          |1 = CAN0 SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[9]     |CAN1BIST  |CAN1 SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables CAN1 SRAM BIST function.
+     * |        |          |0 = CAN1 SRAM BIST Disabled.
+     * |        |          |1 = CAN1 SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[10]    |SPIM0BIST |SPIM0 SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables SPIM0 SRAM BIST function.
+     * |        |          |0 = SPIM0 SRAM BIST Disabled.
+     * |        |          |1 = SPIM0 SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[12]    |CCAPBIST  |CCAP SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables CCAP SRAM BIST function.
+     * |        |          |0 = CCAP SRAM BIST Disabled.
+     * |        |          |1 = CCAP SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[13]    |I3CBIST   |I3C SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables I3C SRAM BIST function.
+     * |        |          |0 = I3C SRAM BIST Disabled.
+     * |        |          |1 = I3C SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[14]    |KSBIST    |KS SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables KS SRAM BIST function.
+     * |        |          |0 = KS SRAM BIST Disabled.
+     * |        |          |1 = KS SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[15]    |RSABIST   |RSA SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables RSA SRAM BIST function.
+     * |        |          |0 = RSA SRAM BIST Disabled.
+     * |        |          |1 = RSA SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[16]    |DMICBIST  |DMIC SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables DMIC SRAM BIST function.
+     * |        |          |0 = DMIC SRAM BIST Disabled.
+     * |        |          |1 = DMIC SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[17]    |EMACBIST  |EMAC SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables EMAC SRAM BIST function.
+     * |        |          |0 = EMAC SRAM BIST Disabled.
+     * |        |          |1 = EMAC SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[18]    |NPUBIST   |NPU SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables NPU SRAM BIST function.
+     * |        |          |0 = NPU SRAM BIST Disabled.
+     * |        |          |1 = NPU SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[24]    |USBDBIST  |USBD SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables USBD SRAM BIST function.
+     * |        |          |0 = USBD SRAM BIST Disabled.
+     * |        |          |1 = USBD SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[25]    |HSUSBDBIST|HSUSBD SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables HSUSBD SRAM BIST function.
+     * |        |          |0 = HSUSBD SRAM BIST Disabled.
+     * |        |          |1 = HSUSBD SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * |[26]    |HSUSBHBIST|HSUSBH SRAM BIST Enable Bit (Write Protect)
+     * |        |          |This bit enables HSUSBH SRAM BIST function.
+     * |        |          |0 = HSUSBH SRAM BIST Disabled.
+     * |        |          |1 = HSUSBH SRAM BIST Enabled.
+     * |        |          |Note: This bit is write protected. Refer to the SYS_REGLCTL register.
+     * @var SYS_T::SRAMBFF
+     * Offset: 0xE94  System SRAM BIST Finish Flag Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |SR0BFF    |System SRAM 0 BIST Finish Flag (Read Only)
+     * |        |          |0 = System SRAM 0 BIST is active.
+     * |        |          |1 = System SRAM 0 BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when SR0BIST(SYS_SRAMBCTL[0]) set to 0.
+     * |[1]     |SR1BFF    |System SRAM 1 BIST Finish Flag (Read Only)
+     * |        |          |0 = System SRAM 1 BIST is active.
+     * |        |          |1 = System SRAM 1 BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when SR1BIST(SYS_SRAMBCTL[1]) set to 0.
+     * |[2]     |SR2BFF    |System SRAM 2 BIST Finish Flag (Read Only)
+     * |        |          |0 = System SRAM 2 BIST is active.
+     * |        |          |1 = System SRAM 2 BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when SR2BIST(SYS_SRAMBCTL[2]) set to 0.
+     * |[3]     |SR3BFF    |System SRAM 3 BIST Finish Flag (Read Only)
+     * |        |          |0 = System SRAM 3 BIST is active.
+     * |        |          |1 = System SRAM 3 BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when SR3BIST(SYS_SRAMBCTL[3]) set to 0.
+     * |[4]     |LPSRBFF   |Low Power System SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = Low Power System SRAM BIST is active.
+     * |        |          |1 = Low Power System SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when LPSRBIST(SYS_SRAMBCTL[4]) set to 0.
+     * |[8]     |CAN0BFF   |CAN0 SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = CAN0 SRAM BIST is active.
+     * |        |          |1 = CAN0 SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when CAN0BIST(SYS_SRAMBCTL[8]) set to 0.
+     * |[9]     |CAN1BFF   |CAN1 SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = CAN1 SRAM BIST is active.
+     * |        |          |1 = CAN1 SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when CAN1BIST(SYS_SRAMBCTL[9]) set to 0.
+     * |[10]    |SPIM0BFF  |SPIM0 SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = SPIM0 SRAM BIST is active.
+     * |        |          |1 = SPIM0 SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when SPIM0BIST(SYS_SRAMBCTL[10]) set to 0.
+     * |[12]    |CCAPBFF   |CCAP SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = CCAP SRAM BIST is active.
+     * |        |          |1 = CCAP SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when CCAPBIST(SYS_SRAMBCTL[12]) set to 0.
+     * |[13]    |I3CBFF    |I3C SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = I3C SRAM BIST is active.
+     * |        |          |1 = I3C SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when I3CBIST(SYS_SRAMBCTL[13]) set to 0.
+     * |[14]    |KSBFF     |KS SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = KS SRAM BIST is active.
+     * |        |          |1 = KS SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when KSBIST(SYS_SRAMBCTL[14]) set to 0.
+     * |[15]    |RSABFF    |RSA SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = RSA SRAM BIST is active.
+     * |        |          |1 = RSA SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when RSABIST(SYS_SRAMBCTL[15]) set to 0.
+     * |[16]    |DMICBFF   |DMIC SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = DMIC SRAM BIST is active.
+     * |        |          |1 = DMIC SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when DMICBIST(SYS_SRAMBCTL[16]) set to 0.
+     * |[17]    |EMACBFF   |EMAC SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = EMAC SRAM BIST is active.
+     * |        |          |1 = EMAC SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when EMACBIST(SYS_SRAMBCTL[17]) set to 0.
+     * |[18]    |NPUBFF    |NPU SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = NPU SRAM BIST is active.
+     * |        |          |1 = NPU SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when NPUBIST(SYS_SRAMBCTL[18]) set to 0.
+     * |[24]    |USBDBFF   |USBD SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = USBD SRAM BIST is active.
+     * |        |          |1 = USBD SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when USBDBIST(SYS_SRAMBCTL[24]) set to 0.
+     * |[25]    |HSUSBDBFF |HSUSBD SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = HSUSBD SRAM BIST is active.
+     * |        |          |1 = HSUSBD SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when HSUSBDBIST(SYS_SRAMBCTL[25]) set to 0.
+     * |[26]    |HSUSBHBFF |HSUSBH SRAM BIST Finish Flag (Read Only)
+     * |        |          |0 = HSUSBH SRAM BIST is active.
+     * |        |          |1 = HSUSBH SRAM BIST test finish.
+     * |        |          |Note 1: This bit will be clear to 0 when HSUSBHBIST(SYS_SRAMBCTL[26]) set to 0.
+     * @var SYS_T::SRAMBRF
+     * Offset: 0xE98  System SRAM BIST Result Flag Register
+     * ---------------------------------------------------------------------------------------------------
+     * |Bits    |Field     |Descriptions
+     * | :----: | :----:   | :---- |
+     * |[0]     |SR0BRF    |System SRAM 0 BIST Result Flag (Read Only)
+     * |        |          |0 = System SRAM 0 BIST test pass.
+     * |        |          |1 = System SRAM 0 BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when SR0BIST(SYS_SRAMBCTL[0]) set to 0.
+     * |[1]     |SR1BRF    |System SRAM 1 BIST Result Flag (Read Only)
+     * |        |          |0 = System SRAM 1 BIST test pass.
+     * |        |          |1 = System SRAM 1 BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when SR1BIST(SYS_SRAMBCTL[1]) set to 0.
+     * |[2]     |SR2BRF    |System SRAM 2 BIST Result Flag (Read Only)
+     * |        |          |0 = System SRAM 2 BIST test pass.
+     * |        |          |1 = System SRAM 2 BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when SR2BIST(SYS_SRAMBCTL[3]) set to 0.
+     * |[3]     |SR3BRF    |System SRAM 3 BIST Result Flag (Read Only)
+     * |        |          |0 = System SRAM 3 BIST test pass.
+     * |        |          |1 = System SRAM 3 BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when SR3BIST(SYS_SRAMBCTL[3]) set to 0.
+     * |[4]     |LPSRBRF   |Low Power System SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = Low Power System SRAM BIST test pass.
+     * |        |          |1 = Low Power System SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when LPSRBIST(SYS_SRAMBCTL[4]) set to 0.
+     * |[8]     |CAN0BRF   |CAN0 SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = CAN0 SRAM BIST test pass.
+     * |        |          |1 = CAN0 SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when CAN0BIST(SYS_SRAMBCTL[8]) set to 0.
+     * |[9]     |CAN1BRF   |CAN1 SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = CAN1 SRAM BIST test pass.
+     * |        |          |1 = CAN1 SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when CAN1BIST(SYS_SRAMBCTL[9]) set to 0.
+     * |[10]    |SPIM0BRF  |SPIM0 SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = SPIM0 SRAM BIST test pass.
+     * |        |          |1 = SPIM0 SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when SPIM0BIST(SYS_SRAMBCTL[10]) set to 0.
+     * |[12]    |CCAPBRF   |CCAP SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = CCAP SRAM BIST test pass.
+     * |        |          |1 = CCAP SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when CCAPBIST(SYS_SRAMBCTL[12]) set to 0.
+     * |[13]    |I3CBRF    |I3C SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = I3C SRAM BIST test pass.
+     * |        |          |1 = I3C SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when I3CBIST(SYS_SRAMBCTL[13]) set to 0.
+     * |[14]    |KSBRF     |KS SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = KS SRAM BIST test pass.
+     * |        |          |1 = KS SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when KSBIST(SYS_SRAMBCTL[14]) set to 0.
+     * |[15]    |RSABRF    |RSA SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = RSA SRAM BIST test pass.
+     * |        |          |1 = RSA SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when RSABIST(SYS_SRAMBCTL[15]) set to 0.
+     * |[16]    |DMICBRF   |DMIC SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = DMIC SRAM BIST test pass.
+     * |        |          |1 = DMIC SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when DMICBIST(SYS_SRAMBCTL[16]) set to 0.
+     * |[17]    |EMACBRF   |EMAC SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = EMAC SRAM BIST test pass.
+     * |        |          |1 = EMAC SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when EMACBIST(SYS_SRAMBCTL[17]) set to 0.
+     * |[18]    |NPUBRF    |NPU SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = NPU SRAM BIST test pass.
+     * |        |          |1 = NPU SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when NPUBIST(SYS_SRAMBCTL[18]) set to 0.
+     * |[24]    |USBDBRF   |USBD SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = USBD SRAM BIST test pass.
+     * |        |          |1 = USBD SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when USBDBIST(SYS_SRAMBCTL[24]) set to 0.
+     * |[25]    |HSUSBDBRF |HSUSBD SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = HSUSBD SRAM BIST test pass.
+     * |        |          |1 = HSUSBD SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when HSUSBDBIST(SYS_SRAMBCTL[25]) set to 0.
+     * |[26]    |HSUSBHBRF |HSUSBH SRAM BIST Result Flag (Read Only)
+     * |        |          |0 = HSUSBH SRAM BIST test pass.
+     * |        |          |1 = HSUSBH SRAM BIST test fail.
+     * |        |          |Note 1: This bit will be clear to 0 when HSUSBHBIST(SYS_SRAMBCTL[26]) set to 0.
      */
     __I  uint32_t PDID;                  /*!< [0x0000] Part Device Identification Number Register                       */
     __IO uint32_t RSTCTL;                /*!< [0x0004] System Reset Control Register                                    */
     __IO uint32_t RSTSTS;                /*!< [0x0008] System Reset Status Register                                     */
     __IO uint32_t VTORSET;               /*!< [0x000c] VTOR Setting Register                                            */
-    __I  uint32_t RESERVE0[4];
+    __IO uint32_t SRAMICTL;              /*!< [0x0010] System SRAM Parity Error Interrupt Enable Control Register       */
+    __IO uint32_t SRAMSTS;               /*!< [0x0014] System SRAM Parity Check Status Register                         */
+    __I  uint32_t SRAMEADR;              /*!< [0x0018] System SRAM Parity Error Address Register                        */
+    __I  uint32_t RESERVE0[1];
     __IO uint32_t BODCTL;                /*!< [0x0020] Brown-out Detector Control Register                              */
-    __IO uint32_t PORCTL;                /*!< [0x0024] Power-on Reset Controller Register                               */
-    __IO uint32_t VREFCTL;               /*!< [0x0028] VREF Control Register                                            */
-    __IO uint32_t IVSCTL;                /*!< [0x002c] Internal Voltage Source Control Register                         */
-    __IO uint32_t USBPHY;                /*!< [0x0030] USB PHY Control Register                                         */
-    __IO uint32_t UTCPDCTL;              /*!< [0x0034] UTCPD Control Register                                           */
-    __I  uint32_t RESERVE1[18];
+    __IO uint32_t BODSTS;                /*!< [0x0024] Brown-out Detector Status Register                               */
+    __IO uint32_t PORCTL;                /*!< [0x0028] Power-on Reset Controller Register                               */
+    __IO uint32_t VREFCTL;               /*!< [0x002c] VREF Control Register                                            */
+    __IO uint32_t IVSCTL;                /*!< [0x0030] Internal Voltage Source Control Register                         */
+    __IO uint32_t USBPHY;                /*!< [0x0034] USB PHY Control Register                                         */
+    __IO uint32_t UTCPDCTL;              /*!< [0x0038] UTCPD Control Register                                           */
+    __I  uint32_t RESERVE1[1];
+    __IO uint32_t DBUSCTL;               /*!< [0x0040] Data Bus Control Register                                        */
+    __I  uint32_t RESERVE2[15];
     __IO uint32_t GPA_MFOS;              /*!< [0x0080] GPIOA Multiple Function Output Select Register                   */
     __IO uint32_t GPB_MFOS;              /*!< [0x0084] GPIOB Multiple Function Output Select Register                   */
     __IO uint32_t GPC_MFOS;              /*!< [0x0088] GPIOC Multiple Function Output Select Register                   */
@@ -2950,21 +3386,21 @@ typedef struct
     __IO uint32_t GPH_MFOS;              /*!< [0x009c] GPIOH Multiple Function Output Select Register                   */
     __IO uint32_t GPI_MFOS;              /*!< [0x00a0] GPIOI Multiple Function Output Select Register                   */
     __IO uint32_t GPJ_MFOS;              /*!< [0x00a4] GPIOJ Multiple Function Output Select Register                   */
-    __I  uint32_t RESERVE2[22];
+    __I  uint32_t RESERVE3[22];
     __IO uint32_t REGLCTL;               /*!< [0x0100] Register Lock Control Register                                   */
-    __I  uint32_t RESERVE3[3];
+    __I  uint32_t RESERVE4[3];
     __IO uint32_t TCTL48M;               /*!< [0x0110] HIRC 48M Trim Control Register                                   */
     __IO uint32_t TIEN48M;               /*!< [0x0114] HIRC 48M Trim Interrupt Enable Register                          */
     __IO uint32_t TISTS48M;              /*!< [0x0118] HIRC 48M Trim Interrupt Status Register                          */
-    __I  uint32_t RESERVE4[1];
+    __I  uint32_t RESERVE5[1];
     __IO uint32_t TCTL12M;               /*!< [0x0120] HIRC 12M Trim Control Register                                   */
     __IO uint32_t TIEN12M;               /*!< [0x0124] HIRC 12M Trim Interrupt Enable Register                          */
     __IO uint32_t TISTS12M;              /*!< [0x0128] HIRC 12M Trim Interrupt Status Register                          */
-    __I  uint32_t RESERVE5[1];
+    __I  uint32_t RESERVE6[1];
     __IO uint32_t TCTLMIRC;              /*!< [0x0130] MIRC Trim Control Register                                       */
     __IO uint32_t TIENMIRC;              /*!< [0x0134] MIRC Trim Interrupt Enable Register                              */
     __IO uint32_t TISTSMIRC;             /*!< [0x0138] MIRC Trim Interrupt Status Register                              */
-    __I  uint32_t RESERVE6[49];
+    __I  uint32_t RESERVE7[49];
     __IO uint32_t ACMPRST;               /*!< [0x0200] ACMP Reset Control Register                                      */
     __IO uint32_t AWFRST;                /*!< [0x0204] AWF Reset Control Register                                       */
     __IO uint32_t BPWMRST;               /*!< [0x0208] BPWM Reset Control Register                                      */
@@ -3010,7 +3446,7 @@ typedef struct
     __IO uint32_t SDHRST;                /*!< [0x02a8] SDH Reset Control Register                                       */
     __IO uint32_t SPIRST;                /*!< [0x02ac] SPI Reset Control Register                                       */
     __IO uint32_t SPIMRST;               /*!< [0x02b0] SPIM Reset Control Register                                      */
-    __I  uint32_t RESERVE7[3];
+    __I  uint32_t RESERVE8[3];
     __IO uint32_t TMRRST;                /*!< [0x02c0] Timer Reset Control Register                                     */
     __IO uint32_t TRNGRST;               /*!< [0x02c4] TRNG Reset Control Register                                      */
     __IO uint32_t TTMRRST;               /*!< [0x02c8] Tick Timer Reset Control Register                                */
@@ -3019,7 +3455,8 @@ typedef struct
     __IO uint32_t USBHRST;               /*!< [0x02d4] USB Host Reset Control Register                                  */
     __IO uint32_t USCIRST;               /*!< [0x02d8] USCI Reset Control Register                                      */
     __IO uint32_t UTCPDRST;              /*!< [0x02dc] UTCPD Reset Control Register                                     */
-    __I  uint32_t RESERVE8[8];
+    __IO uint32_t WWDTRST;               /*!< [0x02e0] WWDT Reset Control Register                                      */
+    __I  uint32_t RESERVE9[7];
     __IO uint32_t GPA_MFP0;              /*!< [0x0300] GPIOA Multiple Function Control Register 0                       */
     __IO uint32_t GPA_MFP1;              /*!< [0x0304] GPIOA Multiple Function Control Register 1                       */
     __IO uint32_t GPA_MFP2;              /*!< [0x0308] GPIOA Multiple Function Control Register 2                       */
@@ -3043,7 +3480,7 @@ typedef struct
     __IO uint32_t GPF_MFP0;              /*!< [0x0350] GPIOF Multiple Function Control Register 0                       */
     __IO uint32_t GPF_MFP1;              /*!< [0x0354] GPIOF Multiple Function Control Register 1                       */
     __IO uint32_t GPF_MFP2;              /*!< [0x0358] GPIOF Multiple Function Control Register 2                       */
-    __I  uint32_t RESERVE9[1];
+    __I  uint32_t RESERVE10[1];
     __IO uint32_t GPG_MFP0;              /*!< [0x0360] GPIOG Multiple Function Control Register 0                       */
     __IO uint32_t GPG_MFP1;              /*!< [0x0364] GPIOG Multiple Function Control Register 1                       */
     __IO uint32_t GPG_MFP2;              /*!< [0x0368] GPIOG Multiple Function Control Register 2                       */
@@ -3052,7 +3489,7 @@ typedef struct
     __IO uint32_t GPH_MFP1;              /*!< [0x0374] GPIOH Multiple Function Control Register 1                       */
     __IO uint32_t GPH_MFP2;              /*!< [0x0378] GPIOH Multiple Function Control Register 2                       */
     __IO uint32_t GPH_MFP3;              /*!< [0x037c] GPIOH Multiple Function Control Register 3                       */
-    __I  uint32_t RESERVE10[1];
+    __I  uint32_t RESERVE11[1];
     __IO uint32_t GPI_MFP1;              /*!< [0x0384] GPIOI Multiple Function Control Register 1                       */
     __IO uint32_t GPI_MFP2;              /*!< [0x0388] GPIOI Multiple Function Control Register 2                       */
     __IO uint32_t GPI_MFP3;              /*!< [0x038c] GPIOI Multiple Function Control Register 3                       */
@@ -3060,9 +3497,13 @@ typedef struct
     __IO uint32_t GPJ_MFP1;              /*!< [0x0394] GPIOJ Multiple Function Control Register 1                       */
     __IO uint32_t GPJ_MFP2;              /*!< [0x0398] GPIOJ Multiple Function Control Register 2                       */
     __IO uint32_t GPJ_MFP3;              /*!< [0x039c] GPIOJ Multiple Function Control Register 3                       */
-    __I  uint32_t RESERVE11[88];
+    __I  uint32_t RESERVE12[88];
     __IO uint32_t NMIEN;                 /*!< [0x0500] NMI Source Interrupt Enable Register                             */
     __I  uint32_t NMISTS;                /*!< [0x0504] NMI Source Interrupt Status Register                             */
+    __I  uint32_t RESERVE13[610];
+    __IO uint32_t SRAMBCTL;              /*!< [0x0e90] System SRAM BIST Control Register                                */
+    __I  uint32_t SRAMBFF;               /*!< [0x0e94] System SRAM BIST Finish Flag Register                            */
+    __I  uint32_t SRAMBRF;               /*!< [0x0e98] System SRAM BIST Result Flag Register                            */
 
 } SYS_T;
 
@@ -3110,35 +3551,71 @@ typedef struct
 #define SYS_VTORSET_VTORSET_Pos          (7)                                               /*!< SYS_T::VTORSET: VTORSET Position       */
 #define SYS_VTORSET_VTORSET_Msk          (0x1fffffful << SYS_VTORSET_VTORSET_Pos)          /*!< SYS_T::VTORSET: VTORSET Mask           */
 
+#define SYS_SRAMICTL_PERRIEN_Pos         (0)                                               /*!< SYS_T::SRAMICTL: PERRIEN Position      */
+#define SYS_SRAMICTL_PERRIEN_Msk         (0x1ul << SYS_SRAMICTL_PERRIEN_Pos)               /*!< SYS_T::SRAMICTL: PERRIEN Mask          */
+
+#define SYS_SRAMSTS_PERRIF_Pos           (0)                                               /*!< SYS_T::SRAMSTS: PERRIF Position        */
+#define SYS_SRAMSTS_PERRIF_Msk           (0x1ul << SYS_SRAMSTS_PERRIF_Pos)                 /*!< SYS_T::SRAMSTS: PERRIF Mask            */
+
+#define SYS_SRAMSTS_B0PERRIF_Pos         (8)                                               /*!< SYS_T::SRAMSTS: B0PERRIF Position      */
+#define SYS_SRAMSTS_B0PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B0PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B0PERRIF Mask          */
+
+#define SYS_SRAMSTS_B1PERRIF_Pos         (9)                                               /*!< SYS_T::SRAMSTS: B1PERRIF Position      */
+#define SYS_SRAMSTS_B1PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B1PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B1PERRIF Mask          */
+
+#define SYS_SRAMSTS_B2PERRIF_Pos         (10)                                              /*!< SYS_T::SRAMSTS: B2PERRIF Position      */
+#define SYS_SRAMSTS_B2PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B2PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B2PERRIF Mask          */
+
+#define SYS_SRAMSTS_B3PERRIF_Pos         (11)                                              /*!< SYS_T::SRAMSTS: B3PERRIF Position      */
+#define SYS_SRAMSTS_B3PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B3PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B3PERRIF Mask          */
+
+#define SYS_SRAMSTS_B4PERRIF_Pos         (12)                                              /*!< SYS_T::SRAMSTS: B4PERRIF Position      */
+#define SYS_SRAMSTS_B4PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B4PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B4PERRIF Mask          */
+
+#define SYS_SRAMSTS_B5PERRIF_Pos         (13)                                              /*!< SYS_T::SRAMSTS: B5PERRIF Position      */
+#define SYS_SRAMSTS_B5PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B5PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B5PERRIF Mask          */
+
+#define SYS_SRAMSTS_B6PERRIF_Pos         (14)                                              /*!< SYS_T::SRAMSTS: B6PERRIF Position      */
+#define SYS_SRAMSTS_B6PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B6PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B6PERRIF Mask          */
+
+#define SYS_SRAMSTS_B7PERRIF_Pos         (15)                                              /*!< SYS_T::SRAMSTS: B7PERRIF Position      */
+#define SYS_SRAMSTS_B7PERRIF_Msk         (0x1ul << SYS_SRAMSTS_B7PERRIF_Pos)               /*!< SYS_T::SRAMSTS: B7PERRIF Mask          */
+
+#define SYS_SRAMEADR_ERRADDR_Pos         (0)                                               /*!< SYS_T::SRAMEADR: ERRADDR Position      */
+#define SYS_SRAMEADR_ERRADDR_Msk         (0xfffffffful << SYS_SRAMEADR_ERRADDR_Pos)        /*!< SYS_T::SRAMEADR: ERRADDR Mask          */
+
 #define SYS_BODCTL_BODEN_Pos             (0)                                               /*!< SYS_T::BODCTL: BODEN Position          */
 #define SYS_BODCTL_BODEN_Msk             (0x1ul << SYS_BODCTL_BODEN_Pos)                   /*!< SYS_T::BODCTL: BODEN Mask              */
 
-#define SYS_BODCTL_BODRSTEN_Pos          (3)                                               /*!< SYS_T::BODCTL: BODRSTEN Position       */
-#define SYS_BODCTL_BODRSTEN_Msk          (0x1ul << SYS_BODCTL_BODRSTEN_Pos)                /*!< SYS_T::BODCTL: BODRSTEN Mask           */
-
-#define SYS_BODCTL_BODIF_Pos             (4)                                               /*!< SYS_T::BODCTL: BODIF Position          */
-#define SYS_BODCTL_BODIF_Msk             (0x1ul << SYS_BODCTL_BODIF_Pos)                   /*!< SYS_T::BODCTL: BODIF Mask              */
-
-#define SYS_BODCTL_BODLPM_Pos            (5)                                               /*!< SYS_T::BODCTL: BODLPM Position         */
+#define SYS_BODCTL_BODLPM_Pos            (1)                                               /*!< SYS_T::BODCTL: BODLPM Position         */
 #define SYS_BODCTL_BODLPM_Msk            (0x1ul << SYS_BODCTL_BODLPM_Pos)                  /*!< SYS_T::BODCTL: BODLPM Mask             */
 
-#define SYS_BODCTL_BODOUT_Pos            (6)                                               /*!< SYS_T::BODCTL: BODOUT Position         */
-#define SYS_BODCTL_BODOUT_Msk            (0x1ul << SYS_BODCTL_BODOUT_Pos)                  /*!< SYS_T::BODCTL: BODOUT Mask             */
+#define SYS_BODCTL_BODRSTEN_Pos          (2)                                               /*!< SYS_T::BODCTL: BODRSTEN Position       */
+#define SYS_BODCTL_BODRSTEN_Msk          (0x1ul << SYS_BODCTL_BODRSTEN_Pos)                /*!< SYS_T::BODCTL: BODRSTEN Mask           */
 
-#define SYS_BODCTL_LVREN_Pos             (7)                                               /*!< SYS_T::BODCTL: LVREN Position          */
-#define SYS_BODCTL_LVREN_Msk             (0x1ul << SYS_BODCTL_LVREN_Pos)                   /*!< SYS_T::BODCTL: LVREN Mask              */
-
-#define SYS_BODCTL_BODDGSEL_Pos          (8)                                               /*!< SYS_T::BODCTL: BODDGSEL Position       */
+#define SYS_BODCTL_BODDGSEL_Pos          (4)                                               /*!< SYS_T::BODCTL: BODDGSEL Position       */
 #define SYS_BODCTL_BODDGSEL_Msk          (0x7ul << SYS_BODCTL_BODDGSEL_Pos)                /*!< SYS_T::BODCTL: BODDGSEL Mask           */
 
-#define SYS_BODCTL_LVRDGSEL_Pos          (12)                                              /*!< SYS_T::BODCTL: LVRDGSEL Position       */
-#define SYS_BODCTL_LVRDGSEL_Msk          (0x7ul << SYS_BODCTL_LVRDGSEL_Pos)                /*!< SYS_T::BODCTL: LVRDGSEL Mask           */
-
-#define SYS_BODCTL_BODVL_Pos             (16)                                              /*!< SYS_T::BODCTL: BODVL Position          */
+#define SYS_BODCTL_BODVL_Pos             (8)                                               /*!< SYS_T::BODCTL: BODVL Position          */
 #define SYS_BODCTL_BODVL_Msk             (0x7ul << SYS_BODCTL_BODVL_Pos)                   /*!< SYS_T::BODCTL: BODVL Mask              */
+
+#define SYS_BODCTL_BODWKEN_Pos           (12)                                              /*!< SYS_T::BODCTL: BODWKEN Position        */
+#define SYS_BODCTL_BODWKEN_Msk           (0x3ul << SYS_BODCTL_BODWKEN_Pos)                 /*!< SYS_T::BODCTL: BODWKEN Mask            */
+
+#define SYS_BODCTL_LVREN_Pos             (16)                                              /*!< SYS_T::BODCTL: LVREN Position          */
+#define SYS_BODCTL_LVREN_Msk             (0x1ul << SYS_BODCTL_LVREN_Pos)                   /*!< SYS_T::BODCTL: LVREN Mask              */
+
+#define SYS_BODCTL_LVRDGSEL_Pos          (20)                                              /*!< SYS_T::BODCTL: LVRDGSEL Position       */
+#define SYS_BODCTL_LVRDGSEL_Msk          (0x7ul << SYS_BODCTL_LVRDGSEL_Pos)                /*!< SYS_T::BODCTL: LVRDGSEL Mask           */
 
 #define SYS_BODCTL_WRBUSY_Pos            (31)                                              /*!< SYS_T::BODCTL: WRBUSY Position         */
 #define SYS_BODCTL_WRBUSY_Msk            (0x1ul << SYS_BODCTL_WRBUSY_Pos)                  /*!< SYS_T::BODCTL: WRBUSY Mask             */
+
+#define SYS_BODSTS_BODOUT_Pos            (0)                                               /*!< SYS_T::BODSTS: BODOUT Position         */
+#define SYS_BODSTS_BODOUT_Msk            (0x1ul << SYS_BODSTS_BODOUT_Pos)                  /*!< SYS_T::BODSTS: BODOUT Mask             */
+
+#define SYS_BODSTS_BODIF_Pos             (1)                                               /*!< SYS_T::BODSTS: BODIF Position          */
+#define SYS_BODSTS_BODIF_Msk             (0x1ul << SYS_BODSTS_BODIF_Pos)                   /*!< SYS_T::BODSTS: BODIF Mask              */
 
 #define SYS_PORCTL_PORMASK_Pos           (0)                                               /*!< SYS_T::PORCTL: PORMASK Position        */
 #define SYS_PORCTL_PORMASK_Msk           (0xfffful << SYS_PORCTL_PORMASK_Pos)              /*!< SYS_T::PORCTL: PORMASK Mask            */
@@ -3199,6 +3676,9 @@ typedef struct
 
 #define SYS_UTCPDCTL_UDVBDETS_Pos        (12)                                              /*!< SYS_T::UTCPDCTL: UDVBDETS Position     */
 #define SYS_UTCPDCTL_UDVBDETS_Msk        (0x1ul << SYS_UTCPDCTL_UDVBDETS_Pos)              /*!< SYS_T::UTCPDCTL: UDVBDETS Mask         */
+
+#define SYS_DBUSCTL_H2XBSTEN_Pos         (0)                                               /*!< SYS_T::DBUSCTL: H2XBSTEN Position      */
+#define SYS_DBUSCTL_H2XBSTEN_Msk         (0x1ul << SYS_DBUSCTL_H2XBSTEN_Pos)               /*!< SYS_T::DBUSCTL: H2XBSTEN Mask          */
 
 #define SYS_GPA_MFOS_MFOS0_Pos           (0)                                               /*!< SYS_T::GPA_MFOS: MFOS0 Position        */
 #define SYS_GPA_MFOS_MFOS0_Msk           (0x1ul << SYS_GPA_MFOS_MFOS0_Pos)                 /*!< SYS_T::GPA_MFOS: MFOS0 Mask            */
@@ -3917,9 +4397,6 @@ typedef struct
 #define SYS_OTFCRST_OTFC0RST_Pos         (0)                                               /*!< SYS_T::OTFCRST: OTFC0RST Position      */
 #define SYS_OTFCRST_OTFC0RST_Msk         (0x1ul << SYS_OTFCRST_OTFC0RST_Pos)               /*!< SYS_T::OTFCRST: OTFC0RST Mask          */
 
-#define SYS_OTFCRST_OTFC1RST_Pos         (1)                                               /*!< SYS_T::OTFCRST: OTFC1RST Position      */
-#define SYS_OTFCRST_OTFC1RST_Msk         (0x1ul << SYS_OTFCRST_OTFC1RST_Pos)               /*!< SYS_T::OTFCRST: OTFC1RST Mask          */
-
 #define SYS_OTGRST_OTG0RST_Pos           (0)                                               /*!< SYS_T::OTGRST: OTG0RST Position        */
 #define SYS_OTGRST_OTG0RST_Msk           (0x1ul << SYS_OTGRST_OTG0RST_Pos)                 /*!< SYS_T::OTGRST: OTG0RST Mask            */
 
@@ -3973,9 +4450,6 @@ typedef struct
 
 #define SYS_SPIMRST_SPIM0RST_Pos         (0)                                               /*!< SYS_T::SPIMRST: SPIM0RST Position      */
 #define SYS_SPIMRST_SPIM0RST_Msk         (0x1ul << SYS_SPIMRST_SPIM0RST_Pos)               /*!< SYS_T::SPIMRST: SPIM0RST Mask          */
-
-#define SYS_SPIMRST_SPIM1RST_Pos         (1)                                               /*!< SYS_T::SPIMRST: SPIM1RST Position      */
-#define SYS_SPIMRST_SPIM1RST_Msk         (0x1ul << SYS_SPIMRST_SPIM1RST_Pos)               /*!< SYS_T::SPIMRST: SPIM1RST Mask          */
 
 #define SYS_TMRRST_TMR0RST_Pos           (0)                                               /*!< SYS_T::TMRRST: TMR0RST Position        */
 #define SYS_TMRRST_TMR0RST_Msk           (0x1ul << SYS_TMRRST_TMR0RST_Pos)                 /*!< SYS_T::TMRRST: TMR0RST Mask            */
@@ -4039,6 +4513,12 @@ typedef struct
 
 #define SYS_UTCPDRST_UTCPD0RST_Pos       (0)                                               /*!< SYS_T::UTCPDRST: UTCPD0RST Position    */
 #define SYS_UTCPDRST_UTCPD0RST_Msk       (0x1ul << SYS_UTCPDRST_UTCPD0RST_Pos)             /*!< SYS_T::UTCPDRST: UTCPD0RST Mask        */
+
+#define SYS_WWDTRST_WWDT0RST_Pos         (0)                                               /*!< SYS_T::WWDTRST: WWDT0RST Position      */
+#define SYS_WWDTRST_WWDT0RST_Msk         (0x1ul << SYS_WWDTRST_WWDT0RST_Pos)               /*!< SYS_T::WWDTRST: WWDT0RST Mask          */
+
+#define SYS_WWDTRST_WWDT1RST_Pos         (1)                                               /*!< SYS_T::WWDTRST: WWDT1RST Position      */
+#define SYS_WWDTRST_WWDT1RST_Msk         (0x1ul << SYS_WWDTRST_WWDT1RST_Pos)               /*!< SYS_T::WWDTRST: WWDT1RST Mask          */
 
 #define SYS_GPA_MFP0_PA0MFP_Pos          (0)                                               /*!< SYS_T::GPA_MFP0: PA0MFP Position       */
 #define SYS_GPA_MFP0_PA0MFP_Msk          (0x1ful << SYS_GPA_MFP0_PA0MFP_Pos)               /*!< SYS_T::GPA_MFP0: PA0MFP Mask           */
@@ -4127,16 +4607,14 @@ typedef struct
 #define SYS_GPB_MFP3_PB12MFP_Pos         (0)                                               /*!< SYS_T::GPB_MFP3: PB12MFP Position      */
 #define SYS_GPB_MFP3_PB12MFP_Msk         (0x1ful << SYS_GPB_MFP3_PB12MFP_Pos)              /*!< SYS_T::GPB_MFP3: PB12MFP Mask          */
 
-#if !defined(ALIGN_AF_PINS)
-    #define SYS_GPB_MFP3_PB13MFP_Pos         (8)                                               /*!< SYS_T::GPB_MFP3: PB13MFP Position      */
-    #define SYS_GPB_MFP3_PB13MFP_Msk         (0x1ful << SYS_GPB_MFP3_PB13MFP_Pos)              /*!< SYS_T::GPB_MFP3: PB13MFP Mask          */
+#define SYS_GPB_MFP3_PB13MFP_Pos         (8)                                               /*!< SYS_T::GPB_MFP3: PB13MFP Position      */
+#define SYS_GPB_MFP3_PB13MFP_Msk         (0x1ful << SYS_GPB_MFP3_PB13MFP_Pos)              /*!< SYS_T::GPB_MFP3: PB13MFP Mask          */
 
-    #define SYS_GPB_MFP3_PB14MFP_Pos         (16)                                              /*!< SYS_T::GPB_MFP3: PB14MFP Position      */
-    #define SYS_GPB_MFP3_PB14MFP_Msk         (0x1ful << SYS_GPB_MFP3_PB14MFP_Pos)              /*!< SYS_T::GPB_MFP3: PB14MFP Mask          */
+#define SYS_GPB_MFP3_PB14MFP_Pos         (16)                                              /*!< SYS_T::GPB_MFP3: PB14MFP Position      */
+#define SYS_GPB_MFP3_PB14MFP_Msk         (0x1ful << SYS_GPB_MFP3_PB14MFP_Pos)              /*!< SYS_T::GPB_MFP3: PB14MFP Mask          */
 
-    #define SYS_GPB_MFP3_PB15MFP_Pos         (24)                                              /*!< SYS_T::GPB_MFP3: PB15MFP Position      */
-    #define SYS_GPB_MFP3_PB15MFP_Msk         (0x1ful << SYS_GPB_MFP3_PB15MFP_Pos)              /*!< SYS_T::GPB_MFP3: PB15MFP Mask          */
-#endif
+#define SYS_GPB_MFP3_PB15MFP_Pos         (24)                                              /*!< SYS_T::GPB_MFP3: PB15MFP Position      */
+#define SYS_GPB_MFP3_PB15MFP_Msk         (0x1ful << SYS_GPB_MFP3_PB15MFP_Pos)              /*!< SYS_T::GPB_MFP3: PB15MFP Mask          */
 
 #define SYS_GPC_MFP0_PC0MFP_Pos          (0)                                               /*!< SYS_T::GPC_MFP0: PC0MFP Position       */
 #define SYS_GPC_MFP0_PC0MFP_Msk          (0x1ful << SYS_GPC_MFP0_PC0MFP_Pos)               /*!< SYS_T::GPC_MFP0: PC0MFP Mask           */
@@ -4180,22 +4658,23 @@ typedef struct
 #define SYS_GPC_MFP3_PC13MFP_Pos         (8)                                               /*!< SYS_T::GPC_MFP3: PC13MFP Position      */
 #define SYS_GPC_MFP3_PC13MFP_Msk         (0x1ful << SYS_GPC_MFP3_PC13MFP_Pos)              /*!< SYS_T::GPC_MFP3: PC13MFP Mask          */
 
+#define SYS_GPC_MFP3_PC14MFP_Pos         (16)                                              /*!< SYS_T::GPC_MFP3: PC14MFP Position      */
+#define SYS_GPC_MFP3_PC14MFP_Msk         (0x1ful << SYS_GPC_MFP3_PC14MFP_Pos)              /*!< SYS_T::GPC_MFP3: PC14MFP Mask          */
+
 #define SYS_GPD_MFP0_PD0MFP_Pos          (0)                                               /*!< SYS_T::GPD_MFP0: PD0MFP Position       */
 #define SYS_GPD_MFP0_PD0MFP_Msk          (0x1ful << SYS_GPD_MFP0_PD0MFP_Pos)               /*!< SYS_T::GPD_MFP0: PD0MFP Mask           */
 
-#if !defined(ALIGN_AF_PINS)
-    #define SYS_GPD_MFP0_PD1MFP_Pos          (8)                                               /*!< SYS_T::GPD_MFP0: PD1MFP Position       */
-    #define SYS_GPD_MFP0_PD1MFP_Msk          (0x1ful << SYS_GPD_MFP0_PD1MFP_Pos)               /*!< SYS_T::GPD_MFP0: PD1MFP Mask           */
+#define SYS_GPD_MFP0_PD1MFP_Pos          (8)                                               /*!< SYS_T::GPD_MFP0: PD1MFP Position       */
+#define SYS_GPD_MFP0_PD1MFP_Msk          (0x1ful << SYS_GPD_MFP0_PD1MFP_Pos)               /*!< SYS_T::GPD_MFP0: PD1MFP Mask           */
 
-    #define SYS_GPD_MFP0_PD2MFP_Pos          (16)                                              /*!< SYS_T::GPD_MFP0: PD2MFP Position       */
-    #define SYS_GPD_MFP0_PD2MFP_Msk          (0x1ful << SYS_GPD_MFP0_PD2MFP_Pos)               /*!< SYS_T::GPD_MFP0: PD2MFP Mask           */
+#define SYS_GPD_MFP0_PD2MFP_Pos          (16)                                              /*!< SYS_T::GPD_MFP0: PD2MFP Position       */
+#define SYS_GPD_MFP0_PD2MFP_Msk          (0x1ful << SYS_GPD_MFP0_PD2MFP_Pos)               /*!< SYS_T::GPD_MFP0: PD2MFP Mask           */
 
-    #define SYS_GPD_MFP0_PD3MFP_Pos          (24)                                              /*!< SYS_T::GPD_MFP0: PD3MFP Position       */
-    #define SYS_GPD_MFP0_PD3MFP_Msk          (0x1ful << SYS_GPD_MFP0_PD3MFP_Pos)               /*!< SYS_T::GPD_MFP0: PD3MFP Mask           */
+#define SYS_GPD_MFP0_PD3MFP_Pos          (24)                                              /*!< SYS_T::GPD_MFP0: PD3MFP Position       */
+#define SYS_GPD_MFP0_PD3MFP_Msk          (0x1ful << SYS_GPD_MFP0_PD3MFP_Pos)               /*!< SYS_T::GPD_MFP0: PD3MFP Mask           */
 
-    #define SYS_GPD_MFP1_PD4MFP_Pos          (0)                                               /*!< SYS_T::GPD_MFP1: PD4MFP Position       */
-    #define SYS_GPD_MFP1_PD4MFP_Msk          (0x1ful << SYS_GPD_MFP1_PD4MFP_Pos)               /*!< SYS_T::GPD_MFP1: PD4MFP Mask           */
-#endif
+#define SYS_GPD_MFP1_PD4MFP_Pos          (0)                                               /*!< SYS_T::GPD_MFP1: PD4MFP Position       */
+#define SYS_GPD_MFP1_PD4MFP_Msk          (0x1ful << SYS_GPD_MFP1_PD4MFP_Pos)               /*!< SYS_T::GPD_MFP1: PD4MFP Mask           */
 
 #define SYS_GPD_MFP1_PD5MFP_Pos          (8)                                               /*!< SYS_T::GPD_MFP1: PD5MFP Position       */
 #define SYS_GPD_MFP1_PD5MFP_Msk          (0x1ful << SYS_GPD_MFP1_PD5MFP_Pos)               /*!< SYS_T::GPD_MFP1: PD5MFP Mask           */
@@ -4331,6 +4810,12 @@ typedef struct
 
 #define SYS_GPG_MFP1_PG6MFP_Pos          (16)                                              /*!< SYS_T::GPG_MFP1: PG6MFP Position       */
 #define SYS_GPG_MFP1_PG6MFP_Msk          (0x1ful << SYS_GPG_MFP1_PG6MFP_Pos)               /*!< SYS_T::GPG_MFP1: PG6MFP Mask           */
+
+#define SYS_GPG_MFP1_PG7MFP_Pos          (24)                                              /*!< SYS_T::GPG_MFP1: PG7MFP Position       */
+#define SYS_GPG_MFP1_PG7MFP_Msk          (0x1ful << SYS_GPG_MFP1_PG7MFP_Pos)               /*!< SYS_T::GPG_MFP1: PG7MFP Mask           */
+
+#define SYS_GPG_MFP2_PG8MFP_Pos          (0)                                               /*!< SYS_T::GPG_MFP2: PG8MFP Position       */
+#define SYS_GPG_MFP2_PG8MFP_Msk          (0x1ful << SYS_GPG_MFP2_PG8MFP_Pos)               /*!< SYS_T::GPG_MFP2: PG8MFP Mask           */
 
 #define SYS_GPG_MFP2_PG9MFP_Pos          (8)                                               /*!< SYS_T::GPG_MFP2: PG9MFP Position       */
 #define SYS_GPG_MFP2_PG9MFP_Msk          (0x1ful << SYS_GPG_MFP2_PG9MFP_Pos)               /*!< SYS_T::GPG_MFP2: PG9MFP Mask           */
@@ -4574,6 +5059,168 @@ typedef struct
 
 #define SYS_NMISTS_UART1INT_Pos          (17)                                              /*!< SYS_T::NMISTS: UART1INT Position       */
 #define SYS_NMISTS_UART1INT_Msk          (0x1ul << SYS_NMISTS_UART1INT_Pos)                /*!< SYS_T::NMISTS: UART1INT Mask           */
+
+#define SYS_SRAMBCTL_SR0BIST_Pos         (0)                                               /*!< SYS_T::SRAMBCTL: SR0BIST Position      */
+#define SYS_SRAMBCTL_SR0BIST_Msk         (0x1ul << SYS_SRAMBCTL_SR0BIST_Pos)               /*!< SYS_T::SRAMBCTL: SR0BIST Mask          */
+
+#define SYS_SRAMBCTL_SR1BIST_Pos         (1)                                               /*!< SYS_T::SRAMBCTL: SR1BIST Position      */
+#define SYS_SRAMBCTL_SR1BIST_Msk         (0x1ul << SYS_SRAMBCTL_SR1BIST_Pos)               /*!< SYS_T::SRAMBCTL: SR1BIST Mask          */
+
+#define SYS_SRAMBCTL_SR2BIST_Pos         (2)                                               /*!< SYS_T::SRAMBCTL: SR2BIST Position      */
+#define SYS_SRAMBCTL_SR2BIST_Msk         (0x1ul << SYS_SRAMBCTL_SR2BIST_Pos)               /*!< SYS_T::SRAMBCTL: SR2BIST Mask          */
+
+#define SYS_SRAMBCTL_SR3BIST_Pos         (3)                                               /*!< SYS_T::SRAMBCTL: SR3BIST Position      */
+#define SYS_SRAMBCTL_SR3BIST_Msk         (0x1ul << SYS_SRAMBCTL_SR3BIST_Pos)               /*!< SYS_T::SRAMBCTL: SR3BIST Mask          */
+
+#define SYS_SRAMBCTL_LPSRBIST_Pos        (4)                                               /*!< SYS_T::SRAMBCTL: LPSRBIST Position     */
+#define SYS_SRAMBCTL_LPSRBIST_Msk        (0x1ul << SYS_SRAMBCTL_LPSRBIST_Pos)              /*!< SYS_T::SRAMBCTL: LPSRBIST Mask         */
+
+#define SYS_SRAMBCTL_CAN0BIST_Pos        (8)                                               /*!< SYS_T::SRAMBCTL: CAN0BIST Position     */
+#define SYS_SRAMBCTL_CAN0BIST_Msk        (0x1ul << SYS_SRAMBCTL_CAN0BIST_Pos)              /*!< SYS_T::SRAMBCTL: CAN0BIST Mask         */
+
+#define SYS_SRAMBCTL_CAN1BIST_Pos        (9)                                               /*!< SYS_T::SRAMBCTL: CAN1BIST Position     */
+#define SYS_SRAMBCTL_CAN1BIST_Msk        (0x1ul << SYS_SRAMBCTL_CAN1BIST_Pos)              /*!< SYS_T::SRAMBCTL: CAN1BIST Mask         */
+
+#define SYS_SRAMBCTL_SPIM0BIST_Pos       (10)                                              /*!< SYS_T::SRAMBCTL: SPIM0BIST Position    */
+#define SYS_SRAMBCTL_SPIM0BIST_Msk       (0x1ul << SYS_SRAMBCTL_SPIM0BIST_Pos)             /*!< SYS_T::SRAMBCTL: SPIM0BIST Mask        */
+
+#define SYS_SRAMBCTL_CCAPBIST_Pos        (12)                                              /*!< SYS_T::SRAMBCTL: CCAPBIST Position     */
+#define SYS_SRAMBCTL_CCAPBIST_Msk        (0x1ul << SYS_SRAMBCTL_CCAPBIST_Pos)              /*!< SYS_T::SRAMBCTL: CCAPBIST Mask         */
+
+#define SYS_SRAMBCTL_I3CBIST_Pos         (13)                                              /*!< SYS_T::SRAMBCTL: I3CBIST Position      */
+#define SYS_SRAMBCTL_I3CBIST_Msk         (0x1ul << SYS_SRAMBCTL_I3CBIST_Pos)               /*!< SYS_T::SRAMBCTL: I3CBIST Mask          */
+
+#define SYS_SRAMBCTL_KSBIST_Pos          (14)                                              /*!< SYS_T::SRAMBCTL: KSBIST Position       */
+#define SYS_SRAMBCTL_KSBIST_Msk          (0x1ul << SYS_SRAMBCTL_KSBIST_Pos)                /*!< SYS_T::SRAMBCTL: KSBIST Mask           */
+
+#define SYS_SRAMBCTL_RSABIST_Pos         (15)                                              /*!< SYS_T::SRAMBCTL: RSABIST Position      */
+#define SYS_SRAMBCTL_RSABIST_Msk         (0x1ul << SYS_SRAMBCTL_RSABIST_Pos)               /*!< SYS_T::SRAMBCTL: RSABIST Mask          */
+
+#define SYS_SRAMBCTL_DMICBIST_Pos        (16)                                              /*!< SYS_T::SRAMBCTL: DMICBIST Position     */
+#define SYS_SRAMBCTL_DMICBIST_Msk        (0x1ul << SYS_SRAMBCTL_DMICBIST_Pos)              /*!< SYS_T::SRAMBCTL: DMICBIST Mask         */
+
+#define SYS_SRAMBCTL_EMACBIST_Pos        (17)                                              /*!< SYS_T::SRAMBCTL: EMACBIST Position     */
+#define SYS_SRAMBCTL_EMACBIST_Msk        (0x1ul << SYS_SRAMBCTL_EMACBIST_Pos)              /*!< SYS_T::SRAMBCTL: EMACBIST Mask         */
+
+#define SYS_SRAMBCTL_NPUBIST_Pos         (18)                                              /*!< SYS_T::SRAMBCTL: NPUBIST Position      */
+#define SYS_SRAMBCTL_NPUBIST_Msk         (0x1ul << SYS_SRAMBCTL_NPUBIST_Pos)               /*!< SYS_T::SRAMBCTL: NPUBIST Mask          */
+
+#define SYS_SRAMBCTL_USBDBIST_Pos        (24)                                              /*!< SYS_T::SRAMBCTL: USBDBIST Position     */
+#define SYS_SRAMBCTL_USBDBIST_Msk        (0x1ul << SYS_SRAMBCTL_USBDBIST_Pos)              /*!< SYS_T::SRAMBCTL: USBDBIST Mask         */
+
+#define SYS_SRAMBCTL_HSUSBDBIST_Pos      (25)                                              /*!< SYS_T::SRAMBCTL: HSUSBDBIST Position   */
+#define SYS_SRAMBCTL_HSUSBDBIST_Msk      (0x1ul << SYS_SRAMBCTL_HSUSBDBIST_Pos)            /*!< SYS_T::SRAMBCTL: HSUSBDBIST Mask       */
+
+#define SYS_SRAMBCTL_HSUSBHBIST_Pos      (26)                                              /*!< SYS_T::SRAMBCTL: HSUSBHBIST Position   */
+#define SYS_SRAMBCTL_HSUSBHBIST_Msk      (0x1ul << SYS_SRAMBCTL_HSUSBHBIST_Pos)            /*!< SYS_T::SRAMBCTL: HSUSBHBIST Mask       */
+
+#define SYS_SRAMBFF_SR0BFF_Pos           (0)                                               /*!< SYS_T::SRAMBFF: SR0BFF Position        */
+#define SYS_SRAMBFF_SR0BFF_Msk           (0x1ul << SYS_SRAMBFF_SR0BFF_Pos)                 /*!< SYS_T::SRAMBFF: SR0BFF Mask            */
+
+#define SYS_SRAMBFF_SR1BFF_Pos           (1)                                               /*!< SYS_T::SRAMBFF: SR1BFF Position        */
+#define SYS_SRAMBFF_SR1BFF_Msk           (0x1ul << SYS_SRAMBFF_SR1BFF_Pos)                 /*!< SYS_T::SRAMBFF: SR1BFF Mask            */
+
+#define SYS_SRAMBFF_SR2BFF_Pos           (2)                                               /*!< SYS_T::SRAMBFF: SR2BFF Position        */
+#define SYS_SRAMBFF_SR2BFF_Msk           (0x1ul << SYS_SRAMBFF_SR2BFF_Pos)                 /*!< SYS_T::SRAMBFF: SR2BFF Mask            */
+
+#define SYS_SRAMBFF_SR3BFF_Pos           (3)                                               /*!< SYS_T::SRAMBFF: SR3BFF Position        */
+#define SYS_SRAMBFF_SR3BFF_Msk           (0x1ul << SYS_SRAMBFF_SR3BFF_Pos)                 /*!< SYS_T::SRAMBFF: SR3BFF Mask            */
+
+#define SYS_SRAMBFF_LPSRBFF_Pos          (4)                                               /*!< SYS_T::SRAMBFF: LPSRBFF Position       */
+#define SYS_SRAMBFF_LPSRBFF_Msk          (0x1ul << SYS_SRAMBFF_LPSRBFF_Pos)                /*!< SYS_T::SRAMBFF: LPSRBFF Mask           */
+
+#define SYS_SRAMBFF_CAN0BFF_Pos          (8)                                               /*!< SYS_T::SRAMBFF: CAN0BFF Position       */
+#define SYS_SRAMBFF_CAN0BFF_Msk          (0x1ul << SYS_SRAMBFF_CAN0BFF_Pos)                /*!< SYS_T::SRAMBFF: CAN0BFF Mask           */
+
+#define SYS_SRAMBFF_CAN1BFF_Pos          (9)                                               /*!< SYS_T::SRAMBFF: CAN1BFF Position       */
+#define SYS_SRAMBFF_CAN1BFF_Msk          (0x1ul << SYS_SRAMBFF_CAN1BFF_Pos)                /*!< SYS_T::SRAMBFF: CAN1BFF Mask           */
+
+#define SYS_SRAMBFF_SPIM0BFF_Pos         (10)                                              /*!< SYS_T::SRAMBFF: SPIM0BFF Position      */
+#define SYS_SRAMBFF_SPIM0BFF_Msk         (0x1ul << SYS_SRAMBFF_SPIM0BFF_Pos)               /*!< SYS_T::SRAMBFF: SPIM0BFF Mask          */
+
+#define SYS_SRAMBFF_CCAPBFF_Pos          (12)                                              /*!< SYS_T::SRAMBFF: CCAPBFF Position       */
+#define SYS_SRAMBFF_CCAPBFF_Msk          (0x1ul << SYS_SRAMBFF_CCAPBFF_Pos)                /*!< SYS_T::SRAMBFF: CCAPBFF Mask           */
+
+#define SYS_SRAMBFF_I3CBFF_Pos           (13)                                              /*!< SYS_T::SRAMBFF: I3CBFF Position        */
+#define SYS_SRAMBFF_I3CBFF_Msk           (0x1ul << SYS_SRAMBFF_I3CBFF_Pos)                 /*!< SYS_T::SRAMBFF: I3CBFF Mask            */
+
+#define SYS_SRAMBFF_KSBFF_Pos            (14)                                              /*!< SYS_T::SRAMBFF: KSBFF Position         */
+#define SYS_SRAMBFF_KSBFF_Msk            (0x1ul << SYS_SRAMBFF_KSBFF_Pos)                  /*!< SYS_T::SRAMBFF: KSBFF Mask             */
+
+#define SYS_SRAMBFF_RSABFF_Pos           (15)                                              /*!< SYS_T::SRAMBFF: RSABFF Position        */
+#define SYS_SRAMBFF_RSABFF_Msk           (0x1ul << SYS_SRAMBFF_RSABFF_Pos)                 /*!< SYS_T::SRAMBFF: RSABFF Mask            */
+
+#define SYS_SRAMBFF_DMICBFF_Pos          (16)                                              /*!< SYS_T::SRAMBFF: DMICBFF Position       */
+#define SYS_SRAMBFF_DMICBFF_Msk          (0x1ul << SYS_SRAMBFF_DMICBFF_Pos)                /*!< SYS_T::SRAMBFF: DMICBFF Mask           */
+
+#define SYS_SRAMBFF_EMACBFF_Pos          (17)                                              /*!< SYS_T::SRAMBFF: EMACBFF Position       */
+#define SYS_SRAMBFF_EMACBFF_Msk          (0x1ul << SYS_SRAMBFF_EMACBFF_Pos)                /*!< SYS_T::SRAMBFF: EMACBFF Mask           */
+
+#define SYS_SRAMBFF_NPUBFF_Pos           (18)                                              /*!< SYS_T::SRAMBFF: NPUBFF Position        */
+#define SYS_SRAMBFF_NPUBFF_Msk           (0x1ul << SYS_SRAMBFF_NPUBFF_Pos)                 /*!< SYS_T::SRAMBFF: NPUBFF Mask            */
+
+#define SYS_SRAMBFF_USBDBFF_Pos          (24)                                              /*!< SYS_T::SRAMBFF: USBDBFF Position       */
+#define SYS_SRAMBFF_USBDBFF_Msk          (0x1ul << SYS_SRAMBFF_USBDBFF_Pos)                /*!< SYS_T::SRAMBFF: USBDBFF Mask           */
+
+#define SYS_SRAMBFF_HSUSBDBFF_Pos        (25)                                              /*!< SYS_T::SRAMBFF: HSUSBDBFF Position     */
+#define SYS_SRAMBFF_HSUSBDBFF_Msk        (0x1ul << SYS_SRAMBFF_HSUSBDBFF_Pos)              /*!< SYS_T::SRAMBFF: HSUSBDBFF Mask         */
+
+#define SYS_SRAMBFF_HSUSBHBFF_Pos        (26)                                              /*!< SYS_T::SRAMBFF: HSUSBHBFF Position     */
+#define SYS_SRAMBFF_HSUSBHBFF_Msk        (0x1ul << SYS_SRAMBFF_HSUSBHBFF_Pos)              /*!< SYS_T::SRAMBFF: HSUSBHBFF Mask         */
+
+#define SYS_SRAMBRF_SR0BRF_Pos           (0)                                               /*!< SYS_T::SRAMBRF: SR0BRF Position        */
+#define SYS_SRAMBRF_SR0BRF_Msk           (0x1ul << SYS_SRAMBRF_SR0BRF_Pos)                 /*!< SYS_T::SRAMBRF: SR0BRF Mask            */
+
+#define SYS_SRAMBRF_SR1BRF_Pos           (1)                                               /*!< SYS_T::SRAMBRF: SR1BRF Position        */
+#define SYS_SRAMBRF_SR1BRF_Msk           (0x1ul << SYS_SRAMBRF_SR1BRF_Pos)                 /*!< SYS_T::SRAMBRF: SR1BRF Mask            */
+
+#define SYS_SRAMBRF_SR2BRF_Pos           (2)                                               /*!< SYS_T::SRAMBRF: SR2BRF Position        */
+#define SYS_SRAMBRF_SR2BRF_Msk           (0x1ul << SYS_SRAMBRF_SR2BRF_Pos)                 /*!< SYS_T::SRAMBRF: SR2BRF Mask            */
+
+#define SYS_SRAMBRF_SR3BRF_Pos           (3)                                               /*!< SYS_T::SRAMBRF: SR3BRF Position        */
+#define SYS_SRAMBRF_SR3BRF_Msk           (0x1ul << SYS_SRAMBRF_SR3BRF_Pos)                 /*!< SYS_T::SRAMBRF: SR3BRF Mask            */
+
+#define SYS_SRAMBRF_LPSRBRF_Pos          (4)                                               /*!< SYS_T::SRAMBRF: LPSRBRF Position       */
+#define SYS_SRAMBRF_LPSRBRF_Msk          (0x1ul << SYS_SRAMBRF_LPSRBRF_Pos)                /*!< SYS_T::SRAMBRF: LPSRBRF Mask           */
+
+#define SYS_SRAMBRF_CAN0BRF_Pos          (8)                                               /*!< SYS_T::SRAMBRF: CAN0BRF Position       */
+#define SYS_SRAMBRF_CAN0BRF_Msk          (0x1ul << SYS_SRAMBRF_CAN0BRF_Pos)                /*!< SYS_T::SRAMBRF: CAN0BRF Mask           */
+
+#define SYS_SRAMBRF_CAN1BRF_Pos          (9)                                               /*!< SYS_T::SRAMBRF: CAN1BRF Position       */
+#define SYS_SRAMBRF_CAN1BRF_Msk          (0x1ul << SYS_SRAMBRF_CAN1BRF_Pos)                /*!< SYS_T::SRAMBRF: CAN1BRF Mask           */
+
+#define SYS_SRAMBRF_SPIM0BRF_Pos         (10)                                              /*!< SYS_T::SRAMBRF: SPIM0BRF Position      */
+#define SYS_SRAMBRF_SPIM0BRF_Msk         (0x1ul << SYS_SRAMBRF_SPIM0BRF_Pos)               /*!< SYS_T::SRAMBRF: SPIM0BRF Mask          */
+
+#define SYS_SRAMBRF_CCAPBRF_Pos          (12)                                              /*!< SYS_T::SRAMBRF: CCAPBRF Position       */
+#define SYS_SRAMBRF_CCAPBRF_Msk          (0x1ul << SYS_SRAMBRF_CCAPBRF_Pos)                /*!< SYS_T::SRAMBRF: CCAPBRF Mask           */
+
+#define SYS_SRAMBRF_I3CBRF_Pos           (13)                                              /*!< SYS_T::SRAMBRF: I3CBRF Position        */
+#define SYS_SRAMBRF_I3CBRF_Msk           (0x1ul << SYS_SRAMBRF_I3CBRF_Pos)                 /*!< SYS_T::SRAMBRF: I3CBRF Mask            */
+
+#define SYS_SRAMBRF_KSBRF_Pos            (14)                                              /*!< SYS_T::SRAMBRF: KSBRF Position         */
+#define SYS_SRAMBRF_KSBRF_Msk            (0x1ul << SYS_SRAMBRF_KSBRF_Pos)                  /*!< SYS_T::SRAMBRF: KSBRF Mask             */
+
+#define SYS_SRAMBRF_RSABRF_Pos           (15)                                              /*!< SYS_T::SRAMBRF: RSABRF Position        */
+#define SYS_SRAMBRF_RSABRF_Msk           (0x1ul << SYS_SRAMBRF_RSABRF_Pos)                 /*!< SYS_T::SRAMBRF: RSABRF Mask            */
+
+#define SYS_SRAMBRF_DMICBRF_Pos          (16)                                              /*!< SYS_T::SRAMBRF: DMICBRF Position       */
+#define SYS_SRAMBRF_DMICBRF_Msk          (0x1ul << SYS_SRAMBRF_DMICBRF_Pos)                /*!< SYS_T::SRAMBRF: DMICBRF Mask           */
+
+#define SYS_SRAMBRF_EMACBRF_Pos          (17)                                              /*!< SYS_T::SRAMBRF: EMACBRF Position       */
+#define SYS_SRAMBRF_EMACBRF_Msk          (0x1ul << SYS_SRAMBRF_EMACBRF_Pos)                /*!< SYS_T::SRAMBRF: EMACBRF Mask           */
+
+#define SYS_SRAMBRF_NPUBRF_Pos           (18)                                              /*!< SYS_T::SRAMBRF: NPUBRF Position        */
+#define SYS_SRAMBRF_NPUBRF_Msk           (0x1ul << SYS_SRAMBRF_NPUBRF_Pos)                 /*!< SYS_T::SRAMBRF: NPUBRF Mask            */
+
+#define SYS_SRAMBRF_USBDBRF_Pos          (24)                                              /*!< SYS_T::SRAMBRF: USBDBRF Position       */
+#define SYS_SRAMBRF_USBDBRF_Msk          (0x1ul << SYS_SRAMBRF_USBDBRF_Pos)                /*!< SYS_T::SRAMBRF: USBDBRF Mask           */
+
+#define SYS_SRAMBRF_HSUSBDBRF_Pos        (25)                                              /*!< SYS_T::SRAMBRF: HSUSBDBRF Position     */
+#define SYS_SRAMBRF_HSUSBDBRF_Msk        (0x1ul << SYS_SRAMBRF_HSUSBDBRF_Pos)              /*!< SYS_T::SRAMBRF: HSUSBDBRF Mask         */
+
+#define SYS_SRAMBRF_HSUSBHBRF_Pos        (26)                                              /*!< SYS_T::SRAMBRF: HSUSBHBRF Position     */
+#define SYS_SRAMBRF_HSUSBHBRF_Msk        (0x1ul << SYS_SRAMBRF_HSUSBHBRF_Pos)              /*!< SYS_T::SRAMBRF: HSUSBHBRF Mask         */
 
 /** @} SYS_CONST */
 /** @} end of SYS register group */

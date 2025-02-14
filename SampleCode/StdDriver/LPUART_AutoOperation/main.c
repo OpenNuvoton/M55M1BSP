@@ -24,13 +24,26 @@ typedef struct dma_desc_t
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-/* LPUART can support NPD0,NDP1,NPD3 power-down mode */
+/* LPUART can support NPD0,NPD1,NPD3 power-down mode */
 #define TEST_POWER_DOWN_MODE    PMC_NPD0
 
 #define MAX_SG_TAB_NUM          8       /* Scater gather table nubmer */
-#define SG_TX_LENGTH            32      /* Each Scater gather transfer length */
+#define SG_TX_LENGTH            32      /* Each Scatter gather transfer length */
 #define SG_BASE_ADDR            0x20310800
 
+/*
+
+  LPSRAM is configured in mpu_config_M55M1.h
+
+  MPU Region 2
+    - Start Address        0x2031 0000
+    - Region Size          0x0000 2000
+    - Memory attribute     Non-cacheable
+    - Access attribute
+      - Read-ony         No
+      - Non-Privileged   No
+      - Non-executable   No
+*/
 uint8_t SrcArray[MAX_SG_TAB_NUM * SG_TX_LENGTH] __attribute__((section(".lpSram")));
 uint8_t DestArray[MAX_SG_TAB_NUM * SG_TX_LENGTH] __attribute__((section(".lpSram")));
 DMA_DESC_T DMA_DESC_SC[MAX_SG_TAB_NUM] __attribute__((section(".lpSram")));
@@ -142,7 +155,7 @@ NVT_ITCM void LPPDMA_IRQHandler(void)
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  Function to Build LPPDMA Scatter-gather table                                                                 */
+/*  Function to Build LPPDMA Scatter-gather table                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
 void BuildSCTab(uint32_t u32tabNum, uint32_t u32TxfSize, uint32_t pu8StarAddr)
 {
@@ -209,8 +222,15 @@ void LPPDMA_RX_init(uint8_t u8TestCh, uint32_t u8TestLen)
 
 void LPUART_trigger_init(LPUART_T *lpuart)
 {
-    // set Auto Operation mode trigger source from LPTMR0
-    LPUART_SelectAutoOperationMode(LPUART0, LPUART_AUTOCTL_TRIGSEL_LPTMR0);
+    /* Configure bus idle timeout to ensure proper functionality of RX */
+    LPUART_BUS_IDLE_TIMEOUT_ENABLE(lpuart);
+
+    LPUART_SetTimeoutCnt(lpuart, 100);
+
+    LPUART_EnableInt(lpuart, LPUART_INTEN_TOCNTEN_Msk | LPUART_INTEN_RXTOIEN_Msk);
+
+    /* Set auto operation mode trigger source from LPTMR0 */
+    LPUART_SelectAutoOperationMode(lpuart, LPUART_AUTOCTL_TRIGSEL_LPTMR0);
 
     /* Enable LPUART PDMA RX/TX */
     LPUART_PDMA_ENABLE(lpuart, LPUART_INTEN_TXPDMAEN_Msk | LPUART_INTEN_RXPDMAEN_Msk);
@@ -224,24 +244,20 @@ int32_t LPUART_AutoOP(uint32_t u32PDMode)
     // LPPDMA CH-0 Scatter gather Mode to send LUART TX data
     LPPDMA_TX_init(0, SG_TX_LENGTH);
 
-    // LPPDMA CH-1 basic Mode RX to receive LUART TX data
+    /* LPPDMA CH-1 basic Mode RX to receive LUART TX data */
     LPPDMA_RX_init(1, SG_TX_LENGTH * MAX_SG_TAB_NUM);
 
-    // LUART TX to send data and RX to receive data
+    /* LUART TX to send data and RX to receive data */
     LPUART_trigger_init(LPUART0);
 
     /* Start LPTMR */
     LPTMR_Start(LPTMR0);
 
     /* Set Power-down mode */
-    SYS_UnlockReg();
-    /* Switch SCLK clock source to HIRC */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
-
     PMC_SetPowerDownMode(u32PDMode, PMC_PLCTL_PLSEL_PL0);
 
-    /* clear all wakeup flag */
-    PMC->INTSTS |= PMC_INTSTS_CLRWK_Msk;    // clear all wakeup flag
+    /* Clear all wakeup flag */
+    PMC->INTSTS |= PMC_INTSTS_CLRWK_Msk;
 
     /* Clear LPPDMA interrupt status */
     LPPDMA->INTSTS = LPPDMA_INTSTS_WKF_Msk | LPPDMA_INTSTS_ALIGNF_Msk | LPPDMA_INTSTS_TDIF_Msk | LPPDMA_INTSTS_ABTIF_Msk;
@@ -270,20 +286,14 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
+    /* Enable Internal RC clock */
+    CLK_EnableXtalRC(CLK_SRCCTL_LIRCEN_Msk);
 
     /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
+    CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to PLL0 and Enable PLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to HIRC */
+    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -295,10 +305,10 @@ void SYS_Init(void)
     /* Enable LPUART0 peripheral clock */
     CLK_EnableModuleClock(LPUART0_MODULE);
 
-    /* Select LPUART0 clock source is HIRC and Low Power UART module clock divider as 1*/
-    CLK_SetModuleClock(LPTMR0_MODULE, CLK_LPTMRSEL_LPTMR0SEL_HIRC, 0);
+    /* Select LPUART0 clock source is LIRC and Low Power UART module clock divider as 1*/
+    CLK_SetModuleClock(LPTMR0_MODULE, CLK_LPTMRSEL_LPTMR0SEL_LIRC, 0);
 
-    /* Enable LPTMR 0 module clock */
+    /* Enable LPTMR0 module clock */
     CLK_EnableModuleClock(LPTMR0_MODULE);
 
     /* Enable LPPDMA module clock */
@@ -322,7 +332,6 @@ void SYS_Init(void)
     /* Set PA multi-function pins for LPUART0 TXD and RXD*/
     SET_LPUART0_RXD_PA0();
     SET_LPUART0_TXD_PA1();
-
 
 }
 
@@ -348,6 +357,9 @@ int main(void)
     /* Init System, peripheral clock and multi-function I/O */
     SYS_Init();
 
+    /* Releases GPIO hold status from power-down wake-up */
+    PMC_RELEASE_GPIO();
+
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
     initialise_monitor_handles();
 #endif
@@ -357,6 +369,7 @@ int main(void)
 
     /* Init LPUART0 */
     LPUART0_Init();
+
     /* Lock protected registers */
     SYS_LockReg();
 

@@ -68,12 +68,6 @@ static void SYS_Init(void)
     /* Unlock protected registers */
     SYS_UnlockReg();
 
-    /*---------------------------------------------------------------------------------------------------------*/
-    /* Init System Clock                                                                                       */
-    /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
-
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
     SystemCoreClockUpdate();
@@ -100,8 +94,14 @@ int main()
 
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();
+
     /* Init Debug UART for print message */
+#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+    DEBUG_PORT->LINE = (UART_WORD_LEN_8 | UART_PARITY_NONE | UART_STOP_BIT_1);
+    DEBUG_PORT->BAUD = (UART_BAUD_MODE2 | UART_BAUD_MODE2_DIVIDER(__HIRC, 115200));
+#else
     InitDebugUart();
+#endif
 
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
     initialise_monitor_handles();
@@ -116,10 +116,10 @@ int main()
     SYS_UnlockReg();    /* Unlock protected registers */
     FMC_Open();         /* Enable FMC ISP function */
 
-    PutString("\n\nPress any key to branch to APROM...\n");
+    PutString("\n\nPress any key to branch to APROM ...\n");
     GetChar();                         /* block on waiting for any one character input from UART */
 
-    PutString("\n\nChange VECMAP and branch to APROM...\n");
+    PutString("\n\nChange VECMAP and branch to APROM ...\n");
     u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
 
     while (!(DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXEMPTY_Msk))        /* wait until UART TX FIFO is empty */

@@ -79,6 +79,7 @@ static int32_t GenECDHSharedKey(ECC_PUBKEY_T *PubKey, uint32_t *AESKey)
 
 static void SetClientPublicKey(uint32_t *pub0, uint32_t *pub1)
 {
+    // Use BytesSwap to get correct endian
     Hex2Reg((char *)((uint32_t)gacPubKey0),  pub0);
     BytesSwap((char *)pub0, sizeof(pub0)); // 256-bits
 
@@ -86,8 +87,8 @@ static void SetClientPublicKey(uint32_t *pub0, uint32_t *pub1)
     BytesSwap((char *)pub1, sizeof(pub1)); // 256-bits
 
     /* ECC key pair example */
-    //  "d32438a1b4428541c564eeed79669b4bd3bf601c758469545e013c8fe8af7ef6"
-    //    /* B0, B1, ... B63 */
+    //  "gacPubKey0: d32438a1 b4428541 c564eeed 79669b4b d3bf601c 75846954 5e013c8f e8af7ef6"
+    //    /* Take care endian */
     //    pub0[0] = 0xa13824d3;
     //    pub0[1] = 0x418542b4;
     //    pub0[2] = 0xedee64c5;
@@ -97,8 +98,8 @@ static void SetClientPublicKey(uint32_t *pub0, uint32_t *pub1)
     //    pub0[6] = 0x8f3c015e;
     //    pub0[7] = 0xf67eafe8;
 
-    //  "476de8f3c6e6c48a8bacf1e1827cfb82501833c2bb816344f996533b1b031706"
-    //    /* B0, B1, ... B63 */
+    //  "gacPubKey1: 476de8f3 c6e6c48a 8bacf1e1 827cfb82 501833c2 bb816344 f996533b 1b031706"
+    //    /* Take care endian */
     //    pub1[0] = 0xf3e86d47;
     //    pub1[1] = 0x8ac4e6c6;
     //    pub1[2] = 0xe1f1ac8b;

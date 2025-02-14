@@ -25,7 +25,7 @@ typedef struct dma_desc_t
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-/* LPI2C can support NPD0 ~ NDP4 power-down mode */
+/* The LPI2C supports three auto-operations in master mode while chip is in Power-down mode(NPD0, NPD1, NPD3).  */
 #define TEST_POWER_DOWN_MODE    PMC_NPD0
 
 #define SG_TX_TAB_NUM    8       /* Scater gather table nubmer */
@@ -33,6 +33,19 @@ typedef struct dma_desc_t
 #define SG_TX_LENGTH     4
 #define SG_RX_LENGTH     2
 
+/*
+
+  LPSRAM is configured in mpu_config_M55M1.h
+
+  MPU Region 2
+    - Start Address        0x2031 0000
+    - Region Size          0x0000 2000
+    - Memory attribute     Non-cacheable
+    - Access attribute
+      - Read-ony         No
+      - Non-Privileged   No
+      - Non-executable   No
+*/
 uint8_t SrcArray[SG_TX_LENGTH * SG_TX_TAB_NUM] __attribute__((section(".lpSram"))) = {0};
 uint8_t DestArray[SG_RX_LENGTH * SG_RX_TAB_NUM] __attribute__((section(".lpSram"))) = {0};
 DMA_DESC_T DMA_DESC_SC[SG_TX_TAB_NUM] __attribute__((section(".lpSram"))) = {0};
@@ -82,7 +95,7 @@ void LPTMR_Trigger_Init(void)
     /* Set LPTMR to trigger LPI2C when LPTMR0 timeout */
     LPTMR_SetTriggerSource(LPTMR0, TIMER_TRGSRC_TIMEOUT_EVENT);
     /* Enable LPTMR0 to trigger Low Power IP */
-    LPTMR_SetTriggerTarget(LPTMR0, (LPTMR_TRG_TO_LPPDMA | LPTMR_TRGEN));
+    LPTMR_SetTriggerTarget(LPTMR0, LPTMR_TRGEN);
 }
 
 void LPPDMA_TX_Init(uint8_t u8TestCh, uint32_t u32TabNum, uint32_t u32TestLen)
@@ -282,16 +295,12 @@ void LPI2C_LPPDMA_MasterRx(uint32_t u32Status)
 /*---------------------------------------------------------------------------------------------------------*/
 void PowerDownFunction(void)
 {
-    /* Switch SCLK clock source to HIRC */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
     /* Check if all the debug messages are finished */
     UART_WAIT_TX_EMPTY(DEBUG_PORT);
     /* Set Power-down mode */
     PMC_SetPowerDownMode(TEST_POWER_DOWN_MODE, PMC_PLCTL_PLSEL_PL1);
     /* Enter to Power-down mode */
     PMC_PowerDown();
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
 }
 
 static void SYS_Init(void)
@@ -301,24 +310,15 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
-    /* Set HCLK2 divide 2 */
-    CLK_SET_HCLK2DIV(2);
-    /* Set PCLKx divide 2 */
-    CLK_SET_PCLK0DIV(2);
-    CLK_SET_PCLK1DIV(2);
-    CLK_SET_PCLK2DIV(2);
-    CLK_SET_PCLK3DIV(2);
-    CLK_SET_PCLK4DIV(2);
-    /* Update System Core Clock */
-    /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
+    /*
+      If SCLK is set to APLL0 at normal mode, SCLK must be switch to HIRC before entering power down mode.
+        And LPI2C clock should be set again due to clock source changes.
+        Without these settings, LPI2C can not work at power down mode.
+
+        In thie sample, SCLK is set to HIRC to prevent complex clock switch processing during normal mode and power down mode.
+    */
+    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
+    /* Use SystemCoreClockUpdate() to calculate and update SystemCoreClock. */
     SystemCoreClockUpdate();
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -326,11 +326,15 @@ static void SYS_Init(void)
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
     SetDebugUartMFP();
+    /* Disable Auto Operation Clock in Power-down Mode */
+    PMC_DISABLE_AOCKPD();
     /* enable LPSRAM clock */
     CLK_EnableModuleClock(LPSRAM0_MODULE);
     /* Enable LPPDMA Clock */
     CLK_EnableModuleClock(LPPDMA0_MODULE);
-    /* Enable LPTMR 0 module clock */
+    /* Select LPTMR0 module clock source from HIRC */
+    CLK_SetModuleClock(LPTMR0_MODULE, CLK_LPTMRSEL_LPTMR0SEL_HIRC, MODULE_NoMsk);
+    /* Enable LPTMR0 module clock */
     CLK_EnableModuleClock(LPTMR0_MODULE);
     /* Enable LPI2C0 clock */
     CLK_EnableModuleClock(LPI2C0_MODULE);
@@ -473,8 +477,8 @@ int32_t main(void)
     /* Autmatic Operation Mode Test                                                                                 */
     /* 1. LPI2C uses LPPDMA Channel-0 to trasnfer test pattern at SrcArray                                          */
     /*        and uses LPPDMA Channel-1 to Received RX data to DestArray                                            */
-    /* 3. System enter power-down mode and enable LPTMR0 to trigger Low Power I2C TX transfer at power-down mode    */
-    /* 4. When RX transfer done interrupt and wake-up system, compare the data between SrcArray and DestArray       */
+    /* 2. System enter power-down mode and enable LPTMR0 to trigger Low Power I2C TX transfer at power-down mode    */
+    /* 3. When RX transfer done interrupt and wake-up system, compare the data between SrcArray and DestArray       */
     /*--------------------------------------------------------------------------------------------------------------*/
     printf("+-------------------------------------------------------+\n");
     printf("|      M55M1 LPI2C Auto Operation Mode Sample Code      |\n");

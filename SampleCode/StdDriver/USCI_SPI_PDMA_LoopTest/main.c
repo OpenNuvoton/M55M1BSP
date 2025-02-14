@@ -20,8 +20,15 @@
 
 //------------------------------------------------------------------------------
 /* Global variable declaration */
+#if (NVT_DCACHE_ON == 1)
+// When DCache is enabled, the data buffers must be aligned to a cache line
+uint16_t g_au16MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(TEST_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+uint16_t g_au16MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(TEST_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+#else
+// When DCache is disabled, the data buffers do not need to be aligned
 uint16_t g_au16MasterToSlaveTestPattern[TEST_COUNT];
 uint16_t g_au16MasterRxBuffer[TEST_COUNT];
+#endif
 
 //------------------------------------------------------------------------------
 /* Function prototype declaration */
@@ -32,44 +39,6 @@ void SpiLoopTest_WithPDMA(void);
 /*---------------------------------------------------------------------------------------------------------*/
 /*  MAIN function                                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
-int main(void)
-{
-    /* Unlock protected registers */
-    SYS_UnlockReg();
-
-    /* Init System, peripheral clock and multi-function I/O */
-    SYS_Init();
-
-    /* Init Debug UART to 115200-8N1 for print message */
-    InitDebugUart();
-
-    /* Init USCI_SPI */
-    USCI_SPI_Init();
-
-    /* Lock protected registers */
-    SYS_LockReg();
-
-    printf("\n\n");
-    printf("+------------------------------------------------------------------+\n");
-    printf("|                   USCI_SPI Driver Sample Code                    |\n");
-    printf("+------------------------------------------------------------------+\n");
-    printf("\n");
-    printf("\nThis sample code demonstrates USCI_SPI0 self loop back data transfer.\n");
-    printf(" USCI_SPI0 configuration:\n");
-    printf("     Master mode; data width 16 bits.\n");
-    printf(" I/O connection:\n");
-    printf("     PA.10 USCI_SPI0_MOSI <--> PA.9 USCI_SPI0_MISO \n");
-
-    SpiLoopTest_WithPDMA();
-
-    printf("\n\nExit USCI_SPI driver sample code.\n");
-
-    /* Close USCI_SPI0 */
-    USPI_Close(USPI0);
-
-    while (1);
-}
-
 void SYS_Init(void)
 {
     /* Enable Internal RC 12MHz clock */
@@ -78,8 +47,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -100,7 +69,6 @@ void SYS_Init(void)
 
     /* Enable peripheral clock */
     CLK_EnableModuleClock(USCI0_MODULE);
-
     CLK_EnableModuleClock(PDMA0_MODULE);
 
     /* Enable GPIO Module Clock */
@@ -115,13 +83,13 @@ void SYS_Init(void)
     SetDebugUartMFP();
 
     /* Set USCI0_SPI multi-function pins */
-    SYS->GPA_MFP2 = SYS->GPA_MFP2 & ~(SYS_GPA_MFP2_PA9MFP_Msk | SYS_GPA_MFP2_PA10MFP_Msk | SYS_GPA_MFP2_PA11MFP_Msk);
-    SYS->GPA_MFP2 = SYS->GPA_MFP2 | (SYS_GPA_MFP2_PA11MFP_USCI0_CLK | SYS_GPA_MFP2_PA10MFP_USCI0_DAT0 | SYS_GPA_MFP2_PA9MFP_USCI0_DAT1);
-    SYS->GPB_MFP0 = SYS->GPB_MFP0 & ~(SYS_GPB_MFP0_PB0MFP_Msk);
-    SYS->GPB_MFP0 = SYS->GPB_MFP0 | (SYS_GPB_MFP0_PB0MFP_USCI0_CTL0);
+    SET_USCI0_CTL0_PB0();
+    SET_USCI0_CLK_PA11();
+    SET_USCI0_DAT0_PA10();
+    SET_USCI0_DAT1_PA9();
 
     /* USCI_SPI clock pin enable schmitt trigger */
-    PA->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
+    PA->SMTEN |= GPIO_SMTEN_SMTEN11_Msk;
 }
 
 void USCI_SPI_Init(void)
@@ -147,6 +115,12 @@ void SpiLoopTest_WithPDMA(void)
     USPI_T *UspiMaster = USPI0;
 
     printf("\nUSCI_SPI0 Loop test with PDMA ");
+
+#if (NVT_DCACHE_ON == 1)
+    // Clean the data cache for the master to slave test pattern buffer
+    // This ensures that the data is written from the cache to the memory
+    SCB_CleanDCache_by_Addr((uint8_t *)&g_au16MasterToSlaveTestPattern, sizeof(g_au16MasterToSlaveTestPattern));
+#endif
 
     /* Source data initiation */
     for (u32DataCount = 0; u32DataCount < TEST_COUNT; u32DataCount++)
@@ -190,6 +164,11 @@ void SpiLoopTest_WithPDMA(void)
         Destination Address = Increasing
         Burst Type = Single Transfer
     =========================================================================*/
+#if (NVT_DCACHE_ON == 1)
+    /* If DCACHE is enabled, clean and invalidate the data cache for the two buffers before using them */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)&g_au16MasterRxBuffer, sizeof(g_au16MasterRxBuffer));
+#endif
     /* Set transfer width (16 bits) and transfer count */
     PDMA_SetTransferCnt(PDMA0, USPI_MASTER_RX_DMA_CH, PDMA_WIDTH_16, TEST_COUNT);
     /* Set source/destination address and attributes */
@@ -209,7 +188,7 @@ void SpiLoopTest_WithPDMA(void)
     for (u32TestCycle = 0; u32TestCycle < 0x1000; u32TestCycle++)
     {
         if ((u32TestCycle & 0x1FF) == 0)
-            putchar('.');
+            printf(".");
 
         while (1)
         {
@@ -227,6 +206,12 @@ void SpiLoopTest_WithPDMA(void)
                     PDMA_CLR_TD_FLAG(PDMA0, (1 << USPI_MASTER_TX_DMA_CH) | (1 << USPI_MASTER_RX_DMA_CH));
                     /* Disable USCI_SPI master's PDMA transfer function */
                     USPI_DISABLE_TX_RX_PDMA(UspiMaster);
+
+#if (NVT_DCACHE_ON == 1)
+                    /* If DCache is enabled, clean the data cache for the master to slave test pattern before checking it */
+                    /* This is to ensure that the data written to the cache is actually written to the memory */
+                    SCB_InvalidateDCache_by_Addr((uint8_t *)&g_au16MasterToSlaveTestPattern, sizeof(g_au16MasterToSlaveTestPattern));
+#endif
 
                     /* Check the transfer data */
                     for (u32DataCount = 0; u32DataCount < TEST_COUNT; u32DataCount++)
@@ -304,6 +289,44 @@ void SpiLoopTest_WithPDMA(void)
     }
 
     return;
+}
+
+int main(void)
+{
+    /* Unlock protected registers */
+    SYS_UnlockReg();
+
+    /* Init System, peripheral clock and multi-function I/O */
+    SYS_Init();
+
+    /* Init Debug UART to 115200-8N1 for print message */
+    InitDebugUart();
+
+    /* Init USCI_SPI */
+    USCI_SPI_Init();
+
+    /* Lock protected registers */
+    SYS_LockReg();
+
+    printf("\n\n");
+    printf("+------------------------------------------------------------------+\n");
+    printf("|                   USCI_SPI Driver Sample Code                    |\n");
+    printf("+------------------------------------------------------------------+\n");
+    printf("\n");
+    printf("\nThis sample code demonstrates USCI_SPI0 self loop back data transfer.\n");
+    printf(" USCI_SPI0 configuration:\n");
+    printf("     Master mode; data width 16 bits.\n");
+    printf(" I/O connection:\n");
+    printf("     PA.10 USCI_SPI0_MOSI <--> PA.9 USCI_SPI0_MISO \n");
+
+    SpiLoopTest_WithPDMA();
+
+    printf("\n\nExit USCI_SPI driver sample code.\n");
+
+    /* Close USCI_SPI0 */
+    USPI_Close(USPI0);
+
+    while (1);
 }
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

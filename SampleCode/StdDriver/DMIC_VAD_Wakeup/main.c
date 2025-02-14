@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include "NuMicro.h"
 
-#define VAD_DETECT_SAMPLERATE      (8000)
+#define VAD_DETECT_SAMPLERATE      (16000)
 #define VAD_STABLECNT      (100)
 
 static volatile uint32_t g_u32PDWK;
@@ -72,7 +72,7 @@ void VAD_WaitStable(uint32_t u32StableCount)
 {
     while (u32StableCount--)
     {
-        while ((DMIC_VAD_GET_DEV(VAD0) > DMIC_VAD_POWERTHRE_M90DB) || (DMIC_VAD_GET_STP(VAD0) > DMIC_VAD_POWERTHRE_M70DB)) {};
+        while ((DMIC_VAD_GET_DEV(VAD0) > DMIC_VAD_POWERTHRE_M80DB) || (DMIC_VAD_GET_STP(VAD0) > DMIC_VAD_POWERTHRE_M60DB)) {};
 
         while (DMIC_VAD_IS_ACTIVE(VAD0))
         {
@@ -84,8 +84,6 @@ void VAD_WaitStable(uint32_t u32StableCount)
 NVT_ITCM void DMIC0VAD_IRQHandler()
 {
     uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
-    CLK_WaitModuleClockReady(DMIC0_MODULE);//TESTCHIP_ONLY
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);//TESTCHIP_ONLY
 
     //printf(",DMIC_VAD_GET_STP(VAD0) %lx,DMIC_VAD_GET_DEV(VAD0) %lx\n", DMIC_VAD_GET_STP(VAD0),DMIC_VAD_GET_DEV(VAD0));
     DMIC_VAD_CLR_ACTIVE(VAD0);
@@ -109,7 +107,6 @@ NVT_ITCM void PMC_IRQHandler(void)
 {
     uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
     g_u32PDWK = PMC_GetPMCWKSrc();
-    CLK_WaitModuleClockReady(DEBUG_PORT_MODULE);//TESTCHIP_ONLY
 
     /* check power down wakeup flag */
     if (g_u32PDWK & PMC_INTSTS_PDWKIF_Msk)
@@ -135,12 +132,14 @@ NVT_ITCM void PMC_IRQHandler(void)
 void PowerDownFunction(void)
 {
     SYS_UnlockReg();
-    PMC_ENABLE_INT();
+    PMC_ENABLE_WKINT();
     NVIC_EnableIRQ(PMC_IRQn);
-    /* Switch SCLK clock source to HIRC */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
+    /* Switch SCLK to HIRC when power down */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_HIRC, CLK_APLLCTL_APLLSRC_HIRC, 0);
     /* Check if all the debug messages are finished */
     UART_WAIT_TX_EMPTY(DEBUG_PORT);
+    //MIRC and HIRC enable in power down mode
+    PMC_DISABLE_AOCKPD();
     /* Set Power-down mode */
     PMC_SetPowerDownMode(PMC_NPD0, PMC_PLCTL_PLSEL_PL1);
 
@@ -152,8 +151,8 @@ void PowerDownFunction(void)
     NVIC_EnableIRQ(DMIC0VAD_IRQn);
     /* Enter to Power-down mode */
     PMC_PowerDown();
-    /* Switch SCLK clock source to PLL0 */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
     SYS_LockReg();
 }
 
@@ -165,8 +164,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -183,7 +182,6 @@ static void SYS_Init(void)
     CLK_EnableModuleClock(VAD0SEL_MODULE);
     // DMIC_VAD IPReset.
     SYS_ResetModule(SYS_DMIC0RST);
-    CLK_EnableModuleClock(GPIOB_MODULE);
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
@@ -192,10 +190,8 @@ static void SYS_Init(void)
     CLK_EnableModuleClock(GPIOB_MODULE);
     SET_DMIC0_DAT_PB5();
     SET_DMIC0_CLKLP_PB6();
-    SYS->GPB_MFOS = BIT5;
-    PB5 = 1;
-    SET_CLKO_PG15();
-    CLK_EnableCKO(CLK_CLKOSEL_CLKOSEL_HXT, 0, 1);
+    SET_CLKO_PC13();
+    CLK_EnableCKO(CLK_CLKOSEL_CLKOSEL_SYSCLK, 0, 1);
     /* Lock protected registers */
     SYS_LockReg();
 }
@@ -214,7 +210,6 @@ int main(void)
 
     printf("System core clock = %d\n", SystemCoreClock);
     printf("DMIC_VAD power down/wake up sample code\n");
-    printf("  !! Connect PB.4 <--> PB.6 !!\n\n");
     VAD_Init();
     VAD_Start();
     g_u32PDWK = 0;

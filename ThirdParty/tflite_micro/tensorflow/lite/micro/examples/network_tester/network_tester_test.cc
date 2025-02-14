@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2024 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,12 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/examples/network_tester/expected_output_data.h"
 #include "tensorflow/lite/micro/examples/network_tester/input_data.h"
 #include "tensorflow/lite/micro/examples/network_tester/network_model.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_log.h"
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 #include "tensorflow/lite/micro/testing/micro_test.h"
 #include "tensorflow/lite/schema/schema_generated.h"
@@ -32,7 +32,7 @@ limitations under the License.
 #ifdef ETHOS_U
 #define TENSOR_ARENA_SIZE (136 * 1024)
 #else
-#define TENSOR_ARENA_SIZE (3 * 1024)
+#define TENSOR_ARENA_SIZE (5 * 1024)
 #endif
 #endif
 
@@ -40,7 +40,7 @@ limitations under the License.
 #define NUM_INFERENCES 1
 #endif
 
-uint8_t tensor_arena[TENSOR_ARENA_SIZE];
+alignas(16) uint8_t tensor_arena[TENSOR_ARENA_SIZE];
 
 #ifdef NUM_BYTES_TO_PRINT
 inline void print_output_data(TfLiteTensor* output) {
@@ -80,29 +80,37 @@ void check_output_elem(TfLiteTensor* output, const T* expected_output,
 TF_LITE_MICRO_TESTS_BEGIN
 
 TF_LITE_MICRO_TEST(TestInvoke) {
-  tflite::MicroErrorReporter micro_error_reporter;
-
 #ifdef ETHOS_U
   const tflite::Model* model = ::tflite::GetModel(g_person_detect_model_data);
 #else
   const tflite::Model* model = ::tflite::GetModel(network_model);
 #endif
   if (model->version() != TFLITE_SCHEMA_VERSION) {
-    TF_LITE_REPORT_ERROR(&micro_error_reporter,
-                         "Model provided is schema version %d not equal "
-                         "to supported version %d.\n",
-                         model->version(), TFLITE_SCHEMA_VERSION);
+    MicroPrintf(
+        "Model provided is schema version %d not equal "
+        "to supported version %d.\n",
+        model->version(), TFLITE_SCHEMA_VERSION);
     return kTfLiteError;
   }
+#ifdef ETHOS_U
+  tflite::MicroMutableOpResolver<1> resolver;
+  resolver.AddEthosU();
 
-  tflite::AllOpsResolver resolver;
+#else
+  tflite::MicroMutableOpResolver<5> resolver;
+  resolver.AddAveragePool2D(tflite::Register_AVERAGE_POOL_2D_INT8());
+  resolver.AddConv2D(tflite::Register_CONV_2D_INT8());
+  resolver.AddDepthwiseConv2D(tflite::Register_DEPTHWISE_CONV_2D_INT8());
+  resolver.AddReshape();
+  resolver.AddSoftmax(tflite::Register_SOFTMAX_INT8());
 
-  tflite::MicroInterpreter interpreter(
-      model, resolver, tensor_arena, TENSOR_ARENA_SIZE, &micro_error_reporter);
+#endif
+  tflite::MicroInterpreter interpreter(model, resolver, tensor_arena,
+                                       TENSOR_ARENA_SIZE);
 
   TfLiteStatus allocate_status = interpreter.AllocateTensors();
   if (allocate_status != kTfLiteOk) {
-    TF_LITE_REPORT_ERROR(&micro_error_reporter, "Tensor allocation failed\n");
+    MicroPrintf("Tensor allocation failed\n");
     return kTfLiteError;
   }
 
@@ -117,7 +125,7 @@ TF_LITE_MICRO_TEST(TestInvoke) {
     }
     TfLiteStatus invoke_status = interpreter.Invoke();
     if (invoke_status != kTfLiteOk) {
-      TF_LITE_REPORT_ERROR(&micro_error_reporter, "Invoke failed\n");
+      MicroPrintf("Invoke failed\n");
       return kTfLiteError;
     }
     TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, invoke_status);
@@ -148,7 +156,8 @@ TF_LITE_MICRO_TEST(TestInvoke) {
     }
 #endif
   }
-  TF_LITE_REPORT_ERROR(&micro_error_reporter, "Ran successfully\n");
+
+  MicroPrintf("~~~ALL TESTS PASSED~~~\n");
 }
 
 TF_LITE_MICRO_TESTS_END

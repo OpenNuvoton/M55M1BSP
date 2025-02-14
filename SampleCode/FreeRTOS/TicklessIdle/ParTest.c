@@ -173,7 +173,7 @@ void vParTestInitialise(void)
     CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
     CLK_EnableXtalRC(CLK_SRCCTL_LIRCEN_Msk);
     /* Enable External LXT clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_LXTEN_Msk);
+    //    CLK_EnableXtalRC(CLK_SRCCTL_LXTEN_Msk);
 
     /* Enable HXT clock */
     CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
@@ -185,10 +185,10 @@ void vParTestInitialise(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
     /* Waiting for LXT clock ready */
-    CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
+    //    CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk);
 
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -196,7 +196,7 @@ void vParTestInitialise(void)
 
     /* Enable GPIO module clock */
     CLK_EnableModuleClock(GPIOB_MODULE);
-    CLK_EnableModuleClock(GPIOI_MODULE);
+    CLK_EnableModuleClock(GPIOH_MODULE);
 
     /* Enable UART module clock */
     SetDebugUartCLK();
@@ -232,7 +232,8 @@ void vParTestInitialise(void)
     CLK_EnableModuleClock(RTC0_MODULE);
 
     /* Set LXT as RTC clock source */
-    RTC_SetClockSource(RTC_CLOCK_SOURCE_LXT);
+    //    RTC_SetClockSource(RTC_CLOCK_SOURCE_LXT);
+    RTC_SetClockSource(RTC_CLOCK_SOURCE_LIRC);
 
     /* Enable RTC NVIC */
     NVIC_EnableIRQ(RTC_IRQn);
@@ -270,7 +271,7 @@ void vParTestInitialise(void)
     NVIC_EnableIRQ(GPB_IRQn);
 
     /* LED control */
-    GPIO_SetMode(PI, (BIT12), GPIO_MODE_OUTPUT);
+    GPIO_SetMode(PH, (BIT4), GPIO_MODE_OUTPUT);
 
     /* Enable interrupt de-bounce function and select de-bounce sampling cycle time is 1024 clocks of LIRC clock */
     GPIO_SET_DEBOUNCE_TIME(PB, GPIO_DBCTL_DBCLKSRC_LIRC, GPIO_DBCTL_DBCLKSEL_1024);

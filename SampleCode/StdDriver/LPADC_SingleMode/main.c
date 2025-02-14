@@ -33,20 +33,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -57,7 +45,8 @@ void SYS_Init(void)
 
     /* Enable LPADC module clock */
     CLK_EnableModuleClock(LPADC0_MODULE);
-
+    /* Enable GPIOB module clock */
+    CLK_EnableModuleClock(GPIOB_MODULE);
     /* Debug UART clock setting*/
     SetDebugUartCLK();
 
@@ -88,9 +77,6 @@ void LPADC_FunctionTest()
     printf("+----------------------------------------------------------------------+\n");
     printf("|                   LPADC single mode sample code                      |\n");
     printf("+----------------------------------------------------------------------+\n");
-
-    /* LPADC Calibration */
-    LPADC_Calibration(LPADC0);
 
     while (1)
     {

@@ -17,6 +17,8 @@
   @{
 */
 
+int32_t g_EADC_i32ErrCode = 0;   /*!< EADC global error code */
+
 /** @addtogroup EADC_EXPORTED_FUNCTIONS EADC Exported Functions
   @{
 */
@@ -34,11 +36,84 @@
   */
 void EADC_Open(EADC_T *eadc, uint32_t u32InputMode)
 {
+    /* Add one cycle in the decode trigger event is used to improve EADC accuracy.*/
+    outpw((uint32_t)eadc + 0xFF0, inpw((uint32_t)eadc + 0xFF0) | BIT8);
 
     eadc->CTL &= (~EADC_CTL_DIFFEN_Msk);
 
     eadc->CTL |= (u32InputMode | EADC_CTL_ADCEN_Msk);
 
+    /*Start the EADC calibration function*/
+    EADC_Calibration(eadc);
+
+}
+
+/**
+  * @brief  Calibration the specified EADC module
+  *
+  * @param[in]  eadc The pointer of the specified EADC module
+  *
+  * @return     None
+  *
+  * @details    To decrease the effect of electrical random noise, the calibration mode performs an offset and mismatch measurement cycles.
+  *             Afterwards, in normal operation mode, the calibration engine applies to the capacitor array, so that the offset and mismatch are removed.
+  * @note       This API will reset and calibrate EADC if EADC never be calibrated after chip power on.
+  * @note       If chip power off, calibration function should be executed again.
+  * @note       This function sets g_EADC_i32ErrCode to EADC_TIMEOUT_ERR if CALIF(EADC_CALSR[[16]) is not set to 1.
+  * @note       If you use the calibration function again, you must write 1 to clear CALIF (EADC_CALSR[[16]).
+  */
+
+void EADC_Calibration(EADC_T *eadc)
+{
+    uint32_t u32Delay = SystemCoreClock;    /* 1 second */
+    uint32_t u32EADCClkSel, u32EADCClkDiv;
+
+    g_EADC_i32ErrCode = 0;
+
+    /* record EADC clock settings */
+    u32EADCClkSel = CLK->EADCSEL;
+    u32EADCClkDiv = CLK->EADCDIV;
+
+    /* Set ECLK equal to PCLK according to calibration requirements */
+    CLK->EADCSEL = (CLK->EADCSEL & CLK_EADCSEL_EADC0SEL_Msk) | CLK_EADCSEL_EADC0SEL_PCLK0;
+    CLK->EADCDIV &= CLK_EADCDIV_EADC0DIV_Msk;
+
+    /* EADC Converter Enable  */
+    eadc->CTL |= EADC_CTL_ADCEN_Msk;
+
+    /* Do calibration for EADC to decrease the effect of electrical random noise. */
+    if ((eadc->CALSR & EADC_CALSR_CALIF_Msk) == 0)
+    {
+        /* Must reset EADC before EADC calibration */
+        EADC_CONV_RESET(eadc);
+
+        while ((eadc->CTL & EADC_CTL_ADCRST_Msk) == EADC_CTL_ADCRST_Msk)
+        {
+            if (--u32Delay == 0)
+            {
+                g_EADC_i32ErrCode = EADC_TIMEOUT_ERR;
+                break;
+            }
+        }
+
+        eadc->CALSR |= EADC_CALSR_CALIF_Msk;        /* Clear Calibration Finish Interrupt Flag */
+        eadc->CALCTL |= EADC_CALCTL_CAL_Msk;        /* Enable Calibration function */
+
+        u32Delay = SystemCoreClock / 20;
+
+        while ((eadc->CALSR & EADC_CALSR_CALIF_Msk) != EADC_CALSR_CALIF_Msk) /* Wait calibration finish */
+        {
+            if (--u32Delay == 0)
+            {
+                g_EADC_i32ErrCode = EADC_TIMEOUT_ERR;
+                break;
+            }
+        }
+    }
+
+    /* Restore EADC clock settings */
+    CLK->EADCSEL = u32EADCClkSel;
+    CLK->EADCDIV = u32EADCClkDiv;
 }
 
 /**
@@ -83,13 +158,13 @@ void EADC_Close(EADC_T *eadc)
   *                            - \ref EADC_BPWM1TG_TRIGGER               : BPWM1TG trigger
   *                            - \ref EADC_ACMP0_INT_TRIGGER             : ACMP0 interrupt trigger
   *                            - \ref EADC_ACMP1_INT_TRIGGER             : ACMP1 interrupt trigger
-    *                          - \ref EADC_ACMP2_INT_TRIGGER             : ACMP2 interrupt trigger
+  *                            - \ref EADC_ACMP2_INT_TRIGGER             : ACMP2 interrupt trigger
   *                            - \ref EADC_ACMP3_INT_TRIGGER             : ACMP3 interrupt trigger
 
   * @param[in] u32Channel Specifies the sample module channel, valid value are from 0 to 27.
   * @return None
-  * @details Each of ADC control logic modules 0~18 which is configurable for ADC converter channel EADC_CH0~18 and trigger source.
-  *         sample module 19~21 is fixed for ADC channel 19, 20, 21 input sources as band-gap voltage, temperature sensor, and DAC0 output.
+  * @details Each of ADC control logic modules 0~23 which is configurable for ADC converter channel EADC_CH0~23 and trigger source.
+  *         sample module 24~27 is fixed for ADC channel 24, 25, 26, 27 input sources as band-gap voltage, temperature sensor, VBAT/4, and AVDD/4.
   */
 void EADC_ConfigSampleModule(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32TriggerSrc, uint32_t u32Channel)
 {
@@ -124,13 +199,13 @@ void EADC_SetTriggerDelayTime(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32T
 {
     if (u32ModuleNum < 19)
     {
-        eadc->SCTL[u32ModuleNum] &= ~(EADC_SCTL_TRGDLYDIV_Msk | EADC_SCTL_TRGDLYCNT_Msk);
-        eadc->SCTL[u32ModuleNum] |= ((u32TriggerDelayTime << EADC_SCTL_TRGDLYCNT_Pos) | u32DelayClockDivider);
+        eadc->SCTL[u32ModuleNum] &= ~(EADC_SCTL_TRGDLDIV_Msk | EADC_SCTL_TRGDLCNT_Msk);
+        eadc->SCTL[u32ModuleNum] |= ((u32TriggerDelayTime << EADC_SCTL_TRGDLCNT_Pos) | u32DelayClockDivider);
     }
     else
     {
-        eadc->SCTL19[u32ModuleNum - 19] &= ~(EADC_SCTL_TRGDLYDIV_Msk | EADC_SCTL_TRGDLYCNT_Msk);
-        eadc->SCTL19[u32ModuleNum - 19] |= ((u32TriggerDelayTime << EADC_SCTL_TRGDLYCNT_Pos) | u32DelayClockDivider);
+        eadc->SCTL19[u32ModuleNum - 19] &= ~(EADC_SCTL_TRGDLDIV_Msk | EADC_SCTL_TRGDLCNT_Msk);
+        eadc->SCTL19[u32ModuleNum - 19] |= ((u32TriggerDelayTime << EADC_SCTL_TRGDLCNT_Pos) | u32DelayClockDivider);
     }
 }
 

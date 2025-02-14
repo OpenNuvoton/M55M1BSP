@@ -182,9 +182,9 @@ void MP3Player(void)
     NVIC_EnableIRQ(I2S0_IRQn);
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
-    SET_GPIO_PB12();
-    GPIO_SetMode(PB, BIT12, GPIO_MODE_OUTPUT);
-    PB12 = 0;
+    SET_GPIO_PD1();
+    GPIO_SetMode(PD, BIT1, GPIO_MODE_OUTPUT);
+    PD1 = 0;
 
     /* Set MCLK and enable MCLK */
     I2S_EnableMCLK(I2S0, 12000000);
@@ -199,6 +199,10 @@ void MP3Player(void)
 
     while (1)
     {
+#if (NVT_DCACHE_ON == 1)
+        SCB_CleanInvalidateDCache_by_Addr((int *)&g_ai32PCMBuffer, sizeof(g_ai32PCMBuffer));
+#endif
+
         if (Stream.buffer == NULL || Stream.error == MAD_ERROR_BUFLEN)
         {
             if (Stream.next_frame != NULL)

@@ -7,6 +7,7 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include "NuMicro.h"
 
 
@@ -18,17 +19,14 @@
 // <o0> Power-down Mode
 //      <0=> NPD0
 //      <1=> NPD1
+//      <2=> NPD2
+//      <3=> NPD3
+//      <4=> NPD4
 //      <5=> SPD0
-//      <7=> DPD0
+//      <6=> SPD1
+//      <7=> DPD
 */
 #define SET_PDMSEL    0
-
-/*
-// <o0> Voltage Regulator
-//      <0=> LDO
-//      <1=> DCDC
-*/
-#define SET_MVR       0
 
 /*
 // <o0> POR
@@ -57,11 +55,10 @@
 
 void PowerDownFunction(void);
 void GPC_IRQHandler(void);
-void PorSetting(void);
-int32_t LircSetting(void);
-int32_t LxtSetting(void);
+void POR_Setting(void);
+int32_t LIRC_Setting(void);
+int32_t LXT_Setting(void);
 void SYS_Init(void);
-
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Function for System Entry to Power Down Mode                                                           */
@@ -116,7 +113,7 @@ NVT_ITCM void GPC_IRQHandler(void)
     inp32(PC->INTSRC);
 }
 
-void PorSetting(void)
+void POR_Setting(void)
 {
     if (SET_POR == 0)
     {
@@ -130,7 +127,7 @@ void PorSetting(void)
     }
 }
 
-int32_t LircSetting(void)
+int32_t LIRC_Setting(void)
 {
     uint32_t u32TimeOutCnt;
 
@@ -164,7 +161,7 @@ int32_t LircSetting(void)
     return 0;
 }
 
-int32_t LxtSetting(void)
+int32_t LXT_Setting(void)
 {
     uint32_t u32TimeOutCnt;
 
@@ -191,30 +188,6 @@ int32_t LxtSetting(void)
         if (CLK_WaitClockReady(CLK_STATUS_LXTSTB_Msk) == 0)
         {
             printf("Wait for LXT enable time-out!\n");
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
-int32_t VoltageRegulatorSetting(void)
-{
-    if (SET_MVR == 0)
-    {
-        /* Set voltage regulator to LDO mode */
-        if (PMC_SetPowerRegulator(PMC_VRCTL_MVRS_LDO) != 0)
-        {
-            printf("Set voltage regulator to LDO mode not finished!\n");
-            return -1;
-        }
-    }
-    else
-    {
-        /* Set voltage regulator to DCDC mode */
-        if (PMC_SetPowerRegulator(PMC_VRCTL_MVRS_DCDC) != 0)
-        {
-            printf("Set voltage regulator to DCDC mode not finished!\n");
             return -1;
         }
     }
@@ -257,6 +230,18 @@ void SYS_Init(void)
 
     /* Enable UART module clock */
     SetDebugUartCLK();
+
+    /* Enable all GPIO clock */
+    CLK_EnableModuleClock(GPIOA_MODULE);
+    CLK_EnableModuleClock(GPIOB_MODULE);
+    CLK_EnableModuleClock(GPIOC_MODULE);
+    CLK_EnableModuleClock(GPIOD_MODULE);
+    CLK_EnableModuleClock(GPIOE_MODULE);
+    CLK_EnableModuleClock(GPIOF_MODULE);
+    CLK_EnableModuleClock(GPIOG_MODULE);
+    CLK_EnableModuleClock(GPIOH_MODULE);
+    CLK_EnableModuleClock(GPIOI_MODULE);
+    CLK_EnableModuleClock(GPIOJ_MODULE);
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
@@ -311,73 +296,20 @@ int32_t main(void)
     }
 
     /* Check SPD/DPD mode PC.0 falling-edge wake-up event */
-    if (u32PMUSTS & (PMC_INTSTS_PIN0WKIF_Msk | PMC_INTSTS_GPCTGWKIF_Msk))
+    if (u32PMUSTS & PMC_INTSTS_PIN0WKIF_Msk)
     {
         printf("System waken-up done.\n\n");
 
         while (1);
     }
 
-    printf("\n\nCPU @ %d Hz\n", SystemCoreClock);
-    printf("+-------------------------------------------------------------------+\n");
-    printf("|  SYS_PowerDown_MinCurrent and Wake-up by PC.0 Sample Code         |\n");
-    printf("+-------------------------------------------------------------------+\n\n");
+    /* Set all multi-function pins to GPIO mode except UART and ICE pins */
+    memset((void *)(&SYS->GPA_MFP0), 0x0, sizeof(SYS->GPA_MFP0) * 40);
+    SET_ICE_CLK_PF1();
+    SET_ICE_DAT_PF0();
+    SetDebugUartMFP();
 
-    printf("+-------------------------------------------------------------------+\n");
-    printf("| Operating sequence                                                |\n");
-    printf("| 1. Remove all continuous load, e.g. LED.                          |\n");
-    printf("| 2. Configure all GPIO as Quasi-bidirectional Mode                 |\n");
-    printf("| 3. Disable analog function, e.g. POR module                       |\n");
-    printf("| 4. Disable unused clock, e.g. LIRC                                |\n");
-    printf("| 5. Enter to Power-Down                                            |\n");
-    printf("| 6. Wait for PC.0 falling-edge interrupt event to wake-up the MCU  |\n");
-    printf("+-------------------------------------------------------------------+\n\n");
-
-    /* Set function pin to GPIO mode except UART pin to print message */
-    SYS->GPA_MFP0 = 0;
-    SYS->GPA_MFP1 = 0;
-    SYS->GPA_MFP2 = 0;
-    SYS->GPA_MFP3 = 0;
-    SYS->GPB_MFP0 = 0;
-    SYS->GPB_MFP1 = 0;
-    SYS->GPB_MFP2 = 0;
-    SYS->GPB_MFP3 = 0;
-    SYS->GPC_MFP0 = 0;
-    SYS->GPC_MFP1 = 0;
-    SYS->GPC_MFP2 = 0;
-    SYS->GPC_MFP3 = 0;
-    SYS->GPD_MFP0 = 0;
-    SYS->GPD_MFP1 = 0;
-    SYS->GPD_MFP2 = 0;
-    SYS->GPD_MFP3 = 0;
-    SYS->GPE_MFP0 = 0;
-    SYS->GPE_MFP1 = 0;
-    SYS->GPE_MFP2 = 0;
-    SYS->GPE_MFP3 = 0;
-    SYS->GPF_MFP0 = SYS_GPF_MFP0_PF1MFP_ICE_CLK | SYS_GPF_MFP0_PF0MFP_ICE_DAT;
-    SYS->GPF_MFP1 = 0;
-    SYS->GPF_MFP2 = 0;
-    SYS->GPG_MFP0 = 0;
-    SYS->GPG_MFP1 = 0;
-    SYS->GPG_MFP2 = 0;
-    SYS->GPG_MFP3 = 0;
-    SYS->GPH_MFP0 = 0;
-    SYS->GPH_MFP1 = SYS_GPH_MFP1_PH5MFP_UART6_RXD | SYS_GPH_MFP1_PH4MFP_UART6_TXD;
-    SYS->GPH_MFP2 = 0;
-    SYS->GPH_MFP3 = 0;
-    SYS->GPI_MFP1 = 0;
-    SYS->GPI_MFP2 = 0;
-    SYS->GPI_MFP3 = 0;
-    SYS->GPJ_MFP0 = 0;
-    SYS->GPJ_MFP1 = 0;
-    SYS->GPJ_MFP2 = 0;
-    SYS->GPJ_MFP3 = 0;
-    /*
-        Configure all GPIO as Quasi-bidirectional Mode. They are default output high.
-
-        On NuMaker board, configure GPIO as input mode pull-down if they have pull-down resistor outside:
-        TBD.
-    */
+    /* Configure all GPIO as Quasi-bidirectional mode */
     GPIO_SetMode(PA, GPIO_P0_TO_P15, GPIO_MODE_QUASI);
     GPIO_SetMode(PB, GPIO_P0_TO_P15, GPIO_MODE_QUASI);
     GPIO_SetMode(PC, GPIO_P0_TO_P15, GPIO_MODE_QUASI);
@@ -389,31 +321,34 @@ int32_t main(void)
     GPIO_SetMode(PI, GPIO_P0_TO_P15, GPIO_MODE_QUASI);
     GPIO_SetMode(PJ, GPIO_P0_TO_P15, GPIO_MODE_QUASI);
 
+    printf("\n\nCPU @ %d Hz\n", SystemCoreClock);
+    printf("+-------------------------------------------------------------------+\n");
+    printf("|  SYS_PowerDown_MinCurrent and Wake-up by PC.0 Sample Code         |\n");
+    printf("+-------------------------------------------------------------------+\n\n");
+    printf("+-------------------------------------------------------------------+\n");
+    printf("| Operating sequence                                                |\n");
+    printf("| 1. Remove all continuous load, e.g. LED.                          |\n");
+    printf("| 2. Configure all GPIO as Quasi-bidirectional Mode                 |\n");
+    printf("| 3. Disable analog function, e.g. POR module                       |\n");
+    printf("| 4. Disable unused clock, e.g. LIRC                                |\n");
+    printf("| 5. Enter to Power-Down                                            |\n");
+    printf("| 6. Wait for PC.0 falling-edge interrupt event to wake-up the MCU  |\n");
+    printf("+-------------------------------------------------------------------+\n\n");
+
     /* Unlock protected registers for Power-down and wake-up setting */
     SYS_UnlockReg();
 
     /* POR setting */
-    PorSetting();
+    POR_Setting();
 
     /* LIRC setting */
-    if (LircSetting() < 0) goto lexit;
+    if (LIRC_Setting() < 0) goto lexit;
 
     /* LXT setting */
-    if (LxtSetting() < 0) goto lexit;
-
-    /* Voltage regulator setting */
-    if (VoltageRegulatorSetting() < 0) goto lexit;
+    if (LXT_Setting() < 0) goto lexit;
 
     /* Wake-up source configuration */
-    if (
-        (SET_PDMSEL == PMC_NPD0)
-        ||
-        (SET_PDMSEL == PMC_NPD1)
-#if 0   // TESTCHIP_ONLY not support    
-        ||
-        (SET_PDMSEL == PMC_NPD2)
-#endif
-    )
+    if ((SET_PDMSEL == PMC_NPD0) || (SET_PDMSEL == PMC_NPD1) || (SET_PDMSEL == PMC_NPD2))
     {
         /* Configure PC.0 as Quasi mode and enable interrupt by falling edge trigger */
         CLK_EnableModuleClock(GPIOC_MODULE);
@@ -421,32 +356,9 @@ int32_t main(void)
         GPIO_EnableInt(PC, 0, GPIO_INT_FALLING);
         NVIC_EnableIRQ(GPC_IRQn);
     }
-    else if (
-#if 0   // TESTCHIP_ONLY not support
-        (SET_PDMSEL == PMC_NPD3)
-        ||
-        (SET_PDMSEL == PMC_NPD4)
-        ||
-#endif
-        (SET_PDMSEL == PMC_SPD0)
-#if 0   // TESTCHIP_ONLY not support        
-        ||
-        (SET_PDMSEL == PMC_SPD1)
-#endif
-    )
+    else if ((SET_PDMSEL == PMC_NPD3) || (SET_PDMSEL == PMC_NPD4) || (SET_PDMSEL == PMC_SPD0) || (SET_PDMSEL == PMC_SPD1) || (SET_PDMSEL == PMC_DPD))
     {
-        /* Enable wake-up pin PC.0 falling edge wake-up at SPD mode */
-        PMC_EnableTGPin(PMC_TGPIN_PC, 0, PMC_TGPIN_FALLING, PMC_TGPIN_DEBOUNCEDIS, PMC_TGPIN_WAKEUP_ENABLE);
-    }
-    else if (
-        (SET_PDMSEL == PMC_DPD0)
-#if 0   // TESTCHIP_ONLY not support
-        ||
-        (SET_PDMSEL == PMC_DPD1)
-#endif
-    )
-    {
-        /* Enable wake-up pin PC.0 falling edge wake-up at DPD mode. PC.0 would be input mode floating at DPD mode. */
+        /* Enable wake-up pin PC.0 falling edge wake-up */
         PMC_EnableWKPIN(PMC_WKPIN0_FALLING);
     }
     else
@@ -458,26 +370,13 @@ int32_t main(void)
     /* Enter to Power-down mode */
     if (SET_PDMSEL == PMC_NPD0)            printf("Enter to NPD0 Power-Down ......\n");
     else if (SET_PDMSEL == PMC_NPD1)       printf("Enter to NPD1 Power-Down ......\n");
-
-#if 0   // TESTCHIP_ONLY not support    
     else if (SET_PDMSEL == PMC_NPD2)       printf("Enter to NPD2 Power-Down ......\n");
     else if (SET_PDMSEL == PMC_NPD3)       printf("Enter to NPD3 Power-Down ......\n");
     else if (SET_PDMSEL == PMC_NPD4)       printf("Enter to NPD4 Power-Down ......\n");
-
-#endif
     else if (SET_PDMSEL == PMC_SPD0)       printf("Enter to SPD0 Power-Down ......\n");
-
-#if 0   // TESTCHIP_ONLY not support    
     else if (SET_PDMSEL == PMC_SPD1)       printf("Enter to SPD1 Power-Down ......\n");
+    else if (SET_PDMSEL == PMC_DPD)       printf("Enter to DPD Power-Down ......\n");
 
-#endif
-
-    else if (SET_PDMSEL == PMC_DPD0)       printf("Enter to DPD0 Power-Down ......\n");
-
-#if 0   // TESTCHIP_ONLY not support
-    else if (SET_PDMSEL == PMC_DPD1)       printf("Enter to DPD1 Power-Down ......\n");
-
-#endif
     printf("Press any key to start test\n");
 
     getchar();

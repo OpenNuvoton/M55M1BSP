@@ -10,25 +10,19 @@
 #include "NuMicro.h"        /* Device header */
 #include "cssd_nsclib.h"    /* Collaborative Secure Software Development Library header */
 
-void LED_On(uint32_t u32Num);
-void LED_Off(uint32_t u32Num);
+#define NON_SECURE_LED1  PH4_NS     /* NuMaker LED_R */
+
+void NonSecure_LED(uint32_t u32Num, uint32_t bOn);
 void SysTick_Handler(void);
 
 /*---------------------------------------------------------------------------
  * Non-secure Functions from Non-secure Region
  *---------------------------------------------------------------------------*/
-void LED_On(uint32_t u32Num)
+void NonSecure_LED1(uint32_t u32Num, uint32_t bOn)
 {
     (void)u32Num;
-    printf("Non-secure PC0 LED On call by Non-secure\n");
-    PC0_NS = 0;
-}
-
-void LED_Off(uint32_t u32Num)
-{
-    (void)u32Num;
-    printf("Non-secure PC0 LED Off call by Non-secure\n");
-    PC0_NS = 1;
+    printf("Non-secure LED %s call by Non-secure\n", (bOn == LED_ON) ? "On" : "Off");
+    NON_SECURE_LED1 = bOn;
 }
 
 /*---------------------------------------------------------------------------
@@ -41,31 +35,31 @@ void SysTick_Handler(void)
     switch (u32Ticks++)
     {
         case   0:
-            LED_On(7u);
-            Secure_PA11_LED_On(0u);
+            NonSecure_LED1(7u, LED_ON);
+            Secure_LED1(0u, LED_ON);
             break;
 
         case 100:
-            Secure_PA11_LED_Off(0u);
-            Secure_PA12_LED_On(0u);
+            Secure_LED1(0u, LED_OFF);
+            Secure_LED2(0u, LED_ON);
             break;
 
         case 200:
-            Secure_PA12_LED_Off(0u);
+            Secure_LED2(0u, LED_OFF);
             break;
 
         case 300:
-            LED_Off(7u);
+            NonSecure_LED1(7u, LED_OFF);
             break;
 
         case 400:
-            Secure_PA11_LED_On(0u);
-            Secure_PA12_LED_On(0u);
+            Secure_LED1(0u, LED_ON);
+            Secure_LED2(0u, LED_ON);
             break;
 
         case 500:
-            Secure_PA11_LED_Off(0u);
-            Secure_PA12_LED_Off(0u);
+            Secure_LED1(0u, LED_OFF);
+            Secure_LED2(0u, LED_OFF);
             break;
 
         case 600:
@@ -89,8 +83,8 @@ int main(void)
     printf("|       Non-secure code is running        |\n");
     printf("+-----------------------------------------+\n");
 
-    /* Init GPIO Port C Pin 0 for Non-secure LED control */
-    GPIO_SetMode(PC_NS, BIT0, GPIO_MODE_OUTPUT);
+    /* Init GPIO Port H Pin 4 for Non-secure LED control */
+    GPIO_SetMode(PH_NS, BIT4, GPIO_MODE_OUTPUT);
 
     /* Call Secure API to get system core clock */
     SystemCoreClock = GetSystemCoreClock();

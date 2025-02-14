@@ -47,6 +47,7 @@ static struct CSW s_sCSW;
 
 uint32_t g_au32MassBlock[MASS_BUFFER_SIZE / 4];
 uint32_t g_au32StorageBlock[STORAGE_BUFFER_SIZE / 4];
+uint32_t Storage[DATA_FLASH_STORAGE_SIZE / 4];
 
 /*--------------------------------------------------------------------------*/
 static uint8_t s_au8InquiryID[36] =
@@ -1408,11 +1409,11 @@ void MSC_SetConfig(void)
 void DataFlashRead(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer)
 {
     //DataFlashRead(u32Addr, u32Size, (uint32_t)u32Buffer);
-    USBD_MemCopy((uint8_t *)u32Buffer, (uint8_t *)(u32Addr + 0x2000c000), u32Size);
+    USBD_MemCopy((uint8_t *)u32Buffer, (uint8_t *)(u32Addr + STORAGE_BASE), u32Size);
 }
 
 
 void DataFlashWrite(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer)
 {
-    USBD_MemCopy((uint8_t *)(u32Addr + 0x2000c000), (uint8_t *)u32Buffer, u32Size);
+    USBD_MemCopy((uint8_t *)(u32Addr + STORAGE_BASE), (uint8_t *)u32Buffer, u32Size);
 }

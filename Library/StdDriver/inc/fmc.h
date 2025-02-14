@@ -104,11 +104,9 @@ extern "C"
 #define FMC_ISPCMD_CFG_ERASE    0x24UL          /*!< ISP Command: Erase config word       \hideinitializer */
 #define FMC_ISPCMD_MASS_ERASE   0x26UL          /*!< ISP Command: Mass erase              \hideinitializer */
 #define FMC_ISPCMD_PROGRAM_MUL  0x27UL          /*!< ISP Command: Multuple word program   \hideinitializer */
-// TESTCHIP_ONLY not support
-//#define FMC_ISPCMD_RUN_ALL1     0x28UL          /*!< ISP Command: Run all-one verification \hideinitializer */
+#define FMC_ISPCMD_RUN_ALL1     0x28UL          /*!< ISP Command: Run all-one verification \hideinitializer */
 #define FMC_ISPCMD_BANK_REMAP   0x2CUL          /*!< ISP Command: Bank Remap              \hideinitializer */
-// TESTCHIP_ONLY not support
-//#define FMC_ISPCMD_RUN_CKS      0x2DUL          /*!< ISP Command: Run checksum calculation \hideinitializer */
+#define FMC_ISPCMD_RUN_CKS      0x2DUL          /*!< ISP Command: Run checksum calculation \hideinitializer */
 #define FMC_ISPCMD_VECMAP       0x2EUL          /*!< ISP Command: Vector Page Remap       \hideinitializer */
 #define FMC_ISPCMD_READ_64      0x40UL          /*!< ISP Command: Read double flash word  \hideinitializer */
 #define FMC_ISPCMD_PROGRAM_64   0x61UL          /*!< ISP Command: Write double flash word \hideinitializer */
@@ -139,7 +137,6 @@ extern "C"
 #define FMC_ERR_SC_ENABLED          (-4UL)  /*!< FMC secure conceal is enabled            */
 #define FMC_ERR_SC_INVALID_BASE     (-5UL)  /*!< FMC invalid secure conceal base address (Must be page alignment and cannot set first page of APROM */
 #define FMC_ERR_SC_INVALID_PAGECNT  (-6UL)  /*!< FMC invalid secure conceal page count    */
-
 /** @} end of group FMC_EXPORTED_CONSTANTS */
 
 
@@ -171,13 +168,10 @@ extern "C"
 #define FMC_GET_SC_ACTIVE()            ((FMC->SCACT & FMC_SCACT_SCACT_Msk) ? TRUE : FALSE)           /*!< Get secure conceal function active flag \hideinitializer */
 /** @} end of group FMC_EXPORTED_MACROS */
 
-/*---------------------------------------------------------------------------------------------------------*/
-/*  Global variables                                                                                       */
-/*---------------------------------------------------------------------------------------------------------*/
-extern int32_t  g_FMC_i32ErrCode;
+extern int32_t  g_FMC_i32ErrCode;           /*!< FMC global error code                    */
 
 /** @addtogroup FMC_EXPORTED_FUNCTIONS FMC Exported Functions
-  @{
+    @{
 */
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -198,6 +192,23 @@ __STATIC_INLINE void FMC_Open(void)
 __STATIC_INLINE void FMC_Close(void)
 {
     FMC->ISPCTL &= ~FMC_ISPCTL_ISPEN_Msk;
+}
+
+/**
+  * @brief Enable FMC ISP INT function.
+  * @note  Workaround: Read ISPSTS once after trigger FMC_ISPTRG.ISPGO[0] to get ISPFF interrupt.
+  */
+__STATIC_INLINE void FMC_EnableINT(void)
+{
+    FMC->ISPCTL |= FMC_ISPCTL_INTEN_Msk;
+}
+
+/**
+  * @brief Disable FMC ISP INT function.
+  */
+__STATIC_INLINE void FMC_DisableINT(void)
+{
+    FMC->ISPCTL &= ~FMC_ISPCTL_INTEN_Msk;
 }
 
 /**
@@ -360,7 +371,6 @@ __STATIC_INLINE int32_t FMC_SetVectorPageAddr(uint32_t u32PageAddr)
     return 0;
 }
 
-
 /**
  * @brief       Get current vector mapping address.
  * @param       None
@@ -372,6 +382,27 @@ __STATIC_INLINE int32_t FMC_SetVectorPageAddr(uint32_t u32PageAddr)
 __STATIC_INLINE uint32_t FMC_GetVECMAP(void)
 {
     return (FMC->ISPSTS & FMC_ISPSTS_VECMAP_Msk);
+}
+
+/**
+ * @brief       Get selected flash bank index.
+ * @param       None
+ * @return      The selected flash bank index. 0: Bank0, 1: Bank1.
+ */
+__STATIC_INLINE uint32_t FMC_GetBankIdx(void)
+{
+    return ((FMC->ISPSTS & FMC_ISPSTS_FBS_Msk) >> FMC_ISPSTS_FBS_Pos);
+}
+
+/**
+ * @brief       Check if bank remap function is enabled or not.
+ * @param       None
+ * @return      0: Bank remap function is disabled.
+ *              1: Bank remap function is enabled.
+ */
+__STATIC_INLINE uint32_t FMC_IsBankRemapEnabled(void)
+{
+    return ((FMC->ISPSTS & FMC_ISPSTS_MIRBOUND_Msk) >> FMC_ISPSTS_MIRBOUND_Pos);
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -398,11 +429,8 @@ extern int32_t  FMC_WriteOTP(uint32_t u32OtpNum, uint32_t u32LowWord, uint32_t u
 extern int32_t  FMC_LockOTP(uint32_t u32OtpNum);
 extern int32_t  FMC_IsOTPLocked(uint32_t u32OtpNum);
 extern int32_t  FMC_ConfigSecureConceal(uint32_t u32Base, uint32_t u32PageCnt, uint32_t bActiveEnable);
-
-#if 0   // TESTCHIP_ONLY not support
 extern uint32_t FMC_GetChkSum(uint32_t u32Addr, uint32_t u32count);
 extern uint32_t FMC_CheckAllOne(uint32_t u32Addr, uint32_t u32count);
-#endif  // TESTCHIP_ONLY not support
 
 /** @} end of group FMC_EXPORTED_FUNCTIONS */
 /** @} end of group FMC_Driver */

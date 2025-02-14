@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
-
 static volatile uint8_t s_u8IsINTEvent = 0;
 
 void WDT0_IRQHandler(void);
@@ -23,10 +22,20 @@ void SYS_Init(void);
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void WDT0_IRQHandler(void)
 {
+    uint32_t u32TimeOutCnt;
+
     if (WDT_GET_TIMEOUT_INT_FLAG(WDT0))
     {
         /* Clear WDT time-out interrupt flag */
         WDT_CLEAR_TIMEOUT_INT_FLAG(WDT0);
+
+        u32TimeOutCnt = SystemCoreClock >> 1;
+
+        /* Wait WDT0 interrupt flag clear */
+        while (WDT0->STATUS & WDT_STATUS_IF_Msk)
+        {
+            if (--u32TimeOutCnt == 0) break;
+        }
     }
 
     if (WDT_GET_TIMEOUT_WAKEUP_FLAG(WDT0))
@@ -35,12 +44,17 @@ NVT_ITCM void WDT0_IRQHandler(void)
 
         /* Clear WDT time-out wake-up flag */
         WDT_CLEAR_TIMEOUT_WAKEUP_FLAG(WDT0);
+
+        u32TimeOutCnt = SystemCoreClock >> 1;
+
+        /* Wait WDT0 wake-up flag clear */
+        while (WDT0->STATUS & WDT_STATUS_WKF_Msk)
+        {
+            if (--u32TimeOutCnt == 0) break;
+        }
     }
 
     s_u8IsINTEvent = 1;
-
-    /* CPU read interrupt flag register to wait write(clear) instruction completement */
-    inp32(&WDT0->STATUS);
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -50,8 +64,14 @@ void PowerDownFunction(void)
 {
     uint32_t u32TimeOutCnt;
 
+    u32TimeOutCnt = SystemCoreClock >> 1;
+
+    /* Enable HIRC in power down mode */
+    PMC_DISABLE_AOCKPD();
+
+    printf("Power-down...\n");
+
     /* Check if all the debug messages are finished */
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
     UART_WAIT_TX_EMPTY(DEBUG_PORT)
 
     if (--u32TimeOutCnt == 0) break;
@@ -136,6 +156,9 @@ void SYS_Init(void)
     /* Unlock protected registers */
     SYS_UnlockReg();
 
+    /* Release GPIO hold status */
+    PMC_RELEASE_GPIO();
+
     /* Set PF multi-function pins for XT1_OUT(PF.2) and XT1_IN(PF.3) */
     SET_XT1_OUT_PF2();
     SET_XT1_IN_PF3();
@@ -147,15 +170,14 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-
     /* Enable Internal RC 12MHz clock */
     CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
 
     /* Waiting for Internal RC 12MHz clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -164,6 +186,7 @@ void SYS_Init(void)
     /* Enable UART module clock */
     SetDebugUartCLK();
 
+    CLK_SetModuleClock(WDT0_MODULE, CLK_WDTSEL_WDT0SEL_LIRC, NA);
     /* Enable WDT0 module clock */
     CLK_EnableModuleClock(WDT0_MODULE);
 
@@ -198,8 +221,25 @@ int32_t main(void)
     /* Unlock protected registers before setting power level and main voltage regulator type */
     SYS_UnlockReg();
 
-    /* Set HCLK clock as MIRC */
-    CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_MIRC);
+    /* Set power level to 1.1V */
+    printf("Set power level to 1.1V...");
+    PMC_SetPowerLevel(PMC_PLCTL_PLSEL_PL1);
+
+    /* Check system work */
+    CheckSystemWork();
+
+    /* Set power level to 1.15V */
+    printf("Set power level to 1.15V..");
+    PMC_SetPowerLevel(PMC_PLCTL_PLSEL_PL0);
+
+    /* Set core clock as 220MHz from PLL */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
+
+    /* Check system work */
+    CheckSystemWork();
+
+    /* Set core clock as 200MHz from PLL */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_200MHZ);
 
     /* Set power level to 1.1V */
     printf("Set power level to 1.1V...");
@@ -212,33 +252,8 @@ int32_t main(void)
     printf("Set power level to 1.15V..");
     PMC_SetPowerLevel(PMC_PLCTL_PLSEL_PL0);
 
-    /* Set core clock as 200MHz from PLL */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_200MHZ);
-
-    /* Check system work */
-    CheckSystemWork();
-
-    /* Set core clock as 180MHz from PLL */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
-
-    /* Set power level to 1.1V */
-    printf("Set power level to 1.1V...");
-    PMC_SetPowerLevel(PMC_PLCTL_PLSEL_PL1);
-
-    /* Check system work */
-    CheckSystemWork();
-
-    /* Set main voltage regulator type to DCDC mode */
-    printf("Set main voltage regulator type to DCDC mode..");
-
-    if (PMC_SetPowerRegulator(PMC_VRCTL_MVRS_DCDC) != PMC_OK)
-        printf("[no inductor connect]\n");
-    else
-        CheckSystemWork();      /* Check system work */
-
-    /* Set main voltage regulator type to LDO mode */
-    printf("Set main voltage regulator type to LDO mode...");
-    PMC_SetPowerRegulator(PMC_VRCTL_MVRS_LDO);
+    /* Set core clock as 220MHz from PLL */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Check system work */
     CheckSystemWork();
@@ -263,7 +278,7 @@ int32_t main(void)
     PowerDownFunction();
 
     /* Check if WDT time-out interrupt and wake-up occurred or not */
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    u32TimeOutCnt = SystemCoreClock >> 1;
 
     while (s_u8IsINTEvent == 0)
     {

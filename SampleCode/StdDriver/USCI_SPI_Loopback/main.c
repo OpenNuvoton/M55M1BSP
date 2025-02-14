@@ -31,6 +31,7 @@ int main()
     /* Unlock protected registers */
     SYS_UnlockReg();
 
+
     /* Init System, IP clock and multi-function I/O. */
     SYS_Init();
 
@@ -76,9 +77,9 @@ int main()
 
         u32DataCount = 0;
 
-        if ((u32TestCount & 0x1FF) == 0)
+        if ((u32TestCount & 32) == 0)
         {
-            putchar('.');
+            printf(".");
         }
 
         while (1)
@@ -127,8 +128,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_72MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -161,13 +162,13 @@ void SYS_Init(void)
     SetDebugUartMFP();
 
     /* Set USCI0_SPI multi-function pins */
-    SYS->GPA_MFP2 = SYS->GPA_MFP2 & ~(SYS_GPA_MFP2_PA9MFP_Msk | SYS_GPA_MFP2_PA10MFP_Msk | SYS_GPA_MFP2_PA11MFP_Msk);
-    SYS->GPA_MFP2 = SYS->GPA_MFP2 | (SYS_GPA_MFP2_PA11MFP_USCI0_CLK | SYS_GPA_MFP2_PA10MFP_USCI0_DAT0 | SYS_GPA_MFP2_PA9MFP_USCI0_DAT1);
-    SYS->GPB_MFP0 = SYS->GPB_MFP0 & ~(SYS_GPB_MFP0_PB0MFP_Msk);
-    SYS->GPB_MFP0 = SYS->GPB_MFP0 | (SYS_GPB_MFP0_PB0MFP_USCI0_CTL0);
+    SET_USCI0_CTL0_PB0();
+    SET_USCI0_CLK_PA11();
+    SET_USCI0_DAT0_PA10();
+    SET_USCI0_DAT1_PA9();
 
     /* USCI_SPI clock pin enable schmitt trigger */
-    PA->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
+    PA->SMTEN |= GPIO_SMTEN_SMTEN11_Msk;
 }
 
 void USCI_SPI_Init(void)

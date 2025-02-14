@@ -154,8 +154,8 @@ void LPPDMA_SetTransferMode(LPPDMA_T *lppdma, uint32_t u32Ch, uint32_t u32Periph
 
     if (u32ScatterEn)
     {
-        lppdma->LPDSCT[u32Ch].CTL = (lppdma->LPDSCT[u32Ch].CTL & ~LPPDMA_DSCT_CTL_OPMODE_Msk) | LPPDMA_OP_SCATTER;
         lppdma->LPDSCT[u32Ch].NEXT = u32DescAddr;
+        lppdma->LPDSCT[u32Ch].CTL = (lppdma->LPDSCT[u32Ch].CTL & ~LPPDMA_DSCT_CTL_OPMODE_Msk) | LPPDMA_OP_SCATTER;
     }
     else
     {
@@ -201,6 +201,8 @@ void LPPDMA_Trigger(LPPDMA_T *lppdma, uint32_t u32Ch)
 {
     if (u32ChSelect[u32Ch] == LPPDMA_MEM)
     {
+        /* Ensure completion of memory access */
+        __DSB();
         lppdma->SWREQ = (1ul << u32Ch);
     }
     else {}

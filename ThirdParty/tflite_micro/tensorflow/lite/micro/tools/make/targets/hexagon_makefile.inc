@@ -37,8 +37,10 @@ ifndef HEXAGON_CPU_VER
   $(error HEXAGON_CPU_VER is undefined)
 endif
 
-ifeq ($(HEXAGON_TFLM_LIB), )
-  $(error HEXAGON_TFLM_LIB is undefined)
+ifneq ($(OPTIMIZED_KERNEL_DIR), )
+  ifeq ($(HEXAGON_TFLM_LIB), )
+    $(error HEXAGON_TFLM_LIB is undefined)
+  endif
 endif
 
 HEXAGON_LPI_BUILD :=
@@ -51,9 +53,7 @@ PLATFORM_ARGS = \
   -DPTHREAD_STUBS \
   -DUSE_PREALLOCATED_BUFFER \
   -D_HAS_C9X \
-  -DTF_LITE_USE_CTIME \
   -MMD \
-  -DHEXAGON \
   -Wall \
   -Wextra \
   -Wno-missing-field-initializers \
@@ -80,6 +80,10 @@ PLATFORM_ARGS = \
   -mcpu=$(HEXAGON_CPU_VER) \
   -m$(HEXAGON_CPU_VER)
 
+ifeq ($(HEXAGON_PIC_BUILD), true)
+  PLATFORM_ARGS += -fPIC
+endif
+
 # See http://b/183462077 for more details on why we need -G0 for an LPI build.
 ifeq ($(HEXAGON_LPI_BUILD), true)
   PLATFORM_ARGS += -G0
@@ -104,6 +108,18 @@ INCLUDES += \
   -I$(HEXAGON_SDK_ROOT)/libs/common/qurt/computev66/include/qurt \
   -I${HEXAGON_SDK_ROOT}/rtos/qurt/computev66/include/posix \
   -I${HEXAGON_SDK_ROOT}/rtos/qurt/computev66/include/qurt
+
+# Excludes memory_arena_threshold_test because of the size difference between
+# reference OP and optimized OP.
+EXCLUDED_TESTS := \
+  $(TENSORFLOW_ROOT)tensorflow/lite/micro/memory_arena_threshold_test.cc
+
+MICROLITE_TEST_SRCS := $(filter-out $(EXCLUDED_TESTS), $(MICROLITE_TEST_SRCS))
+
+# TODO(b/302404477): micro_speech_test example does not pass due to misprediction
+EXCLUDED_EXAMPLE_TESTS := \
+  $(TENSORFLOW_ROOT)tensorflow/lite/micro/examples/micro_speech/Makefile.inc
+MICRO_LITE_EXAMPLE_TESTS := $(filter-out $(EXCLUDED_EXAMPLE_TESTS), $(MICRO_LITE_EXAMPLE_TESTS))
 
 TEST_SCRIPT := $(TENSORFLOW_ROOT)tensorflow/lite/micro/testing/test_hexagon_binary.sh
 SIZE_SCRIPT := $(TENSORFLOW_ROOT)tensorflow/lite/micro/testing/size_hexagon_binary.sh

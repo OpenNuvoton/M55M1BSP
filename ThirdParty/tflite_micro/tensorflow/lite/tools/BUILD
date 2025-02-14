@@ -6,9 +6,10 @@ py_library(
     srcs_version = "PY3",
     visibility = ["//:__subpackages__"],
     deps = [
-        requirement("flatbuffers"),
-        requirement("tensorflow-cpu"),
+        "@flatbuffers//:runtime_py",
+        requirement("tensorflow"),
         "//tensorflow/lite/python:schema_py",
+        "//tensorflow/lite/python:schema_util",
     ],
 )
 
@@ -17,8 +18,8 @@ py_library(
     srcs = ["test_utils.py"],
     srcs_version = "PY3",
     deps = [
-        requirement("flatbuffers"),
-        requirement("tensorflow-cpu"),
+        "@flatbuffers//:runtime_py",
+        requirement("tensorflow"),
         "//tensorflow/lite/python:schema_py",
     ],
 )
@@ -40,6 +41,7 @@ py_binary(
     srcs = ["visualize.py"],
     python_version = "PY3",
     srcs_version = "PY3",
+    visibility = ["//:__subpackages__"],
     deps = [
         "//tensorflow/lite/python:schema_py",
         requirement("numpy"),
@@ -54,7 +56,7 @@ py_test(
     deps = [
         ":flatbuffer_utils",
         ":test_utils",
-        requirement("tensorflow-cpu"),
+        requirement("tensorflow"),
     ],
 )
 
@@ -66,6 +68,6 @@ py_test(
     deps = [
         ":test_utils",
         ":visualize",
-        requirement("tensorflow-cpu"),
+        requirement("tensorflow"),
     ],
 )

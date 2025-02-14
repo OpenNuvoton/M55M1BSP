@@ -170,7 +170,7 @@ extern "C"
   * \hideinitializer
   */
 #define OTFC_GET_BUSY(otfc, pr)   \
-    (otfc->STS & (0x1ul << ((pr) * OTFC_CTL_PR_Pos)) >> ((pr) * OTFC_CTL_PR_Pos))
+    ((otfc->STS & (0x1ul << ((pr) * OTFC_CTL_PR_Pos))) >> ((pr) * OTFC_CTL_PR_Pos))
 
 /**
   * @brief  Get Access Key Store Error Flag. (Read Only)

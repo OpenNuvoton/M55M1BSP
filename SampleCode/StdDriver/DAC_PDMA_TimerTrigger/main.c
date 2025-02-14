@@ -32,20 +32,8 @@ void SYS_Init(void)
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
-
-    /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
-
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -113,11 +101,11 @@ int32_t main(void)
     /* transfer width is one word(32 bit) */
     PDMA_SetTransferAddr(PDMA0, 0, (uint32_t)&g_au16Sine[0], PDMA_SAR_INC, (uint32_t)&DAC0->DAT, PDMA_DAR_FIX);
 
-    /* Select channel 0 request source from DAC */
-    PDMA_SetTransferMode(PDMA0, 0, PDMA_DAC0_TX, FALSE, 0);
-
     /* Set transfer type and burst size */
     PDMA_SetBurstType(PDMA0, 0, PDMA_REQ_SINGLE, PDMA_BURST_128);
+
+    /* Select channel 0 request source from DAC */
+    PDMA_SetTransferMode(PDMA0, 0, PDMA_DAC0_TX, FALSE, 0);
 
     /* Set the timer 0 trigger,enable DAC even trigger mode and enable D/A converter */
     DAC_Open(DAC0, 0, DAC_TIMER0_TRIGGER);

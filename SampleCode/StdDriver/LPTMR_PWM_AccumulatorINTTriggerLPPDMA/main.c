@@ -23,7 +23,12 @@
 /* Global Interface Variables Declarations                                                                 */
 /*---------------------------------------------------------------------------------------------------------*/
 static volatile uint32_t g_u32IsTestOver = 0;
-static uint32_t u32UpdatedPeriod __attribute__((section(".lpSram")));
+
+#if (NVT_DCACHE_ON == 1)
+    static uint32_t s_u32UpdatedPeriod __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+#else
+    static uint32_t s_u32UpdatedPeriod __attribute__((section(".lpSram")));
+#endif
 
 /**
  * @brief       LPPDMA IRQ Handler
@@ -73,8 +78,8 @@ static void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ);
+    /* Enable PLL0 220MHZ clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -160,10 +165,18 @@ int main(void)
     LPPDMA_SetTransferCnt(LPPDMA, 0, LPPDMA_WIDTH_16, 1);
 
     /* Set updated period vaule */
-    u32UpdatedPeriod = ((u32InitPeriod + 1) * 2) - 1;
+    s_u32UpdatedPeriod = ((u32InitPeriod + 1) * 2) - 1;
 
-    /* Set source address as u32UpdatedPeriod(no increment) and destination address as Low Power Timer0 PWM period register(no increment) */
-    LPPDMA_SetTransferAddr(LPPDMA, 0, (uint32_t)&u32UpdatedPeriod, LPPDMA_SAR_FIX, (uint32_t) & (LPTMR0->PWMPERIOD), LPPDMA_DAR_FIX);
+#if (NVT_DCACHE_ON == 1)
+    /*
+        Clean the CPU Data cache before starting the DMA transfer.
+        This guarantees that the source buffer will be up to date before starting the transfer.
+    */
+    SCB_CleanDCache_by_Addr(&s_u32UpdatedPeriod, sizeof(s_u32UpdatedPeriod));
+#endif  // (NVT_DCACHE_ON == 1)
+
+    /* Set source address as s_u32UpdatedPeriod(no increment) and destination address as Low Power Timer0 PWM period register(no increment) */
+    LPPDMA_SetTransferAddr(LPPDMA, 0, (uint32_t)&s_u32UpdatedPeriod, LPPDMA_SAR_FIX, (uint32_t) & (LPTMR0->PWMPERIOD), LPPDMA_DAR_FIX);
 
     /* Select LPPDMA request source as LPPDMA_TMR0(Low Power Timer0 PWM accumulator interrupt) */
     LPPDMA_SetTransferMode(LPPDMA, 0, LPPDMA_LPTMR0, FALSE, 0);

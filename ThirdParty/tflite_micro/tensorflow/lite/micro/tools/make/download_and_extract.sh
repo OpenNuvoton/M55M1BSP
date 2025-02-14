@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2024 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,17 +76,6 @@ build_embarc_mli() {
   fi
 }
 
-setup_zephyr() {
-  command -v virtualenv >/dev/null 2>&1 || {
-    echo >&2 "The required 'virtualenv' tool isn't installed. Try 'pip install virtualenv'."; exit 1;
-  }
-  virtualenv -p python3 ${1}/venv-zephyr
-  . ${1}/venv-zephyr/bin/activate
-  python ${1}/venv-zephyr/bin/pip install -r ${1}/scripts/requirements.txt
-  west init -m https://github.com/zephyrproject-rtos/zephyr.git
-  deactivate
-}
-
 # Main function handling the download, verify, extract, and patch process.
 download_and_extract() {
   local usage="Usage: download_and_extract URL MD5 DIR [ACTION] [ACTION_PARAM]"
@@ -134,9 +123,9 @@ download_and_extract() {
     sleep 2
   done
 
-  # Check that the file was downloaded correctly using a checksum.
+  # Check that the file was downloaded correctly using a checksum. Put expected_md5 as "SKIP_MD5_CHECK" to skip this check.
   DOWNLOADED_MD5=$(openssl dgst -md5 ${tempfile} | sed 's/.* //g')
-  if [ ${expected_md5} != ${DOWNLOADED_MD5} ]; then
+  if [ ${expected_md5} != ${DOWNLOADED_MD5} ] && [ ${expected_md5} != "SKIP_MD5_CHECK" ]; then
     echo "Checksum error for '${url}'. Expected ${expected_md5} but found ${DOWNLOADED_MD5}"
     exit 1
   fi
@@ -145,28 +134,30 @@ download_and_extract() {
   url=$(echo "${url}" | sed "s/\?.*//")
 
   if [[ "${url}" == *gz ]]; then
-    tar -C "${dir}" --strip-components=1 -xzf ${tempfile}
+    tar -C "${tempdir2}" -xzf ${tempfile}
   elif [[ "${url}" == *tar.xz ]]; then
-    tar -C "${dir}" --strip-components=1 -xf ${tempfile}
+    tar -C "${tempdir2}" -xf ${tempfile}
   elif [[ "${url}" == *bz2 ]]; then
     curl -Ls "${url}" > ${tempdir}/tarred.bz2
-    tar -C "${dir}" --strip-components=1 -xjf ${tempfile}
+    tar -C "${tempdir2}" -xjf ${tempfile}
   elif [[ "${url}" == *zip ]]; then
     unzip ${tempfile} -d ${tempdir2} 2>&1 1>/dev/null
-    # If the zip file contains nested directories, extract the files from the
-    # inner directory.
-    if [ $(find $tempdir2/* -maxdepth 0 | wc -l) = 1 ] && [ -d $tempdir2/* ]; then
-      # unzip has no strip components, so unzip to a temp dir, and move the
-      # files we want from the tempdir to destination.
-      cp -R ${tempdir2}/*/* ${dir}/
-    else
-      cp -R ${tempdir2}/* ${dir}/
-    fi
   else
     echo "Error unsupported archive type. Failed to extract tool after download."
     exit 1
   fi
-  rm -rf ${tempdir2} ${tempdir}
+
+  # If the zip file contains nested directories, extract the files from the
+  # inner directory.
+  if [ $(find $tempdir2/* -maxdepth 0 | wc -l) = 1 ] && [ -d $tempdir2/* ]; then
+    # Unzip to a temp dir, and move the files we want from the tempdir to destination.
+    # We want this to be dependent on the folder structure of the zipped file, so --strip-components cannot be used.
+    cp -R ${tempdir2}/*/* ${dir}/
+  else
+    cp -R ${tempdir2}/* ${dir}/
+  fi
+
+  rm -rf ${tempdir} ${tempdir2}
 
   # Delete any potential BUILD files, which would interfere with Bazel builds.
   find "${dir}" -type f -name '*BUILD' -delete
@@ -182,8 +173,6 @@ download_and_extract() {
     else
       build_embarc_mli ${dir} ${action_param1}
     fi
-  elif [[ ${action} == "setup_zephyr" ]]; then
-    setup_zephyr ${dir}
   elif [[ ${action} ]]; then
     echo "Unknown action '${action}'"
     exit 1

@@ -174,20 +174,6 @@ typedef struct
      * |        |          |1011 = 521 bits.
      * |        |          |1100 = 571 bits.
      * |        |          |Others = reserved.
-     * @var KDF_T::VERSION
-     * Offset: 0xFFC  KDF RTL Design Version Register
-     * ---------------------------------------------------------------------------------------------------
-     * |Bits    |Field     |Descriptions
-     * | :----: | :----:   | :---- |
-     * |[15:0]  |MINOR     |RTL Design Minor Version Number
-     * |        |          |Minor version number is dependent on moduleu2019s ECO version control.
-     * |        |          |0x0000 (Current Minor Version Number)
-     * |[23:16] |SUB       |RTL Design Sub Version Number
-     * |        |          |Sub version number is correlated to moduleu2019s key feature.
-     * |        |          |0x01 (Current Sub Version Number)
-     * |[31:24] |MAJOR     |RTL Design Major Version Number
-     * |        |          |Major version number is correlated to Product Line.
-     * |        |          |0x01 (Current Major Version Number)
      */
     __IO uint32_t CTL;                   /*!< [0x0000] KDF Control Register                                             */
     __I  uint32_t STS;                   /*!< [0x0004] KDF Status Register                                              */
@@ -206,8 +192,6 @@ typedef struct
     __O  uint32_t KSCTL;                 /*!< [0x0f00] KDF Output Key Control Register                                  */
     __I  uint32_t KSSTS;                 /*!< [0x0f04] KDF Output Key Status Register                                   */
     __IO uint32_t KSSIZE;                /*!< [0x0f08] KDF Output Key Size Register                                     */
-    __I  uint32_t RESERVE6[60];
-    __I  uint32_t VERSION;               /*!< [0x0ffc] KDF RTL Design Version Register                                  */
 
 } KDF_T;
 
@@ -369,15 +353,6 @@ typedef struct
 
 #define KDF_KSSIZE_SIZE_Pos              (0)                                               /*!< KDF_T::KSSIZE: SIZE Position           */
 #define KDF_KSSIZE_SIZE_Msk              (0xful << KDF_KSSIZE_SIZE_Pos)                    /*!< KDF_T::KSSIZE: SIZE Mask               */
-
-#define KDF_VERSION_MINOR_Pos            (0)                                               /*!< KDF_T::VERSION: MINOR Position         */
-#define KDF_VERSION_MINOR_Msk            (0xfffful << KDF_VERSION_MINOR_Pos)               /*!< KDF_T::VERSION: MINOR Mask             */
-
-#define KDF_VERSION_SUB_Pos              (16)                                              /*!< KDF_T::VERSION: SUB Position           */
-#define KDF_VERSION_SUB_Msk              (0xfful << KDF_VERSION_SUB_Pos)                   /*!< KDF_T::VERSION: SUB Mask               */
-
-#define KDF_VERSION_MAJOR_Pos            (24)                                              /*!< KDF_T::VERSION: MAJOR Position         */
-#define KDF_VERSION_MAJOR_Msk            (0xfful << KDF_VERSION_MAJOR_Pos)                 /*!< KDF_T::VERSION: MAJOR Mask             */
 
 /** @} KDF_CONST */
 /** @} end of KDF register group */

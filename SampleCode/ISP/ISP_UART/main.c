@@ -13,12 +13,11 @@
 #include <stdio.h>
 #include "NuMicro.h"
 #include "targetdev.h"
+#include "isp_user.h"
 #include "uart_transfer.h"
 
 int32_t SYS_Init(void)
 {
-    uint32_t u32TimeOutCnt = SystemCoreClock >> 1; /* 500ms time-out */
-
     /* Unlock protected registers */
     SYS_UnlockReg();
 
@@ -29,8 +28,8 @@ int32_t SYS_Init(void)
     CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
     /* Waiting for external high speed crystal clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 220MHz clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -50,29 +49,17 @@ int32_t SYS_Init(void)
     SystemCoreClock = PllClock;
     CyclesPerUs = SystemCoreClock / 1000000UL;
 
+    CLK->UARTSEL0 = (CLK->UARTSEL0 & ~CLK_UARTSEL0_UART0SEL_Msk) | CLK_UARTSEL0_UART0SEL_HIRC;
     /* Enable module clock */
-    CLK->FMCCTL |= CLK_FMCCTL_ISP0CKEN_Msk;
-    CLK->UARTSEL0 = (CLK->UARTSEL0 & ~CLK_UARTSEL0_UART6SEL_Msk) | CLK_UARTSEL0_UART6SEL_HXT;
-    CLK->UARTCTL |= CLK_UARTCTL_UART6CKEN_Msk;
-    /* Check clock stable */
-    u32TimeOutCnt = SystemCoreClock >> 1;
-
-    while ((CLK->UARTCTL & BIT31) == 0UL)
-    {
-        if (--u32TimeOutCnt == 0)
-        {
-            return -1;
-        }
-    }
-
+    CLK_EnableModuleClock(UART0_MODULE);
     CLK_EnableModuleClock(ISP0_MODULE);
 
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
-    /* Set multi-function pins for UART6 RXD and TXD */
-    SET_UART6_RXD_PH5();
-    SET_UART6_TXD_PH4();
+    /* Set multi-function pins for UART0 RXD and TXD */
+    SET_UART0_RXD_PB12();
+    SET_UART0_TXD_PB13();
 
     /* Lock protected registers */
     SYS_LockReg();

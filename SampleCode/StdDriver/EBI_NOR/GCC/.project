@@ -83,6 +83,11 @@
 			<name>User/nor_MX29LV320T.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/nor_MX29LV320T.c</locationURI>
-		</link>		
+		</link>
+		<link>
+			<name>User/mpu_config_M55M1.h</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/mpu_config_M55M1.h</locationURI>
+		</link>			
 	</linkedResources>
 </projectDescription>

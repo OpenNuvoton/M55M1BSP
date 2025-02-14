@@ -7,13 +7,13 @@ namespace MyGame
 
 using global::System;
 using global::System.Collections.Generic;
-using global::FlatBuffers;
+using global::Google.FlatBuffers;
 
 public struct InParentNamespace : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_1_12_0(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_23_5_26(); }
   public static InParentNamespace GetRootAsInParentNamespace(ByteBuffer _bb) { return GetRootAsInParentNamespace(_bb, new InParentNamespace()); }
   public static InParentNamespace GetRootAsInParentNamespace(ByteBuffer _bb, InParentNamespace obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
@@ -37,7 +37,7 @@ public struct InParentNamespace : IFlatbufferObject
     StartInParentNamespace(builder);
     return EndInParentNamespace(builder);
   }
-};
+}
 
 public class InParentNamespaceT
 {
@@ -46,5 +46,14 @@ public class InParentNamespaceT
   }
 }
 
+
+static public class InParentNamespaceVerify
+{
+  static public bool Verify(Google.FlatBuffers.Verifier verifier, uint tablePos)
+  {
+    return verifier.VerifyTableStart(tablePos)
+      && verifier.VerifyTableEnd(tablePos);
+  }
+}
 
 }

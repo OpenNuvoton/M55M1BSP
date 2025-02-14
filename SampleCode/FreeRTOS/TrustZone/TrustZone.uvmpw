@@ -9,13 +9,11 @@
 
   <project>
     <PathAndName>.\NonSecure\KEIL\NonSecure.uvprojx</PathAndName>
-    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
   <project>
     <PathAndName>.\Secure\KEIL\Secure.uvprojx</PathAndName>
     <NodeIsActive>1</NodeIsActive>
-    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
 </ProjectWorkspace>

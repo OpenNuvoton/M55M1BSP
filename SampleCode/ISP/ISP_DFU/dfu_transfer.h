@@ -11,60 +11,58 @@
 
 
 /* Define the vendor id and product id */
-#define USBD_VID                       0x0416
-#define USBD_PID                       0xBDF0
+#define USBD_VID                    0x0416
+#define USBD_PID                    0xBDF0
 
 
 /* Define EP maximum packet size */
-#define EP0_MAX_PKT_SIZE               64
-#define EP1_MAX_PKT_SIZE               EP0_MAX_PKT_SIZE
-#define TRANSFER_SIZE                  1024
-#define SETUP_BUF_BASE                 0
-#define SETUP_BUF_LEN                  8
-#define EP0_BUF_BASE                   (SETUP_BUF_BASE + SETUP_BUF_LEN)
-#define EP0_BUF_LEN                    EP0_MAX_PKT_SIZE
-#define EP1_BUF_BASE                   (SETUP_BUF_BASE + SETUP_BUF_LEN)
-#define EP1_BUF_LEN                    EP1_MAX_PKT_SIZE
+#define EP0_MAX_PKT_SIZE            64
+#define EP1_MAX_PKT_SIZE            EP0_MAX_PKT_SIZE
+#define TRANSFER_SIZE               1024
+#define SETUP_BUF_BASE              0
+#define SETUP_BUF_LEN               8
+#define EP0_BUF_BASE                (SETUP_BUF_BASE + SETUP_BUF_LEN)
+#define EP0_BUF_LEN                 EP0_MAX_PKT_SIZE
+#define EP1_BUF_BASE                (SETUP_BUF_BASE + SETUP_BUF_LEN)
+#define EP1_BUF_LEN                 EP1_MAX_PKT_SIZE
 
 
 /* Define Descriptor information */
-#define USBD_SELF_POWERED              0
-#define USBD_REMOTE_WAKEUP             0
-#define USBD_MAX_POWER                 50  /* The unit is in 2mA. ex: 50 * 2mA = 100mA */
+#define USBD_SELF_POWERED           0
+#define USBD_REMOTE_WAKEUP          0
+#define USBD_MAX_POWER              50  /* The unit is in 2mA. ex: 50 * 2mA = 100mA */
 
-#define LEN_CONFIG_AND_SUBORDINATE     (LEN_CONFIG+LEN_INTERFACE+LEN_HID+LEN_ENDPOINT)
-
-
+#define LEN_CONFIG_AND_SUBORDINATE  (LEN_CONFIG+LEN_INTERFACE+LEN_HID+LEN_ENDPOINT)
 
 /* manifestation State */
-#define MANIFEST_COMPLETE              0x00
-#define MANIFEST_IN_PROGRESS           0x01
+#define MANIFEST_COMPLETE           0x00
+#define MANIFEST_IN_PROGRESS        0x01
 
 /* special commands with download request */
-#define GET_COMMANDS                   0x00
-#define SET_ADDRESS_POINTER            0x21
-#define ERASE                          0x41
+#define GET_COMMANDS                0x00
+#define SET_ADDRESS_POINTER         0x21
+#define ERASE                       0x41
 
 /* memory operation command */
-#define CMD_ERASE                      0
-#define CMD_WRITE                      1
+#define CMD_ERASE                   0
+#define CMD_WRITE                   1
 
-#define _BYTE1(x)                      (uint8_t)((x) & 0xFF)               /*!< addressing cycle 1st byte */
-#define _BYTE2(x)                      (uint8_t)(((x) & 0xFF00) >> 8)      /*!< addressing cycle 2nd byte */
-#define _BYTE3(x)                      (uint8_t)(((x) & 0xFF0000) >> 16)   /*!< addressing cycle 3rd byte */
+#define _BYTE1(x)                   (uint8_t)((x) & 0xFF)               /*!< addressing cycle 1st byte */
+#define _BYTE2(x)                   (uint8_t)(((x) & 0xFF00) >> 8)      /*!< addressing cycle 2nd byte */
+#define _BYTE3(x)                   (uint8_t)(((x) & 0xFF0000) >> 16)   /*!< addressing cycle 3rd byte */
 
-#define SET_POLLING_TIMEOUT(x)         dfu_status.bwPollTimeout0 = _BYTE1(x);\
+#define SET_POLLING_TIMEOUT(x)      dfu_status.bwPollTimeout0 = _BYTE1(x);\
     dfu_status.bwPollTimeout1 = _BYTE2(x);\
     dfu_status.bwPollTimeout2 = _BYTE3(x);
 
-#define FLASH_ERASE_TIMEOUT            60
-#define FLASH_WRITE_TIMEOUT            80
+#define FLASH_ERASE_TIMEOUT         60
+#define FLASH_WRITE_TIMEOUT         80
 
 
 /* bit detach capable = bit 3 in bmAttributes field */
-#define DFU_DETACH_MASK                (uint8_t)(0x10)
-#define USB_SERIAL_STRING_SIZE         0x06
-#define DFU_DESC_TYPE                  0x21
+#define DFU_DETACH_MASK             (uint8_t)(0x10)
+#define USB_SERIAL_STRING_SIZE      0x06
+#define DFU_DESC_TYPE               0x21
 
 
 typedef struct
@@ -127,8 +125,6 @@ typedef enum
     DFU_REQ_MAX
 } dfu_requests_enum;
 
-//#pragma pack(1)
-
 #define DFU_DETACH                        0
 #define DFU_DNLOAD                        1
 #define DFU_UPLOAD                        2
@@ -144,9 +140,6 @@ typedef struct
     uint16_t block_num;
     uint32_t base_addr;
 } s_prog_struct;
-
-/*-------------------------------------------------------------*/
-extern uint32_t g_u32ApromSize;
 
 /*-------------------------------------------------------------*/
 void DFU_Init(void);

@@ -18,11 +18,11 @@
     @{
 */
 
+int32_t  g_KDF_i32ErrCode = eKDF_ERRCODE_SUCCESS;   /*!< KDF global error code */
+
 /** @addtogroup KDF_EXPORTED_FUNCTIONS KDF Exported Functions
     @{
 */
-
-int32_t  g_KDF_i32ErrCode = eKDF_ERRCODE_SUCCESS;   /*!< KDF global error code */
 
 /**
   * @brief      Get key bit size
@@ -230,7 +230,7 @@ int32_t KDF_DeriveKey(E_KDF_MODE eMode, uint32_t u32DeriveKeyParam, uint32_t u32
   *                                  \ref KDF_KS_KEYSIZE_521
   *                                  \ref KDF_KS_KEYSIZE_571
   * @param[in]    u32KeyMeta         The metadata of the key. It could be the combine of
-  *                                  \ref KDF_KS_OWNER_AES / \ref KDF_KS_OWNER_HMAC / \ref KDF_KS_OWNER_ECC / \ref KDF_KS_OWNER_CPU / \ref KDF_KS_OWNER_CHACHA
+  *                                  \ref KDF_KS_OWNER_AES / \ref KDF_KS_OWNER_HMAC / \ref KDF_KS_OWNER_ECC / \ref KDF_KS_OWNER_CPU
   *                                  \ref KDF_KS_NON_PRIV   / \ref KDF_KS_PRIV
   *                                  \ref KDF_KS_NON_SECURE / \ref KDF_KS_SECURE
   * @return       Index of the key. Failed when index < 0.

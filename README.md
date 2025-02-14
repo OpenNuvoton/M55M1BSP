@@ -1,30 +1,30 @@
-# M55M1 Series CMSIS BSP
+# M55M1/M5531 Series CMSIS BSP
 
-To experience the powerful features of M55M1 series in few minutes, please select the sample code to download and execute on the NuMaker-M55M1 board. Open the project files to build them with Keil® MDK, IAR or NuEclipse, and then download and trace them on the M55M1 board to see how it works.
+To experience the powerful features of M55M1/M5531 series in few minutes, please select the sample code to download and execute on the NuMaker-M55M1 board. Open the project files to build them with Keil® MDK, IAR, NuEclipse or VSCode, and then download and trace them on the NuMaker board to see how it works.
 
 
 ## .\Document\
 
 - CMSIS.html<br>
-	Document of CMSIS.
+	Document of CMSIS version 6.1.0.
 
-- NuMicro M55M1 Series CMSIS BSP Driver Reference Guide.chm<br>
-	This document describes the usage of drivers in M55M1 Series BSP.
+- NuMicro M55M1_M5531 Series CMSIS BSP Driver Reference Guide.chm<br>
+	This document describes the usage of drivers in M55M1/M5531 Series BSP.
 
-- Revision History.pdf<br>
-	This document shows the revision history of M55M1 Series BSP.
+- NuMicro M55M1_M5531 Series CMSIS BSP Revision History.pdf<br>
+	This document shows the revision history of M55M1/M5531 Series BSP.
 
 
 ## .\Library\
 
 - CMSIS<br>
-	Cortex® Microcontroller Software Interface Standard (CMSIS) definitions by Arm® Corp.
+	Cortex® Microcontroller Software Interface Standard (CMSIS) V6.1.0 definitions by Arm® Corp.
 
 - Commu<br>
-	Helper functions of communication protocols, e.g., xmodem.
+	Helper functions of communication protocols, e.g., XMODEM.
 
 - CryptoAccelerator<br>
-	Crypto accelerator source code for MbedTLS library.
+	Crypto accelerator source code for mbedtls.
 
 - Device<br>
 	CMSIS compliant device header files.
@@ -48,13 +48,13 @@ To experience the powerful features of M55M1 series in few minutes, please selec
 ## .\Sample Code\
 
 - CortexM55<br>
-	Cortex®-M55 sample codes.
+	Cortex®-M55 sample code.
 
 - Crypto<br>
-	Crypto sample codes using MbedTLS library.
+	Crypto sample code using Mbed TLS library.
 
 - FreeRTOS<br>
-	Simple FreeRTOS™ demo codes.
+	Simple FreeRTOS™ demo code.
 	
 - Hard\_Fault\_Sample<br>
 	Show hard fault information when hard fault happened.<p>
@@ -62,34 +62,37 @@ To experience the powerful features of M55M1 series in few minutes, please selec
 	It also shows the Link Register (LR), which contains the return address of the last function call. It can show the status where CPU comes from to get to this point.
 
 - ISP<br>
-	Sample codes for In-System-Programming.
+	Sample code for In-System-Programming.
 
 - MachineLearning<br>
-	Sample codes for machine learning.
+	Sample code for machine learning.<p>
+	For more tools/samples about machine learning training and inference (such as face/pose recognition, face/hand landmark, YOLO object detection, etc), please refer to the following repositories.
+	- **NuEdgeWise**: https://github.com/OpenNuvoton/NuEdgeWise
+	- **ML_M55M1_SampleCode**: https://github.com/OpenNuvoton/ML_M55M1_SampleCode (Private repository, please contact [Nuvoton support team](https://www.nuvoton.com/ai/contact-us/).)
 
 - NuMaker_M55M1<br>
-	Sample codes for NuMaker-M55M1 board.
+	Sample code for NuMaker-M55M1 board.
 
 - PowerDelivery<br>
-	Sample codes for power delivery on TC8263_UTCPD board.
+	Sample code for power delivery on M55M1_UTCPD board.
 
 - PowerManagement<br>
-	Sample codes for power management.
+	Sample code for power management.
 
 - SecureApplication<br>
-	Sample codes for secure application.
+	Sample code for secure application.
 
 - Semihost<br>
 	Show how to print and get character through IDE console window.
 
 - StdDriver<br>
-	Sample codes to demonstrate the usage of M55M1 series MCU peripheral driver APIs.
+	Sample code to demonstrate the usage of M55M1/M5531 series MCU peripheral driver APIs.
 
 - Template<br>
-	Project template for M55M1 series MCU.
+	Project template for M55M1/M5531 series MCU.
 
 - TrustZone<br>
-	Demo of secure codes and non-secure codes.
+	Demo of secure code and non-secure code.
 
 - XOM<br>
 	Demonstrate how to create XOM library and use it.
@@ -132,10 +135,19 @@ To experience the powerful features of M55M1 series in few minutes, please selec
 	TensorFlow Lite for Microcontrollers is a port of TensorFlow Lite designed to run machine learning models on DSPs, microcontrollers, and other devices with limited memory.
 
 
+## .\Tool\
+
+- imgtool.exe<br>
+	Used to perform the operations that are necessary to manage keys and sign images.
+
+- OTAServerDemo_v2.2.1.apk<br>
+	Secure OTA server Android APP to download firmware images with Secure OTA sample codes.
+
+
 # License
 
 **SPDX-License-Identifier: Apache-2.0**
 
 Copyright in some of the content available in this BSP belongs to third parties.
 Third parties license is specified in a file header or license file.<p>
-M55M1 Series BSP files are provided under the Apache-2.0 license.
+M55M1/M5531 Series BSP files are provided under the Apache-2.0 license.

@@ -362,7 +362,7 @@ extern "C"
   *             enable Software Trigger in Auto Operation Mode.
   * \hideinitializer
   */
-#define LPSPI_ENABLE_AUTO_SW_TRIG(lpspi)    ((lpspi)->AUTOCTL |= LPSPI_AUTOCTL_SWTRIG_Msk)
+#define LPSPI_ENABLE_AUTO_SW_TRIG(lpspi)    ((lpspi)->AUTOCTL |= LPSPI_AUTOCTL_SWTRG_Msk)
 
 /**
   * @brief      Disable Software Trigger for Auto Operation.
@@ -372,7 +372,7 @@ extern "C"
   *             disable Software Trigger in Auto Operation Mode.
   * \hideinitializer
   */
-#define LPSPI_DISABLE_AUTO_SW_TRIG(lpspi)   ((lpspi)->AUTOCTL &= ~LPSPI_AUTOCTL_SWTRIG_Msk)
+#define LPSPI_DISABLE_AUTO_SW_TRIG(lpspi)   ((lpspi)->AUTOCTL &= ~LPSPI_AUTOCTL_SWTRG_Msk)
 
 /**
   * @brief      Enable LPSPI Auto Operation Mode.

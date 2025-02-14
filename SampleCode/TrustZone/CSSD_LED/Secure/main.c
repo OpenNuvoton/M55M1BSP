@@ -9,28 +9,29 @@
 
 #include <arm_cmse.h>
 #include <stdio.h>
-#include "NuMicro.h"                    /* Device header */
+#include "NuMicro.h"            /* Device header */
 #include "partition_M55M1.h"
+#include "..\lib\cssd_nsclib.h"
 
-#define LOOP_HERE       0xE7FEE7FF      /* Instruction Code of "B ." */
+#define LOOP_HERE           0xE7FEE7FF      /* Instruction Code of "B ." */
+#define SECURE_LED0         PD5             /* NuMaker LED_G */
+#define SECURE_LED1         PD4
+#define SECURE_LED2         PD6             /* NuMaker LED_Y */
+#define SECURE_LED3         PD7
+#define NON_SECURE_LED0     PH5_NS
 
 /* typedef for Non-secure callback functions */
 typedef __NONSECURE_CALL int32_t (*PFN_NON_SECURE_FUNC)(uint32_t);
 
 __NONSECURE_ENTRY
-int32_t Secure_PA11_LED_On(uint32_t u32Num);
+int32_t Secure_LED1(uint32_t u32Num, uint32_t bOn);
 __NONSECURE_ENTRY
-int32_t Secure_PA11_LED_Off(uint32_t u32Num);
+int32_t Secure_LED2(uint32_t u32Num, uint32_t bOn);
 __NONSECURE_ENTRY
-int32_t Secure_PA12_LED_On(uint32_t u32Num);
-__NONSECURE_ENTRY
-int32_t Secure_PA12_LED_Off(uint32_t u32Num);
-__NONSECURE_ENTRY
-int32_t Secure_PA13_LED_On(uint32_t u32Num);
-__NONSECURE_ENTRY
-int32_t Secure_PA13_LED_Off(uint32_t u32Num);
+int32_t Secure_LED3(uint32_t u32Num, uint32_t bOn);
 __NONSECURE_ENTRY
 uint32_t GetSystemCoreClock(void);
+
 int32_t LED_On(void);
 int32_t LED_Off(void);
 
@@ -39,63 +40,33 @@ int32_t LED_Off(void);
  * Must place in Non-secure Callable
  *---------------------------------------------------------------------------*/
 __NONSECURE_ENTRY
-int32_t Secure_PA11_LED_On(uint32_t u32Num)
+int32_t Secure_LED1(uint32_t u32Num, uint32_t bOn)
 {
-    (void)u32Num;
-    printf("Secure PA11 LED On call by Non-secure\n");
-    PA11 = 0;
+    NVT_UNUSED(u32Num);
+    printf("Secure LED1 %s call by Non-secure\n", (bOn == LED_ON) ? "On" : "Off");
+    SECURE_LED1 = bOn;
 
-    return 0;
+    return bOn;
 }
 
 __NONSECURE_ENTRY
-int32_t Secure_PA11_LED_Off(uint32_t u32Num)
+int32_t Secure_LED2(uint32_t u32Num, uint32_t bOn)
 {
-    (void)u32Num;
-    printf("Secure PA11 LED Off call by Non-secure\n");
-    PA11 = 1;
+    NVT_UNUSED(u32Num);
+    printf("Secure LED2 %s call by Non-secure\n", (bOn == LED_ON) ? "On" : "Off");
+    SECURE_LED2 = bOn;
 
-    return 1;
+    return bOn;
 }
 
 __NONSECURE_ENTRY
-int32_t Secure_PA12_LED_On(uint32_t u32Num)
+int32_t Secure_LED3(uint32_t u32Num, uint32_t bOn)
 {
-    (void)u32Num;
-    printf("Secure PA12 LED On call by Non-secure\n");
-    PA12 = 0;
+    NVT_UNUSED(u32Num);
+    printf("Secure LED3 %s call by Non-secure\n", (bOn == LED_ON) ? "On" : "Off");
+    SECURE_LED3 = bOn;
 
-    return 0;
-}
-
-__NONSECURE_ENTRY
-int32_t Secure_PA12_LED_Off(uint32_t u32Num)
-{
-    (void)u32Num;
-    printf("Secure PA12 LED Off call by Non-secure\n");
-    PA12 = 1;
-
-    return 1;
-}
-
-__NONSECURE_ENTRY
-int32_t Secure_PA13_LED_On(uint32_t u32Num)
-{
-    (void)u32Num;
-    printf("Secure PA13 LED On call by Non-secure\n");
-    PA13 = 0;
-
-    return 0;
-}
-
-__NONSECURE_ENTRY
-int32_t Secure_PA13_LED_Off(uint32_t u32Num)
-{
-    (void)u32Num;
-    printf("Secure PA13 LED Off call by Non-secure\n");
-    PA13 = 1;
-
-    return 1;
+    return bOn;
 }
 
 __NONSECURE_ENTRY
@@ -108,20 +79,20 @@ uint32_t GetSystemCoreClock(void)
 
 int32_t LED_On(void)
 {
-    printf("Secure PA10 & Non-secure PC1 LED On call by Secure\n");
-    PA10   = 0;
-    PC1_NS = 0;
+    printf("Secure LED0 & Non-secure LED0 On call by Secure\n");
+    SECURE_LED0     = LED_ON;
+    NON_SECURE_LED0 = LED_ON;
 
-    return 0;
+    return LED_ON;
 }
 
 int32_t LED_Off(void)
 {
-    printf("Secure PA10 & Non-secure PC1 LED Off call by Secure\n");
-    PA10   = 1;
-    PC1_NS = 1;
+    printf("Secure LED0 & Non-secure LED0 Off call by Secure\n");
+    SECURE_LED0     = LED_OFF;
+    NON_SECURE_LED0 = LED_OFF;
 
-    return 1;
+    return LED_OFF;
 }
 
 /*---------------------------------------------------------------------------
@@ -217,16 +188,16 @@ int main(void)
     SYS_UnlockReg();
     FMC_Open();
     /* Check Secure/Non-secure base address configuration */
-    printf("SCU->FNSADDR: 0x%08X, NSCBA:        0x%08X\n", SCU->FNSADDR, FMC_Read(FMC_NSCBA_BASE));
+    printf("SCU->FNSADDR: 0x%08X, NSCBA: 0x%08X\n", SCU->FNSADDR, FMC_Read(FMC_NSCBA_BASE));
     printf("SRAM0MPCLUT0: 0x%08X\n", SCU->SRAM0MPCLUT0);
     printf("SRAM1MPCLUT0: 0x%08X\n", SCU->SRAM1MPCLUT0);
     printf("SRAM2MPCLUT0: 0x%08X\n", SCU->SRAM2MPCLUT0);
 
-    /* Init GPIO Port A Pin 10 ~ 13 for Secure LED control */
-    GPIO_SetMode(PA, (BIT10 | BIT11 | BIT12 | BIT13), GPIO_MODE_OUTPUT);
+    /* Init GPIO Port D Pin 4 ~ 7 for Secure LED control */
+    GPIO_SetMode(PD, (BIT4 | BIT5 | BIT6 | BIT7), GPIO_MODE_OUTPUT);
 
-    /* Init GPIO Port C Pin 1 for Non-secure LED control */
-    GPIO_SetMode(PC_NS, BIT1, GPIO_MODE_OUTPUT);
+    /* Init GPIO Port H Pin 5 for Non-secure LED control */
+    GPIO_SetMode(PH_NS, BIT5, GPIO_MODE_OUTPUT);
 
     /* Generate Systick interrupt each 10 ms */
     SysTick_Config(SystemCoreClock / 100);
@@ -293,8 +264,8 @@ void SYS_Init(void)
     /*-----------------------------------------------------------------------
      * Init System Clock
      *-----------------------------------------------------------------------*/
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -304,9 +275,8 @@ void SYS_Init(void)
     SetDebugUartCLK();
 
     /* Enable module clock */
-    CLK_EnableModuleClock(GPIOA_MODULE);
-    CLK_EnableModuleClock(GPIOB_MODULE);
-    CLK_EnableModuleClock(GPIOC_MODULE);
+    CLK_EnableModuleClock(GPIOD_MODULE);
+    CLK_EnableModuleClock(GPIOH_MODULE);
 
     /*-----------------------------------------------------------------------
      * Init I/O Multi-function

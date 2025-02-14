@@ -878,9 +878,8 @@ cmsis_arm_barycenter_f32(PyObject *obj, PyObject *args)
   float32_t *pDst=NULL; // output
   uint32_t nbVectors,vecDim;
 
-  if (PyArg_ParseTuple(args,"OOkk",&pSrcA,&pSrcB,&nbVectors,&vecDim))
+  if (PyArg_ParseTuple(args,"OOII",&pSrcA,&pSrcB,&nbVectors,&vecDim))
   {
-
     GETARGUMENT(pSrcA,NPY_DOUBLE,double,float32_t);
     GETARGUMENT(pSrcB,NPY_DOUBLE,double,float32_t);
 
@@ -902,7 +901,7 @@ cmsis_arm_barycenter_f32(PyObject *obj, PyObject *args)
 }
 
 static PyObject *
-cmsis_arm_weighted_sum_f32(PyObject *obj, PyObject *args)
+cmsis_arm_weighted_average_f32(PyObject *obj, PyObject *args)
 {
 
   PyObject *pSrcA=NULL; // input
@@ -920,7 +919,7 @@ cmsis_arm_weighted_sum_f32(PyObject *obj, PyObject *args)
     blockSize = arraySizepSrcA ;
 
 
-    dst=arm_weighted_sum_f32(pSrcA_converted,pSrcB_converted,blockSize);
+    dst=arm_weighted_average_f32(pSrcA_converted,pSrcB_converted,blockSize);
     PyObject* pDstOBJ=Py_BuildValue("f",dst);
     PyObject *pythonResult = Py_BuildValue("O",pDstOBJ);
 
@@ -934,7 +933,7 @@ cmsis_arm_weighted_sum_f32(PyObject *obj, PyObject *args)
 }
 
 static PyObject *
-cmsis_arm_div_q63_to_q31(PyObject *obj, PyObject *args)
+cmsis_arm_div_int64_to_int32(PyObject *obj, PyObject *args)
 {
 
   PyObject *pSrc=NULL; // input
@@ -946,7 +945,7 @@ cmsis_arm_div_q63_to_q31(PyObject *obj, PyObject *args)
   {
 
     
-    result=arm_div_q63_to_q31(num,den);
+    result=arm_div_int64_to_int32(num,den);
 
     PyObject* resultOBJ=Py_BuildValue("l",result);
 
@@ -962,7 +961,7 @@ cmsis_arm_div_q63_to_q31(PyObject *obj, PyObject *args)
 
 static PyMethodDef CMSISDSPMethods[] = {
 
-{"arm_div_q63_to_q31",  cmsis_arm_div_q63_to_q31, METH_VARARGS,""},
+{"arm_div_int64_to_int32",  cmsis_arm_div_int64_to_int32, METH_VARARGS,""},
 {"arm_copy_f64",  cmsis_arm_copy_f64, METH_VARARGS,""},
 {"arm_copy_f32",  cmsis_arm_copy_f32, METH_VARARGS,""},
 {"arm_copy_q7",  cmsis_arm_copy_q7, METH_VARARGS,""},
@@ -994,7 +993,7 @@ static PyMethodDef CMSISDSPMethods[] = {
 {"arm_sort_f32",  cmsis_arm_sort_f32, METH_VARARGS,""},
 {"arm_sort_init_f32",  cmsis_arm_sort_init_f32, METH_VARARGS,""},
 {"arm_barycenter_f32",  cmsis_arm_barycenter_f32, METH_VARARGS,""},
-{"arm_weighted_sum_f32",  cmsis_arm_weighted_sum_f32, METH_VARARGS,""},
+{"arm_weighted_average_f32",  cmsis_arm_weighted_average_f32, METH_VARARGS,""},
 
     {"error_out", (PyCFunction)error_out, METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL}        /* Sentinel */

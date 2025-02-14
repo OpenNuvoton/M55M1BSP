@@ -1,7 +1,9 @@
 /**************************************************************************//**
  * @file    main.c
  * @version V1.00
- * @brief   Use M55M1 as USB Host to perform SecureISP.
+ * @brief   Demonstrate how to initialize a SecureISP server mode via
+ *          USB host connected to SecureISPDemo.
+ *          This sample code needs to work with SecureISPDemo sample code.
  *
  * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -152,8 +154,8 @@ void SYS_Init(void)
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
     CLK_WaitClockReady(CLK_STATUS_HIRC48MSTB_Msk);
 
-    /* Enable PLL0 180MHz clock from HIRC and switch SCLK clock source to PLL0 */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock from HIRC and switch SCLK clock source to PLL0 */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -179,6 +181,10 @@ void SYS_Init(void)
     CLK_EnableModuleClock(OTG0_MODULE);
     /* Enable HSUSBH module clock */
     CLK_EnableModuleClock(HSUSBH0_MODULE);
+    /* Enable HSOTG module clock */
+    CLK_EnableModuleClock(HSOTG0_MODULE);
+    /* Select HSOTG PHY Reference clock frequency which is from HXT*/
+    HSOTG_SET_PHY_REF_CLK(HSOTG_PHYCTL_FSEL_24_0M);
     /* Enable CRYPTO and TRNG module clock */
     CLK_EnableModuleClock(CRYPTO0_MODULE);
     CLK_EnableModuleClock(TRNG0_MODULE);
@@ -192,11 +198,11 @@ void SYS_Init(void)
     delay_us(20);
     SYS->USBPHY |= SYS_USBPHY_HSUSBACT_Msk;
 
-    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.8     */
-    SET_USB_VBUS_EN_PB8();
+    /* USB_VBUS_EN (USB 1.1 VBUS power enable pin) multi-function pin - PB.15     */
+    SET_USB_VBUS_EN_PB15();
 
-    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.9   */
-    SET_USB_VBUS_ST_PB9();
+    /* USB_VBUS_ST (USB 1.1 over-current detect pin) multi-function pin - PB.14   */
+    SET_USB_VBUS_ST_PB14();
 
     /* HSUSB_VBUS_EN (USB 2.0 VBUS power enable pin) multi-function pin - PJ.13   */
     SET_HSUSB_VBUS_EN_PJ13();
@@ -237,6 +243,10 @@ int main()
 
     enable_sys_tick(100);
 
+#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+    /* Disable STDOUT buffering */
+    setbuf(stdout, NULL);
+#endif
     printf("\n\n");
     printf("System clock:   %d Hz.\n", SystemCoreClock);
     printf("USB Host clock: %d Hz.\n", CLK_GetUSBFreq());

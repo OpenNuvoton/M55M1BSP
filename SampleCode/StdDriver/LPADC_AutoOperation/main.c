@@ -16,14 +16,19 @@
 volatile uint32_t g_u32LPPdmaIntFlag = 0;
 volatile uint32_t g_u32WakeupCount = 0;
 
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
-    extern void initialise_monitor_handles(void);
-#endif
-
 /* M55M1: Because LPPDMA only can access LPSRAM,
    the g_i32ConversionData[] MUST be allocated at LPSRAM area 0x20310000 ~ 0x20311FFF (8 KB).
  */
-volatile uint32_t g_i32ConversionData[10] __attribute__((section(".lpSram")));
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    volatile uint32_t g_i32ConversionData[DCACHE_ALIGN_LINE_SIZE(10)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+#else
+    volatile uint32_t g_i32ConversionData[10] __attribute__((section(".lpSram")));
+#endif
+
+#if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
+    extern void initialise_monitor_handles(void);
+#endif
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* LPPDMA interrupt handler                                                                                  */
@@ -63,21 +68,14 @@ void SYS_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init System Clock                                                                                       */
     /*---------------------------------------------------------------------------------------------------------*/
-
-    /* Enable Internal RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
+    /* Enable Internal RC clock */
+    CLK_EnableXtalRC(CLK_SRCCTL_LIRCEN_Msk);
 
     /* Waiting for Internal RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
+    CLK_WaitClockReady(CLK_STATUS_LIRCSTB_Msk);
 
-    /* Enable External RC 12MHz clock */
-    CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
-
-    /* Waiting for External RC clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-
-    /* Switch SCLK clock source to APLL0 and Enable APLL0 180MHz clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -89,8 +87,8 @@ void SYS_Init(void)
     /* Enable LPADC module clock */
     CLK_EnableModuleClock(LPADC0_MODULE);
 
-    /* Select LPTMR0 module clock source as HIRC */
-    CLK_SetModuleClock(LPTMR0_MODULE, CLK_LPTMRSEL_LPTMR0SEL_HIRC, 0);
+    /* Select LPTMR0 module clock source as LIRC */
+    CLK_SetModuleClock(LPTMR0_MODULE, CLK_LPTMRSEL_LPTMR0SEL_LIRC, 0);
 
     /* Enable LPTMR0 module clock */
     CLK_EnableModuleClock(LPTMR0_MODULE);
@@ -112,7 +110,7 @@ void SYS_Init(void)
     /*----------------------------------------------------------------------*/
 
     /* Set PH multi-function pins for Debug UART RXD and TXD */
-    SetDebugUartMFP();;
+    SetDebugUartMFP();
 
     /* Set PB.1 to input mode */
     GPIO_SetMode(PB, BIT1, GPIO_MODE_INPUT);
@@ -166,11 +164,12 @@ void LPPDMA_Init()
 
     /* Set source address is LPADC0->ADPDMA, destination address is g_i32ConversionData[] on LPSRAM */
     LPPDMA_SetTransferAddr(LPPDMA, lppdma_ch, (uint32_t) & (LPADC0->ADPDMA), LPPDMA_SAR_FIX, (uint32_t)g_i32ConversionData, LPPDMA_DAR_INC);
+
+    /* Set transfer type and burst size */
+    LPPDMA_SetBurstType(LPPDMA, lppdma_ch, LPPDMA_REQ_SINGLE, LPPDMA_BURST_1);
+
     /* Request source is LPADC */
     LPPDMA_SetTransferMode(LPPDMA, lppdma_ch, LPPDMA_LPADC0_RX, FALSE, 0);
-
-    /* Transfer type is burst transfer and burst size is 1 */
-    LPPDMA_SetBurstType(LPPDMA, lppdma_ch, LPPDMA_REQ_SINGLE, LPPDMA_BURST_1);
 
     /* Enable interrupt */
     LPPDMA_CLR_TD_FLAG(LPPDMA, LPPDMA_TDSTS_TDIF0_Msk << lppdma_ch);
@@ -180,8 +179,6 @@ void LPPDMA_Init()
 
 void LPADC_Init(void)
 {
-    /* LPADC Calibration */
-    LPADC_Calibration(LPADC0);
 
     /* Set input mode as single-end, Single-cycle scan mode, and select channel 1 */
     LPADC_Open(LPADC0, LPADC_ADCR_DIFFEN_SINGLE_END, LPADC_ADCR_ADMD_SINGLE, BIT1);
@@ -209,7 +206,18 @@ void AutoOperation_FunctionTest()
 
     while (1)
     {
+#if (NVT_DCACHE_ON == 1)
+        /* If DCACHE is enabled, clean the data cache for the buffer before writing to them and enabling DMA */
+        /* This is to ensure that the data written to the cache is actually written to the memory */
+        SCB_CleanDCache_by_Addr((uint32_t *)&g_i32ConversionData, sizeof(g_i32ConversionData));
+#endif
+
         LPPDMA_Init();
+
+#if (NVT_DCACHE_ON == 1)
+        /* Clean the data cache for the destination buffer of LPADC PDMA RX channel */
+        SCB_InvalidateDCache_by_Addr((uint32_t *)&g_i32ConversionData, sizeof(g_i32ConversionData));
+#endif
 
         printf("Power down and wait LPPDMA wake up CPU ...\n\n");
         UART_WAIT_TX_EMPTY(DEBUG_PORT);

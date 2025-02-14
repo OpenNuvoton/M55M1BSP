@@ -12,15 +12,20 @@
 #include <stdio.h>
 #include "NuMicro.h"
 
+//------------------------------------------------------------------------------
 #define DATA_COUNT      16
 #define TEST_PATTERN    0x00AA0000
 #define SPI_CLK_FREQ    2000000
 
+//------------------------------------------------------------------------------
+/* Buffer for SPI0 data transfer with FIFO mode when DCache is disabled */
 uint32_t g_au32SourceData[DATA_COUNT] = {0};
+/* Buffer for SPI0 data transfer with FIFO mode when DCache is disabled */
 uint32_t g_au32DestinationData[DATA_COUNT] = {0};
 uint32_t g_u32TxDataCount = 0;
 uint32_t g_u32RxDataCount = 0;
 
+//------------------------------------------------------------------------------
 void SYS_Init(void)
 {
     /* Enable Internal RC 12MHz clock */
@@ -29,8 +34,8 @@ void SYS_Init(void)
     /* Waiting for Internal RC clock ready */
     CLK_WaitClockReady(CLK_STATUS_HIRCSTB_Msk);
 
-    /* Enable PLL0 180MHz clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_180MHZ, CLK_APLL0_SELECT);
+    /* Enable PLL0 clock */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL0_SELECT);
 
     /* Switch SCLK clock source to PLL0 and divide 1 */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_APLL0);
@@ -66,14 +71,10 @@ void SYS_Init(void)
     /* Setup SPI0 multi-function pins */
     /* PA.3 is SPI0_SS,   PA.2 is SPI0_CLK,
        PA.1 is SPI0_MISO, PA.0 is SPI0_MOSI*/
-    SYS->GPA_MFP0 = (SYS->GPA_MFP0 & ~(SYS_GPA_MFP0_PA3MFP_Msk |
-                                       SYS_GPA_MFP0_PA2MFP_Msk |
-                                       SYS_GPA_MFP0_PA1MFP_Msk |
-                                       SYS_GPA_MFP0_PA0MFP_Msk)) |
-                    (SYS_GPA_MFP0_PA3MFP_SPI0_SS |
-                     SYS_GPA_MFP0_PA2MFP_SPI0_CLK |
-                     SYS_GPA_MFP0_PA1MFP_SPI0_MISO |
-                     SYS_GPA_MFP0_PA0MFP_SPI0_MOSI);
+    SET_SPI0_SS_PA3();
+    SET_SPI0_CLK_PA2();
+    SET_SPI0_MOSI_PA0();
+    SET_SPI0_MISO_PA1();
 }
 
 void SPI_Init(void)
@@ -92,7 +93,7 @@ void SPI_Init(void)
 int main(void)
 {
     uint32_t u32TxDataCount, u32RxDataCount;
-    uint32_t u32TimeOutCount;
+    volatile uint32_t u32TimeOutCount;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -154,14 +155,12 @@ int main(void)
         if (SPI_GET_RX_FIFO_EMPTY_FLAG(SPI0) == 0)
             g_au32DestinationData[u32RxDataCount++] = SPI_READ_RX(SPI0); /* Read RX FIFO */
 
-        if (u32TimeOutCount == 0)
+        if (--u32TimeOutCount == 0)
         {
             printf("\nSomething is wrong, please check if pin connection is correct. \n");
 
             while (1);
         }
-
-        u32TimeOutCount--;
     }
 
     /* Print the received data */

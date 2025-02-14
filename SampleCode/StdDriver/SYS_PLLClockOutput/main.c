@@ -91,7 +91,8 @@ static uint32_t g_au32PllSetting[] =
     FREQ_50MHZ,    /* PLL = 50MHz */
     FREQ_100MHZ,   /* PLL = 100MHz */
     FREQ_150MHZ,   /* PLL = 150MHz */
-    FREQ_180MHZ,   /* PLL = 180MHz */
+    FREQ_200MHZ,   /* PLL = 200MHz */
+    FREQ_220MHZ,   /* PLL = 220MHz */
 };
 
 void SYS_PLL_Test(void)
@@ -170,8 +171,8 @@ void SYS_Init(void)
     /* Switch SCLK clock source to HIRC */
     CLK_SetSCLK(CLK_SCLKSEL_SCLKSEL_HIRC);
 
-    /* Enable PLL0 180MHz clock and set all bus clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ);
+    /* Enable PLL0 220MHz clock and set all bus clock */
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
