@@ -18,7 +18,6 @@ extern int32_t g_TotalSectors;
 NVT_ITCM void SDH0_IRQHandler(void)
 {
     unsigned int volatile isr;
-    unsigned int volatile ier;
 
     // FMI data abort interrupt
     if (SDH0->GINTSTS & SDH_GINTSTS_DTAIF_Msk)

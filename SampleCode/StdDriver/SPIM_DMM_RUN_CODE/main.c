@@ -29,6 +29,7 @@ static SPIM_PHASE_T sWb0BhRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                     // Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE, // Data Phase
     8,                                                                        // Dummy Cycle Phase
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 static SPIM_PHASE_T sWb02hWrCMD =
@@ -38,6 +39,7 @@ static SPIM_PHASE_T sWb02hWrCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                       //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,  //Data Phase
     0,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 //------------------------------------------------------------------------------

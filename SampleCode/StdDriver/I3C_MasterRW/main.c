@@ -83,6 +83,7 @@ int32_t main(void)
         if ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk) == 0U)
         {
             char ch = (char)DEBUG_PORT->DAT;
+            (void)ch;
 
             if (1 == I3C_BroadcastENTDAA(I3C0, 1))
             {

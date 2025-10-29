@@ -54,7 +54,7 @@ size_t          ReturnSize;
 // I2S PCM buffer x2
 #if (NVT_DCACHE_ON == 1)
 // If DCACHE is enabled, each buffer is aligned to a full cache line and is padded to a full cache line size
-signed int aPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+signed int aPCMBuffer[2][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
 // File IO buffer for MP3 library
 unsigned char MadInputBuffer[DCACHE_ALIGN_LINE_SIZE(FILE_IO_BUFFER_SIZE + MAD_BUFFER_GUARD)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
 #else
@@ -126,8 +126,9 @@ void StartPlay(void)
 {
     printf("Start playing ...\n");
     PDMA_Init();
-    I2S_ENABLE_TXDMA(I2S0);
-    I2S_ENABLE_TX(I2S0);
+
+    I2S_ENABLE_TXDMA(I2S_PORT);
+    I2S_ENABLE_TX(I2S_PORT);
 
     // enable sound output
     audioInfo.mp3Playing = 1;
@@ -136,10 +137,10 @@ void StartPlay(void)
 // Disable I2S TX with PDMA function
 void StopPlay(void)
 {
-    I2S_DISABLE_TXDMA(I2S0);
-    I2S_DISABLE_TX(I2S0);
+    I2S_DISABLE_TXDMA(I2S_PORT);
+    I2S_DISABLE_TX(I2S_PORT);
 
-    PDMA_Close(PDMA0);
+    PDMA_Close(PDMA_PORT);
 
     // disable sound output
     audioInfo.mp3Playing = 0;
@@ -187,7 +188,7 @@ void MP3Player(void)
 #endif
 
     /* Open I2S0 interface and set to slave mode, stereo channel, I2S format */
-    I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_DISABLE_MONO, I2S_FORMAT_I2S);
+    I2S_Open(I2S_PORT, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_DISABLE_MONO, I2S_FORMAT_I2S);
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
     SET_GPIO_PD1();
@@ -195,8 +196,8 @@ void MP3Player(void)
     PD1 = 0;
 
     /* Set MCLK and enable MCLK */
-    I2S_EnableMCLK(I2S0, 12000000);
-    I2S0->CTL0 |= I2S_CTL0_ORDER_Msk;
+    I2S_EnableMCLK(I2S_PORT, 12000000);
+    I2S_PORT->CTL0 |= I2S_CTL0_ORDER_Msk;
 
 #if NAU8822
     /* Initialize NAU8822 codec */
@@ -221,7 +222,6 @@ void MP3Player(void)
         /* This is to ensure that the data written to the cache is actually written to the memory */
 #if (NVT_DCACHE_ON == 1)
         SCB_CleanInvalidateDCache_by_Addr((int *)&aPCMBuffer, sizeof(aPCMBuffer));
-        SCB_CleanInvalidateDCache_by_Addr((uint8_t *)&MadInputBuffer, sizeof(MadInputBuffer));
 #endif
 
         if (Stream.buffer == NULL || Stream.error == MAD_ERROR_BUFLEN)
@@ -325,7 +325,7 @@ void MP3Player(void)
             }
         }
 
-        for (i = 0; i < (int)Synth.pcm.length; i++)
+        for (i = 0; i < (uint32_t)Synth.pcm.length; i++)
         {
             /* Get the left/right samples */
             sampleL = Synth.pcm.samples[0][i];
@@ -335,7 +335,7 @@ void MP3Player(void)
             aPCMBuffer[u8PCMBufferTargetIdx][pcmbuf_idx++] = sampleR | (sampleL << 16);
 
             /* Need change buffer ? */
-            if (pcmbuf_idx == PCM_BUFFER_SIZE)
+            if (pcmbuf_idx >= PCM_BUFFER_SIZE)
             {
                 aPCMBuffer_Full[u8PCMBufferTargetIdx] = 1;      //set full flag
                 u8PCMBufferTargetIdx ^= 1;

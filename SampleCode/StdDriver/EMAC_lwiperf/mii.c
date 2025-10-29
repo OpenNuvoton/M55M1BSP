@@ -45,7 +45,7 @@ uint16_t mii_nway_result(uint32_t negotiated)
 int32_t mii_ethtool_gset(synopGMACdevice *gmacdev, uint8_t reset)
 {
     int32_t ret = -1;
-    uint16_t val, bmcr, lpa;
+    uint16_t val, lpa;
     volatile int32_t loop_count;
 
     gmacdev->LinkState = LINKDOWN;

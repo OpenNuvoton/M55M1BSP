@@ -95,8 +95,6 @@ static void SYS_Init(void)
 
 int main(void)
 {
-    volatile int i;
-
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();
     /* Init Debug UART to 115200-8N1 for print message */

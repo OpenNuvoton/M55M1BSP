@@ -105,6 +105,7 @@ static inline int tcpc_xfer(int port, const uint8_t *out, int out_size,
 static inline int tcpc_xfer_unlocked(int port, const uint8_t *out, int out_size,
                                      uint8_t *in, int in_size, int flags)
 {
+    (void)port, (void)out, (void)out_size, (void)in, (void)in_size, (void)flags;
 #ifdef SW
     return i2c_xfer_unlocked(tcpc_config[port].i2c_info.port,
                              tcpc_config[port].i2c_info.addr_flags,
@@ -363,6 +364,7 @@ static inline int tcpm_enable_drp_toggle(int port)
 #else
 static inline int tcpm_auto_toggle_supported(int port)
 {
+    (void)port;
     return false;
 }
 int tcpm_enable_drp_toggle(int port);

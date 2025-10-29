@@ -132,7 +132,7 @@ uint8_t st1633i_read_multi_reg(uint8_t addr, uint8_t *data, uint8_t len)
     return I2C_ReadMultiBytesOneReg(I2C_PORT, ST1633_SLV_ADDR, addr, data, len);
 }
 
-static void st1663i_touch_up(void *buf, int8_t id)
+static void st1663i_touch_up(int8_t id)
 {
     pre_x[id] = -1;  /* last point is none */
     pre_y[id] = -1;
@@ -142,6 +142,8 @@ static void st1663i_touch_up(void *buf, int8_t id)
 
 static void st1663i_touch_down(void *buf, int8_t id, int16_t x, int16_t y, int16_t w)
 {
+    (void)(buf);
+
     pre_x[id] = x; /* save last point */
     pre_y[id] = y;
     pre_w[id] = w;
@@ -190,7 +192,7 @@ uint8_t st1663i_read_point(S_LVGL_TPINFO *pbuf, uint8_t read_num)
             if ((j == sStRegMap.u8Fingers) && (pre_id[i] != -1))         /* free this node */
             {
                 printf("touch up, free %d tid=%d\n", i, pre_id[i]);
-                st1663i_touch_up(NULL, pre_id[i]);
+                st1663i_touch_up(pre_id[i]);
                 pbuf->event_touched =  0;
                 pre_id[i] = -1;
             }
@@ -226,7 +228,7 @@ uint8_t st1663i_read_point(S_LVGL_TPINFO *pbuf, uint8_t read_num)
         else
         {
             // Up
-            st1663i_touch_up(NULL, touchid);//report to OS
+            st1663i_touch_up(touchid); //report to OS
             pbuf->event_touched =  0;
             printf("touch up\r\n");
         }

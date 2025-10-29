@@ -64,8 +64,6 @@ image_t displayImg;
 
 uint8_t u8SpeedString[32];
 
-extern const char *g_NumberCategory[];
-
 //Data Buffer for ML inference
 static __attribute__((aligned))int8_t gNNBuffer[MNIST_HANDWRITE_WIDTH * MNIST_HANDWRITE_HEIGHT] = {0};
 
@@ -73,7 +71,19 @@ static __attribute__((aligned))int8_t gNNBuffer[MNIST_HANDWRITE_WIDTH * MNIST_HA
 static __attribute__((aligned))uint8_t u8DrawBuffer[MNIST_HANDWRITE_HEIGHT * MNIST_HANDWRITE_WIDTH] = {0};
 static __attribute__((aligned))uint8_t u8FrameBuffer[TP_POS_X_MAX * TP_POS_Y_MAX * 2] = {0};
 
-
+static const char *g_NumberCategory[]  =
+{
+    "ZERO",
+    "ONE",
+    "TWO",
+    "THREE",
+    "FOUR",
+    "FIVE",
+    "SIX",
+    "SEVEN",
+    "EIGHT",
+    "NINE"
+};
 /****************************************************************************
  * User Code
  ****************************************************************************/
@@ -200,6 +210,9 @@ uint8_t dbuffer_update(S_LVGL_TPINFO tp_info)
 
 static eUserIntent draw_check_intent(S_LVGL_TPINFO tp_info)
 {
+
+    (void)(tp_info);
+
     if ((sctp_info.pos_x > CLEARDRAW_BUTTON_X_THRESH) && (sctp_info.pos_y > CLEARDRAW_BUTTON_Y_THRESH))
     {
         u8ClearDrawFlag = 1;

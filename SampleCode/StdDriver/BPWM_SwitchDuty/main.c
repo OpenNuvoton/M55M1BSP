@@ -72,6 +72,8 @@ static void SYS_Init(void)
  */
 uint32_t CalNewDutyCMR(BPWM_T *pwm, uint32_t u32ChannelNum, uint32_t u32DutyCycle, uint32_t u32CycleResolution)
 {
+    NVT_UNUSED(u32ChannelNum);
+
     return (u32DutyCycle * (BPWM_GET_CNR(pwm, u32ChannelNum) + 1) / u32CycleResolution);
 }
 

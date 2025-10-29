@@ -26,18 +26,21 @@
 #define LPPDMA0                     LPPDMA
 
 //------------------------------------------------------------------------------
+extern void LPSPI0_IRQHandler(void);
+
+//------------------------------------------------------------------------------
 #if (NVT_DCACHE_ON == 1)
     // DCache-line aligned buffer for LPSPI Auto Operation mode test
-    uint32_t g_au32MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
-    uint32_t g_au32MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+    static uint32_t g_au32MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
+    static uint32_t g_au32MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE), section(".lpSram")));
 #else
     // Buffer for LPSPI Auto Operation mode test
-    uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
-    uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
+    static uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
+    static uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
 #endif
-volatile uint32_t g_u32WakeupCount = 0;
-volatile uint32_t g_u32LPPdmaIntFlag;
-volatile uint32_t g_u32Ifr = 0;
+volatile static uint32_t g_u32WakeupCount = 0;
+volatile static uint32_t g_u32LPPdmaIntFlag;
+volatile static uint32_t g_u32Ifr = 0;
 
 //------------------------------------------------------------------------------
 NVT_ITCM void LPSPI0_IRQHandler(void)
@@ -56,7 +59,7 @@ NVT_ITCM void LPSPI0_IRQHandler(void)
     }
 }
 
-void SYS_Init(void)
+static void SYS_Init(void)
 {
     /* Enable Internal RC 12MHz clock */
     CLK_EnableXtalRC(CLK_SRCCTL_HIRCEN_Msk);
@@ -127,7 +130,7 @@ void SYS_Init(void)
     PMC_DISABLE_AOCKPD();
 }
 
-void LPTMR0_Init(void)
+static void LPTMR0_Init(void)
 {
     /* Open LPTMR */
     LPTMR_Open(LPTMR0, LPTMR_ONESHOT_MODE, LPTMR0_FREQ);
@@ -142,7 +145,7 @@ void LPTMR0_Init(void)
     LPTMR0->TRGCTL = LPTMR_TRGCTL_TRGEN_Msk;
 }
 
-void LPPDMA_Init(void)
+static void LPPDMA_Init(void)
 {
     /* Reset PDMA module */
     SYS_ResetModule(SYS_LPPDMA0RST);
@@ -203,7 +206,7 @@ void LPPDMA_Init(void)
     LPPDMA_CLR_TD_FLAG(LPPDMA0, LPPDMA_TDSTS_TDIF0_Msk << LPSPI_MASTER_RX_DMA_CH);
 }
 
-void LPSPI_Init(void)
+static void LPSPI_Init(void)
 {
     /* Configure as a master, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge.
        Set IP clock divider. SPI clock rate = 2 MHz */
@@ -243,7 +246,7 @@ void LPSPI_Init(void)
     NVIC_EnableIRQ(LPSPI0_IRQn);
 }
 
-void AutoOperation_FunctionTest()
+static int32_t AutoOperation_FunctionTest(void)
 {
     uint32_t u32i, u32DataCount, u32TotalRxCount;
     uint32_t u32PdmaDoneFlag, u32Status;
@@ -335,6 +338,7 @@ void AutoOperation_FunctionTest()
             printf("    [%2d]: %08X\n", u32i, g_au32MasterRxBuffer[u32i]);
         }
     }   /* end of while(1) */
+
 }
 
 int32_t main(void)

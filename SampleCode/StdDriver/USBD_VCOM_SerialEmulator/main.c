@@ -156,7 +156,7 @@ void DEBUG_PORT_Init(void)
 NVT_ITCM void DEBUG_PORT_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = DEBUG_PORT->INTSTS;
@@ -195,14 +195,14 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
         if (g_u16ComTbytes && (DEBUG_PORT->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes;
+            u32Size = g_u16ComTbytes;
 
-            if (i32Size >= DEBUG_PORT_FIFO_SIZE)
+            if (u32Size >= DEBUG_PORT_FIFO_SIZE)
             {
-                i32Size = DEBUG_PORT_FIFO_SIZE;
+                u32Size = DEBUG_PORT_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf[g_u16ComThead++];
                 DEBUG_PORT->DAT = u8InChar;
@@ -211,7 +211,7 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
                     g_u16ComThead = 0;
 
                 g_u16ComTbytes--;
-                i32Size--;
+                u32Size--;
             }
         }
         else

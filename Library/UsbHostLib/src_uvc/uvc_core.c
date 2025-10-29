@@ -30,6 +30,7 @@
 
 static void  dump_parameter_block(UVC_CTRL_PARAM_T *param)
 {
+#ifdef UVC_DEBUG
     UVC_DBGMSG("\n\nbmHint          = 0x%x\n", param->bmHint);
     UVC_DBGMSG("bFormatIndex    = %d\n", param->bFormatIndex);
     UVC_DBGMSG("bFrameIndex     = %d\n", param->bFrameIndex);
@@ -41,6 +42,9 @@ static void  dump_parameter_block(UVC_CTRL_PARAM_T *param)
     UVC_DBGMSG("bmFramingInfo   = 0x%x\n", param->bmFramingInfo);
     UVC_DBGMSG("bUsage          = 0x%x\n", param->bUsage);
     UVC_DBGMSG("bmSettings      = 0x%x\n", param->bmSettings);
+#else
+    NVT_UNUSED(param);
+#endif
 }
 
 
@@ -373,7 +377,7 @@ commit:
 void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t *buff, int pkt_len)
 {
     UVC_STRM_T   *vs = &vdev->vs;
-    UVC_CTRL_T     *vc = &vdev->vc;
+    //UVC_CTRL_T   *vc = &vdev->vc;
     int          data_len;
 
     if (pkt_len < 2)

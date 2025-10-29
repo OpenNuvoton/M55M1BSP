@@ -36,17 +36,17 @@ typedef struct
      * |[31:0]  |RLDCNT    |WWDT Reload Counter Register
      * |        |          |Writing 0x00005AA5 to this register will reload the WWDT counter value to 0x3F.
      * |        |          |Note: User can only write WWDT_RLDCNT register to reload WWDT counter value when current WWDT counter value between 0 and CMPDAT (WWDT_CTL[21:16])
-     * |        |          |If user writes WWDT_RLDCNT when current WWDT counter value is larger than CMPDAT , WWDT reset signal will generate immediately.
+     * |        |          |If user writes WWDT_RLDCNT when current WWDT counter value is larger than CMPDAT, WWDT reset signal will be generated immediately.
+     * |        |          |Note 2 :Performing to RLDCNT needs 3 * WWDT_CLK period to become active.
      * @var WWDT_T::CTL
      * Offset: 0x04  WWDT Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |WWDTEN    |WWDT Enable Control Bit
-     * |        |          |Set this bit to enable WWDT counter counting.
+     * |[0]     |WWDTEN    |WWDT Enable Bit
      * |        |          |0 = WWDT counter is stopped.
-     * |        |          |1 = WWDT counter is starting counting.
-     * |[1]     |INTEN     |WWDT Interrupt Enable Control Bit
+     * |        |          |1 = WWDT counter starts counting.
+     * |[1]     |INTEN     |WWDT Interrupt Enable Bit
      * |        |          |If this bit is enabled, the WWDT counter compare match interrupt signal is generated and inform to CPU.
      * |        |          |0 = WWDT counter compare match interrupt Disabled.
      * |        |          |1 = WWDT counter compare match interrupt Enabled.
@@ -67,15 +67,15 @@ typedef struct
      * |        |          |1101 = Pre-scale is 1024; Max time-out period is 1024 * 64 * WWDT_CLK.
      * |        |          |1110 = Pre-scale is 1536; Max time-out period is 1536 * 64 * WWDT_CLK.
      * |        |          |1111 = Pre-scale is 2048; Max time-out period is 2048 * 64 * WWDT_CLK.
-     * |[21:16] |CMPDAT    |WWDT Window Compare Register
+     * |[21:16] |CMPDAT    |WWDT Window Compare
      * |        |          |Set this register to adjust the valid reload window.
      * |        |          |Note: User can only write WWDT_RLDCNT register to reload WWDT counter value when current WWDT counter value between 0 and CMPDAT
      * |        |          |If user writes WWDT_RLDCNT register when current WWDT counter value larger than CMPDAT, WWDT reset signal will generate immediately.
-     * |[31]    |ICEDEBUG  |ICE Debug Mode Acknowledge Disable Control
+     * |[31]    |ICEDEBUG  |ICE Debug Mode Acknowledge Disable Bit
      * |        |          |0 = ICE debug mode acknowledgement effects WWDT counting.
      * |        |          |WWDT down counter will be held while CPU is held by ICE.
      * |        |          |1 = ICE debug mode acknowledgement Disabled.
-     * |        |          |WWDT down counter will keep going no matter CPU is held by ICE or not.
+     * |        |          |Note: WWDT down counter will keep going no matter CPU is held by ICE or not.
      * @var WWDT_T::STATUS
      * Offset: 0x08  WWDT Status Register
      * ---------------------------------------------------------------------------------------------------

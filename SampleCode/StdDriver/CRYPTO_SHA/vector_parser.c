@@ -208,15 +208,12 @@ int32_t Str2Dec(uint8_t *str)
 
 int GetNextPattern(void)
 {
-    int32_t line_num = 1;
     uint8_t *p;
 
     g_au8ShaData = (uint8_t *)g_au8ShaDataPool;
 
     while (GetLine() == 0)
     {
-        line_num++;
-
         if (g_pi8LineBuff[0] == '#')
             continue;
 

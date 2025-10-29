@@ -186,8 +186,6 @@ void CCAP_SetFreq(uint32_t u32CCAP_ClkSrc, uint32_t u32SensorFreq)
 
 int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
 {
-    uint32_t u32Frame;
-
     /* Init CCAP clock and Sensor clock */
     CCAP_SetFreq(CLK_CCAPSEL_CCAP0SEL_HIRC, 12000000);
 
@@ -355,7 +353,7 @@ int Init_SysTick_Export(void)
 
     return err;
 }
-
+static uint64_t Get_SysTick_Cycle_Count(void) __attribute__((unused));
 /**
  * Gets the current SysTick derived counter value
  */
@@ -372,10 +370,8 @@ static uint64_t Get_SysTick_Cycle_Count(void)
 
 int32_t main(void)
 {
-    uint32_t u32TimeVal, i = 0;
-
-    uint32_t u32TimeVal_Vec;
-
+    uint32_t u32TimeVal, u32TimeVal_Vec;
+    NVT_UNUSED(u32TimeVal), NVT_UNUSED(u32TimeVal_Vec);
     /* Init System, peripheral clock and multi-function I/O */
     SYS_Init();
 

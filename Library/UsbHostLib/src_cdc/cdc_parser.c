@@ -27,7 +27,7 @@ static int  cdc_parse_cs_interface(CDC_DEV_T *cdev, uint8_t *buffer, int size)
 
     while (size > 0)
     {
-        while (size >= sizeof(DESC_HDR_T))
+        while (size >= (int)sizeof(DESC_HDR_T))
         {
             header = (DESC_HDR_T *)buffer;
 
@@ -147,7 +147,7 @@ int  cdc_config_parser(CDC_DEV_T *cdev)
     bptr += config->bLength;
     size = config->wTotalLength - config->bLength;
 
-    while (size >= sizeof(DESC_HDR_T))
+    while (size >= (int)sizeof(DESC_HDR_T))
     {
         header = (DESC_HDR_T *)bptr;
 
@@ -180,7 +180,7 @@ int  cdc_config_parser(CDC_DEV_T *cdev)
     /*  Parsing all follwoing CDC class interface descriptors           */
     /*------------------------------------------------------------------*/
 
-    while (size >= sizeof(DESC_HDR_T))
+    while (size >= (int)sizeof(DESC_HDR_T))
     {
         header = (DESC_HDR_T *)bptr;
 

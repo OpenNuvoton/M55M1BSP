@@ -359,19 +359,17 @@ void OTA_WiFiProcess(void)
 __NONSECURE_ENTRY
 int32_t OTA_GetBLxFwVer(uint32_t *pu32FwVer, uint8_t u8Mode)
 {
-    volatile int32_t  ret = -1000;
-    volatile uint32_t i;
-
+    NVT_UNUSED(pu32FwVer);
 
     if (!((u8Mode == 0) || (u8Mode == 1)))
     {
         NUBL_MSG("\nGet NuBL3x Version FAIL. Invalid mode: 0x%x.\n\n", u8Mode);
-        return ret;
+        return -1;
     }
 
     NUBL_MSG("\nGet NuBL3%d. \n\n", ((u8Mode & BIT0) == 0) ? 2 : 3);
 
-    return ret;
+    return 0;
 }
 
 /**

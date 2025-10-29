@@ -3262,7 +3262,7 @@ static int32_t USBH_HW_PipeTransfer(uint8_t ctrl, ARM_USBH_PIPE_HANDLE pipe_hndl
     USBH_EHCI_COMMON    *ptr_curr;
     USBH_EHCI_qTD       *ptr_qTD;
     USBH_TransferInfo_t *ptr_TI;
-    uint32_t             num_to_transfer, j;
+    uint32_t             num_to_transfer;
 
 
 
@@ -3465,7 +3465,7 @@ static void USBH_HW_IRQ_Handler(uint8_t ctrl)
     uint32_t             *ptr_uint32_t;
     uint32_t              dw0;
     const uint8_t        *buf;
-    uint8_t               i, j;
+    uint8_t               i;
 
     // Read all registers for interrupt handling
     usbsts  = usbh_ehci_reg_ptr[ctrl]->USTSR;

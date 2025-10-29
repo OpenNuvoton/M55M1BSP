@@ -56,6 +56,7 @@ int TVMBackendFreeWorkspace(int device_type, int device_id, void *ptr)
 
 int TVMBackendParallelLaunch(FTVMParallelLambda flambda, void *cdata, int num_task)
 {
+    (void)num_task;
     TVMParallelGroupEnv env;
     env.num_task = 1;
     flambda(0, &env, cdata);

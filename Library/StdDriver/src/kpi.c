@@ -53,7 +53,7 @@ __WEAK void KPI_KeyHandler(KPI_KEY_T key)
 
 NVT_ITCM void KPI_IRQHandler()
 {
-    int32_t i, j, idx, r;
+    uint32_t i, j, idx, r;
     uint32_t u32KeyPress[2], u32KeyRelease[2], status;
     uint32_t row, col, mask;
     KPI_KEY_T key;

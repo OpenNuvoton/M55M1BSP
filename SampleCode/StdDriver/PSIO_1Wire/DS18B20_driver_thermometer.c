@@ -60,7 +60,6 @@ int32_t PSIO_DS18B20_Write_Command(S_PSIO_DS18B20_CFG *psConfig, uint8_t u8CMD)
     return 0;
 }
 
-
 int32_t PSIO_DS18B20_Reset(S_PSIO_DS18B20_CFG *psConfig)
 {
     uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
@@ -101,7 +100,6 @@ int32_t PSIO_DS18B20_Reset(S_PSIO_DS18B20_CFG *psConfig)
 
     return 0;
 }
-
 
 int32_t PSIO_DS18B20_Read_Data(S_PSIO_DS18B20_CFG *psConfig, uint8_t *pu8InData)
 {
@@ -164,7 +162,6 @@ int32_t PSIO_DS18B20_Read_Data(S_PSIO_DS18B20_CFG *psConfig, uint8_t *pu8InData)
 
     return 0;
 }
-
 
 void PSIO_DS18B20_Open(S_PSIO_DS18B20_CFG *psConfig)
 {

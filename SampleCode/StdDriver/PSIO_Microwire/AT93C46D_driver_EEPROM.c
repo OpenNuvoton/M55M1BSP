@@ -10,7 +10,7 @@
 #include "NuMicro.h"
 #include "AT93C46D_driver_EEPROM.h"
 
-void PSIO_AT93C46D_CheckStatus(S_PSIO_AT93C46D *psConfig)
+void PSIO_AT93C46D_CheckStatus(void)
 {
     /* Set chip select pin to GPIO function */
     SetCSPinToGPIO();
@@ -77,7 +77,7 @@ void PSIO_AT93C46D_Write(S_PSIO_AT93C46D *psConfig, uint8_t u8Address, uint8_t *
     while (PSIO_GET_BUSY_FLAG(PSIO, psConfig->u8SlotCtrl));
 
     /* Check device status is READY */
-    PSIO_AT93C46D_CheckStatus(psConfig);
+    PSIO_AT93C46D_CheckStatus();
 }
 
 
@@ -99,7 +99,7 @@ void PSIO_AT93C46D_Erase(S_PSIO_AT93C46D *psConfig, uint8_t u8Address)
     while (PSIO_GET_BUSY_FLAG(PSIO, psConfig->u8SlotCtrl));
 
     /* Check device status is READY */
-    PSIO_AT93C46D_CheckStatus(psConfig);
+    PSIO_AT93C46D_CheckStatus();
 }
 
 

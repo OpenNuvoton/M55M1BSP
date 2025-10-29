@@ -236,7 +236,7 @@ static int32_t ARM_ETH_MAC_PowerControl(ARM_POWER_STATE state)
 
             break;
 
-defult:
+        default:
             return ARM_DRIVER_ERROR_PARAMETER;
     }
 
@@ -685,6 +685,7 @@ static int32_t ARM_ETH_MAC_Control(uint32_t control, uint32_t arg)
 static int32_t ARM_ETH_MAC_ControlTimer(uint32_t control, ARM_ETH_MAC_TIME *time)
 {
     (void)time;
+    (void)control;
     return ARM_DRIVER_ERROR_UNSUPPORTED;
 }
 
@@ -722,12 +723,6 @@ static int32_t ARM_ETH_MAC_PHY_Write(uint8_t phy_addr, uint8_t reg_addr, uint16_
         return ARM_DRIVER_ERROR;
 
     return ARM_DRIVER_OK;
-}
-
-
-static void ARM_ETH_MAC_SignalEvent(uint32_t event)
-{
-
 }
 
 extern \
@@ -990,6 +985,9 @@ NVT_ITCM void EMAC0_IRQHandler(void)
 
     /* CPU read interrupt flag register to wait write(clear) instruction completement */
     u32Status = synopGMACReadReg(GMACdev.MacBase, GmacInterruptStatus);
+
+    (void)u32Status;
+    (void)status;
 }
 
 /**

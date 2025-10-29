@@ -27,7 +27,7 @@ project:
           C:
             - -std=c11
           C-CPP:
-            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
           CPP:
             - -xc++
@@ -41,15 +41,17 @@ project:
         - for-compiler: GCC
           C:
             - -std=gnu11
+            - -Wno-stringop-overflow
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
           Library:
             - m
   linker:
-    - script: ./M55M1.scatter
+    - script: ./M55M1.scf
       for-compiler: AC6
     - script: ./M55M1.ld
       for-compiler: GCC
@@ -58,6 +60,7 @@ project:
       files:
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+
     - group: Library
       files:
         - file: ../../../../Library/StdDriver/src/retarget.c
@@ -73,6 +76,10 @@ project:
       files:
         - file: ../../../../ThirdParty/FatFs/source/ff.c
     - group: MP3Lib
+      misc:
+      - for-compiler: AC6
+        C-CPP:
+        - -w
       files:
         - file: ../../../../ThirdParty/libmad/src/version.c
         - file: ../../../../ThirdParty/libmad/src/bit.c

@@ -319,7 +319,7 @@ void SPIM_TrimRxClkDlyNum(SPIM_T *spim, SPIM_PHASE_T *psWbWrCMD, SPIM_PHASE_T *p
     SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8RdDelay);
 }
 
-int dma_rw_patten(SPIM_T *spim, int is4ByteAddr, uint32_t u32RdCmd, uint32_t WrCmd)
+int dma_rw_patten(SPIM_T *spim, int is4ByteAddr, uint32_t WrCmd)
 {
     uint32_t i, offset;             /* variables */
     uint32_t *pData;
@@ -405,7 +405,7 @@ int dma_rw_patten(SPIM_T *spim, int is4ByteAddr, uint32_t u32RdCmd, uint32_t WrC
     return SPIM_OK;
 }
 
-int dmm_read(SPIM_T *spim, int is4ByteAddr, uint32_t u32RdCmd, uint32_t WrCmd)
+int dmm_read(SPIM_T *spim, int is4ByteAddr, uint32_t u32RdCmd)
 {
     uint32_t i, offset;             /* variables */
     uint32_t *pData;
@@ -506,13 +506,13 @@ int main()
 
     u32Is4ByteAddr = (gsWb0BhRdCMD.u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
-    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWb0BhRdCMD.u32CMDCode, gsWb02hWrCMD.u32CMDCode) < 0)
+    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWb02hWrCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;
     }
 
-    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWb0BhRdCMD.u32CMDCode, gsWb02hWrCMD.u32CMDCode) < 0)
+    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWb0BhRdCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;
@@ -529,13 +529,13 @@ int main()
 
     u32Is4ByteAddr = (gsWbBBhRdCMD.u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
-    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWbBBhRdCMD.u32CMDCode, gsWb02hWrCMD.u32CMDCode) < 0)
+    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWb02hWrCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;
     }
 
-    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWbBBhRdCMD.u32CMDCode, gsWb02hWrCMD.u32CMDCode) < 0)
+    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWbBBhRdCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;
@@ -553,13 +553,13 @@ int main()
 
     u32Is4ByteAddr = (gsWbBChRdCMD.u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
-    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWbBChRdCMD.u32CMDCode, gsWb12hWrCMD.u32CMDCode) < 0)
+    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWb12hWrCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;
     }
 
-    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWbBChRdCMD.u32CMDCode, gsWb12hWrCMD.u32CMDCode) < 0)
+    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWbBChRdCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;
@@ -576,13 +576,13 @@ int main()
 
     u32Is4ByteAddr = (gsWbEChRdCMD.u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
-    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWbEChRdCMD.u32CMDCode, gsWb12hWrCMD.u32CMDCode) < 0)
+    if (dma_rw_patten(SPIM_PORT, u32Is4ByteAddr, gsWb12hWrCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;
     }
 
-    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWbEChRdCMD.u32CMDCode, gsWb12hWrCMD.u32CMDCode) < 0)
+    if (dmm_read(SPIM_PORT, u32Is4ByteAddr, gsWbEChRdCMD.u32CMDCode) < 0)
     {
         printf("  FAILED!!\n");
         goto lexit;

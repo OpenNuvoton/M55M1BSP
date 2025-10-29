@@ -156,21 +156,21 @@ void SYS_Init(void)
   *
   * @details  Dump buffer in byte, hex, char format to console
   */
-void DumpHex(uint8_t *pu8Buff, int i32nSize)
+void DumpHex(uint8_t *pu8Buff, uint32_t u32nSize)
 {
     uint32_t u32Idx, u32i;
     uint32_t u32nPerLine = 16;
 
-    for (u32Idx = 0; u32Idx < i32nSize; u32Idx += u32nPerLine)
+    for (u32Idx = 0; u32Idx < u32nSize; u32Idx += u32nPerLine)
     {
         printf("0x%04X  ", u32Idx); /* Dump address in hex format */
 
-        for (u32i = u32Idx; u32i < u32Idx + u32nPerLine && u32i < i32nSize; u32i++)
+        for (u32i = u32Idx; u32i < u32Idx + u32nPerLine && u32i < u32nSize; u32i++)
             printf("%02x ", pu8Buff[u32i]); /* Dump byte in hex format */
 
         printf("  "); /* Print a space */
 
-        for (u32i = u32Idx; u32i < u32Idx + u32nPerLine && u32i < i32nSize; u32i++)
+        for (u32i = u32Idx; u32i < u32Idx + u32nPerLine && u32i < u32nSize; u32i++)
         {
             if (pu8Buff[u32i] >= 0x20 && pu8Buff[u32i] < 127)
                 printf("%c", pu8Buff[u32i]); /* Dump char if printable */

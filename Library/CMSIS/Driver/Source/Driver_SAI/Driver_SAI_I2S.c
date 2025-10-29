@@ -37,10 +37,13 @@
 #include "NuMicro.h"
 #include "i2s_hal.h"
 
+#define RTE_SAI_I2S0                     RTE_SAI0
+#define RTE_SAI_I2S1                     RTE_SAI1
+
 //------------------------------------------------------------------------------
 // Configuration depending on RTE_SAI.h
 // Check if at least one peripheral instance is configured in RTE_SAI.h
-#if (!(RTE_SAI0) && !(RTE_SAI1) && !(RTE_SAI2) && !(RTE_SAI3) && !(RTE_SAI4) && !(RTE_SAI5))
+#if (!(RTE_SAI_I2S0) && !(RTE_SAI_I2S1))
     #warning  I2S driver requires at least one I2S peripheral configured in RTE_SAI.h
 #else
     #define DRIVER_CONFIG_VALID     1
@@ -50,45 +53,99 @@
 
 #ifdef DRIVER_CONFIG_VALID          // Driver code is available only if configuration is valid
 
-// Local driver functions declarations (for instances)
-#define I2S_INFO_DEFINE(n)                                                  \
-    static I2S_RESOURCES i2s##n##_res = { I2S##n,                           \
-                                          {0},                              \
-                                          {-1,                              \
-                                           -1,                              \
-                                           RTE_SAI##n##_RX_PDMA,            \
-                                           RTE_SAI##n##_TX_PDMA,            \
-                                           RTE_SAI##n##_RX_PDMA_PORT,       \
-                                           RTE_SAI##n##_TX_PDMA_PORT,       \
-                                           RTE_SAI##n##_RX_PDMA_CHANNEL,    \
-                                           RTE_SAI##n##_TX_PDMA_CHANNEL,    \
-                                           PDMA_I2S##n##_RX,                \
-                                           PDMA_I2S##n##_TX,                \
-                                          }                                 \
-                                        };
+#if (RTE_SAI_I2S0 == 1)
+    // Define index and port for SAI_I2S0
+    #define SAI_I2S_IDX0                 0
+    #define SAI_I2S_PORT0                0
+    // Map the index to the corresponding port symbol
+    #define SAI_I2S_PORTSYM_FROM_RTE_0   SAI_I2S_PORT0
+#endif
+
+#if (RTE_SAI_I2S1 == 1)
+    // Define index and port for SAI_I2S1
+    #define SAI_I2S_IDX1                 1
+    #define SAI_I2S_PORT1                1
+    // Map the index to the corresponding port symbol
+    #define SAI_I2S_PORTSYM_FROM_RTE_1   SAI_I2S_PORT1
+#endif
+
+static inline uint32_t sai_idx_from_port_rt(uint32_t n)
+{
+    switch (n)
+    {
+#if (RTE_SAI_I2S0 == 1)
+
+        case SAI_I2S_IDX0:
+            return SAI_I2S_PORT0;
+#endif
+
+#if (RTE_SAI_I2S1 == 1)
+
+        case SAI_I2S_IDX1:
+            return SAI_I2S_PORT1;
+#endif
+
+        default:
+            return 0;
+    }
+}
+
+#define SAI_IDX_FROM_PORT_CAT(x)    SAI_I2S_PORTSYM_FROM_RTE_##x
+#define SAI_IDX_FROM_PORT(x)        SAI_IDX_FROM_PORT_CAT(x)
+
+#define SAI_TO_I2S_INSTANCE(n)        (sai_idx_from_port_rt((uint32_t)(n)))
+#define SAI_TO_I2S(n)                 ( SAI_CAT2(I2S, SAI_IDX_FROM_PORT(n)) )
+
+#define SAI_TO_I2S_PDMA_RX(n)         ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _RX_PDMA) )
+#define SAI_TO_I2S_PDMA_TX(n)         ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _TX_PDMA) )
+#define SAI_TO_I2S_PDMA_RX_PORT(n)    ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _RX_PDMA_PORT) )
+#define SAI_TO_I2S_PDMA_TX_PORT(n)    ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _TX_PDMA_PORT) )
+#define SAI_TO_I2S_PDMA_RX_CH(n)      ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _RX_PDMA_CHANNEL) )
+#define SAI_TO_I2S_PDMA_TX_CH(n)      ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _TX_PDMA_CHANNEL) )
+
+#define SAI_TO_I2S_PDMA_RX_NUM(n)     ( SAI_CAT3(PDMA_I2S, SAI_IDX_FROM_PORT(n), _RX) )
+#define SAI_TO_I2S_PDMA_TX_NUM(n)     ( SAI_CAT3(PDMA_I2S, SAI_IDX_FROM_PORT(n), _TX) )
 
 // Local driver functions declarations (for instances)
-#if (RTE_SAI0 == 1)
-    I2S_INFO_DEFINE(0)
+#define I2S_INFO_DEFINE(n)                                                     \
+    static I2S_RESOURCES SAI_RES_NAME(n) = { SAI_TO_I2S(n),                    \
+                                             {0},                              \
+                                             {-1,                              \
+                                              -1,                              \
+                                              SAI_TO_I2S_PDMA_RX(n),           \
+                                              SAI_TO_I2S_PDMA_TX(n),           \
+                                              SAI_TO_I2S_PDMA_RX_PORT(n),      \
+                                              SAI_TO_I2S_PDMA_TX_PORT(n),      \
+                                              SAI_TO_I2S_PDMA_RX_CH(n),        \
+                                              SAI_TO_I2S_PDMA_TX_CH(n),        \
+                                              SAI_TO_I2S_PDMA_RX_NUM(n),       \
+                                              SAI_TO_I2S_PDMA_TX_NUM(n),       \
+                                             }                                \
+                                           };
+
+// Local driver functions declarations (for instances)
+#if (RTE_SAI_I2S0 == 1)
+    I2S_INFO_DEFINE(SAI_I2S_IDX0)
 #endif
-#if (RTE_SAI1 == 1)
-    I2S_INFO_DEFINE(1)
+
+#if (RTE_SAI_I2S1 == 1)
+    I2S_INFO_DEFINE(SAI_I2S_IDX1)
 #endif
 
 // List of available I2S instance infos
 static const I2S_RESOURCES *const i2s_res_list[] =
 {
-#if defined(RTE_SAI0) && (RTE_SAI0 == 1)
-    &i2s0_res,
+#if defined(RTE_SAI_I2S0) && (RTE_SAI_I2S0 == 1)
+    &SAI_RES_NAME(SAI_I2S_IDX0),
 #else
     NULL,
-#endif // RTE_SAI0
+#endif
 
-#if defined(RTE_SAI1) && (RTE_SAI1 == 1)
-    &i2s1_res,
+#if defined(RTE_SAI_I2S1) && (RTE_SAI_I2S1 == 1)
+    &SAI_RES_NAME(SAI_I2S_IDX1),
 #else
     NULL,
-#endif // RTE_SAI1
+#endif
 
     NULL,
 };
@@ -109,12 +166,12 @@ static ARM_SAI_STATUS SAIn_GetStatus(uint32_t u32Inst);
 static void SAI_PDMA_TXInit(I2S_RESOURCES *pI2Sn);
 static void SAI_PDMA_RXInit(I2S_RESOURCES *pI2Sn);
 
-#if (RTE_SAI0 == 1)
-    FUNCS_DECLARE(0)
+#if (RTE_SAI_I2S0 == 1)
+    FUNCS_DECLARE(SAI_I2S_IDX0)
 #endif
 
-#if (RTE_SAI1 == 1)
-    FUNCS_DECLARE(1)
+#if (RTE_SAI_I2S1 == 1)
+    FUNCS_DECLARE(SAI_I2S_IDX1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -145,7 +202,6 @@ static const ARM_SAI_CAPABILITIES DriverCapabilities =
 //------------------------------------------------------------------------------
 static void SAI_PDMA_RX_CB(void *ptr_priv, uint32_t event)
 {
-    // Wait for SPI to become idle
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)ptr_priv;
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
     uint32_t u32DataBits = ((phi2s->CTL0 & I2S_CTL0_DATWIDTH_Msk) >> I2S_CTL0_DATWIDTH_Pos);
@@ -176,7 +232,6 @@ static void SAI_PDMA_RX_CB(void *ptr_priv, uint32_t event)
 
 static void SAI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
 {
-    // Wait for SPI to become idle
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)ptr_priv;
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
     uint32_t u32DataBits = ((phi2s->CTL0 & I2S_CTL0_DATWIDTH_Msk) >> I2S_CTL0_DATWIDTH_Pos);
@@ -207,7 +262,7 @@ static void SAI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
 
 static void SAI_IRQHandler(uint32_t u32Inst)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
     volatile uint32_t status = I2S_GET_INT_FLAG(phi2s, (I2S_STATUS0_TXTHIF_Msk | I2S_STATUS0_RXTHIF_Msk |
                                                         I2S_STATUS0_TXUDIF_Msk | I2S_STATUS0_RXOVIF_Msk));
@@ -215,7 +270,6 @@ static void SAI_IRQHandler(uint32_t u32Inst)
                             (((phi2s->CTL0 & I2S_CTL0_DATWIDTH_Msk) >> I2S_CTL0_DATWIDTH_Pos) == 1) ? 16 : 32);
     uint32_t u32PatternMask = (0xFFFFFFFF >> (32 - u32DataBits));
     uint32_t u32Data = 0;
-    static uint32_t u32RxZeroSkipCnt = 0;
 
     // TX handler
     if (status & I2S_STATUS0_TXTHIF_Msk)
@@ -277,7 +331,6 @@ static void SAI_IRQHandler(uint32_t u32Inst)
         {
             // No more space to receive, disable RX interrupt
             I2S_DisableInt(phi2s, I2S_IEN_RXTHIEN_Msk);
-            u32RxZeroSkipCnt = 0;
             pI2Sn->sInfo.sStatus.u8RxBusy = 0U;
 
             // Trigger RX complete callback if registered
@@ -308,7 +361,7 @@ static void SAI_IRQHandler(uint32_t u32Inst)
 // Configure I2S interrupt
 static void I2S_InterruptConfig(uint32_t u32Inst, uint32_t u32IntEn)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
     IRQn_Type irq_n = I2S0_IRQn; // Default I2S0 interrupt
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
@@ -372,8 +425,7 @@ static ARM_SAI_CAPABILITIES SAIn_GetCapabilities(void)
 */
 static int32_t SAIn_Initialize(uint32_t u32Inst, ARM_SAI_SignalEvent_t cb_event)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
-    I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
 
     if (pI2Sn->sInfo.u8Flags & SAI_FLAG_INITIALIZED)
     {
@@ -393,7 +445,7 @@ static int32_t SAIn_Initialize(uint32_t u32Inst, ARM_SAI_SignalEvent_t cb_event)
     if (pI2Sn->spdma.u32RxUsed == 1)
     {
         if ((pI2Sn->spdma.i32RxChnId >= 0) &&
-                (pI2Sn->spdma.i32RxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pI2Sn->spdma.i32RxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pI2Sn->spdma.i32RxChnId);
             nu_pdma_channel_free(pI2Sn->spdma.i32RxChnId);
@@ -404,7 +456,7 @@ static int32_t SAIn_Initialize(uint32_t u32Inst, ARM_SAI_SignalEvent_t cb_event)
     if (pI2Sn->spdma.u32TxUsed == 1)
     {
         if ((pI2Sn->spdma.i32TxChnId >= 0) &&
-                (pI2Sn->spdma.i32TxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pI2Sn->spdma.i32TxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pI2Sn->spdma.i32TxChnId);
             nu_pdma_channel_free(pI2Sn->spdma.i32TxChnId);
@@ -428,10 +480,10 @@ static int32_t SAIn_Initialize(uint32_t u32Inst, ARM_SAI_SignalEvent_t cb_event)
 */
 static int32_t SAIn_Uninitialize(uint32_t u32Inst)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
 
-    I2S_InterruptConfig(u32Inst, SAI_OP_DISABLE); // Disable SPI interrupts
+    I2S_InterruptConfig(u32Inst, SAI_OP_DISABLE);
 
     I2S_Close(phi2s);
 
@@ -465,7 +517,7 @@ static int32_t SAIn_Uninitialize(uint32_t u32Inst)
 */
 static int32_t SAIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
@@ -480,7 +532,7 @@ static int32_t SAIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
     {
         case ARM_POWER_OFF:
             // Disable I2S IRQ
-            I2S_InterruptConfig(u32Inst, SAI_OP_DISABLE); // Disable SPI interrupts
+            I2S_InterruptConfig(u32Inst, SAI_OP_DISABLE);
 
             // Free PDMA channels
             if (pI2Sn->spdma.i32RxChnId != -1)
@@ -580,7 +632,7 @@ static int32_t SAIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
                     pI2Sn->spdma.i32TxChnId = -1;
                 }
 
-                I2S_InterruptConfig(u32Inst, SAI_OP_ENABLE); // Enable SPI interrupts
+                I2S_InterruptConfig(u32Inst, SAI_OP_ENABLE);
             }
 
             // Enable I2S
@@ -602,7 +654,7 @@ static int32_t SAIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
 */
 static int32_t SAIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
 
     if ((data == NULL) || (num == 0U))
@@ -661,7 +713,7 @@ static int32_t SAIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
 */
 static int32_t SAIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
 
     if ((data == NULL) || (num == 0U))
@@ -717,10 +769,9 @@ static int32_t SAIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 */
 static uint32_t SAIn_GetTxDataCount(uint32_t u32Inst)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
-    I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
 
-    // Check if the SPI has an associated DMA channel for receiving data
+    // Check if the I2S has an associated DMA channel for receiving data
     if (pI2Sn->spdma.i32TxChnId != -1)
     {
         // Check if the received data count is not equal to the expected count
@@ -740,10 +791,9 @@ static uint32_t SAIn_GetTxDataCount(uint32_t u32Inst)
 */
 static uint32_t SAIn_GetRxDataCount(uint32_t u32Inst)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
-    I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
 
-    // Check if the SPI has an associated DMA channel for receiving data
+    // Check if the I2S has an associated DMA channel for receiving data
     if (pI2Sn->spdma.i32RxChnId != -1)
     {
         // Check if the received data count is not equal to the expected count
@@ -766,7 +816,7 @@ static uint32_t SAIn_GetRxDataCount(uint32_t u32Inst)
 */
 static int32_t SAIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg1, uint32_t arg2)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
     uint32_t u32Mode, u32Protocol, u32DataBits, u32LSBFirst, u32MonoMode;
     uint32_t u32SampleRate, u32MclkPrescaler, u32SlotCount, u32SlotSize;
@@ -995,8 +1045,7 @@ static int32_t SAIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg1, u
 */
 static ARM_SAI_STATUS SAIn_GetStatus(uint32_t u32Inst)
 {
-    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[u32Inst];
-    I2S_T *phi2s = (I2S_T *)pI2Sn->phi2s;
+    I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_I2S_INSTANCE(u32Inst)];
     ARM_SAI_STATUS status;
 
     status.frame_error   = pI2Sn->sInfo.sStatus.u8FrameError;
@@ -1060,23 +1109,23 @@ static void SAI_PDMA_RXInit(I2S_RESOURCES *pI2Sn)
 
 // Local driver functions definitions (for instances)
 // Information definitions (for instances)
-#if (RTE_SAI0 == 1)
-FUNCS_DEFINE(0)
-I2S_DRIVER(0)
+#if (RTE_SAI_I2S0 == 1)
+FUNCS_DEFINE(SAI_I2S_IDX0)
+I2S_DRIVER(SAI_I2S_IDX0)
 
 NVT_ITCM void I2S0_IRQHandler(void)
 {
-    SAI_IRQHandler(0);
+    SAI_IRQHandler(SAI_I2S_IDX0);
 }
 #endif
 
-#if (RTE_SAI1 == 1)
-FUNCS_DEFINE(1)
-I2S_DRIVER(1)
+#if (RTE_SAI_I2S1 == 1)
+FUNCS_DEFINE(SAI_I2S_IDX1)
+I2S_DRIVER(SAI_I2S_IDX1)
 
 NVT_ITCM void I2S1_IRQHandler(void)
 {
-    SAI_IRQHandler(1);
+    SAI_IRQHandler(SAI_I2S_IDX1);
 }
 #endif
 

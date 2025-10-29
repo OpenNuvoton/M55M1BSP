@@ -18,10 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "NuMicro.h"
-/*---------------------------------------------------------------------------------------------------------*/
-/* Global Interface Variables Declarations                                                                 */
-/*---------------------------------------------------------------------------------------------------------*/
-static volatile uint32_t gu32Period;
 
 NVT_ITCM void TIMER0_IRQHandler(void)
 {

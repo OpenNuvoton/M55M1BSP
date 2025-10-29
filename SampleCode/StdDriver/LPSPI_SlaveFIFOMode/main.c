@@ -19,10 +19,8 @@
 
 //------------------------------------------------------------------------------
 // Buffer for LPSPI0 data transfer with FIFO mode when DCache is disabled
-uint32_t g_au32SourceData[DATA_COUNT];
-uint32_t g_au32DestinationData[DATA_COUNT];
-volatile uint32_t g_u32TxDataCount;
-volatile uint32_t g_u32RxDataCount;
+static uint32_t g_au32SourceData[DATA_COUNT];
+static uint32_t g_au32DestinationData[DATA_COUNT];
 
 //------------------------------------------------------------------------------
 /* Function prototype declaration */

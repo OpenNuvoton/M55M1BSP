@@ -386,52 +386,6 @@ DWORD get_fattime(void)
 
 static FIL file1, file2;        /* File objects */
 
-
-/*
- *  Interrupt-In transfer data delivery callback function.
- */
-void int_xfer_read(uint8_t *data_buff, int *data_len)
-{
-    //  Receive interrupt in transfer data. The data len is (*data_len).
-    //  NOTICE: This callback function is in USB Host interrupt context!
-
-    int_in_cnt++;
-}
-
-
-/*
- *  Interrupt-Out transfer data request callback function.
- */
-void int_xfer_write(uint8_t *data_buff, int *data_len)
-{
-    //  LBK request the interrupt out transfer data.
-    //  NOTICE: This callback function is in USB Host interrupt context!
-    int_out_cnt++;
-    *data_len = 8;
-    memset(data_buff, int_out_cnt & 0xff, 8);
-}
-
-/*
- *  Isochronous-Out transfer data request callback function.
- */
-void iso_xfer_write(uint8_t *data_buff, int data_len)
-{
-    //  Application feeds Isochronous-Out data here.
-    //  NOTICE: This callback function is in USB Host interrupt context!
-    iso_out_cnt++;
-    memset(data_buff, iso_out_cnt & 0xff, data_len);
-}
-
-/*
- *  Isochronous-In transfer data request callback function.
- */
-void iso_xfer_read(uint8_t *data_buff, int data_len)
-{
-    //  Application gets Isochronous-In data here.
-    //  NOTICE: This callback function is in USB Host interrupt context!
-    iso_in_cnt++;
-}
-
 void SYS_Init(void)
 {
     /*---------------------------------------------------------------------------------------------------------*/
@@ -961,7 +915,7 @@ int32_t main(void)
                         put_rc(res);
 
                         if (res == FR_OK)
-                            printf("fptr=%d(0x%X)\n", (INT)file1.fptr, file1.fptr);
+                            printf("fptr=%d(0x%x)\n", (INT)file1.fptr, (INT)file1.fptr);
 
                         break;
 

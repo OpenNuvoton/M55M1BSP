@@ -31,6 +31,6 @@ __STATIC_INLINE int PSIO_NEC_TransferDone(S_PSIO_NEC_CFG *pConfig)
 int PSIO_NEC_Send(S_PSIO_NEC_CFG *pConfig, uint8_t u8Address0, uint8_t u8Address1, uint8_t u8Command0, uint8_t u8Command1);
 int PSIO_NEC_Repeat(S_PSIO_NEC_CFG *pConfig);
 void PSIO_NEC_Open(S_PSIO_NEC_CFG *pConfig);
-void PSIO_NEC_Close(S_PSIO_NEC_CFG *pConfig);
+void PSIO_NEC_Close(void);
 
 #endif  //__NEC_IR_DRIVER_H__

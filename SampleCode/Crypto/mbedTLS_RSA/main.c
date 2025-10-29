@@ -167,7 +167,7 @@ void show(void)
 
 void dump(uint8_t *p, uint32_t size)
 {
-    int i;
+    uint32_t i;
 
     for (i = 0; i < size; i++)
     {

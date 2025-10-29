@@ -40,6 +40,6 @@ uint32_t PSIO_Encode_TxData(uint32_t *u32TxData);
 int32_t PSIO_PS2_HostSend(S_PSIO_PS2 *psConfig);
 void PSIO_PS2_HostRead(S_PSIO_PS2 *psConfig);
 void PSIO_PS2_Open(S_PSIO_PS2 *psConfig);
-void PSIO_PS2_Close(S_PSIO_PS2 *psConfig);
+void PSIO_PS2_Close(void);
 
 #endif  //__PS2_HOST_DRIVER_H__

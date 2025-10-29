@@ -16,11 +16,11 @@
  ******************************************************************************/
 
 /* Minimum number of time quanta in a bit. */
-#define MIN_TIME_QUANTA    8ul
+#define MIN_TIME_QUANTA    8
 /* Maximum number of time quanta in a bit. */
-#define MAX_TIME_QUANTA    25ul
+#define MAX_TIME_QUANTA    25
 /* Number of receive FIFOs (1 - 2) */
-#define CANFD_NUM_RX_FIFOS  2ul
+#define CANFD_NUM_RX_FIFOS  2
 
 /*CAN FD max nominal bit rate*/
 #define MAX_NOMINAL_BAUDRATE (1000000UL)
@@ -272,7 +272,7 @@ static void CANFD_CalculateRamAddress(CANFD_RAM_PART_T *psConfigAddr, CANFD_ELEM
  *              CAN FD RX Buffer elements = 20
  *              CAN FD RX FIFO0 elements = 20
  *              CAN FD RX FIFO1 elements = 20
- *              CAN FD TX Event FOFI elements = 6
+ *              CAN FD TX Event FIFO elements = 3
 */
 void CANFD_GetDefaultConfig(CANFD_FD_T *psConfig, uint8_t u8OpMode)
 {

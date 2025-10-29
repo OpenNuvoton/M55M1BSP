@@ -19,11 +19,6 @@
 #include <stdlib.h>
 #include "NuMicro.h"
 
-/*---------------------------------------------------------------------------------------------------------*/
-/* Global Interface Variables Declarations                                                                 */
-/*---------------------------------------------------------------------------------------------------------*/
-static volatile uint32_t gu32Period;
-
 NVT_ITCM void LPTMR0_IRQHandler(void)
 {
     uint32_t u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */

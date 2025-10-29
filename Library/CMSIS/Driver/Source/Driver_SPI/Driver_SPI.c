@@ -36,10 +36,15 @@
 #include "spi_hal.h"
 
 //------------------------------------------------------------------------------
+#define RTE_SPI_SPI0                        RTE_SPI0
+#define RTE_SPI_SPI1                        RTE_SPI1
+#define RTE_SPI_SPI2                        RTE_SPI2
+#define RTE_SPI_SPI3                        RTE_SPI3
+
 // Configuration depending on RTE_SPI.h
 // Check if at least one peripheral instance is configured in RTE_SPI.h
-#if (!(RTE_SPI0) && !(RTE_SPI1) && !(RTE_SPI2) && !(RTE_SPI3) && !(RTE_SPI4) && !(RTE_SPI5) && !(RTE_SPI6) && !(RTE_SPI7) && !(RTE_SPI8))
-    #warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
+#if (!(RTE_SPI_SPI0) && !(RTE_SPI_SPI1) && !(RTE_SPI_SPI2) && !(RTE_SPI_SPI3))
+    //#warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
 #else
     #define DRIVER_CONFIG_VALID     1
 #endif
@@ -48,67 +53,142 @@
 
 #ifdef DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
 
-// Local driver functions declarations (for instances)
-#define SPI_INFO_DEFINE(n)                                                  \
-    static SPI_RESOURCES spi##n##_res = { SPI##n,                           \
-                                          {\
-                                           RTE_SPI##n##_XFER_MODE,          \
-                                          },                                \
-                                          {0},                              \
-                                          {0},                              \
-                                          {-1,                              \
-                                           -1,                              \
-                                           RTE_SPI##n##_RX_PDMA,            \
-                                           RTE_SPI##n##_TX_PDMA,            \
-                                           RTE_SPI##n##_RX_PDMA_PORT,       \
-                                           RTE_SPI##n##_TX_PDMA_PORT,       \
-                                           RTE_SPI##n##_RX_PDMA_CHANNEL,    \
-                                           RTE_SPI##n##_TX_PDMA_CHANNEL,    \
-                                           PDMA_SPI##n##_RX,                \
-                                           PDMA_SPI##n##_TX,                \
-                                          }                                 \
-                                        };
+#if (RTE_SPI_SPI0 == 1)
+    #define SPI_SPI_IDX0                    0
+    #define SPI_SPI_PORT0                   0
+    #define SPI_PORTSYM_FROM_RTE_0          SPI_SPI_PORT0
+#endif
+
+#if (RTE_SPI_SPI1 == 1)
+    #define SPI_SPI_IDX1                    1
+    #define SPI_SPI_PORT1                   1
+    #define SPI_PORTSYM_FROM_RTE_1          SPI_SPI_PORT1
+#endif
+
+#if (RTE_SPI_SPI2 == 1)
+    #define SPI_SPI_IDX2                    2
+    #define SPI_SPI_PORT2                   2
+    #define SPI_PORTSYM_FROM_RTE_2          SPI_SPI_PORT2
+#endif
+
+#if (RTE_SPI_SPI3 == 1)
+    #define SPI_SPI_IDX3                    3
+    #define SPI_SPI_PORT3                   3
+    #define SPI_PORTSYM_FROM_RTE_3          SPI_SPI_PORT3
+#endif
+
+static inline uint32_t spi_idx_from_port_rt(uint32_t n)
+{
+    switch (n)
+    {
+#if (RTE_SPI_SPI0 == 1)
+
+        case SPI_SPI_IDX0:
+            return SPI_SPI_PORT0;
+#endif
+
+#if (RTE_SPI_SPI1 == 1)
+
+        case SPI_SPI_IDX1:
+            return SPI_SPI_PORT1;
+#endif
+
+#if (RTE_SPI_SPI2 == 1)
+
+        case SPI_SPI_IDX2:
+            return SPI_SPI_PORT2;
+#endif
+
+#if (RTE_SPI_SPI3 == 1)
+
+        case SPI_SPI_IDX3:
+            return SPI_SPI_PORT3;
+#endif
+
+        default:
+            return 0;
+    }
+}
+
+#define SPI_IDX_FROM_PORT_CAT(x)        SPI_PORTSYM_FROM_RTE_##x
+#define SPI_IDX_FROM_PORT(x)            SPI_IDX_FROM_PORT_CAT(x)
+
+#define SPI_TO_SPI_INSTANCE(n)          ( spi_idx_from_port_rt((uint32_t)(n)) )
+#define SPI_TO_SPI(n)                   ( SPI_CONCAT2(SPI, SPI_IDX_FROM_PORT(n)) )
+
+#define SPI_TO_SPI_XFER_MODE(n)         ( SPI_CONCAT3(RTE_SPI, SPI_IDX_FROM_PORT(n), _XFER_MODE) )
+#define SPI_TO_SPI_PDMA_RX(n)           ( SPI_CONCAT3(RTE_SPI, SPI_IDX_FROM_PORT(n), _RX_PDMA) )
+#define SPI_TO_SPI_PDMA_TX(n)           ( SPI_CONCAT3(RTE_SPI, SPI_IDX_FROM_PORT(n), _TX_PDMA) )
+#define SPI_TO_SPI_PDMA_RX_PORT(n)      ( SPI_CONCAT3(RTE_SPI, SPI_IDX_FROM_PORT(n), _RX_PDMA_PORT) )
+#define SPI_TO_SPI_PDMA_TX_PORT(n)      ( SPI_CONCAT3(RTE_SPI, SPI_IDX_FROM_PORT(n), _TX_PDMA_PORT) )
+#define SPI_TO_SPI_PDMA_RX_CH(n)        ( SPI_CONCAT3(RTE_SPI, SPI_IDX_FROM_PORT(n), _RX_PDMA_CHANNEL) )
+#define SPI_TO_SPI_PDMA_TX_CH(n)        ( SPI_CONCAT3(RTE_SPI, SPI_IDX_FROM_PORT(n), _TX_PDMA_CHANNEL) )
+
+#define SPI_TO_SPI_PDMA_RX_NUM(n)       ( SPI_CONCAT3(PDMA_SPI, SPI_IDX_FROM_PORT(n), _RX) )
+#define SPI_TO_SPI_PDMA_TX_NUM(n)       ( SPI_CONCAT3(PDMA_SPI, SPI_IDX_FROM_PORT(n), _TX) )
 
 // Local driver functions declarations (for instances)
-#if (RTE_SPI0 == 1)
-    SPI_INFO_DEFINE(0)
+#define SPI_INFO_DEFINE(n)                                                      \
+    static SPI_RESOURCES SPI_RES_NAME(n) = { SPI_TO_SPI(n),                     \
+                                             { \
+                                               SPI_TO_SPI_XFER_MODE(n),         \
+                                               0,                               \
+                                             },                                 \
+                                             {0},                               \
+                                             {0},                               \
+                                             {-1,                               \
+                                              -1,                               \
+                                              SPI_TO_SPI_PDMA_RX(n),            \
+                                              SPI_TO_SPI_PDMA_TX(n),            \
+                                              SPI_TO_SPI_PDMA_RX_PORT(n),       \
+                                              SPI_TO_SPI_PDMA_TX_PORT(n),       \
+                                              SPI_TO_SPI_PDMA_RX_CH(n),         \
+                                              SPI_TO_SPI_PDMA_TX_CH(n),         \
+                                              SPI_TO_SPI_PDMA_RX_NUM(n),        \
+                                              SPI_TO_SPI_PDMA_TX_NUM(n),        \
+                                             }                                  \
+                                           };
+
+// Local driver functions declarations (for instances)
+#if (RTE_SPI_SPI0 == 1)
+    SPI_INFO_DEFINE(SPI_SPI_IDX0)
 #endif
-#if (RTE_SPI1 == 1)
-    SPI_INFO_DEFINE(1)
+#if (RTE_SPI_SPI1 == 1)
+    SPI_INFO_DEFINE(SPI_SPI_IDX1)
 #endif
-#if (RTE_SPI2 == 1)
-    SPI_INFO_DEFINE(2)
+#if (RTE_SPI_SPI2 == 1)
+    SPI_INFO_DEFINE(SPI_SPI_IDX2)
 #endif
-#if (RTE_SPI3 == 1)
-    SPI_INFO_DEFINE(3)
+#if (RTE_SPI_SPI3 == 1)
+    SPI_INFO_DEFINE(SPI_SPI_IDX3)
 #endif
 
 // List of available SPI instance infos
 static const SPI_RESOURCES *const spi_res_list[] =
 {
-#if defined(RTE_SPI0) && (RTE_SPI0 == 1)
-    &spi0_res,
+#if defined(RTE_SPI_SPI0) && (RTE_SPI_SPI0 == 1)
+    &SPI_RES_NAME(SPI_SPI_IDX0),
 #else
     NULL,
-#endif // RTE_SPI0
+#endif
 
-#if defined(RTE_SPI1) && (RTE_SPI1 == 1)
-    &spi1_res,
+#if defined(RTE_SPI_SPI1) && (RTE_SPI_SPI1 == 1)
+    &SPI_RES_NAME(SPI_SPI_IDX1),
 #else
     NULL,
-#endif // RTE_SPI1
+#endif
 
-#if defined(RTE_SPI2) && (RTE_SPI2 == 1)
-    &spi2_res,
+#if defined(RTE_SPI_SPI2) && (RTE_SPI_SPI2 == 1)
+    &SPI_RES_NAME(SPI_SPI_IDX2),
 #else
     NULL,
-#endif // RTE_SPI2
+#endif
 
-#if defined(RTE_SPI3) && (RTE_SPI3 == 1)
-    &spi3_res,
+#if defined(RTE_SPI_SPI3) && (RTE_SPI_SPI3 == 1)
+    &SPI_RES_NAME(SPI_SPI_IDX3),
 #else
     NULL,
-#endif // RTE_SPI3
+#endif
 
     NULL,
 };
@@ -132,17 +212,17 @@ static void SPI_ReleaseDefaultTxBuffer(SPI_RESOURCES *pSPIn);
 static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn);
 static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn);
 
-#if (RTE_SPI0 == 1)
-    FUNCS_DECLARE(0)
+#if (RTE_SPI_SPI0 == 1)
+    FUNCS_DECLARE(SPI_SPI_IDX0)
 #endif
-#if (RTE_SPI1 == 1)
-    FUNCS_DECLARE(1)
+#if (RTE_SPI_SPI1 == 1)
+    FUNCS_DECLARE(SPI_SPI_IDX1)
 #endif
-#if (RTE_SPI2 == 1)
-    FUNCS_DECLARE(2)
+#if (RTE_SPI_SPI2 == 1)
+    FUNCS_DECLARE(SPI_SPI_IDX2)
 #endif
-#if (RTE_SPI3 == 1)
-    FUNCS_DECLARE(3)
+#if (RTE_SPI_SPI3 == 1)
+    FUNCS_DECLARE(SPI_SPI_IDX3)
 #endif
 
 //------------------------------------------------------------------------------
@@ -261,11 +341,10 @@ static inline void SPI_StoreRxData(SPI_RESOURCES *pSPIn, uint32_t u32RxData, uin
 
 static void SPI_RxIRQHandler(uint32_t u32Inst, uint32_t u32DataBits, uint32_t u32PatternMask)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = pSPIn->phspi;
     uint32_t au32RxBuf[8] = {0};  // Local temporary buffer for batch RX from FIFO
     uint32_t u32Count = 0, u32i = 0;
-    volatile int32_t i32TimeoutCnt = SystemCoreClock / 1000;
 
     // Step 1: Batch read all available data from RX FIFO (store raw data first)
     while (!SPI_GET_RX_FIFO_EMPTY_FLAG(phspi) &&
@@ -286,7 +365,7 @@ static void SPI_RxIRQHandler(uint32_t u32Inst, uint32_t u32DataBits, uint32_t u3
 
 static void SPI_TxIRQHandler(uint32_t u32Inst, uint32_t u32DataBits, uint32_t u32PatternMask)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
     uint8_t  *pu8TxBuf  = pSPIn->sXfer.pu8TxBuf;
     uint16_t *pu16TxBuf = (uint16_t *)pSPIn->sXfer.pu8TxBuf;
@@ -340,7 +419,7 @@ static void SPI_TxIRQHandler(uint32_t u32Inst, uint32_t u32DataBits, uint32_t u3
 // SPI interrupt handler
 static void SPI_IRQHandler(uint32_t u32Inst)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
     uint32_t u32DataBits = ((phspi->CTL & SPI_CTL_DWIDTH_Msk) >> SPI_CTL_DWIDTH_Pos);
     uint32_t u32PatternMask = (0xFFFFFFFF >> (32 - ((u32DataBits == 0) ? 32 : u32DataBits)));
@@ -384,7 +463,7 @@ static void SPI_IRQHandler(uint32_t u32Inst)
 // Configure SPI interrupt
 static void SPI_InterruptConfig(uint32_t u32Inst, uint32_t u32IntEn)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
     IRQn_Type irq_n = SPI0_IRQn; // Default SPI0 interrupt
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
@@ -448,8 +527,7 @@ static ARM_SPI_CAPABILITIES SPIn_GetCapabilities(void)
 */
 static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
-    SPI_T *phspi = (SPI_T *)pSPIn->phspi;
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
 
     if (pSPIn->sState.u8State & SPI_INITIALIZED) return ARM_DRIVER_OK;
 
@@ -466,7 +544,7 @@ static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
     if (pSPIn->spdma.u32RxUsed == 1)
     {
         if ((pSPIn->spdma.i32RxChnId >= 0) &&
-                (pSPIn->spdma.i32RxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pSPIn->spdma.i32RxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pSPIn->spdma.i32RxChnId);
             nu_pdma_channel_free(pSPIn->spdma.i32RxChnId);
@@ -477,7 +555,7 @@ static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
     if (pSPIn->spdma.u32TxUsed == 1)
     {
         if ((pSPIn->spdma.i32TxChnId >= 0) &&
-                (pSPIn->spdma.i32TxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pSPIn->spdma.i32TxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pSPIn->spdma.i32TxChnId);
             nu_pdma_channel_free(pSPIn->spdma.i32TxChnId);
@@ -500,7 +578,7 @@ static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
 */
 static int32_t SPIn_Uninitialize(uint32_t u32Inst)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
 
     SPI_InterruptConfig(u32Inst, SPI_OP_DISABLE); // Disable SPI interrupts
@@ -535,7 +613,7 @@ static int32_t SPIn_Uninitialize(uint32_t u32Inst)
 */
 static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
@@ -679,7 +757,7 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
 */
 static int32_t SPIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
 
     // Check if data and num are valid
@@ -755,7 +833,7 @@ static int32_t SPIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
 */
 static int32_t SPIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
 
     // Check for valid parameters
@@ -834,7 +912,7 @@ static int32_t SPIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 */
 static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_in, uint32_t num)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
 
     // Check for valid parameters
@@ -938,8 +1016,7 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
 */
 static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
-    SPI_T *phspi = (SPI_T *)pSPIn->phspi;
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
 
     // Check if the SPI is configured
     if (!(pSPIn->sState.u8State & SPI_CONFIGURED))
@@ -971,7 +1048,7 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
 
 static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
     uint32_t u32DataBits;
     volatile int32_t i32TimeoutCnt = (SystemCoreClock / 1000);
@@ -1237,7 +1314,7 @@ set_speed:
 */
 static ARM_SPI_STATUS SPIn_GetStatus(uint32_t u32Inst)
 {
-    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[u32Inst];
+    SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     ARM_SPI_STATUS status = {0};
 
     status.busy = pSPIn->sState.sDrvStatus.u8Busy;
@@ -1396,40 +1473,43 @@ static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn)
 
 // Local driver functions definitions (for instances)
 // Information definitions (for instances)
-#if (RTE_SPI0 == 1)
-FUNCS_DEFINE(0)
-SPI_DRIVER(0)
+#if (RTE_SPI_SPI0 == 1)
+FUNCS_DEFINE(SPI_SPI_IDX0)
+SPI_DRIVER(SPI_SPI_IDX0)
 
 NVT_ITCM void SPI0_IRQHandler(void)
 {
-    SPI_IRQHandler(0);
+    SPI_IRQHandler(SPI_SPI_IDX0);
 }
 #endif
-#if (RTE_SPI1 == 1)
-FUNCS_DEFINE(1)
-SPI_DRIVER(1)
+
+#if (RTE_SPI_SPI1 == 1)
+FUNCS_DEFINE(SPI_SPI_IDX1)
+SPI_DRIVER(SPI_SPI_IDX1)
 
 NVT_ITCM void SPI1_IRQHandler(void)
 {
-    SPI_IRQHandler(1);
+    SPI_IRQHandler(SPI_SPI_IDX1);
 }
 #endif
-#if (RTE_SPI2 == 1)
-FUNCS_DEFINE(2)
-SPI_DRIVER(2)
+
+#if (RTE_SPI_SPI2 == 1)
+FUNCS_DEFINE(SPI_SPI_IDX2)
+SPI_DRIVER(SPI_SPI_IDX2)
 
 NVT_ITCM void SPI2_IRQHandler(void)
 {
-    SPI_IRQHandler(2);
+    SPI_IRQHandler(SPI_SPI_IDX2);
 }
 #endif
-#if (RTE_SPI3 == 1)
-FUNCS_DEFINE(3)
-SPI_DRIVER(3)
+
+#if (RTE_SPI_SPI3 == 1)
+FUNCS_DEFINE(SPI_SPI_IDX3)
+SPI_DRIVER(SPI_SPI_IDX3)
 
 NVT_ITCM void SPI3_IRQHandler(void)
 {
-    SPI_IRQHandler(3);
+    SPI_IRQHandler(SPI_SPI_IDX3);
 }
 #endif
 

@@ -24,7 +24,7 @@ project:
           C:
             - -std=c11
           C-CPP:
-            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
           CPP:
             - -xc++
@@ -46,8 +46,9 @@ project:
             - -Wl,--cmse-implib
             - -Wl,--out-implib="../../CMSELib/nsclib_gcc.o"
             - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
   linker:
-    - script: ../KEIL/Secure.scatter
+    - script: ../KEIL/Secure.scf
       for-compiler: AC6
     - script: ../GCC/M55M1_s.ld
       for-compiler: GCC
@@ -56,6 +57,7 @@ project:
       files:
         - file: ../../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
         - file: ../../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+
     - group: Library
       files:
         - file: ../../../../../Library/StdDriver/src/retarget.c

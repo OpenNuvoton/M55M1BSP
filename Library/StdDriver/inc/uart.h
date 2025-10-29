@@ -350,7 +350,7 @@ extern "C"
  *
  *    @return       None
  *
- *    @details      This macro enable specified UART interrupt.
+ *    @details      This macro disable specified UART interrupt.
  */
 #define UART_DISABLE_INT(uart, u32eIntSel)    ((uart)->INTEN &= ~ (u32eIntSel))
 
@@ -391,7 +391,7 @@ extern "C"
  *                                  - \ref UART_INTSTS_RDAIF_Msk     : Receive Data Available Interrupt Flag
  *
  *    @retval       0 The specified interrupt is not happened.
- *                  1 The specified interrupt is happened.
+ *    @retval       1 The specified interrupt is happened.
  *
  *    @details      This macro get specified interrupt flag or interrupt indicator status.
  */

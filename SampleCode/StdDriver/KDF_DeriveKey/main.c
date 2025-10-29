@@ -47,7 +47,7 @@ void SYS_Init(void)
 
 void DumpKey(uint32_t *pu32KeyBuf, uint32_t u32WordCnt)
 {
-    int32_t i;
+    uint32_t i;
 
     printf("Derived key: ");
 

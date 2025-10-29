@@ -29,14 +29,6 @@ static uint32_t SPII2S_GetSourceClockFreq(SPI_T *i2s);
  */
 static void SPI_SetPCLKSrc(SPI_T *spi)
 {
-    uint32_t u32RegLockLevel = SYS_IsRegLocked();
-
-    if (u32RegLockLevel)
-    {
-        /* Unlock protected registers */
-        SYS_UnlockReg();
-    }
-
     /* Select PCLK as the clock source of SPI */
     if (spi == SPI0)
     {
@@ -57,12 +49,6 @@ static void SPI_SetPCLKSrc(SPI_T *spi)
     {
         /* Set the peripheral clock rate to equal APB clock rate */
         CLK->SPISEL = (CLK->SPISEL & (~CLK_SPISEL_SPI3SEL_Msk)) | CLK_SPISEL_SPI3SEL_PCLK2;
-    }
-
-    if (u32RegLockLevel)
-    {
-        /* Lock protected registers */
-        SYS_LockReg();
     }
 }
 
@@ -112,28 +98,17 @@ static uint32_t SPI_GetModuleClkSrcFreq(SPI_T *spi)
     uint32_t u32RetValue = 0ul;
 
     /* Get SPI clock source selection */
-    switch ((uint32_t)spi)
-    {
-        case (uint32_t)SPI0:
-            u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI0SEL_Msk) >> CLK_SPISEL_SPI0SEL_Pos);
-            break;
+    if (spi == SPI0)
+        u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI0SEL_Msk) >> CLK_SPISEL_SPI0SEL_Pos);
+    else if (spi == SPI1)
+        u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI0SEL_Msk) >> CLK_SPISEL_SPI0SEL_Pos);
+    else if (spi == SPI2)
+        u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI2SEL_Msk) >> CLK_SPISEL_SPI2SEL_Pos);
+    else if (spi == SPI3)
+        u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI3SEL_Msk) >> CLK_SPISEL_SPI3SEL_Pos);
+    else
+        u32SPIClkSrcSel = SPI_CLKSEL_HXT;
 
-        case (uint32_t)SPI1:
-            u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI1SEL_Msk) >> CLK_SPISEL_SPI1SEL_Pos);
-            break;
-
-        case (uint32_t)SPI2:
-            u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI2SEL_Msk) >> CLK_SPISEL_SPI2SEL_Pos);
-            break;
-
-        case (uint32_t)SPI3:
-            u32SPIClkSrcSel = ((CLK->SPISEL & CLK_SPISEL_SPI3SEL_Msk) >> CLK_SPISEL_SPI3SEL_Pos);
-            break;
-
-        default:
-            u32SPIClkSrcSel = SPI_CLKSEL_HXT;
-            break;
-    }
 
     switch (u32SPIClkSrcSel)
     {
@@ -190,90 +165,44 @@ static uint32_t SPI_GetModuleClkSrcFreq(SPI_T *spi)
   */
 uint32_t SPI_Open(SPI_T *spi, uint32_t u32MasterSlave, uint32_t u32SPIMode, uint32_t u32DataWidth, uint32_t u32BusClock)
 {
-    uint32_t u32ClkSrc = 0U, u32Div, u32HCLKFreq, u32RetValue = 0U;
+    uint32_t u32RetValue = 0U;
 
     /* Disable I2S mode */
     spi->I2SCTL &= ~SPI_I2SCTL_I2SEN_Msk;
 
-    if (u32DataWidth == 32U)
+    if ((u32DataWidth < 4) && (u32DataWidth > 0U))
+    {
+        u32DataWidth = 4U;
+    }
+    else if (u32DataWidth >= 32U)
     {
         u32DataWidth = 0U;
     }
 
-    /* Get system clock frequency */
-    u32HCLKFreq = CLK_GetSCLKFreq();
-
     if (u32MasterSlave == SPI_MASTER)
     {
         /* Default setting: slave selection signal is active low; disable automatic slave selection function. */
-        spi->SSCTL |= SPI_SS_ACTIVE_LOW;
+        spi->SSCTL = SPI_SS_ACTIVE_LOW;
 
         /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        spi->CTL |= (u32MasterSlave |
-                     (u32DataWidth << SPI_CTL_DWIDTH_Pos) |
-                     (u32SPIMode) |
-                     SPI_CTL_SPIEN_Msk);
+        spi->CTL = (u32MasterSlave |
+                    (u32DataWidth << SPI_CTL_DWIDTH_Pos) |
+                    (u32SPIMode) |
+                    SPI_CTL_SPIEN_Msk);
 
-        if (u32BusClock >= u32HCLKFreq)
-        {
-            /* Select PCLK as the clock source of SPI */
-            SPI_SetPCLKSrc(spi);
-        }
-
-        /* Check clock source of SPI */
-        u32ClkSrc = SPI_GetModuleClkSrcFreq(spi);
-
-        if (u32BusClock >= u32HCLKFreq)
-        {
-            /* Set DIVIDER = 0 */
-            spi->CLKDIV = 0U;
-            /* Return master peripheral clock rate */
-            u32RetValue = u32ClkSrc;
-        }
-        else if (u32BusClock >= u32ClkSrc)
-        {
-            /* Set DIVIDER = 0 */
-            spi->CLKDIV = 0U;
-            /* Return master peripheral clock rate */
-            u32RetValue = u32ClkSrc;
-        }
-        else if (u32BusClock == 0U)
-        {
-            /* Set DIVIDER to the maximum value 0xFF. f_spi = f_spi_clk_src / (DIVIDER + 1) */
-            spi->CLKDIV |= SPI_CLKDIV_DIVIDER_Msk;
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-        }
-        else
-        {
-            u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
-
-            if (u32Div > 0xFFU)
-            {
-                u32Div = 0xFFU;
-                spi->CLKDIV |= SPI_CLKDIV_DIVIDER_Msk;
-                /* Return master peripheral clock rate */
-                u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-            }
-            else
-            {
-                spi->CLKDIV = (spi->CLKDIV & (~SPI_CLKDIV_DIVIDER_Msk)) |
-                              (u32Div << SPI_CLKDIV_DIVIDER_Pos);
-                /* Return master peripheral clock rate */
-                u32RetValue = (u32ClkSrc / (u32Div + 1U));
-            }
-        }
+        // Set the bus clock for the SPI module and store the actual frequency in u32RetValue
+        u32RetValue = SPI_SetBusClock(spi, u32BusClock);
     }
     else     /* For slave mode, force the SPI peripheral clock rate to equal APB clock rate. */
     {
         /* Default setting: slave selection signal is low level active. */
-        spi->SSCTL |= SPI_SS_ACTIVE_LOW;
+        spi->SSCTL = SPI_SS_ACTIVE_LOW;
 
         /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        spi->CTL |= (u32MasterSlave |
-                     (u32DataWidth << SPI_CTL_DWIDTH_Pos) |
-                     (u32SPIMode) |
-                     SPI_CTL_SPIEN_Msk);
+        spi->CTL = (u32MasterSlave |
+                    (u32DataWidth << SPI_CTL_DWIDTH_Pos) |
+                    (u32SPIMode) |
+                    SPI_CTL_SPIEN_Msk);
 
         /* Set DIVIDER = 0 */
         spi->CLKDIV = 0U;
@@ -406,28 +335,23 @@ uint32_t SPI_SetBusClock(SPI_T *spi, uint32_t u32BusClock)
     }
     else if (u32BusClock == 0U)
     {
-        /* Set DIVIDER to the maximum value 0xFF. f_spi = f_spi_clk_src / (DIVIDER + 1) */
+        /* Set DIVIDER to the maximum value. f_spi = f_spi_clk_src / (DIVIDER + 1) */
         spi->CLKDIV |= SPI_CLKDIV_DIVIDER_Msk;
         /* Return master peripheral clock rate */
-        u32RetValue = (u32ClkSrc / (0xFFU + 1U));
+        u32RetValue = (u32ClkSrc / ((SPI_CLKDIV_DIVIDER_Msk >> SPI_CLKDIV_DIVIDER_Pos) + 1U));
     }
     else
     {
-        u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
+        u32Div = ((((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U); /* Round to the nearest integer */
 
-        if (u32Div > 0x1FFU)
-        {
-            u32Div = 0x1FFU;
-            spi->CLKDIV |= SPI_CLKDIV_DIVIDER_Msk;
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-        }
-        else
-        {
-            spi->CLKDIV = (spi->CLKDIV & ~(SPI_CLKDIV_DIVIDER_Msk)) | (u32Div << SPI_CLKDIV_DIVIDER_Pos);
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (u32Div + 1U));
-        }
+        // Ensure the calculated divider does not exceed the maximum allowed value
+        u32Div = ((u32Div > (SPI_CLKDIV_DIVIDER_Msk >> SPI_CLKDIV_DIVIDER_Pos)) ?
+                  (SPI_CLKDIV_DIVIDER_Msk >> SPI_CLKDIV_DIVIDER_Pos) : u32Div);
+
+        spi->CLKDIV = (spi->CLKDIV & ~(SPI_CLKDIV_DIVIDER_Msk)) | (u32Div << SPI_CLKDIV_DIVIDER_Pos);
+
+        /* Return master peripheral clock rate */
+        u32RetValue = (u32ClkSrc / (u32Div + 1U));
     }
 
     return u32RetValue;
@@ -966,7 +890,7 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
     /* Configure I2S controller */
     i2s->I2SCTL = u32MasterSlave | u32WordWidth | u32Channels | u32DataFormat;
     /* Set TX FIFO threshold to 2 and RX FIFO threshold to 1 */
-    SPI_SetFIFO(i2s, 2, 1);
+    SPII2S_SetFIFO(i2s, 2, 1);
 
     if (u32MasterSlave == SPI_MASTER)
     {
@@ -975,10 +899,12 @@ uint32_t SPII2S_Open(SPI_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate
 
         /* Calculate the bit clock rate */
         u32BitRate = u32SampleRate * ((u32WordWidth >> SPI_I2SCTL_WDWIDTH_Pos) + 1U) * 16U;
-        u32Divider = ((u32SrcClk / u32BitRate) >> 1U) - 1U;
-        //u32Divider = ((((u32SrcClk * 10UL / u32BitRate) >> 1U) + 5UL) / 10UL) - 1U;
+        u32Divider = ((((u32SrcClk * 10UL / u32BitRate) >> 1U) + 5UL) / 10UL) - 1U;
+        //u32Divider = ((u32SrcClk / u32BitRate) >> 1U) - 1U;
         /* Set BCLKDIV setting */
         i2s->I2SCLK = (i2s->I2SCLK & ~SPI_I2SCLK_BCLKDIV_Msk) | (u32Divider << SPI_I2SCLK_BCLKDIV_Pos);
+        /* Enable I2S mode for the frequency of peripheral clock. */
+        i2s->I2SCLK |= SPI_I2SCLK_I2SMODE_Msk;
 
         /* Calculate bit clock rate */
         u32BitRate = u32SrcClk / ((u32Divider + 1U) * 2U);
@@ -1186,12 +1112,12 @@ uint32_t SPII2S_EnableMCLK(SPI_T *i2s, uint32_t u32BusClock)
     }
     else
     {
-        u32Divider = (u32SrcClk / u32BusClock) >> 1U;
+        u32Divider = ((u32SrcClk / u32BusClock) >> 1U);
 
-        /* MCLKDIV is a 6-bit width configuration. The maximum value is 0x3F. */
-        if (u32Divider > 0x3FU)
+        /* MCLKDIV is a 7-bit width configuration. */
+        if (u32Divider > SPI_I2SCLK_MCLKDIV_Msk)
         {
-            u32Divider = 0x3FU;
+            u32Divider = SPI_I2SCLK_MCLKDIV_Msk;
         }
     }
 

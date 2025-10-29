@@ -112,8 +112,6 @@ void I2C3_Init(void)
 
 int32_t main(void)
 {
-    uint32_t volatile i;
-
     /* Unlock protected registers */
     SYS_UnlockReg();
     /* Init System, peripheral clock and multi-function I/O */

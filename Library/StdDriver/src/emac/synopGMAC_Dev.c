@@ -1035,7 +1035,7 @@ void synopGMAC_pause_control(synopGMACdevice *gmacdev)
   */
 s32 synopGMAC_mac_init(synopGMACdevice *gmacdev)
 {
-    u32 PHYreg;
+    //    u32 PHYreg;
 
     if (gmacdev->DuplexMode == FULLDUPLEX)
     {
@@ -1208,6 +1208,7 @@ static s32 synopGMAC_scan_phyid(synopGMACdevice *gmacdev, u32 phyBase)
 
 s32 synopGMAC_attach(synopGMACdevice *gmacdev, u32 macBase, u32 dmaBase, u32 phyBase, u8 *mac_addr)
 {
+    (void)mac_addr;
     /*Make sure the Device data strucure is cleared before we proceed further*/
     memset((void *) gmacdev, 0, sizeof(synopGMACdevice));
 
@@ -1278,7 +1279,7 @@ void synopGMAC_tx_desc_init_ring(DmaDesc *desc, bool last_ring_desc)
 
 s32 synopGMAC_init_tx_rx_desc_queue(synopGMACdevice *gmacdev)
 {
-    s32 i;
+    u32 i;
 
     for (i = 0; i < gmacdev -> TxDescCount; i++)
     {
@@ -1492,6 +1493,8 @@ bool synopGMAC_is_rx_frame_length_errors(u32 status)
   */
 bool synopGMAC_is_last_rx_desc(synopGMACdevice *gmacdev, DmaDesc *desc)
 {
+    (void)gmacdev;
+
     //bool synopGMAC_is_last_desc(DmaDesc *desc)
     return (((desc->length & RxDescEndOfRing) == RxDescEndOfRing) /*|| ((u32)((u64)gmacdev->RxDesc & 0xFFFFFFFF) == desc->data2)*/);
 }
@@ -1506,6 +1509,8 @@ bool synopGMAC_is_last_rx_desc(synopGMACdevice *gmacdev, DmaDesc *desc)
   */
 bool synopGMAC_is_last_tx_desc(synopGMACdevice *gmacdev, DmaDesc *desc)
 {
+    (void)gmacdev;
+
     //bool synopGMAC_is_last_desc(DmaDesc *desc)
 
     return (((desc->status & TxDescEndOfRing) == TxDescEndOfRing) /*|| ((u32)((u64)gmacdev->TxDesc & 0xFFFFFFFF) == desc->data2)*/);
@@ -1527,6 +1532,8 @@ bool synopGMAC_is_last_tx_desc(synopGMACdevice *gmacdev, DmaDesc *desc)
   */
 s32 synopGMAC_get_tx_qptr(synopGMACdevice *gmacdev, u32 *Status, u32 *Buffer1, u32 *Length1, u32 *Data1, u32 *Ext_Status, u32 *Time_Stamp_High, u32 *Time_Stamp_Low)
 {
+    (void)Data1;
+
     u32  txover      = gmacdev->TxBusy;
 
     DmaDesc *txdesc = gmacdev->TxBusyDesc;
@@ -1586,7 +1593,10 @@ void synopGMAC_set_crc_replacement(synopGMACdevice *gmacdev)
 
 void synopGMAC_clr_crc_replacement(synopGMACdevice *gmacdev)
 {
+    (void)gmacdev;
+
     prevtx->status &= ~(DescTxDisableCrc | DescTxCrcReplacement);
+
     prevtx = NULL;
 }
 
@@ -1608,6 +1618,8 @@ void synopGMAC_clr_crc_replacement(synopGMACdevice *gmacdev)
   */
 s32 synopGMAC_set_tx_qptr(synopGMACdevice *gmacdev, u32 Buffer1, u32 Length1, u32 Data1, u32 offload_needed, u32 ts)
 {
+    (void)Data1;
+
     u32  txnext      = gmacdev->TxNext;
 
     DmaDesc *txdesc = gmacdev->TxNextDesc;
@@ -1667,6 +1679,8 @@ s32 synopGMAC_set_tx_qptr(synopGMACdevice *gmacdev, u32 Buffer1, u32 Length1, u3
   */
 s32 synopGMAC_set_rx_qptr(synopGMACdevice *gmacdev, u32 Buffer1, u32 Length1, u32 Data1)
 {
+    (void)Data1;
+
     u32  rxnext      = gmacdev->RxNext;
 
     DmaDesc *rxdesc = gmacdev->RxNextDesc;
@@ -1722,6 +1736,8 @@ s32 synopGMAC_set_rx_qptr(synopGMACdevice *gmacdev, u32 Buffer1, u32 Length1, u3
 s32 synopGMAC_get_rx_qptr(synopGMACdevice *gmacdev, u32 *Status, u32 *Buffer1, u32 *Length1, u32 *Data1,
                           u32 *Ext_Status, u32 *Time_Stamp_High, u32 *Time_Stamp_Low)
 {
+    (void)Data1;
+
     u32 rxnext       = gmacdev->RxBusy; // index of descriptor the DMA just completed. May be useful when data
     //is spread over multiple buffers/descriptors
     DmaDesc *rxdesc = gmacdev->RxBusyDesc;
@@ -1982,7 +1998,7 @@ void synopGMAC_take_desc_ownership(DmaDesc *desc)
   */
 void synopGMAC_take_desc_ownership_rx(synopGMACdevice *gmacdev)
 {
-    s32 i;
+    u32 i;
     DmaDesc *desc;
     desc = gmacdev->RxDesc;
 
@@ -2003,7 +2019,7 @@ void synopGMAC_take_desc_ownership_rx(synopGMACdevice *gmacdev)
   */
 void synopGMAC_take_desc_ownership_tx(synopGMACdevice *gmacdev)
 {
-    s32 i;
+    u32 i;
     DmaDesc *desc;
     desc = gmacdev->TxDesc;
 
@@ -2277,6 +2293,8 @@ void synopGMAC_rx_tcpip_chksum_drop_disable(synopGMACdevice *gmacdev)
   */
 bool synopGMAC_is_ext_status(synopGMACdevice *gmacdev, u32 status)            // extended status present indicates that the RDES4 need to be probed
 {
+    (void)gmacdev;
+
     return ((status & DescRxEXTsts) != 0);  // if extstatus set then it returns 1
 }
 
@@ -2290,6 +2308,8 @@ bool synopGMAC_is_ext_status(synopGMACdevice *gmacdev, u32 status)            //
   */
 bool synopGMAC_ES_is_IP_header_error(synopGMACdevice *gmacdev, u32 ext_status)         // IP header (IPV4) checksum error
 {
+    (void)gmacdev;
+
     return ((ext_status & DescRxIpHeaderError) != 0); // if IPV4 header error return 1
 }
 
@@ -2303,6 +2323,7 @@ bool synopGMAC_ES_is_IP_header_error(synopGMACdevice *gmacdev, u32 ext_status)  
   */
 bool synopGMAC_ES_is_rx_checksum_bypassed(synopGMACdevice *gmacdev, u32 ext_status)    // Hardware engine bypassed the checksum computation/checking
 {
+    (void)gmacdev;
 
     return ((ext_status & DescRxChkSumBypass) != 0);  // if checksum offloading bypassed return 1
 }
@@ -2317,6 +2338,8 @@ bool synopGMAC_ES_is_rx_checksum_bypassed(synopGMACdevice *gmacdev, u32 ext_stat
   */
 bool synopGMAC_ES_is_IP_payload_error(synopGMACdevice *gmacdev, u32 ext_status)        // IP payload checksum is in error (UDP/TCP/ICMP checksum error)
 {
+    (void)gmacdev;
+
     return ((ext_status & DescRxIpPayloadError) != 0); // if IP payload error return 1
 }
 
@@ -2328,6 +2351,8 @@ bool synopGMAC_ES_is_IP_payload_error(synopGMACdevice *gmacdev, u32 ext_status) 
   */
 u32 synopGMAC_is_rx_checksum_error(synopGMACdevice *gmacdev, u32 status)
 {
+    (void)gmacdev;
+
     if (((status & DescRxChkBit5) == 0) && ((status & DescRxChkBit7) == 0) && ((status & DescRxChkBit0) == 0))
         return RxLenLT600;
     else if (((status & DescRxChkBit5) == 0) && ((status & DescRxChkBit7) == 0) && ((status & DescRxChkBit0) != 0))
@@ -2356,6 +2381,8 @@ u32 synopGMAC_is_rx_checksum_error(synopGMACdevice *gmacdev, u32 status)
   */
 bool synopGMAC_is_tx_ipv4header_checksum_error(synopGMACdevice *gmacdev, u32 status)
 {
+    (void)gmacdev;
+
     return ((status & DescTxIpv4ChkError) == DescTxIpv4ChkError);
 }
 
@@ -2369,6 +2396,8 @@ bool synopGMAC_is_tx_ipv4header_checksum_error(synopGMACdevice *gmacdev, u32 sta
   */
 bool synopGMAC_is_tx_payload_checksum_error(synopGMACdevice *gmacdev, u32 status)
 {
+    (void)gmacdev;
+
     return ((status & DescTxPayChkError) == DescTxPayChkError);
 }
 
@@ -2381,9 +2410,9 @@ bool synopGMAC_is_tx_payload_checksum_error(synopGMACdevice *gmacdev, u32 status
   */
 void synopGMAC_tx_checksum_offload_bypass(synopGMACdevice *gmacdev, DmaDesc *desc)
 {
+    (void)gmacdev;
+
     desc->status = (desc->status & (~DescTxCisMask));//ENH_DESC
-
-
 }
 
 /**
@@ -2395,10 +2424,9 @@ void synopGMAC_tx_checksum_offload_bypass(synopGMACdevice *gmacdev, DmaDesc *des
   */
 void synopGMAC_tx_checksum_offload_ipv4hdr(synopGMACdevice *gmacdev, DmaDesc *desc)
 {
+    (void)gmacdev;
 
     desc->status = ((desc->status & (~DescTxCisMask)) | DescTxCisIpv4HdrCs);//ENH_DESC
-
-
 }
 
 /**
@@ -2411,10 +2439,9 @@ void synopGMAC_tx_checksum_offload_ipv4hdr(synopGMACdevice *gmacdev, DmaDesc *de
   */
 void synopGMAC_tx_checksum_offload_tcponly(synopGMACdevice *gmacdev, DmaDesc *desc)
 {
+    (void)gmacdev;
 
     desc->status = ((desc->status & (~DescTxCisMask)) | DescTxCisTcpOnlyCs);//ENH_DESC
-
-
 }
 
 /**
@@ -2428,10 +2455,9 @@ void synopGMAC_tx_checksum_offload_tcponly(synopGMACdevice *gmacdev, DmaDesc *de
   */
 void synopGMAC_tx_checksum_offload_tcp_pseudo(synopGMACdevice *gmacdev, DmaDesc *desc)
 {
+    (void)gmacdev;
 
     desc->status = ((desc->status & (~DescTxCisMask)) | DescTxCisTcpPseudoCs);
-
-
 }
 
 /*******************Ip checksum offloading APIs***************************************/

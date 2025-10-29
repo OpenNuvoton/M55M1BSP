@@ -133,6 +133,7 @@ static ARM_FLASH_CAPABILITIES ARM_Flash_GetCapabilities(void)
 */
 static int32_t ARM_Flash_Initialize(ARM_Flash_SignalEvent_t cb_event)
 {
+    NVT_UNUSED(cb_event);
     FlashStatus.error = 0;
 
     return ARM_DRIVER_OK;
@@ -204,7 +205,6 @@ static int32_t ARM_Flash_PowerControl(ARM_POWER_STATE state)
 */
 static int32_t ARM_Flash_ReadData(uint32_t addr, void *data, uint32_t cnt)
 {
-    int32_t  i32RetCode = 0;
     uint32_t u32ReadCnt;
     uint32_t *pu32DataBuf = (uint32_t *)data;
     uint32_t u32IsRegLocked = SYS_IsRegLocked();

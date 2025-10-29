@@ -47,6 +47,7 @@ static int  LoadImage(uint32_t u32ImageBase, uint32_t u32ImageLimit, uint32_t u3
 {
     uint32_t   u32i, u32j, u32Data, u32ImageSize, *pu32Loader;
 
+    NVT_UNUSED(u32ImageLimit);
     u32ImageSize = u32MaxSize;
 
     printf("Program image to flash address 0x%x ... ", u32FlashAddr);

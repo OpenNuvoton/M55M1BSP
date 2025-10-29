@@ -78,7 +78,6 @@ uint16_t HyperFlash_ReadConfigRegister(SPIM_T *spim, uint32_t u32Reg)
  */
 int32_t HyperFlash_WaitBusBusy(SPIM_T *spim)
 {
-    volatile int32_t i32Timeout = SPIM_TIMEOUT;
     volatile uint32_t u32Status = 0;
 
     while (u32Status != 0x80)
@@ -104,8 +103,6 @@ int32_t HyperFlash_WaitBusBusy(SPIM_T *spim)
 
 void HyperFlash_EraseSector(SPIM_T *spim, uint32_t u32SAddr)
 {
-    volatile int32_t i32Timeout = SPIM_TIMEOUT;
-    volatile uint32_t u32Retry = 0;
 
     if ((u32SAddr != 0) && (u32SAddr >= 2))
     {
@@ -124,8 +121,6 @@ void HyperFlash_EraseSector(SPIM_T *spim, uint32_t u32SAddr)
 
 void HyperFlash_EraseChip(SPIM_T *spim)
 {
-    volatile int32_t i32Timeout = SPIM_TIMEOUT;
-
     HyperFlash_WriteOPCMD(spim, HF_CMD_COMMON_555, HF_CMD_COMMON_AA);
     HyperFlash_WriteOPCMD(spim, HF_CMD_COMMON_2AA, HF_CMD_COMMON_55);
     HyperFlash_WriteOPCMD(spim, HF_CMD_COMMON_555, HF_CMD_80);
@@ -344,7 +339,6 @@ void HyperFlash_TrainingDLLDelayTime(SPIM_T *spim)
     };
     uint8_t au8DestBuf[32] = {0};
 #ifdef DMM_MODE_TRIM
-    uint32_t u32DMMAddr = SPIM_HYPER_GET_DMMADDR(spim);
     uint32_t u32RdDataCnt = 0;
     uint32_t *pu32RdBuf = NULL;
 #endif

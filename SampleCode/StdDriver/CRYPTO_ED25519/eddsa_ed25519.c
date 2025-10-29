@@ -155,7 +155,7 @@ static void dump_word_array(uint32_t *data, int count)
         printf("%08x ", data[i]);
 }
 
-static void set_ed25519_param(void *addr)
+static void set_ed25519_param(void)
 {
     write_reg_array(REG_ECC_X1, (uint32_t *)(ed25519_curve.x1), 18, 18);
     write_reg_array(REG_ECC_Y1, (uint32_t *)(ed25519_curve.y1), 18, 18);
@@ -484,8 +484,7 @@ static void Decoding(uint32_t data[8], int size,
   * @param[out] scalar      The scalar factor
   * @param[out] prefix      The prefix
  */
-static int  ed25519_get_scalar(enum ed_type eddsa_type,
-                               uint8_t *priv_key,
+static int  ed25519_get_scalar(uint8_t *priv_key,
                                uint32_t *scalar, uint32_t *prefix)
 {
     int i;
@@ -516,8 +515,7 @@ static int  ed25519_get_scalar(enum ed_type eddsa_type,
   * @return  0    Success.
   * @return  -1   "ecc_curve" value is invalid.
   */
-static int32_t  ed25519_gen_pub_key(enum ed_type eddsa_type,
-                                    uint8_t *priv_key,
+static int32_t  ed25519_gen_pub_key(uint8_t *priv_key,
                                     uint32_t *A, uint32_t *scalar, uint32_t *prefix)
 {
     //uint32_t scalar[8];
@@ -525,14 +523,14 @@ static int32_t  ed25519_gen_pub_key(enum ed_type eddsa_type,
     int i;
 
     printf("%s, %d\n", __func__, __LINE__);
-    ed25519_get_scalar(eddsa_type, priv_key, scalar, prefix);
+    ed25519_get_scalar(priv_key, scalar, prefix);
 
     /*------------------------------------------------------------------------*/
     /*  3. Compute (Px, Py) = s * G                                           */
     /*     (1) ~ (3)    init curve                                        */
     /*     (4) Write    the scalar s to K register                        */
     /*------------------------------------------------------------------------*/
-    set_ed25519_param(0);
+    set_ed25519_param();
     write_reg_array(REG_ECC_K, scalar, 8, 18);
     printf("%s, %d\n", __func__, __LINE__);
     ECC_KP();
@@ -679,7 +677,7 @@ int32_t  ECC_ED25519_SigGen(enum ed_type eddsa_type, uint8_t *priv_key,
     /*------------------------------------------------------------------------*/
 
     printf("%s, %d\n", __func__, __LINE__);
-    ed25519_gen_pub_key(eddsa_type, priv_key, A, scalar, prefix);
+    ed25519_gen_pub_key(priv_key, A, scalar, prefix);
     printf("ed25519_gen_pub_key result: \n");
     printf("ed25519_gen_pub_key result: \n");
     dump_word_array(A, 8);
@@ -798,7 +796,7 @@ int32_t  ECC_ED25519_SigGen(enum ed_type eddsa_type, uint8_t *priv_key,
     /*     (21) Read X1 registers to get P1x and Y1 registers to get P1y      */
     /*------------------------------------------------------------------------*/
     printf("R = (r mod order) * B :");
-    set_ed25519_param(0);
+    set_ed25519_param();
     write_reg_array(REG_ECC_K, r, 8, 18);
     ECC_KP();
 
@@ -1448,7 +1446,7 @@ int32_t  ECC_ED25519_Verify(enum ed_type eddsa_type,
     // KA = K * A'
     // input ECC parameter
     printf("### Verify 8-10 KA = K * A' :");
-    set_ed25519_param(0);
+    set_ed25519_param();
     write_reg_array(REG_ECC_X1, Ax, 8, 18);
     write_reg_array(REG_ECC_Y1, Ay, 8, 18);
     write_reg_array(REG_ECC_K, k, 8, 18);
@@ -1502,7 +1500,7 @@ int32_t  ECC_ED25519_Verify(enum ed_type eddsa_type,
     // SB = S * B
     // input ECC parameter
     printf("### Verify 10: SB = S * B' :");
-    set_ed25519_param(0);
+    set_ed25519_param();
     //write scalar to sk
     write_reg_array(REG_ECC_K, S, 8, 18);
 
@@ -1557,7 +1555,7 @@ int32_t  ECC_ED25519_Verify(enum ed_type eddsa_type,
     // (SBx,SBy) = (Rx,Ry) + (KAx,KAy)
     // input ECC parameter
     printf("### Verify 9: point addition : R + KA :");
-    set_ed25519_param(0);
+    set_ed25519_param();
 
     //write A' to x1 and y1
     write_reg_array(REG_ECC_X1, Rx, 8, 18);

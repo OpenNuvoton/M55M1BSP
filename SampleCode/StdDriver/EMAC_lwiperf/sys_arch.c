@@ -22,6 +22,7 @@ void NVT_ITCM TIMER0_IRQHandler(void)
 
     /* CPU read interrupt flag register to wait write(clear) instruction completement */
     u32Status = TIMER0->INTSTS;
+    (void)u32Status;
 }
 
 u32_t sys_now(void)

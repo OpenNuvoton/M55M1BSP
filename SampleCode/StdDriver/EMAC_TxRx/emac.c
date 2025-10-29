@@ -264,6 +264,7 @@ NVT_ITCM void EMAC0_IRQHandler(void)
 
     /* CPU read interrupt flag register to wait write(clear) instruction completement */
     u32Status = synopGMACReadReg(GMACdev.MacBase, GmacInterruptStatus);
+    (void)u32Status;
 }
 
 uint32_t EMAC_ReceivePkt(void)

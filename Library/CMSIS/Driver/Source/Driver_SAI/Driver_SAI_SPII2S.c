@@ -38,9 +38,14 @@
 #include "i2s_hal.h"
 
 //------------------------------------------------------------------------------
+#define RTE_SAI_SPII2S0                     RTE_SAI2
+#define RTE_SAI_SPII2S1                     RTE_SAI3
+#define RTE_SAI_SPII2S2                     RTE_SAI4
+#define RTE_SAI_SPII2S3                     RTE_SAI5
+
 // Configuration depending on RTE_SAI.h
 // Check if at least one peripheral instance is configured in RTE_SAI.h
-#if (!(RTE_SAI0) && !(RTE_SAI1) && !(RTE_SAI2) && !(RTE_SAI3) && !(RTE_SAI4) && !(RTE_SAI5))
+#if (!(RTE_SAI_SPII2S0) && !(RTE_SAI_SPII2S1) && !(RTE_SAI_SPII2S2) && !(RTE_SAI_SPII2S3))
     #warning  I2S driver requires at least one I2S peripheral configured in RTE_SAI.h
 #else
     #define DRIVER_CONFIG_VALID     1
@@ -50,80 +55,146 @@
 
 #ifdef DRIVER_CONFIG_VALID          // Driver code is available only if configuration is valid
 
-// SPI Resources
-#define SAI_TO_SPI_INSTANCE(n)             ((n == 2) ? 0 : (n == 3) ? 1 : (n == 4) ? 2 : 3)
-#define SAI_TO_SPI(n)                      ((n == 2) ? SPI0 : (n == 3) ? SPI1 : (n == 4) ? SPI2 : SPI3)
-#define SAI_TO_SPI_PDMA_RX(n)              ((n == 2) ? RTE_SAI2_RX_PDMA : (n == 3) ? RTE_SAI3_RX_PDMA : (n == 4) ? RTE_SAI4_RX_PDMA : RTE_SAI5_RX_PDMA)
-#define SAI_TO_SPI_PDMA_TX(n)              ((n == 2) ? RTE_SAI2_TX_PDMA : (n == 3) ? RTE_SAI3_TX_PDMA : (n == 4) ? RTE_SAI4_TX_PDMA : RTE_SAI5_TX_PDMA)
-#define SAI_TO_SPI_PDMA_RX_PORT(n)         ((n == 2) ? RTE_SAI2_RX_PDMA_PORT : (n == 3) ? RTE_SAI3_RX_PDMA_PORT : (n == 4) ? RTE_SAI4_RX_PDMA_PORT : RTE_SAI5_RX_PDMA_PORT)
-#define SAI_TO_SPI_PDMA_TX_PORT(n)         ((n == 2) ? RTE_SAI2_TX_PDMA_PORT : (n == 3) ? RTE_SAI3_TX_PDMA_PORT : (n == 4) ? RTE_SAI4_TX_PDMA_PORT : RTE_SAI5_TX_PDMA_PORT)
-#define SAI_TO_SPI_PDMA_RX_CH(n)           ((n == 2) ? RTE_SAI2_RX_PDMA_CHANNEL : (n == 3) ? RTE_SAI3_RX_PDMA_CHANNEL : (n == 4) ? RTE_SAI4_RX_PDMA_CHANNEL : RTE_SAI5_RX_PDMA_CHANNEL)
-#define SAI_TO_SPI_PDMA_TX_CH(n)           ((n == 2) ? RTE_SAI2_TX_PDMA_CHANNEL : (n == 3) ? RTE_SAI3_TX_PDMA_CHANNEL : (n == 4) ? RTE_SAI4_TX_PDMA_CHANNEL : RTE_SAI5_TX_PDMA_CHANNEL)
-#define SAI_TO_SPI_PDMA_RX_NUM(n)          ((n == 2) ? PDMA_SPI0_RX : (n == 3) ? PDMA_SPI1_RX : (n == 4) ? PDMA_SPI2_RX : PDMA_SPI3_RX)
-#define SAI_TO_SPI_PDMA_TX_NUM(n)          ((n == 2) ? PDMA_SPI0_TX : (n == 3) ? PDMA_SPI1_TX : (n == 4) ? PDMA_SPI2_TX : PDMA_SPI3_TX)
+#define SAI_ARRAY_SIZE(arr)                 (sizeof(arr) / sizeof((arr)[0]))
 
-#define SAI_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#if (RTE_SAI_SPII2S0 == 1)
+    // Define index and port for SAI_SPII2S0
+    #define SAI_SPII2S_IDX0                 2
+    #define SAI_SPII2S_PORT0                0
+    // Map the index to the corresponding port symbol
+    #define SAI_SPII2S_PORTSYM_FROM_RTE_2   SAI_SPII2S_PORT0
+#endif
+
+#if (RTE_SAI_SPII2S1 == 1)
+    // Define index and port for SAI_SPII2S1
+    #define SAI_SPII2S_IDX1                 3
+    #define SAI_SPII2S_PORT1                1
+    // Map the index to the corresponding port symbol
+    #define SAI_SPII2S_PORTSYM_FROM_RTE_3   SAI_SPII2S_PORT1
+#endif
+
+#if (RTE_SAI_SPII2S2 == 1)
+    // Define index and port for SAI_SPII2S2
+    #define SAI_SPII2S_IDX2                 4
+    #define SAI_SPII2S_PORT2                2
+    // Map the index to the corresponding port symbol
+    #define SAI_SPII2S_PORTSYM_FROM_RTE_4   SAI_SPII2S_PORT2
+#endif
+
+#if (RTE_SAI_SPII2S3 == 1)
+    // Define index and port for SAI_SPII2S3
+    #define SAI_SPII2S_IDX3                 5
+    #define SAI_SPII2S_PORT3                3
+    // Map the index to the corresponding port symbol
+    #define SAI_SPII2S_PORTSYM_FROM_RTE_5   SAI_SPII2S_PORT3
+#endif
+
+static inline uint32_t sai_idx_from_port_rt(uint32_t n)
+{
+    switch (n)
+    {
+#if (RTE_SAI_SPII2S0 == 1)
+
+        case SAI_SPII2S_IDX0:
+            return SAI_SPII2S_PORT0;
+#endif
+#if (RTE_SAI_SPII2S1 == 1)
+
+        case SAI_SPII2S_IDX1:
+            return SAI_SPII2S_PORT1;
+#endif
+#if (RTE_SAI_SPII2S2 == 1)
+
+        case SAI_SPII2S_IDX2:
+            return SAI_SPII2S_PORT2;
+#endif
+#if (RTE_SAI_SPII2S3 == 1)
+
+        case SAI_SPII2S_IDX3:
+            return SAI_SPII2S_PORT3;
+#endif
+
+        default:
+            return 0;
+    }
+}
+
+#define SAI_IDX_FROM_PORT_CAT(x)    SAI_SPII2S_PORTSYM_FROM_RTE_##x
+#define SAI_IDX_FROM_PORT(x)        SAI_IDX_FROM_PORT_CAT(x)
+
+#define SAI_TO_SPI_INSTANCE(n)        (sai_idx_from_port_rt((uint32_t)(n)))
+#define SAI_TO_SPI(n)                 ( SAI_CAT2(SPI, SAI_IDX_FROM_PORT(n)) )
+
+#define SAI_TO_SPI_PDMA_RX(n)         ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _RX_PDMA) )
+#define SAI_TO_SPI_PDMA_TX(n)         ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _TX_PDMA) )
+#define SAI_TO_SPI_PDMA_RX_PORT(n)    ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _RX_PDMA_PORT) )
+#define SAI_TO_SPI_PDMA_TX_PORT(n)    ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _TX_PDMA_PORT) )
+#define SAI_TO_SPI_PDMA_RX_CH(n)      ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _RX_PDMA_CHANNEL) )
+#define SAI_TO_SPI_PDMA_TX_CH(n)      ( SAI_CAT3(RTE_SAI, SAI_IDX_FROM_PORT(n), _TX_PDMA_CHANNEL) )
+
+#define SAI_TO_SPI_PDMA_RX_NUM(n)     ( SAI_CAT3(PDMA_SPI, SAI_IDX_FROM_PORT(n), _RX) )
+#define SAI_TO_SPI_PDMA_TX_NUM(n)     ( SAI_CAT3(PDMA_SPI, SAI_IDX_FROM_PORT(n), _TX) )
 
 // Local driver functions declarations (for instances)
-#define I2S_INFO_DEFINE(n)                                                  \
-    static I2S_RESOURCES i2s##n##_res = { SAI_TO_SPI(n),                    \
-                                          {0},                              \
-                                          {-1,                              \
-                                           -1,                              \
-                                           SAI_TO_SPI_PDMA_RX(n),           \
-                                           SAI_TO_SPI_PDMA_TX(n),           \
-                                           SAI_TO_SPI_PDMA_RX_PORT(n),      \
-                                           SAI_TO_SPI_PDMA_TX_PORT(n),      \
-                                           SAI_TO_SPI_PDMA_RX_CH(n),        \
-                                           SAI_TO_SPI_PDMA_TX_CH(n),        \
-                                           SAI_TO_SPI_PDMA_RX_NUM(n),       \
-                                           SAI_TO_SPI_PDMA_TX_NUM(n),       \
-                                          }                                \
-                                        };
+#define I2S_INFO_DEFINE(n)                                                     \
+    static I2S_RESOURCES SAI_RES_NAME(n) = { SAI_TO_SPI(n),                    \
+                                             {0},                              \
+                                             {-1,                              \
+                                              -1,                              \
+                                              SAI_TO_SPI_PDMA_RX(n),           \
+                                              SAI_TO_SPI_PDMA_TX(n),           \
+                                              SAI_TO_SPI_PDMA_RX_PORT(n),      \
+                                              SAI_TO_SPI_PDMA_TX_PORT(n),      \
+                                              SAI_TO_SPI_PDMA_RX_CH(n),        \
+                                              SAI_TO_SPI_PDMA_TX_CH(n),        \
+                                              SAI_TO_SPI_PDMA_RX_NUM(n),       \
+                                              SAI_TO_SPI_PDMA_TX_NUM(n),       \
+                                             }                                \
+                                           };
 
 // Local driver functions declarations (for instances)
-#if (RTE_SAI2 == 1)
-    I2S_INFO_DEFINE(2)
+#if (RTE_SAI_SPII2S0 == 1)
+    I2S_INFO_DEFINE(SAI_SPII2S_IDX0)
 #endif
 
-#if (RTE_SAI3 == 1)
-    I2S_INFO_DEFINE(3)
+#if (RTE_SAI_SPII2S1 == 1)
+    I2S_INFO_DEFINE(SAI_SPII2S_IDX1)
 #endif
 
-#if (RTE_SAI4 == 1)
-    I2S_INFO_DEFINE(4)
+#if (RTE_SAI_SPII2S2 == 1)
+    I2S_INFO_DEFINE(SAI_SPII2S_IDX2)
 #endif
 
-#if (RTE_SAI5 == 1)
-    I2S_INFO_DEFINE(5)
+#if (RTE_SAI_SPII2S3 == 1)
+    I2S_INFO_DEFINE(SAI_SPII2S_IDX3)
 #endif
 
 // List of available I2S instance infos
 static const I2S_RESOURCES *const i2s_res_list[] =
 {
-#if defined(RTE_SAI2) && (RTE_SAI2 == 1)
-    &i2s2_res,
+#if defined(RTE_SAI_SPII2S0) && (RTE_SAI_SPII2S0 == 1)
+    &SAI_RES_NAME(SAI_SPII2S_IDX0),
 #else
     NULL,
-#endif // RTE_SAI2
+#endif
 
-#if defined(RTE_SAI3) && (RTE_SAI3 == 1)
-    &i2s3_res,
+#if defined(RTE_SAI_SPII2S1) && (RTE_SAI_SPII2S1 == 1)
+    &SAI_RES_NAME(SAI_SPII2S_IDX1),
 #else
     NULL,
-#endif // RTE_SAI3
+#endif
 
-#if defined(RTE_SAI4) && (RTE_SAI4 == 1)
-    &i2s4_res,
+#if defined(RTE_SAI_SPII2S2) && (RTE_SAI_SPII2S2 == 1)
+    &SAI_RES_NAME(SAI_SPII2S_IDX2),
 #else
     NULL,
-#endif // RTE_SAI4
+#endif
 
-#if defined(RTE_SAI5) && (RTE_SAI5 == 1)
-    &i2s5_res,
+#if defined(RTE_SAI_SPII2S3) && (RTE_SAI_SPII2S3 == 1)
+    &SAI_RES_NAME(SAI_SPII2S_IDX3),
 #else
     NULL,
-#endif // RTE_SAI5
+#endif
 
     NULL,
 };
@@ -144,20 +215,20 @@ static ARM_SAI_STATUS SAIn_GetStatus(uint32_t u32Inst);
 static void SAI_PDMA_TXInit(I2S_RESOURCES *pI2Sn);
 static void SAI_PDMA_RXInit(I2S_RESOURCES *pI2Sn);
 
-#if (RTE_SAI2 == 1)
-    FUNCS_DECLARE(2)
+#if (RTE_SAI_SPII2S0 == 1)
+    FUNCS_DECLARE(SAI_SPII2S_IDX0)
 #endif
 
-#if (RTE_SAI3 == 1)
-    FUNCS_DECLARE(3)
+#if (RTE_SAI_SPII2S1 == 1)
+    FUNCS_DECLARE(SAI_SPII2S_IDX1)
 #endif
 
-#if (RTE_SAI4 == 1)
-    FUNCS_DECLARE(4)
+#if (RTE_SAI_SPII2S2 == 1)
+    FUNCS_DECLARE(SAI_SPII2S_IDX2)
 #endif
 
-#if (RTE_SAI5 == 1)
-    FUNCS_DECLARE(5)
+#if (RTE_SAI_SPII2S3 == 1)
+    FUNCS_DECLARE(SAI_SPII2S_IDX3)
 #endif
 
 //------------------------------------------------------------------------------
@@ -193,7 +264,6 @@ static void SAI_PDMA_RX_CB(void *ptr_priv, uint32_t event)
     SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
     uint32_t u32DataBits = ((phi2s->I2SCTL & SPI_I2SCTL_WDWIDTH_Msk) >> SPI_I2SCTL_WDWIDTH_Pos);
     uint32_t item_size = ((u32DataBits + 1U) * 8U);
-    volatile int32_t u32TimeoutCnt = SystemCoreClock / 1000;
 
     if (event & NU_PDMA_EVENT_TRANSFER_DONE)
     {
@@ -225,7 +295,6 @@ static void SAI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
     SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
     uint32_t u32DataBits = ((phi2s->I2SCTL & SPI_I2SCTL_WDWIDTH_Msk) >> SPI_I2SCTL_WDWIDTH_Pos);
     uint32_t item_size = ((u32DataBits + 1U) * 8U);
-    volatile int32_t u32TimeoutCnt = SystemCoreClock / 1000;
 
     if (event & NU_PDMA_EVENT_TRANSFER_DONE)
     {
@@ -353,8 +422,8 @@ static void SAI_IRQHandler(uint32_t u32Inst)
 {
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
-    volatile uint32_t status = SPII2S_GET_INT_FLAG(phi2s, (SPII2S_FIFO_TXTH_INT_MASK | SPII2S_FIFO_RXTH_INT_MASK |
-                                                           SPII2S_TXUF_INT_MASK | SPII2S_FIFO_RXOV_INT_MASK));
+    //volatile uint32_t status = SPII2S_GET_INT_FLAG(phi2s, (SPII2S_FIFO_TXTH_INT_MASK | SPII2S_FIFO_RXTH_INT_MASK |
+    //                                                       SPII2S_TXUF_INT_MASK | SPII2S_FIFO_RXOV_INT_MASK));
     uint32_t u32DataBits = ((((phi2s->I2SCTL & SPI_I2SCTL_WDWIDTH_Msk) >> SPI_I2SCTL_WDWIDTH_Pos) + 1) * 8);
     uint32_t u32PatternMask = (0xFFFFFFFF >> (32 - u32DataBits));
 
@@ -452,7 +521,6 @@ static ARM_SAI_CAPABILITIES SAIn_GetCapabilities(void)
 static int32_t SAIn_Initialize(uint32_t u32Inst, ARM_SAI_SignalEvent_t cb_event)
 {
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_SPI_INSTANCE(u32Inst)];
-    SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
 
     if (pI2Sn->sInfo.u8Flags & SAI_FLAG_INITIALIZED)
     {
@@ -472,7 +540,7 @@ static int32_t SAIn_Initialize(uint32_t u32Inst, ARM_SAI_SignalEvent_t cb_event)
     if (pI2Sn->spdma.u32RxUsed == 1)
     {
         if ((pI2Sn->spdma.i32RxChnId >= 0) &&
-                (pI2Sn->spdma.i32RxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pI2Sn->spdma.i32RxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pI2Sn->spdma.i32RxChnId);
             nu_pdma_channel_free(pI2Sn->spdma.i32RxChnId);
@@ -483,7 +551,7 @@ static int32_t SAIn_Initialize(uint32_t u32Inst, ARM_SAI_SignalEvent_t cb_event)
     if (pI2Sn->spdma.u32TxUsed == 1)
     {
         if ((pI2Sn->spdma.i32TxChnId >= 0) &&
-                (pI2Sn->spdma.i32TxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pI2Sn->spdma.i32TxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pI2Sn->spdma.i32TxChnId);
             nu_pdma_channel_free(pI2Sn->spdma.i32TxChnId);
@@ -797,7 +865,6 @@ static int32_t SAIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 static uint32_t SAIn_GetTxDataCount(uint32_t u32Inst)
 {
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_SPI_INSTANCE(u32Inst)];
-    SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
 
     // Check if the SPI has an associated DMA channel for receiving data
     if (pI2Sn->spdma.i32TxChnId != -1)
@@ -820,7 +887,6 @@ static uint32_t SAIn_GetTxDataCount(uint32_t u32Inst)
 static uint32_t SAIn_GetRxDataCount(uint32_t u32Inst)
 {
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_SPI_INSTANCE(u32Inst)];
-    SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
 
     // Check if the SPI has an associated DMA channel for receiving data
     if (pI2Sn->spdma.i32RxChnId != -1)
@@ -847,8 +913,8 @@ static int32_t SAIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg1, u
 {
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
-    uint32_t u32Mode, u32Protocol, u32DataBits, u32LSBFirst, u32MonoMode;
-    uint32_t u32SampleRate, u32MclkPrescaler, u32SlotCount, u32SlotSize;
+    uint32_t u32Mode, u32Protocol, u32DataBits, /* u32LSBFirst, */ u32MonoMode;
+    uint32_t u32SampleRate, u32MclkPrescaler/* , u32SlotCount, u32SlotSize */;
     uint32_t u32Ctrl = (control & ARM_SAI_CONTROL_Msk);
 
     if (!(pI2Sn->sInfo.u8Flags & SAI_FLAG_POWERED))
@@ -997,7 +1063,7 @@ static int32_t SAIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg1, u
                   : (u32DataBits <= 16) ? SPII2S_DATABIT_16
                   : SPII2S_DATABIT_32;
 
-    u32LSBFirst = (((control & ARM_SAI_BIT_ORDER_Msk) >> ARM_SAI_BIT_ORDER_Pos) ? I2S_ORDER_AT_LSB : I2S_ORDER_AT_MSB);
+    //u32LSBFirst = (((control & ARM_SAI_BIT_ORDER_Msk) >> ARM_SAI_BIT_ORDER_Pos) ? I2S_ORDER_AT_LSB : I2S_ORDER_AT_MSB);
 
     u32MonoMode = (control & ARM_SAI_MONO_MODE) ? SPII2S_MONO : SPII2S_STEREO;
 
@@ -1028,10 +1094,10 @@ static int32_t SAIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg1, u
     u32MclkPrescaler = ((arg2 & ARM_SAI_MCLK_PRESCALER_Msk) >> ARM_SAI_MCLK_PRESCALER_Pos) + 1;
 
     // --------- Step 7: Parse TDM slot settings ---------
-    u32SlotCount = ((arg1 & ARM_SAI_SLOT_COUNT_Msk) >> ARM_SAI_SLOT_COUNT_Pos) + 1;
-    u32SlotSize = ((arg1 & ARM_SAI_SLOT_SIZE_Msk) == ARM_SAI_SLOT_SIZE_16) ? I2S_TDM_WIDTH_16BIT :
-                  ((arg1 & ARM_SAI_SLOT_SIZE_Msk) == ARM_SAI_SLOT_SIZE_32) ? I2S_TDM_WIDTH_32BIT :
-                  I2S_TDM_WIDTH_8BIT;
+    //u32SlotCount = ((arg1 & ARM_SAI_SLOT_COUNT_Msk) >> ARM_SAI_SLOT_COUNT_Pos) + 1;
+    //u32SlotSize = ((arg1 & ARM_SAI_SLOT_SIZE_Msk) == ARM_SAI_SLOT_SIZE_16) ? I2S_TDM_WIDTH_16BIT :
+    //              ((arg1 & ARM_SAI_SLOT_SIZE_Msk) == ARM_SAI_SLOT_SIZE_32) ? I2S_TDM_WIDTH_32BIT :
+    //              I2S_TDM_WIDTH_8BIT;
 
     // --------- Step 8: Re-configure I2S with new settings ---------
     if (SPII2S_Open(phi2s, u32Mode, u32SampleRate, u32DataBits, u32MonoMode, u32Protocol) < 0)
@@ -1131,43 +1197,43 @@ static void SAI_PDMA_RXInit(I2S_RESOURCES *pI2Sn)
 
 // Local driver functions definitions (for instances)
 // Information definitions (for instances)
-#if (RTE_SAI2 == 1)
-FUNCS_DEFINE(2)
-I2S_DRIVER(2)
+#if (RTE_SAI_SPII2S0 == 1)
+FUNCS_DEFINE(SAI_SPII2S_IDX0)
+I2S_DRIVER(SAI_SPII2S_IDX0)
 
 NVT_ITCM void SPI0_IRQHandler(void)
 {
-    SAI_IRQHandler(2);
+    SAI_IRQHandler(SAI_SPII2S_IDX0);
 }
 #endif
 
-#if (RTE_SAI3 == 1)
-FUNCS_DEFINE(3)
-I2S_DRIVER(3)
+#if (RTE_SAI_SPII2S1 == 1)
+FUNCS_DEFINE(SAI_SPII2S_IDX1)
+I2S_DRIVER(SAI_SPII2S_IDX1)
 
 NVT_ITCM void SPI1_IRQHandler(void)
 {
-    SAI_IRQHandler(3);
+    SAI_IRQHandler(SAI_SPII2S_IDX1);
 }
 #endif
 
-#if (RTE_SAI4 == 1)
-FUNCS_DEFINE(4)
-I2S_DRIVER(4)
+#if (RTE_SAI_SPII2S2 == 1)
+FUNCS_DEFINE(SAI_SPII2S_IDX2)
+I2S_DRIVER(SAI_SPII2S_IDX2)
 
 NVT_ITCM void SPI2_IRQHandler(void)
 {
-    SAI_IRQHandler(4);
+    SAI_IRQHandler(SAI_SPII2S_IDX2);
 }
 #endif
 
-#if (RTE_SAI5 == 1)
-FUNCS_DEFINE(5)
-I2S_DRIVER(5)
+#if (RTE_SAI_SPII2S3 == 1)
+FUNCS_DEFINE(SAI_SPII2S_IDX3)
+I2S_DRIVER(SAI_SPII2S_IDX3)
 
 NVT_ITCM void SPI3_IRQHandler(void)
 {
-    SAI_IRQHandler(5);
+    SAI_IRQHandler(SAI_SPII2S_IDX3);
 }
 #endif
 

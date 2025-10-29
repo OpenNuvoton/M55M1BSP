@@ -79,8 +79,8 @@ void PDMA_Init(void)
     PDMA_SetTransferMode(PDMA0, PDMA_I2S_RX_CH, PDMA_I2S0_RX, 1, (uint32_t)&DMA_RXDESC[0]);
 
     /* Enable PDMA channel 1&2 interrupt */
-    PDMA_EnableInt(PDMA0, PDMA_I2S_TX_CH, 0);
-    PDMA_EnableInt(PDMA0, PDMA_I2S_RX_CH, 0);
+    PDMA_EnableInt(PDMA0, PDMA_I2S_TX_CH, PDMA_INT_TRANS_DONE);
+    PDMA_EnableInt(PDMA0, PDMA_I2S_RX_CH, PDMA_INT_TRANS_DONE);
 
     /* Enable PDMA interrupt */
     NVIC_EnableIRQ(PDMA0_IRQn);
@@ -99,6 +99,7 @@ void PDMA_WriteTxSGTable(void)
         DMA_TXDESC[u16Cnt].dest = (uint32_t)&I2S0->TXFIFO;
 
         uint32_t u32ScTbAddr = inp32(((uint32_t)PDMA0) + 0x43C);
+        NVT_UNUSED(u32ScTbAddr);
 
         if (u16Cnt != PDMA_TXBUFFER_CNT - 1)
             DMA_TXDESC[u16Cnt].offset = (uint32_t)&DMA_TXDESC[u16Cnt + 1];
@@ -120,6 +121,7 @@ void PDMA_WriteRxSGTable(void)
         DMA_RXDESC[u16Cnt].dest = (uint32_t)&g_au8PcmRecBuff[u16Cnt];
 
         uint32_t u32ScTbAddr = inp32(((uint32_t)PDMA0) + 0x43C);
+        NVT_UNUSED(u32ScTbAddr);
 
         if (u16Cnt != (PDMA_RXBUFFER_CNT - 1))
             DMA_RXDESC[u16Cnt].offset = (uint32_t)&DMA_RXDESC[u16Cnt + 1];

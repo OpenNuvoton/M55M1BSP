@@ -251,6 +251,7 @@ void LPADC_DisableInt(LPADC_T *lpadc, uint32_t u32Mask)
   */
 void LPADC_SetExtendSampleTime(LPADC_T *lpadc, uint32_t u32ModuleNum, uint32_t u32ExtendSampleTime)
 {
+    NVT_UNUSED(u32ModuleNum);
     lpadc->ESMPCTL = (lpadc->ESMPCTL & ~LPADC_ESMPCTL_EXTSMPT_Msk) |
                      (u32ExtendSampleTime << LPADC_ESMPCTL_EXTSMPT_Pos);
 }

@@ -199,9 +199,11 @@ int32_t InitHM1055_VGA_YUV422(uint32_t u32Param)
     uint32_t i;
     uint8_t u8DeviceID = 0x48;
     uint8_t u8ID[2] = {0};
+
+    NVT_UNUSED(u32Param);
+
     SET_GPIO_PH2();        /* PH2 for GPIO to act as SCL */
     SET_GPIO_PH3();        /* PH3 for GPIO to act as SDA */
-
     SET_GPIO_PG11();
     SET_GPIO_PD12();
     GPIO_SetMode(PG, BIT11, GPIO_MODE_OUTPUT);        /* Set #RST pin to high */

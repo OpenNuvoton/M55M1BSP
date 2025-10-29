@@ -716,7 +716,7 @@ void AudioStartRecord(uint32_t u32SampleRate)
     //    LPPDMA_init();
 
     //    DMIC_SetSampleRate(DMIC0, u32SampleRate);
-
+    (void)u32SampleRate;
     DMIC_EnableChMsk(DMIC0, DMIC_CTL_CHEN0_Msk);
     DMIC_ENABLE_LPPDMA(DMIC0);
 

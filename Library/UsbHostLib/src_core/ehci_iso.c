@@ -691,12 +691,14 @@ static void  write_sitd_info(UTR_T *utr, siTD_T *sitd)
         sitd->Bptr[1] |= scnt;                  /* Transaction count (T-Count)            */
     }
 
-    if (sitd->fidx == IF_PER_UTR)
-    {
-        sitd->Sched |= SITD_IOC;
-    }
+
 
     sitd->StsCtrl = (xlen << SITD_XFER_CNT_Pos) | SITD_STATUS_ACTIVE;
+
+    if (sitd->fidx == (IF_PER_UTR - 1))
+    {
+        sitd->StsCtrl |= SITD_IOC;
+    }
 
     sitd->BackLink = SITD_LIST_END;
 }

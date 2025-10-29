@@ -33,7 +33,7 @@ project:
           C:
             - -std=c11
           C-CPP:
-            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
           CPP:
             - -xc++
             - -std=c++11
@@ -52,12 +52,13 @@ project:
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
             - -L"../../../../Library/CMSIS/Lib/GCC"
           Library:
             - -lCMSIS_DSP
             - -lCMSIS_NN
   linker:
-    - script: ../KEIL/M55M1.scatter
+    - script: ../KEIL/M55M1.scf
       for-compiler: AC6
     - script: ../GCC/M55M1.ld
       for-compiler: GCC
@@ -66,6 +67,7 @@ project:
       files:
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+
     - group: Driver
       files:
         - file: ../../../../Library/StdDriver/src/uart.c

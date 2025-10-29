@@ -5,40 +5,6 @@
             "label": "CMSIS Erase",
             "type": "shell",
             "command": "pyocd",
-            "options": {
-                "cwd": "${workspaceFolder}/"
-            },
-            "windows": {
-                "options": {
-                    "shell": {
-                        "executable": "cmd.exe",
-                        "args": [
-                            "/d",
-                            "/c"
-                        ]
-                    }
-                }
-            },
-            "linux": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
-            "osx": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
             "args": [
                 "erase",
                 "--probe",
@@ -53,40 +19,6 @@
             "label": "CMSIS Load",
             "type": "shell",
             "command": "pyocd",
-            "options": {
-                "cwd": "${workspaceFolder}/"
-            },
-            "windows": {
-                "options": {
-                    "shell": {
-                        "executable": "cmd.exe",
-                        "args": [
-                            "/d",
-                            "/c"
-                        ]
-                    }
-                }
-            },
-            "linux": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
-            "osx": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
             "args": [
                 "load",
                 "--probe",
@@ -100,44 +32,8 @@
             "label": "CMSIS Run",
             "type": "shell",
             "command": "pyocd",
-            "options": {
-                "cwd": "${workspaceFolder}/"
-            },
-            "windows": {
-                "options": {
-                    "shell": {
-                        "executable": "cmd.exe",
-                        "args": [
-                            "/d",
-                            "/c"
-                        ]
-                    }
-                }
-            },
-            "linux": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
-            "osx": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
             "args": [
                 "gdbserver",
-                "--port",
-                "3333",
                 "--probe",
                 "cmsisdap:",
                 "--connect",
@@ -152,55 +48,9 @@
         {
             "label": "CMSIS Load+Run",
             "dependsOn": [
-                "CMSIS Load",
-                "CMSIS Run"
+                "CMSIS Load"
             ],
             "dependsOrder": "sequence",
-            "problemMatcher": []
-        },
-        {
-            "label": "CMSIS TargetInfo",
-            "type": "shell",
-            "command": "pyocd",
-            "options": {
-                "cwd": "${workspaceFolder}/"
-            },
-            "windows": {
-                "options": {
-                    "shell": {
-                        "executable": "cmd.exe",
-                        "args": [
-                            "/d",
-                            "/c"
-                        ]
-                    }
-                }
-            },
-            "linux": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
-            "osx": {
-                "options": {
-                    "shell": {
-                        "executable": "/bin/bash",
-                        "args": [
-                            "-c"
-                        ]
-                    }
-                }
-            },
-            "args": [
-                "list",
-                "--cbuild-run",
-                "${command:cmsis-csolution.getCbuildRunFile}"
-            ],
             "problemMatcher": []
         }
     ]

@@ -67,7 +67,7 @@ typedef int32_t (*PFN_LCD_INIT)(void);
 typedef void (*PFN_LCD_WRITE_REG)(uint16_t u16Reg, uint16_t u16Data);
 typedef void (*PFN_LCD_SET_COLUMN)(uint16_t u16StartCol, uint16_t u16EndCol);
 typedef void (*PFN_LCD_SET_PAGE)(uint16_t u16StartPage, uint16_t u16EndPage);
-typedef void (*PFN_LCD_SENT_PIXEL)(uint16_t *pu16Pixels, uint32_t u32Width, uint32_t u32Height, uint32_t u32FixedColor, int32_t i32ByteLen, int32_t i32ScaleUpFactory);
+typedef void (*PFN_LCD_SENT_PIXEL)(uint16_t *pu16Pixels, uint32_t u32Width, uint32_t u32Height, uint32_t u32FixedColor, int32_t i32ByteLen, uint32_t u32ScaleUpFactory);
 typedef void (*PFN_LCD_PUT_CHAR)(uint16_t x, uint16_t y, uint8_t c, uint32_t fColor, uint32_t bColor, int32_t i32ScaleUpFactory);
 
 typedef enum

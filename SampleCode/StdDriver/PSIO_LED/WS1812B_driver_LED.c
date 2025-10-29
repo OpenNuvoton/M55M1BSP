@@ -18,7 +18,7 @@
 /*---------------------------------------------------------------------------------------------------------*/
 static int PSIO_EncodePattern(uint32_t *pu32SourceAddress, uint32_t *pu32DestinationAddress, uint32_t u32DataLength, uint8_t u8PinNum)
 {
-    int i, j;
+    uint32_t i, j;
 
     if (pu32DestinationAddress == NULL)
     {

@@ -135,8 +135,6 @@ NVT_ITCM void LPUART0_IRQHandler(void)
 void RS485_HANDLE()
 {
     volatile uint32_t addr = 0;
-    volatile uint32_t regRX = 0xFF;
-    volatile uint32_t u32IntSts = LPUART0->INTSTS;
 
     if (LPUART_GET_INT_FLAG(LPUART0, LPUART_INTSTS_RLSINT_Msk) && LPUART_GET_INT_FLAG(LPUART0, LPUART_INTSTS_RDAINT_Msk))       /* RLS INT & RDA INT */ //For RS485 Detect Address
     {

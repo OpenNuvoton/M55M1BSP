@@ -35,10 +35,13 @@
 #include "spi_hal.h"
 
 //------------------------------------------------------------------------------
+#define RTE_SPI_USPI0                   RTE_SPI7
+//#define RTE_SPI_USPI1                   RTE_SPIx
+
 // Configuration depending on RTE_SPI.h
 // Check if at least one peripheral instance is configured in RTE_SPI.h
-#if (!(RTE_SPI0) && !(RTE_SPI1) && !(RTE_SPI2) && !(RTE_SPI3) && !(RTE_SPI4) && !(RTE_SPI5) && !(RTE_SPI6) && !(RTE_SPI7) && !(RTE_SPI8))
-    #warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
+#if (!(RTE_SPI_USPI0) && !(RTE_SPI_USPI1))
+    //#warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
 #else
     #define DRIVER_CONFIG_VALID     1
 #endif
@@ -47,52 +50,100 @@
 
 #ifdef DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
 
-#define SPI_TO_USPI_INSTANCE(n)             (n == 7 ? 0 : 0)
-#define SPI_TO_USPI(n)                      (n == 7 ? USPI0 : USPI0)
-#define SPI_TO_USPI_CLK_SRC(n)              (n == 7 ? RTE_USPI0_CLK_SRC : RTE_USPI0_CLK_SRC)
-#define SPI_TO_USPI_PDMA_RX(n)              (n == 7 ? RTE_USPI0_RX_PDMA : RTE_USPI0_RX_PDMA)
-#define SPI_TO_USPI_PDMA_TX(n)              (n == 7 ? RTE_USPI0_RX_PDMA : RTE_USPI0_TX_PDMA)
-#define SPI_TO_USPI_PDMA_RX_PORT(n)         (n == 7 ? RTE_USPI0_RX_PDMA_PORT : RTE_USPI0_RX_PDMA_PORT)
-#define SPI_TO_USPI_PDMA_TX_PORT(n)         (n == 7 ? RTE_USPI0_TX_PDMA_PORT : RTE_USPI0_TX_PDMA_PORT)
-#define SPI_TO_USPI_PDMA_RX_CH(n)           (n == 7 ? RTE_USPI0_RX_PDMA_CHANNEL : RTE_USPI0_RX_PDMA_CHANNEL)
-#define SPI_TO_USPI_PDMA_TX_CH(n)           (n == 7 ? RTE_USPI0_TX_PDMA_CHANNEL : RTE_USPI0_TX_PDMA_CHANNEL)
-#define SPI_TO_USPI_PDMA_RX_NUM(n)          (n == 7 ? PDMA_USCI0_RX : PDMA_USCI0_RX)
-#define SPI_TO_USPI_PDMA_TX_NUM(n)          (n == 7 ? PDMA_USCI0_TX : PDMA_USCI0_TX)
+#if (RTE_SPI_USPI0 == 1)
+    #define SPI_USPI_IDX0               7
+    #define SPI_USPI_PORT0              0
+    #define USPI_PORTSYM_FROM_RTE_7     SPI_USPI_PORT0
+#endif
+
+#if (RTE_SPI_USPI1 == 1)
+    #define SPI_USPI_IDX1               8
+    #define SPI_USPI_PORT1              1
+    #define USPI_PORTSYM_FROM_RTE_8     SPI_USPI_PORT1
+#endif
+
+static inline uint32_t spi_idx_from_port_rt(uint32_t n)
+{
+    switch (n)
+    {
+#if (RTE_SPI_USPI0 == 1)
+
+        case SPI_USPI_IDX0:
+            return SPI_USPI_PORT0;
+#endif
+
+#if (RTE_SPI_USPI1 == 1)
+
+        case SPI_USPI_IDX1:
+            return SPI_USPI_PORT1;
+#endif
+
+        default:
+            return 0;
+    }
+}
+
+#define USPI_IDX_FROM_PORT_CAT(x)        USPI_PORTSYM_FROM_RTE_##x
+#define USPI_IDX_FROM_PORT(x)            USPI_IDX_FROM_PORT_CAT(x)
+
+#define SPI_TO_USPI_INSTANCE(n)          ( spi_idx_from_port_rt((uint32_t)(n)) )
+#define SPI_TO_USPI(n)                   ( SPI_CONCAT2(USPI, USPI_IDX_FROM_PORT(n)) )
+
+#define SPI_TO_USPI_PDMA_RX(n)           ( SPI_CONCAT3(RTE_USPI, USPI_IDX_FROM_PORT(n), _RX_PDMA) )
+#define SPI_TO_USPI_PDMA_TX(n)           ( SPI_CONCAT3(RTE_USPI, USPI_IDX_FROM_PORT(n), _TX_PDMA) )
+#define SPI_TO_USPI_PDMA_RX_PORT(n)      ( SPI_CONCAT3(RTE_USPI, USPI_IDX_FROM_PORT(n), _RX_PDMA_PORT) )
+#define SPI_TO_USPI_PDMA_TX_PORT(n)      ( SPI_CONCAT3(RTE_USPI, USPI_IDX_FROM_PORT(n), _TX_PDMA_PORT) )
+#define SPI_TO_USPI_PDMA_RX_CH(n)        ( SPI_CONCAT3(RTE_USPI, USPI_IDX_FROM_PORT(n), _RX_PDMA_CHANNEL) )
+#define SPI_TO_USPI_PDMA_TX_CH(n)        ( SPI_CONCAT3(RTE_USPI, USPI_IDX_FROM_PORT(n), _TX_PDMA_CHANNEL) )
+
+#define SPI_TO_USPI_PDMA_RX_NUM(n)       ( SPI_CONCAT3(PDMA_USCI, USPI_IDX_FROM_PORT(n), _RX) )
+#define SPI_TO_USPI_PDMA_TX_NUM(n)       ( SPI_CONCAT3(PDMA_USCI, USPI_IDX_FROM_PORT(n), _TX) )
 
 // Local driver functions declarations (for instances)
-#define SPI_INFO_DEFINE(n)                                                  \
-    static SPI_RESOURCES spi##n##_res = { SPI_TO_USPI(n),                   \
-                                          { \
-                                            RTE_SPI_FULL_XFER_MODE,         \
-                                          },                                \
-                                          {0},                              \
-                                          {0},                              \
-                                          {-1,                              \
-                                           -1,                              \
-                                           SPI_TO_USPI_PDMA_RX(n),          \
-                                           SPI_TO_USPI_PDMA_TX(n),          \
-                                           SPI_TO_USPI_PDMA_RX_PORT(n),     \
-                                           SPI_TO_USPI_PDMA_TX_PORT(n),     \
-                                           SPI_TO_USPI_PDMA_RX_CH(n),       \
-                                           SPI_TO_USPI_PDMA_TX_CH(n),       \
-                                           SPI_TO_USPI_PDMA_RX_NUM(n),      \
-                                           SPI_TO_USPI_PDMA_TX_NUM(n),      \
-                                          }                                \
-                                        };
+#define SPI_INFO_DEFINE(n)                                                     \
+    static SPI_RESOURCES SPI_RES_NAME(n) = { SPI_TO_USPI(n),                   \
+                                             { \
+                                               0,                              \
+                                               0,                              \
+                                             },                                \
+                                             {0},                              \
+                                             {0},                              \
+                                             {-1,                              \
+                                              -1,                              \
+                                              SPI_TO_USPI_PDMA_RX(n),          \
+                                              SPI_TO_USPI_PDMA_TX(n),          \
+                                              SPI_TO_USPI_PDMA_RX_PORT(n),     \
+                                              SPI_TO_USPI_PDMA_TX_PORT(n),     \
+                                              SPI_TO_USPI_PDMA_RX_CH(n),       \
+                                              SPI_TO_USPI_PDMA_TX_CH(n),       \
+                                              SPI_TO_USPI_PDMA_RX_NUM(n),      \
+                                              SPI_TO_USPI_PDMA_TX_NUM(n),      \
+                                             }                                 \
+                                           };
 
 // Local driver functions declarations (for instances)
-#if (RTE_SPI7 == 1)
-    SPI_INFO_DEFINE(7)
+#if (RTE_SPI_USPI0 == 1)
+    SPI_INFO_DEFINE(SPI_USPI_IDX0)
+#endif
+
+#if (RTE_SPI_USPI1 == 1)
+    SPI_INFO_DEFINE(SPI_USPI_IDX1)
 #endif
 
 // List of available SPI instance infos
 static const SPI_RESOURCES *const spi_res_list[] =
 {
-#if defined(RTE_SPI7) && (RTE_SPI7 == 1)
-    &spi7_res,
+#if defined(RTE_SPI_USPI0) && (RTE_SPI_USPI0 == 1)
+    &SPI_RES_NAME(SPI_USPI_IDX0),
 #else
     NULL,
-#endif // RTE_SPI7
+#endif
+
+#if defined(RTE_SPI_USPI1) && (RTE_SPI_USPI1 == 1)
+    &SPI_RES_NAME(SPI_USPI_IDX1),
+#else
+    NULL,
+#endif
 
     NULL,
 };
@@ -113,8 +164,12 @@ static ARM_SPI_STATUS SPIn_GetStatus(uint32_t u32Inst);
 static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn);
 static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn);
 
-#if (RTE_SPI7 == 1)
-    FUNCS_DECLARE(7)
+#if (RTE_SPI_USPI0 == 1)
+    FUNCS_DECLARE(SPI_USPI_IDX0)
+#endif
+
+#if (RTE_SPI_USPI1 == 1)
+    FUNCS_DECLARE(SPI_USPI_IDX1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -268,7 +323,7 @@ static void SPI_RxIRQHandler(uint32_t u32Inst, uint32_t u32DataBits, uint32_t u3
     }
 }
 
-static void SPI_TxIRQHandler(uint32_t u32Inst, uint32_t u32DataBits, uint32_t u32PatternMask)
+static void SPI_TxIRQHandler(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_USPI_INSTANCE(u32Inst)];
     USPI_T *phspi = (USPI_T *)pSPIn->phspi;
@@ -317,7 +372,7 @@ static void SPI_IRQHandler(uint32_t u32Inst)
 
     if (!USPI_GET_TX_FULL_FLAG(phspi))
     {
-        SPI_TxIRQHandler(u32Inst, u32DataBits, u32PatternMask);
+        SPI_TxIRQHandler(u32Inst);
     }
 
     // Relax the Transfer Complete condition
@@ -342,6 +397,8 @@ static void SPI_InterruptConfig(uint32_t u32Inst, uint32_t u32IntEn)
     USPI_T *phspi = (USPI_T *)pSPIn->phspi;
     IRQn_Type irq_n = USCI0_IRQn; // Default SPI0 interrupt
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    irq_n = (phspi == USPI0) ? USCI0_IRQn : USCI0_IRQn;
 
     /* Unlock protected registers */
     if (u32RegLockLevel)
@@ -396,7 +453,6 @@ static ARM_SPI_CAPABILITIES SPIn_GetCapabilities(void)
 static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_USPI_INSTANCE(u32Inst)];
-    USPI_T *phspi = (USPI_T *)pSPIn->phspi;
 
     if (pSPIn->sState.u8State & SPI_INITIALIZED) return ARM_DRIVER_OK;
 
@@ -413,7 +469,7 @@ static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
     if (pSPIn->spdma.u32RxUsed == 1)
     {
         if ((pSPIn->spdma.i32RxChnId >= 0) &&
-                (pSPIn->spdma.i32RxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pSPIn->spdma.i32RxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pSPIn->spdma.i32RxChnId);
             nu_pdma_channel_free(pSPIn->spdma.i32RxChnId);
@@ -424,7 +480,7 @@ static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
     if (pSPIn->spdma.u32TxUsed == 1)
     {
         if ((pSPIn->spdma.i32TxChnId >= 0) &&
-                (pSPIn->spdma.i32TxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pSPIn->spdma.i32TxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_pdma_channel_terminate(pSPIn->spdma.i32TxChnId);
             nu_pdma_channel_free(pSPIn->spdma.i32TxChnId);
@@ -881,7 +937,6 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
 static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_USPI_INSTANCE(u32Inst)];
-    USPI_T *phspi = (USPI_T *)pSPIn->phspi;
 
     // Check if the SPI is configured
     if (!(pSPIn->sState.u8State & SPI_CONFIGURED))
@@ -1217,7 +1272,7 @@ static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn)
         pSPIn->spdma.i32TxChnId,
         ((u32DataBits <= 8) && (u32DataBits > 0))                          ? 8
         : ((u32DataBits > 8) && (u32DataBits <= 16))                       ? 16
-        : ((u32DataBits > 16) && (u32DataBits < 32) || (u32DataBits == 0)) ? 32
+        : ((u32DataBits > 16) && ((u32DataBits < 32) || (u32DataBits == 0))) ? 32
         : 8,
         (uint32_t)pSPIn->sXfer.pu8TxBuf,
         (uint32_t)&phspi->TXDAT,
@@ -1243,7 +1298,7 @@ static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn)
         pSPIn->spdma.i32RxChnId,
         ((u32DataBits <= 8) && (u32DataBits > 0))                          ? 8
         : ((u32DataBits > 8) && (u32DataBits <= 16))                       ? 16
-        : (((u32DataBits > 16) && (u32DataBits < 32)) || (u32DataBits == 0)) ? 32
+        : ((u32DataBits > 16) && ((u32DataBits < 32) || (u32DataBits == 0))) ? 32
         : 8,
         (uint32_t)&phspi->RXDAT,
         (uint32_t)pSPIn->sXfer.pu8RxBuf,
@@ -1253,13 +1308,23 @@ static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn)
 
 // Local driver functions definitions (for instances)
 // Information definitions (for instances)
-#if (RTE_SPI7 == 1)
-FUNCS_DEFINE(7)
-SPI_DRIVER(7)
+#if (RTE_SPI_USPI0 == 1)
+FUNCS_DEFINE(SPI_USPI_IDX0)
+SPI_DRIVER(SPI_USPI_IDX0)
 
 NVT_ITCM void USCI0_IRQHandler(void)
 {
-    SPI_IRQHandler(7);
+    SPI_IRQHandler(SPI_USPI_IDX0);
+}
+#endif
+
+#if (RTE_SPI_USPI1 == 1)
+FUNCS_DEFINE(SPI_USPI_IDX1)
+SPI_DRIVER(SPI_USPI_IDX1)
+
+NVT_ITCM void USCI1_IRQHandler(void)
+{
+    SPI_IRQHandler(SPI_USPI_IDX1);
 }
 #endif
 

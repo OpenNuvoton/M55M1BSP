@@ -452,7 +452,6 @@ extern "C"
 #define CLK_APLL1_SELECT     1UL
 
 #define CLK_APLLCTL_APLLSRC_HXT           0x00000000UL    /*!< For APLL clock source is HXT.       4MHz < FIN/NR < 8MHz \hideinitializer */
-#define CLK_APLLCTL_APLLSRC_HXT_DIV2      0x00000001UL    /*!< For APLL clock source is HXT/2.     4MHz < FIN/NR < 8MHz \hideinitializer */
 #define CLK_APLLCTL_APLLSRC_HIRC          0x00000002UL    /*!< For APLL clock source is HIRC.      4MHz < FIN/NR < 8MHz \hideinitializer */
 #define CLK_APLLCTL_APLLSRC_HIRC48_DIV4   0x00000003UL    /*!< For APLL clock source is HIRC48/4.  4MHz < FIN/NR < 8MHz \hideinitializer */
 

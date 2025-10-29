@@ -765,6 +765,7 @@ int usbh_uac_stop_audio_in(UAC_DEV_T *uac)
 static void iso_out_irq(UTR_T *utr)
 {
     UAC_DEV_T   *uac = (UAC_DEV_T *)utr->context;
+
     int         i, ret;
 
     /* We don't want to do anything if we are about to be removed! */

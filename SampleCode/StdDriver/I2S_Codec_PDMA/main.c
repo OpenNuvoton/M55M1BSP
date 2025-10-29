@@ -33,8 +33,8 @@ void I2C_Init(void);
 //------------------------------------------------------------------------------
 #if (NVT_DCACHE_ON == 1)
 /* Using DCACHE, each buffer is aligned to a full cache line and is padded to a full cache line size */
-static uint32_t s_au32PcmRxBuff[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(BUFF_LEN)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
-static uint32_t s_au32PcmTxBuff[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(BUFF_LEN)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+static uint32_t s_au32PcmRxBuff[2][DCACHE_ALIGN_LINE_SIZE(BUFF_LEN)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+static uint32_t s_au32PcmTxBuff[2][DCACHE_ALIGN_LINE_SIZE(BUFF_LEN)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
 #else
 /* Without DCACHE, each buffer is not aligned to a full cache line and is not padded */
 static uint32_t s_au32PcmRxBuff[2][BUFF_LEN] = {0};
@@ -42,8 +42,8 @@ static uint32_t s_au32PcmTxBuff[2][BUFF_LEN] = {0};
 #endif
 static NVT_NONCACHEABLE DMA_DESC_T DMA_TXDESC[2] = {0}, DMA_RXDESC[2] = {0};
 
-static volatile uint8_t s_u8TxIdx = 0, s_u8RxIdx = 0;
-static volatile uint8_t s_u8CopyData = 0;
+static NVT_NONCACHEABLE volatile uint8_t s_u8TxIdx = 0, s_u8RxIdx = 0;
+static NVT_NONCACHEABLE volatile uint8_t s_u8CopyData = 0;
 
 //------------------------------------------------------------------------------
 NVT_ITCM void PDMA0_IRQHandler(void)
@@ -371,6 +371,9 @@ void PDMA_Init(void)
     /* Open PDMA channel 1 for I2S TX and channel 2 for I2S RX */
     PDMA_Open(PDMA0, 0x3 << 1);
 
+    PDMA_SetBurstType(PDMA0, 1, PDMA_REQ_BURST, PDMA_BURST_4);
+    PDMA_SetBurstType(PDMA0, 2, PDMA_REQ_BURST, PDMA_BURST_4);
+
     /* Configure PDMA transfer mode */
     PDMA_SetTransferMode(PDMA0, 1, PDMA_I2S0_TX, 1, (uint32_t)&DMA_TXDESC[0]);
     PDMA_SetTransferMode(PDMA0, 2, PDMA_I2S0_RX, 1, (uint32_t)&DMA_RXDESC[0]);
@@ -468,12 +471,21 @@ int32_t main(void)
         if (s_u8CopyData)
         {
 #if (NVT_DCACHE_ON == 1)
-            /* Clean and invalidate the whole cache line */
-            /* which the Rx and Tx buffer belongs to */
-            SCB_CleanInvalidateDCache_by_Addr((uint32_t *)&s_au32PcmRxBuff, sizeof(s_au32PcmRxBuff));
-            SCB_CleanInvalidateDCache_by_Addr((uint32_t *)&s_au32PcmTxBuff, sizeof(s_au32PcmTxBuff));
+            SCB_InvalidateDCache_by_Addr(
+                (uint32_t *)&s_au32PcmRxBuff[s_u8RxIdx][0],
+                BUFF_LEN * sizeof(uint32_t));
 #endif
-            memcpy(&s_au32PcmTxBuff[s_u8TxIdx ^ 1], &s_au32PcmRxBuff[s_u8RxIdx], BUFF_LEN * 4);
+
+            memcpy(&s_au32PcmTxBuff[(uint8_t)(s_u8TxIdx ^ 1)][0],
+                   &s_au32PcmRxBuff[s_u8RxIdx][0],
+                   BUFF_LEN * sizeof(uint32_t));
+
+#if (NVT_DCACHE_ON == 1)
+            SCB_CleanDCache_by_Addr(
+                (uint32_t *)&s_au32PcmTxBuff[(uint8_t)(s_u8TxIdx ^ 1)][0],
+                BUFF_LEN * sizeof(uint32_t));
+#endif
+            s_u8CopyData = 0;
         }
     }
 }

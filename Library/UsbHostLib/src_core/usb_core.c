@@ -1119,7 +1119,7 @@ static int  usbh_parse_configuration(UDEV_T *udev, uint8_t *desc_buff)
         /*
          *  find the next interface descriptor
          */
-        while (len >= sizeof(DESC_HDR_T))
+        while (len >= (int)sizeof(DESC_HDR_T))
         {
             hdr = (DESC_HDR_T *)desc_buff;
 

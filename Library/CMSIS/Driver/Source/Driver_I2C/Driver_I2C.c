@@ -598,7 +598,7 @@ NVT_ITCM void I2C3_IRQHandler(void)
 static void I2C_MasterRx(uint32_t port)
 {
     I2C_T *i2c = i2c_info[port].ptr_ro_info->i2c;
-    uint32_t u32TimeOutCnt, u32Status;
+    uint32_t u32Status;
     u32Status = I2C_GET_STATUS(i2c);
     ARM_I2C_SignalEvent_t cb_event = i2c_info[port].ptr_rw_info->cb_event;
     uint32_t event = 0;

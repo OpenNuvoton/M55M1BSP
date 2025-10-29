@@ -182,7 +182,6 @@ int32_t GenCmdSessionKey(uint32_t key[])
         { 0x0EC490E3, 0x6DC89EE1, 0xF6063521, 0x8E17B4D0, 0xEB940D5F, 0xEAF7E7EC, 0xB7D294C4, 0x2671A4D3 }
     };
     uint32_t            AESkey[8];
-    volatile uint32_t    i;
 
     NUBL_MSG("[%s] enter\n", __func__);
     memset(&AESkey, 0x0, sizeof(AESkey));
@@ -246,6 +245,8 @@ _exit_GenCmdSessionKey:
 */
 int32_t IdentifyPublicKey(uint32_t *p32Buf, int32_t i32Mode)
 {
+    NVT_UNUSED(p32Buf);
+    NVT_UNUSED(i32Mode);
     int32_t i32RetCode = 0;
 
     return i32RetCode;
@@ -264,6 +265,7 @@ int32_t IdentifyPublicKey(uint32_t *p32Buf, int32_t i32Mode)
   */
 int32_t VerifyNuBL3xKeyHash(uint32_t *pu32KeyHash)
 {
+    NVT_UNUSED(pu32KeyHash);
     int32_t i32RetCode = 0;
     NUBL_MSG("\nNuBL2 verify NuBL3x.\n\n");
 

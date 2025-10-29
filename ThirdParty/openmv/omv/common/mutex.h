@@ -20,11 +20,11 @@ typedef volatile struct {
     uint32_t last_tid;
 } omv_mutex_t;
 
-void mutex_init0(omv_mutex_t *mutex);
-void mutex_lock(omv_mutex_t *mutex, uint32_t tid);
-int mutex_try_lock(omv_mutex_t *mutex, uint32_t tid);
-int mutex_try_lock_alternate(omv_mutex_t *mutex, uint32_t tid);
 //Modify by chchen59
+//void mutex_init0(omv_mutex_t *mutex);
+//void mutex_lock(omv_mutex_t *mutex, uint32_t tid);
+//int mutex_try_lock(omv_mutex_t *mutex, uint32_t tid);
+//int mutex_try_lock_alternate(omv_mutex_t *mutex, uint32_t tid);
 //int mutex_lock_timeout(omv_mutex_t *mutex, uint32_t tid, uint32_t timeout);
-void mutex_unlock(omv_mutex_t *mutex, uint32_t tid);
+//void mutex_unlock(omv_mutex_t *mutex, uint32_t tid);
 #endif /* __MUTEX_H__ */

@@ -167,13 +167,16 @@ void SD_Inits(void)
 void SYS_Init(void)
 {
     /* Switch SCLK clock source to APLL0 and Enable APLL0 clock */
-    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
+    CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ);
 
     /* Enable APLL1 clock */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ, CLK_APLL1_SELECT);
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HIRC, FREQ_220MHZ, CLK_APLL1_SELECT);
 
     /* Enable I2S0 module clock */
     CLK_EnableModuleClock(I2S0_MODULE);
+
+    /* Select source from HIRC(12MHz) */
+    CLK_SetModuleClock(I2S0_MODULE, CLK_I2SSEL_I2S0SEL_HIRC, MODULE_NoMsk);
 
     /* Enable I2C3 module clock */
     CLK_EnableModuleClock(I2C3_MODULE);
@@ -225,23 +228,36 @@ void I2C_Init(void)
     I2C_Open(I2C_PORT, 100000);
 }
 
+/* Once PDMA has transferred, software need to reset Scatter-Gather table */
+void PDMA_ResetTxSGTable(uint8_t u8Id)
+{
+    DMA_DESC[u8Id].ctl = (DMA_DESC[u8Id].ctl & ~PDMA_DSCT_CTL_TXCNT_Msk) |
+                         ((PCM_BUFFER_SIZE - 1) << PDMA_DSCT_CTL_TXCNT_Pos) |
+                         PDMA_OP_SCATTER;
+
+#if (NVT_DCACHE_ON == 1)
+    SCB_CleanDCache_by_Addr((void *)&DMA_DESC[u8Id], sizeof(DMA_DESC[u8Id]));
+    SCB_CleanDCache_by_Addr((void *)aPCMBuffer[u8Id], PCM_BUFFER_SIZE * sizeof(uint32_t));
+#endif
+}
+
 /* Configure PDMA to Scatter Gather mode */
 void PDMA_Init(void)
 {
     DMA_DESC[0].ctl = ((PCM_BUFFER_SIZE - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_32 | PDMA_SAR_INC | PDMA_DAR_FIX | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
     DMA_DESC[0].src = (uint32_t)&aPCMBuffer[0][0];
-    DMA_DESC[0].dest = (uint32_t)&I2S0->TXFIFO;
+    DMA_DESC[0].dest = (uint32_t)&I2S_PORT->TXFIFO;
     DMA_DESC[0].offset = (uint32_t)&DMA_DESC[1];
 
     DMA_DESC[1].ctl = ((PCM_BUFFER_SIZE - 1) << PDMA_DSCT_CTL_TXCNT_Pos) | PDMA_WIDTH_32 | PDMA_SAR_INC | PDMA_DAR_FIX | PDMA_REQ_SINGLE | PDMA_OP_SCATTER;
     DMA_DESC[1].src = (uint32_t)&aPCMBuffer[1][0];
-    DMA_DESC[1].dest = (uint32_t)&I2S0->TXFIFO;
+    DMA_DESC[1].dest = (uint32_t)&I2S_PORT->TXFIFO;
     DMA_DESC[1].offset = (uint32_t)&DMA_DESC[0];
 
-    PDMA_Open(PDMA0, 1 << 2);
-    PDMA_SetTransferMode(PDMA0, 2, PDMA_I2S0_TX, 1, (uint32_t)&DMA_DESC[0]);
+    PDMA_Open(PDMA_PORT, (1 << I2S_TX_DMA_CH));
+    PDMA_SetTransferMode(PDMA_PORT, I2S_TX_DMA_CH, PDMA_I2S0_TX, 1, (uint32_t)&DMA_DESC[0]);
 
-    PDMA_EnableInt(PDMA0, 2, 0);
+    PDMA_EnableInt(PDMA_PORT, I2S_TX_DMA_CH, PDMA_INT_TRANS_DONE);
     NVIC_EnableIRQ(PDMA0_IRQn);
 }
 
@@ -261,6 +277,9 @@ int32_t main(void)
     /* Init Debug UART to 115200-8N1 for print message */
     InitDebugUart();
 
+    /* Init I2C to access codec */
+    I2C_Init();
+
     printf("+-----------------------------------------------------------------------+\n");
     printf("|                   MP3 Player Sample with audio codec                  |\n");
     printf("+-----------------------------------------------------------------------+\n");
@@ -269,12 +288,6 @@ int32_t main(void)
     /* Configure FATFS */
     SDH_Open_Disk(SDH0, CardDetect_From_GPIO);
     f_chdrive(sd_path);          /* Set default path */
-
-    /* Init I2C to access codec */
-    I2C_Init();
-
-    /* Select source from HIRC(12MHz) */
-    CLK_SetModuleClock(I2S0_MODULE, CLK_I2SSEL_I2S0SEL_HIRC, MODULE_NoMsk);
 
     /* Lock protected registers */
     SYS_LockReg();

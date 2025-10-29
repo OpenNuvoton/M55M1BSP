@@ -357,7 +357,7 @@ int32_t Read_Write_SLAVE(uint16_t u16SlvAddr)
         g_u8Test10BitMode = 1;
         /* Init Send 10-bit Addr */
         g_u8DeviceHAddr = (u16SlvAddr >> 8) | SLV_10BIT_ADDR;
-        g_u8DeviceLAddr = u16SlvAddr & 0x7F;
+        g_u8DeviceLAddr = u16SlvAddr & 0xFF;
     }
 
     do

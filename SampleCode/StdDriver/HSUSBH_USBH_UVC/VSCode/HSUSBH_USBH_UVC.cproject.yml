@@ -28,7 +28,7 @@ project:
           C:
             - -std=c11
           C-CPP:
-            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
           CPP:
             - -xc++
@@ -47,8 +47,9 @@ project:
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
   linker:
-    - script: HSUSBH_USBH_UVC.scatter
+    - script: HSUSBH_USBH_UVC.scf
       for-compiler: AC6
     - script: HSUSBH_USBH_UVC.ld
       for-compiler: GCC
@@ -56,6 +57,8 @@ project:
     - group: CMSIS
       files:
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/GCC/_syscalls.c
+          for-compiler: GCC
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
     - group: Driver
       files:
@@ -92,6 +95,10 @@ project:
         - file: ../../../../Library/UsbHostLib/src_uvc/uvc_driver.c
         - file: ../../../../Library/UsbHostLib/src_uvc/uvc_parser.c
     - group: jpeg_lib
+      misc:
+      - for-compiler: AC6
+        C-CPP:
+        - -w
       files:
         - file: ../../../../ThirdParty/libjpeg/jdapimin.c
         - file: ../../../../ThirdParty/libjpeg/jaricom.c

@@ -29,12 +29,12 @@ void LPSPILoopTest_WithLPPDMA(void);
 /* Global variable declaration */
 #if (NVT_DCACHE_ON == 1)
     /* DCache-line aligned buffer for LPSPI0 data transfer with LPPDMA */
-    uint32_t g_au32MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((section(".lpSram"), aligned(DCACHE_LINE_SIZE)));
-    uint32_t g_au32MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((section(".lpSram"), aligned(DCACHE_LINE_SIZE)));
+    static uint32_t g_au32MasterToSlaveTestPattern[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((section(".lpSram"), aligned(DCACHE_LINE_SIZE)));
+    static uint32_t g_au32MasterRxBuffer[DCACHE_ALIGN_LINE_SIZE(DATA_COUNT)] __attribute__((section(".lpSram"), aligned(DCACHE_LINE_SIZE)));
 #else
     /* Buffer for LPSPI0 data transfer with LPPDMA */
-    uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
-    uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
+    static uint32_t g_au32MasterToSlaveTestPattern[DATA_COUNT] __attribute__((section(".lpSram")));
+    static uint32_t g_au32MasterRxBuffer[DATA_COUNT] __attribute__((section(".lpSram")));
 #endif
 
 int main(void)

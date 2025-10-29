@@ -40,7 +40,7 @@ static void SYS_Init(void)
 
 int main(void)
 {
-    int32_t i32RetCode = 0;
+    uint32_t u32RetCode = 0;
     uint32_t u32Data;
 
     /* Init System, IP clock and multi-function I/O */
@@ -73,9 +73,9 @@ int main(void)
 
     printf("\n  Check LDROM is all one after erase\n");
     /* Run and check flash contents are all 0xFFFFFFFF. */
-    i32RetCode = FMC_CheckAllOne(FMC_LDROM_BASE, FMC_FLASH_PAGE_SIZE);
+    u32RetCode = FMC_CheckAllOne(FMC_LDROM_BASE, FMC_FLASH_PAGE_SIZE);
 
-    if (i32RetCode == READ_ALLONE_YES)           /* Return value READ_ALLONE_YES means all flash contents are 0xFFFFFFFF */
+    if (u32RetCode == READ_ALLONE_YES)           /* Return value READ_ALLONE_YES means all flash contents are 0xFFFFFFFF */
         printf("    Check READ_ALLONE_YES success.\n");    /* FMC_CheckAllOne() READ_ALLONE_YES passed on LDROM page 0. */
     else
         printf("    Check READ_ALLONE_YES failed!\n");     /* FMC_CheckAllOne() READ_ALLONE_YES failed on LDROM page 0. */
@@ -84,9 +84,9 @@ int main(void)
 
     printf("  Check LDROM is not all one after write\n");
     /* Run and check flash contents are not all 0xFFFFFFFF. */
-    i32RetCode = FMC_CheckAllOne(FMC_LDROM_BASE, FMC_FLASH_PAGE_SIZE);
+    u32RetCode = FMC_CheckAllOne(FMC_LDROM_BASE, FMC_FLASH_PAGE_SIZE);
 
-    if (i32RetCode == READ_ALLONE_NOT)
+    if (u32RetCode == READ_ALLONE_NOT)
         printf("    Check READ_ALLONE_NOT success.\n");   /* FMC_CheckAllOne() READ_ALLONE_NOT passed on LDROM page 0. */
     else
         printf("    Check READ_ALLONE_NOT failed!\n");    /* FMC_CheckAllOne() READ_ALLONE_NOT failed on LDROM page 0. */

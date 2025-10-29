@@ -216,13 +216,8 @@ void EADC_FunctionTest()
             /* Enable EPWM0 channel 0 counter */
             EPWM_Start(EPWM0, BIT0); /* EPWM0 channel 0 counter start running. */
 
-            while (1)
-            {
-                /* Wait PDMA interrupt (g_u32IsTestOver will be set at IRQ_Handler function) */
-                while (g_u32IsTestOver == 0);
-
-                break;
-            }
+            /* Wait PDMA interrupt (g_u32IsTestOver will be set at IRQ_Handler function) */
+            while (g_u32IsTestOver == 0);
 
             g_u32IsTestOver = 0;
 
@@ -244,17 +239,11 @@ void EADC_FunctionTest()
 
             printf("Conversion result of channel pair 4 (channel 8/9):\n");
 
-
             /* Enable EPWM0 channel 0 counter */
             EPWM_Start(EPWM0, BIT0); /* EPWM0 channel 0 counter start running. */
 
-            while (1)
-            {
-                /* Wait PDMA interrupt (g_u32IsTestOver will be set at IRQ_Handler function) */
-                while (g_u32IsTestOver == 0);
-
-                break;
-            }
+            /* Wait PDMA interrupt (g_u32IsTestOver will be set at IRQ_Handler function) */
+            while (g_u32IsTestOver == 0);
 
             g_u32IsTestOver = 0;
 

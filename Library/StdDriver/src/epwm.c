@@ -39,6 +39,8 @@ uint32_t EPWM_ConfigCaptureChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_
     uint32_t u32NearestUnitTimeNsec;
     uint32_t u16Prescale = 1U, u16CNR = 0xFFFFU;
 
+    NVT_UNUSED(u32CaptureEdge);
+
     if (epwm == EPWM0)
     {
         u32Src = CLK->EPWMSEL & CLK_EPWMSEL_EPWM0SEL_Msk;
@@ -376,6 +378,8 @@ void EPWM_DisableADCTriggerPrescale(EPWM_T *epwm, uint32_t u32ChannelNum)
  */
 void EPWM_ClearADCTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Condition)
 {
+    NVT_UNUSED(u32Condition);
+
     (epwm)->STATUS = (EPWM_STATUS_EADCTRGF0_Msk << u32ChannelNum);
 }
 
@@ -440,6 +444,9 @@ void EPWM_DisableDACTrigger(EPWM_T *epwm, uint32_t u32ChannelNum)
  */
 void EPWM_ClearDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Condition)
 {
+    NVT_UNUSED(u32ChannelNum);
+    NVT_UNUSED(u32Condition);
+
     (epwm)->STATUS = EPWM_STATUS_DACTRGF_Msk;
 }
 
@@ -455,6 +462,8 @@ void EPWM_ClearDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32
  */
 uint32_t EPWM_GetDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum)
 {
+    NVT_UNUSED(u32ChannelNum);
+
     return (((epwm)->STATUS & EPWM_STATUS_DACTRGF_Msk) ? 1UL : 0UL);
 }
 
@@ -924,6 +933,8 @@ uint32_t EPWM_GetFaultBrakeIntFlag(EPWM_T *epwm, uint32_t u32BrakeSource)
  */
 void EPWM_EnablePeriodInt(EPWM_T *epwm, uint32_t u32ChannelNum,  uint32_t u32IntPeriodType)
 {
+    NVT_UNUSED(u32IntPeriodType);
+
     (epwm)->INTEN0 |= ((1UL << EPWM_INTEN0_PIEN0_Pos) << u32ChannelNum);
 }
 

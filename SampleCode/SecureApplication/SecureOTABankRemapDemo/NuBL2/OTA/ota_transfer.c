@@ -163,9 +163,12 @@ uint8_t Transfer_Connect(void)
 uint8_t Transfer_SysTickProcess(uint32_t u32Ticks)
 {
     (void)u32Ticks;
+#if (PERIODIC_CHK_NEW_VER)
     static uint32_t u32ChkNewVerTick = 0;
 
     u32ChkNewVerTick++;
+#endif
+
     ESP_UpdateTime(&ESP, 1);                                /* Update ESP library time for 1 ms */
 
 #if (PERIODIC_CHK_NEW_VER)

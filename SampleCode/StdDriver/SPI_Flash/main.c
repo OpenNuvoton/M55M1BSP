@@ -64,7 +64,7 @@ void SYS_Init(void);
 //------------------------------------------------------------------------------
 __STATIC_INLINE void wait_SPI_IS_BUSY(SPI_T *spi)
 {
-    volatile int32_t i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    volatile int32_t i32TimeOutCnt = (int32_t)SystemCoreClock; /* 1 second time-out */
 
     while (SPI_IS_BUSY(spi))
     {
@@ -196,7 +196,7 @@ void SpiFlash_WriteStatusReg(uint8_t u8Value)
 int32_t SpiFlash_WaitReady(void)
 {
     uint8_t u8ReturnValue;
-    volatile int32_t i32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    volatile int32_t i32TimeOutCnt = (int32_t)SystemCoreClock; /* 1 second time-out */
 
     do
     {

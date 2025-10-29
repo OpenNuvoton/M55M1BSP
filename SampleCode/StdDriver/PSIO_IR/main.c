@@ -129,7 +129,7 @@ int32_t main(void)
     }
 
     /* Release PSIO setting */
-    PSIO_NEC_Close(&sConfig);
+    PSIO_NEC_Close();
 
     printf("Complete!\n");
 

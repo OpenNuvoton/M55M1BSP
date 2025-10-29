@@ -45,6 +45,7 @@ static void VBUS_Disable_Output(int port)
  *******************************************************************************/
 static void VBUS_CMD_Enable_Source_VBus(int port)
 {
+    NVT_UNUSED(port);
     DBG_PRINTF("E SRC VBUS\n");
 #if 1
     outp32(UTCPD0_BASE + TCPC_REG_COMMAND, TCPC_REG_COMMAND_ENABLE_SRC_VBUS);
@@ -55,6 +56,7 @@ static void VBUS_CMD_Enable_Source_VBus(int port)
 }
 static void VBUS_CMD_Disable_Source_VBus(int port)
 {
+    NVT_UNUSED(port);
     DBG_PRINTF("D SRC VBUS\n");
 #if 1
     outp32(UTCPD0_BASE + TCPC_REG_COMMAND, TCPC_REG_COMMAND_DISABLE_SRC_VBUS);
@@ -69,6 +71,7 @@ static void VBUS_CMD_Disable_Source_VBus(int port)
  *******************************************************************************/
 static void VBUS_CMD_Enable_Sink_VBus(int port)
 {
+    NVT_UNUSED(port);
 #if 1
     outp32(UTCPD0_BASE + TCPC_REG_COMMAND, TCPC_REG_COMMAND_ENABLE_SNK_VBUS);
 #else
@@ -78,6 +81,7 @@ static void VBUS_CMD_Enable_Sink_VBus(int port)
 }
 static void VBUS_CMD_Disable_Sink_VBus(int port)
 {
+    NVT_UNUSED(port);
 #if 1
     outp32(UTCPD0_BASE + TCPC_REG_COMMAND, TCPC_REG_COMMAND_DISABLE_SNK_VBUS);
 #else

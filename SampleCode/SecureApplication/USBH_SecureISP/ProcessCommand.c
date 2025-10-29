@@ -125,6 +125,9 @@ __ALIGNED(4) CHIP_ISP_INFO_T g_ChipISPInfo;
 
 void  int_read_callback(HID_DEV_T *hdev, uint16_t ep_addr, int status, uint8_t *rdata, uint32_t data_len)
 {
+    NVT_UNUSED(hdev);
+    NVT_UNUSED(ep_addr);
+
     /*
      *  USB host HID driver notify user the transfer status via <status> parameter. If the
      *  If <status> is 0, the USB transfer is fine. If <status> is not zero, this interrupt in
@@ -142,9 +145,12 @@ void  int_read_callback(HID_DEV_T *hdev, uint16_t ep_addr, int status, uint8_t *
     g_ChipISPInfo.u32IsRXReady = 0x5A5A;
 }
 
-void  int_write_callback(HID_DEV_T *hdev, uint16_t ep_addr, int staus, uint8_t *wbuff, uint32_t *data_len)
+void  int_write_callback(HID_DEV_T *hdev, uint16_t ep_addr, int status, uint8_t *wbuff, uint32_t *data_len)
 {
-    //printf("[%s] ep_addr: 0x%X\n", __func__, ep_addr);
+    NVT_UNUSED(hdev);
+    NVT_UNUSED(ep_addr);
+    NVT_UNUSED(status);
+    DBG("[%s] ep_addr: 0x%X\n", __func__, ep_addr);
     memcpy(wbuff, (uint8_t *)&g_WriteCmd, sizeof(g_WriteCmd)); /* Fill data to be sent via interrupt out pipe     */
     *data_len = sizeof(g_WriteCmd);
 }
@@ -358,7 +364,6 @@ static uint32_t _Perform_CRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
   */
 static int32_t _AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    volatile int32_t    i;
     uint32_t u32TimeOutCnt;
 
     /* KEY and IV are byte order (32 bit) reversed, Swap32(x)) and stored in ISP_INFO_T */
@@ -387,7 +392,6 @@ static int32_t _AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_
   */
 static int32_t _AES256Decrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    volatile int32_t    i;
     uint32_t u32TimeOutCnt;
 
     /* KEY and IV are byte order (32 bit) reversed, Swap32(x)) and stored in ISP_INFO_T */
@@ -412,7 +416,7 @@ static int32_t _AES256Decrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_
 
 static int32_t _Perform_GenPacket(CMD_PACKET_T *pCMD)
 {
-    volatile int32_t    i;
+    uint32_t    i;
 
 #if (0)
     {
@@ -495,7 +499,7 @@ static int32_t _Perform_GenPacket(CMD_PACKET_T *pCMD)
 
 static int32_t _Perform_ParsePacket(CMD_PACKET_T *pCMD)
 {
-    volatile int32_t    i;
+    uint32_t i;
 
 #if (0)
     {

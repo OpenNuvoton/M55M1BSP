@@ -101,6 +101,8 @@ int TVMArrayFree(TVMArrayHandle handle)
 int TVMDeviceAllocDataSpace(DLDevice dev, size_t nbytes, size_t alignment, DLDataType type_hint,
                             void **out_data)
 {
+    (void)type_hint;
+
     if (alignment != 1)
     {
         nbytes = (nbytes + alignment - 1) / alignment * alignment;
@@ -112,6 +114,7 @@ int TVMDeviceAllocDataSpace(DLDevice dev, size_t nbytes, size_t alignment, DLDat
 int TVMDeviceAllocDataSpaceWithScope(DLDevice dev, int ndim, const int64_t *shape, DLDataType dtype,
                                      const char *mem_scope, void **out_data)
 {
+    (void)mem_scope;
     size_t nbytes = 1;
 
     for (int i = 0; i < ndim; ++i)
@@ -122,7 +125,7 @@ int TVMDeviceAllocDataSpaceWithScope(DLDevice dev, int ndim, const int64_t *shap
     nbytes *= (dtype.bits * dtype.lanes + 7) / 8;
 
     int kAllocAlignment = 64;
-    size_t align = (dtype.bits / 8) * dtype.lanes;
+    int align = (dtype.bits / 8) * dtype.lanes;
 
     if (align < kAllocAlignment) align = kAllocAlignment;
 
@@ -154,6 +157,7 @@ TVM_ATTRIBUTE_UNUSED static bool IsContiguous(const DLTensor *arr)
 
 int TVMDeviceCopyDataFromTo(DLTensor *from, DLTensor *to, TVMStreamHandle stream)
 {
+    (void)stream;
     assert(IsContiguous(from) && IsContiguous(to));
     size_t size = 1;
 
@@ -169,22 +173,33 @@ int TVMDeviceCopyDataFromTo(DLTensor *from, DLTensor *to, TVMStreamHandle stream
 
 int TVMStreamCreate(int device_type, int device_id, TVMStreamHandle *out)
 {
-    out = NULL;
+    (void)device_type;
+    (void)device_id;
+    (void)out;
     return 0;
 }
 
 int TVMStreamFree(int device_type, int device_id, TVMStreamHandle stream)
 {
+    (void)device_type;
+    (void)device_id;
+    (void)stream;
     return 0;
 }
 
 int TVMSetStream(int device_type, int device_id, TVMStreamHandle stream)
 {
+    (void)device_type;
+    (void)device_id;
+    (void)stream;
     return 0;
 }
 
 int TVMSynchronize(int device_type, int device_id, TVMStreamHandle stream)
 {
+    (void)device_type;
+    (void)device_id;
+    (void)stream;
     return 0;
 }
 
@@ -267,6 +282,9 @@ int TVMModFree(TVMModuleHandle mod)
 static int SystemLibraryCreate(TVMValue *args, int *type_codes, int num_args, TVMValue *ret_val,
                                int *ret_type_codes)
 {
+    (void)args;
+    (void)type_codes;
+    (void)num_args;
     const TVMModule *system_lib;
 
     if (system_lib_handle == kTVMModuleHandleUninitialized)
@@ -413,6 +431,7 @@ int TVMFuncGetGlobal(const char *name, TVMFunctionHandle *out)
 int TVMModGetFunction(TVMModuleHandle mod, const char *func_name, int query_imports,
                       TVMFunctionHandle *out)
 {
+    (void)query_imports;
     tvm_module_index_t module_index;
 
     if (DecodeModuleHandle(mod, &module_index) != 0)
@@ -489,6 +508,7 @@ int TVMCFuncSetReturn(TVMRetValueHandle ret, TVMValue *value, int *type_code, in
 
 int TVMFuncFree(TVMFunctionHandle func)
 {
+    (void)func;
     // A no-op, since we don't actually allocate anything in GetFunction.
     return 0;
 }
@@ -500,6 +520,10 @@ int RPCTimeEvaluator(TVMValue *args, int *type_codes, int num_args, TVMValue *re
 int RPCGetCRTMaxPacketSize(TVMValue *args, int *type_codes, int num_args, TVMValue *ret_value,
                            int *ret_type_codes)
 {
+    (void)args;
+    (void)type_codes;
+    (void)num_args;
+
     // 11 bytes is for microtvm overhead:
     // packet start(2), length(4), session header(3), crc(2)
     ret_value[0].v_int64 = TVM_CRT_MAX_PACKET_SIZE_BYTES - 11;
@@ -511,6 +535,9 @@ int RPCGetCRTMaxPacketSize(TVMValue *args, int *type_codes, int num_args, TVMVal
 static int RandomFill(TVMValue *args, int *type_codes, int num_args, TVMValue *ret_val,
                       int *ret_type_code)
 {
+    (void)ret_val;
+    (void)ret_type_code;
+
     if (num_args != 1)
     {
         return kTvmErrorFunctionCallNumArguments;
@@ -795,6 +822,8 @@ release_and_return :
 // Default implementation, overridden by the platform runtime.
 TVM_WEAK tvm_crt_error_t TVMPlatformGenerateRandom(uint8_t *buffer, size_t num_bytes)
 {
+    (void)buffer;
+    (void)num_bytes;
     return kTvmErrorFunctionCallNotImplemented;
 }
 

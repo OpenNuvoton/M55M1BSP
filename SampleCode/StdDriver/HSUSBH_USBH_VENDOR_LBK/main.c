@@ -431,7 +431,7 @@ void demo_interrupt_xfer(void)
 
         if (get_ticks() - msg_tick >= 100)
         {
-            printf("Interrupt transfer loop RX: %d, TX: %d    \r", s_i8IntInCnt, s_i8IntOutCnt);
+            printf("Interrupt transfer loop %d RX: %d, TX: %d    \r", loop, s_i8IntInCnt, s_i8IntOutCnt);
             msg_tick = get_ticks();
         }
     }
@@ -498,7 +498,7 @@ void demo_isochronous_xfer(void)
 
         if (get_ticks() - msg_tick >= 100)
         {
-            printf("Isochronous transfer loop RX: %d, TX: %d    \r", s_i8IsoInCnt, s_i8IsoOutCnt);
+            printf("Isochronous transfer loop %d RX: %d, TX: %d    \r", loop, s_i8IsoInCnt, s_i8IsoOutCnt);
             msg_tick = get_ticks();
         }
     }

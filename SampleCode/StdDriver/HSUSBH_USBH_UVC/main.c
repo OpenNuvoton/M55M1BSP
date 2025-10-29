@@ -381,6 +381,8 @@ int  uvc_rx_callbak(UVC_DEV_T *vdev, uint8_t *data, int len)
 {
     int  next_idx;
 
+    NVT_UNUSED(data);
+
     //printf("RX: %d\n", len);
     _total_frame_count++;
 
@@ -638,7 +640,9 @@ int32_t main(void)
 
             Display_FillRect((uint16_t *)rgb_image_buff_pool, &sDispRect, IMAGE_DISP_UPSCALE_FACTOR);
 #endif
+#ifndef  DEMO_YUYV_FORMAT
 Next_Image:
+#endif
             _imgs[_idx_post].state = IMAGE_BUFF_POST;
             _imgs[_idx_post].state = IMAGE_BUFF_FREE;
             _idx_post = (_idx_post + 1) % IMAGE_BUFF_CNT;

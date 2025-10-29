@@ -89,12 +89,12 @@ void synopGMAC_powerdown_mac(synopGMACdevice *gmacdev)
     //Enable the assertion of PMT interrupt
     synopGMAC_pmt_int_enable(gmacdev);
 
-    //Set transmit and receive stop command(for M55M1)
+    //Set transmit and receive stop command(for M55M1/M5531)
     synopGMACWriteReg(gmacdev->DmaBase, DmaInterrupt, DmaIntRxStopped | DmaIntTxStopped);
     synopGMAC_disable_dma_rx(gmacdev);
     synopGMAC_disable_dma_tx(gmacdev);
 
-    //Check that reception and transmission have been completed(for M55M1)
+    //Check that reception and transmission have been completed(for M55M1/M5531)
     while (!((synopGMACReadReg(gmacdev->DmaBase, DmaStatus) & (DmaIntTxStopped | DmaIntRxStopped))))
     {
         TR("Transmit or Receive Process not Stopped\n");
@@ -131,7 +131,8 @@ void synopGMAC_powerdown_mac(synopGMACdevice *gmacdev)
   */
 s32 synopGMAC_setup_tx_desc_queue(synopGMACdevice *gmacdev, DmaDesc *first_desc, u32 no_of_desc, u32 desc_mode)
 {
-    s32 i;
+    (void)desc_mode;
+    u32 i;
 
     TR("Total size of memory required for Tx Descriptors in Ring Mode = 0x%08x\n", ((sizeof(DmaDesc) * no_of_desc)));
 
@@ -192,7 +193,9 @@ s32 synopGMAC_setup_tx_desc_queue(synopGMACdevice *gmacdev, DmaDesc *first_desc,
   */
 s32 synopGMAC_setup_rx_desc_queue(synopGMACdevice *gmacdev, DmaDesc *first_desc, u32 no_of_desc, u32 desc_mode)
 {
-    s32 i;
+    (void)desc_mode;
+
+    u32 i;
 
     TR("total size of memory required for Rx Descriptors in Ring Mode = 0x%08x\n", ((sizeof(DmaDesc) * no_of_desc)));
 
@@ -239,6 +242,7 @@ s32 synopGMAC_setup_rx_desc_queue(synopGMACdevice *gmacdev, DmaDesc *first_desc,
   */
 void synopGMAC_giveup_rx_desc_queue(synopGMACdevice *gmacdev, u32 desc_mode)
 {
+    (void)desc_mode;
     gmacdev->RxDesc    = NULL;
     gmacdev->RxDescDma = 0;
     return;
@@ -265,6 +269,7 @@ void synopGMAC_giveup_rx_desc_queue(synopGMACdevice *gmacdev, u32 desc_mode)
   */
 void synopGMAC_giveup_tx_desc_queue(synopGMACdevice *gmacdev, u32 desc_mode)
 {
+    (void)desc_mode;
     gmacdev->TxDesc    = NULL;
     gmacdev->TxDescDma = 0;
     return;

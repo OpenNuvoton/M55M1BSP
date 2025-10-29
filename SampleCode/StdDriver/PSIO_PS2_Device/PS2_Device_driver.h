@@ -39,6 +39,6 @@ extern uint8_t *g_pu8RxData, *g_pu8Parity;
 void PSIO_PS2_DeviceSend(S_PSIO_PS2 *pConfig, uint8_t *pu8TxData);
 void PSIO_PS2_DeviceRead(S_PSIO_PS2 *pConfig, uint8_t *pu8RxData, uint8_t *pu8Parity);
 void PSIO_PS2_Open(S_PSIO_PS2 *pConfig);
-void PSIO_PS2_Close(S_PSIO_PS2 *pConfig);
+void PSIO_PS2_Close(void);
 
 #endif  //__PS2_SLAVE_DRIVER_H__

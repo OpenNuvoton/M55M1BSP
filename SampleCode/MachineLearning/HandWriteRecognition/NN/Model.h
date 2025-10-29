@@ -27,9 +27,24 @@
 #include <cstdint>
 
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
-
+//#include "tensorflow/lite/micro/micro_interpreter.h"
+//#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#if defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-parameter"
+    #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+    #include "tensorflow/lite/micro/micro_interpreter.h"
+    #pragma clang diagnostic pop
+#elif defined(__GNUC__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-parameter"
+    #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+    #include "tensorflow/lite/micro/micro_interpreter.h"
+    #pragma GCC diagnostic pop
+#else
+    #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+    #include "tensorflow/lite/micro/micro_interpreter.h"
+#endif
 
 /**
  * @brief   NN model class wrapping the underlying Tensorflow-Lite-Micro API

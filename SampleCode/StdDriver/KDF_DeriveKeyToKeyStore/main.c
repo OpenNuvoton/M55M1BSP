@@ -47,7 +47,7 @@ void SYS_Init(void)
 
 void DumpKeyFromKS(KS_MEM_Type eMemType, int32_t i32KeyIdx, uint32_t u32WordCnt)
 {
-    int32_t i;
+    uint32_t i;
 
     memset(g_au32Keyout, 0x0, sizeof(g_au32Keyout));
 

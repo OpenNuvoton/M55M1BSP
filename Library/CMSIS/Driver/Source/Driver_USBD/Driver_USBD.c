@@ -33,6 +33,7 @@
 
 # Requirements
 
+This driver requires the M55M1 BSP.
 The driver instance is mapped to hardware as shown in the table below:
 
   CMSIS Driver Instance | Hardware Resource
@@ -63,8 +64,8 @@ static const ARM_DRIVER_VERSION usbd_driver_version =
 };
 // Compile-time configuration **************************************************
 
-// Configuration depending on RTE_USBD.h
-// Check if at least one peripheral instance is configured in RTE_USBD.h
+// Configuration depending on RTE_Device_USBD.h
+// Check if at least one peripheral instance is configured in RTE_Device_USBD.h
 #if    (!(RTE_USBD0))
     #warning  USB Device driver requires at least one USB (Device) peripheral configured in RTE_Device_USBD.h
 #else
@@ -76,7 +77,7 @@ static const ARM_DRIVER_VERSION usbd_driver_version =
 // Compile-time configuration (that can be externally overridden if necessary)
 // Maximum number of endpoints
 #ifndef USBD_MAX_ENDPOINT_NUM
-    #define USBD_MAX_ENDPOINT_NUM           (PERIPH_MAX_EP)
+    #define USBD_MAX_ENDPOINT_NUM           (USBD_MAX_EP)
 #endif
 
 // Maximum packet size for Endpoint 0
@@ -190,7 +191,7 @@ static const ARM_DRIVER_VERSION usbd_driver_version =
 #define PERIPH_EP1_BUF_LEN     USBD_EP0_MAX_PACKET_SIZE
 #define PERIPH_EP2_BUF_BASE    (PERIPH_EP1_BUF_BASE + PERIPH_EP1_BUF_LEN)
 
-enum ep_enum
+typedef enum
 {
     PERIPH_EP0 = 0,
     PERIPH_EP1 = 1,
@@ -217,8 +218,15 @@ enum ep_enum
     PERIPH_EP22 = 22,
     PERIPH_EP23 = 23,
     PERIPH_EP24 = 24,
-    PERIPH_MAX_EP,
-};
+    PERIPH_EP25 = 25,
+    PERIPH_EP26 = 26,
+    PERIPH_EP27 = 27,
+    PERIPH_EP28 = 28,
+    PERIPH_EP29 = 29,
+    PERIPH_EP30 = 30,
+    PERIPH_EP31 = 31,
+    PERIPH_MAX_EP = USBD_MAX_ENDPOINT_NUM,
+} EP_Num_t;
 
 // Driver status
 typedef struct
@@ -255,20 +263,20 @@ typedef struct
     ARM_USBD_SignalEndpointEvent_t cb_endpoint_event;     // Endpoint event callback
     DriverStatus_t                drv_status;             // Driver status
     USBD_State_t                  usbd_state;             // USB Device state
-    uint32_t                      bufseg_addr;            // Reset by bus_reset
+    uint32_t                      bufseg_addr;            // Allocated USB RAM
     volatile uint32_t             setup_received;         // Setup Packet received flag (0 - not received or read already, 1 - received and unread yet)
     volatile uint8_t              setup_packet[8];        // Setup Packet data
     EP_Info_t                     ep_info[PERIPH_MAX_EP]; // Endpoint information
 } RW_Info_t;
 
 // Instance compile-time information (RO)
+// also contains pointer to run-time information
 typedef struct
 {
     USBD_t                       *ptr_USBD;               // Pointer to USBD handle
     int32_t                       irq_n;
 } RO_Info_t;
 
-// also contains pointer to run-time information
 typedef struct
 {
     const RO_Info_t              *ptr_ro_info;            // Pointer to compile-time information (RO)
@@ -302,9 +310,9 @@ static        RW_Info_t         usbd0_rw_info USBDn_SECTION(0);
 static  const USBD_Info_t       usbd0_info = { &usbd0_ro_info,
                                                &usbd0_rw_info                                                                                                 \
                                              };
-FUNCS_DECLARE(0);
-FUNCS_DEFINE(0);
-USBD_DRIVER(0);
+FUNCS_DECLARE(0)
+FUNCS_DEFINE(0)
+USBD_DRIVER(0)
 #endif
 
 // List of available USBD instance infos
@@ -349,18 +357,18 @@ static const USBD_Info_t *USBD_GetInfo(const USBD_t *husbd)
 /**
   \fn          USBD_EP_t *USBD_EndpointEntry(const USBD_Info_t *const ptr_usbd_info uint8_t ep_addr, bool add)
   \brief       Find or allocate a peripheral endpoint entry.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
                 - ep_addr.0..3: Address
                 - ep_addr.7:    Direction
   \param[in]   add  Operation
                 - \b false Find peripheral endpoint that matches ep_addr
                 - \b true Open peripheral endpoint
-  \return      ep Pointer to USBD EP handle structure (USBD_EP_t)
+  \return      Pointer to USBD EP handle structure (USBD_EP_t)
 */
 static USBD_EP_t *USBD_EndpointEntry(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr, bool add)
 {
-    enum ep_enum ep_index;
+    EP_Num_t ep_index;
     EP_Info_t *ptr_ep;
     USBD_t *husbd = ptr_usbd_info->ptr_ro_info->ptr_USBD;
     USBD_EP_t *ep;
@@ -371,12 +379,10 @@ static USBD_EP_t *USBD_EndpointEntry(const USBD_Info_t *const ptr_usbd_info, uin
     {
         if (add)
         {
-            // take first peripheral endpoint that is unused
-            if (0 == (ep->CFG & USBD_CFG_STATE_Msk))return ep;
+            if (0 == (ep->CFG & USBD_CFG_STATE_Msk)) return ep;
         }
         else
         {
-            // find a peripheral endpoint that matches ep_addr
             if (ptr_ep->ep_addr == ep_addr) return ep;
         }
     }
@@ -397,7 +403,6 @@ static void USBD_EndpointXfer(const USBD_Info_t *const ptr_usbd_info, uint8_t ep
     }
     else
     {
-        ptr_usbd_info->ptr_rw_info->ep_info[periph_epnum].num_transferred_total = 0;
         // Ready to get next OUT transfer
         ep->MXPLD = ptr_usbd_info->ptr_rw_info->ep_info[periph_epnum].max_packet_size;
     }
@@ -407,7 +412,7 @@ static void USBD_EndpointXfer(const USBD_Info_t *const ptr_usbd_info, uint8_t ep
   \fn          void USBD_EndpointConfigureBuffer (const USBD_Info_t *const ptr_usbd_info)
   \brief       Configure and reassign USB endpoint buffer addresses in USB SRAM.
   \detail      This function resets the buffer allocation pointer and reconfigures the buffer segmentation for all enabled endpoints.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
 */
 static void USBD_EndpointConfigureBuffer(const USBD_Info_t *const ptr_usbd_info)
 {
@@ -415,7 +420,7 @@ static void USBD_EndpointConfigureBuffer(const USBD_Info_t *const ptr_usbd_info)
     ptr_usbd_info->ptr_rw_info->bufseg_addr = PERIPH_EP2_BUF_BASE;
 
     // Reconfigures the buffer segmentation for all enabled endpoints.
-    enum ep_enum ep_index;
+    EP_Num_t ep_index;
     USBD_EP_t *ep;
 
     for (ep_index = PERIPH_EP2, ep = &ptr_usbd_info->ptr_ro_info->ptr_USBD->EP[PERIPH_EP2]; ep_index < PERIPH_MAX_EP; ep_index++, ep++)
@@ -443,7 +448,7 @@ static ARM_DRIVER_VERSION USBD_GetVersion(void)
 /**
   \fn          ARM_USBD_CAPABILITIES USBDn_GetCapabilities (const USBD_Info_t *const ptr_usbd_info)
   \brief       Get driver capabilities.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \return      \ref ARM_USBD_CAPABILITIES
 */
 static ARM_USBD_CAPABILITIES USBDn_GetCapabilities(const USBD_Info_t *const ptr_usbd_info)
@@ -466,7 +471,7 @@ static ARM_USBD_CAPABILITIES USBDn_GetCapabilities(const USBD_Info_t *const ptr_
                                          ARM_USBD_SignalDeviceEvent_t cb_device_event,
                                          ARM_USBD_SignalEndpointEvent_t cb_endpoint_event)
   \brief       Initialize USB Device Interface.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   cb_device_event    Pointer to \ref ARM_USBD_SignalDeviceEvent
   \param[in]   cb_endpoint_event  Pointer to \ref ARM_USBD_SignalEndpointEvent
   \return      \ref execution_status
@@ -488,7 +493,7 @@ static int32_t USBDn_Initialize(const USBD_Info_t *const ptr_usbd_info, ARM_USBD
 /**
   \fn          int32_t USBDn_Uninitialize (const USBD_Info_t *const ptr_usbd_info)
   \brief       De-initialize USB Device Interface.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \return      \ref execution_status
 */
 static int32_t USBDn_Uninitialize(const USBD_Info_t *const ptr_usbd_info)
@@ -554,7 +559,7 @@ static int32_t USBDn_PowerControl(const USBD_Info_t *const ptr_usbd_info, ARM_PO
         case ARM_POWER_OFF:
             husbd->ATTR &= ~USBD_PHY_EN;
 
-            for (enum ep_enum ep_index = PERIPH_EP0; ep_index < PERIPH_MAX_EP; ep_index++)
+            for (EP_Num_t ep_index = PERIPH_EP0; ep_index < PERIPH_MAX_EP; ep_index++)
             {
                 husbd->EP[ep_index].CFGP |= USBD_CFGP_CLRRDY_Msk;
                 husbd->EP[ep_index].CFG = 0U;
@@ -592,7 +597,7 @@ static int32_t USBDn_PowerControl(const USBD_Info_t *const ptr_usbd_info, ARM_PO
 /**
   \fn          int32_t USBDn_DeviceConnect (const USBD_Info_t * const ptr_usbd_info)
   \brief       Connect USB Device.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \return      \ref execution_status
 */
 static int32_t USBDn_DeviceConnect(const USBD_Info_t *const ptr_usbd_info)
@@ -611,7 +616,7 @@ static int32_t USBDn_DeviceConnect(const USBD_Info_t *const ptr_usbd_info)
 /**
   \fn          int32_t USBDn_DeviceDisconnect (const USBD_Info_t * const ptr_usbd_info)
   \brief       Disconnect USB Device.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \return      \ref execution_status
 */
 static int32_t USBDn_DeviceDisconnect(const USBD_Info_t *const ptr_usbd_info)
@@ -629,7 +634,7 @@ static int32_t USBDn_DeviceDisconnect(const USBD_Info_t *const ptr_usbd_info)
 /**
   \fn          ARM_USBD_STATE USBDn_DeviceGetState (const USBD_Info_t * const ptr_usbd_info)
   \brief       Get current USB Device State.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \return      Device State \ref ARM_USBD_STATE
 */
 static ARM_USBD_STATE USBDn_DeviceGetState(const USBD_Info_t *const ptr_usbd_info)
@@ -669,7 +674,7 @@ static ARM_USBD_STATE USBDn_DeviceGetState(const USBD_Info_t *const ptr_usbd_inf
 /**
   \fn          int32_t USBDn_DeviceRemoteWakeup (const USBD_Info_t * const ptr_usbd_info)
   \brief       Trigger USB Remote Wakeup.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \return      \ref execution_status
 */
 static int32_t USBDn_DeviceRemoteWakeup(const USBD_Info_t *const ptr_usbd_info)
@@ -682,7 +687,7 @@ static int32_t USBDn_DeviceRemoteWakeup(const USBD_Info_t *const ptr_usbd_info)
     // Enable PHY before sending Resume('K') state
     ptr_usbd_info->ptr_ro_info->ptr_USBD->ATTR |= USBD_PHY_EN;
     ptr_usbd_info->ptr_ro_info->ptr_USBD->ATTR |= USBD_RWAKEUP;
-    // Per specs: remote wakeup signal bit must be clear within 1-15ms
+
     // Delay for 1 ms
     uint32_t count = SystemCoreClock / 1000;
 
@@ -695,7 +700,7 @@ static int32_t USBDn_DeviceRemoteWakeup(const USBD_Info_t *const ptr_usbd_info)
 /**
   \fn          int32_t USBDn_DeviceSetAddress (const USBD_Info_t * const ptr_usbd_info, uint8_t dev_addr)
   \brief       Set USB Device Address.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   dev_addr  Device Address
   \return      \ref execution_status
 */
@@ -717,7 +722,7 @@ static int32_t USBDn_DeviceSetAddress(const USBD_Info_t *const ptr_usbd_info, ui
 /**
   \fn          int32_t USBDn_ReadSetupPacket (const USBD_Info_t * const ptr_usbd_info, uint8_t *setup)
   \brief       Read setup packet received over Control Endpoint.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[out]  setup  Pointer to buffer for setup packet
   \return      \ref execution_status
 */
@@ -748,7 +753,7 @@ static int32_t USBDn_ReadSetupPacket(const USBD_Info_t *const ptr_usbd_info, uin
                                                       uint8_t           ep_type,
                                                       uint16_t          ep_max_packet_size)
   \brief       Configure USB Endpoint.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
                 - ep_addr.0..3: Address
                 - ep_addr.7:    Direction
@@ -889,7 +894,7 @@ static int32_t USBDn_EndpointStall(const USBD_Info_t *const ptr_usbd_info, uint8
 /**
   \fn          int32_t USBDn_EndpointTransfer (const USBD_Info_t * const ptr_usbd_info, uint8_t ep_addr, uint8_t *data, uint32_t num)
   \brief       Read data from or Write data to USB Endpoint.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
                 - ep_addr.0..3: Address
                 - ep_addr.7:    Direction
@@ -936,7 +941,7 @@ static int32_t USBDn_EndpointTransfer(const USBD_Info_t *const ptr_usbd_info, ui
 /**
   \fn          uint32_t USBDn_EndpointTransferGetResult (const USBD_Info_t * const ptr_usbd_info, uint8_t ep_addr)
   \brief       Get result of USB Endpoint transfer.
-  \param[in]   ptr_usbd_info     Pointer to USBD info structure (ptr_usbd_info)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
                 - ep_addr.0..3: Address
                 - ep_addr.7:    Direction
@@ -945,28 +950,21 @@ static int32_t USBDn_EndpointTransfer(const USBD_Info_t *const ptr_usbd_info, ui
 static uint32_t USBDn_EndpointTransferGetResult(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
 {
     USBD_EP_t *ep = USBD_EndpointEntry(ptr_usbd_info, ep_addr, false);
-    uint8_t    periph_epnum = ep - ptr_usbd_info->ptr_ro_info->ptr_USBD->EP;
 
     if (ptr_usbd_info->ptr_rw_info->drv_status.powered == 0U)
     {
         return 0U;
     }
 
-    if (periph_epnum >= USBD_MAX_ENDPOINT_NUM)
-    {
-        return 0U;
-    }
-
-    return ptr_usbd_info->ptr_rw_info->ep_info[periph_epnum].num_transferred_total;
+    return ptr_usbd_info->ptr_rw_info->ep_info[ep - ptr_usbd_info->ptr_ro_info->ptr_USBD->EP].num_transferred_total;
 }
 
 static int32_t USBDn_EndpointTransferAbort(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
 {
     USBD_EP_t *ep = USBD_EndpointEntry(ptr_usbd_info, ep_addr, false);
 
-    if (ep != NULL)
-        // STOP_TRANSACTION
-        ep->CFGP |= USBD_CFGP_CLRRDY_Msk;
+    // STOP_TRANSACTION
+    ep->CFGP |= USBD_CFGP_CLRRDY_Msk;
 
     return ARM_DRIVER_OK;
 }
@@ -974,7 +972,7 @@ static int32_t USBDn_EndpointTransferAbort(const USBD_Info_t *const ptr_usbd_inf
 /**
   \fn          uint16_t USBDn_GetFrameNumber (const USBD_Info_t * const ptr_usbd_info)
   \brief       Get current USB Frame Number.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \return      Frame Number
 */
 static uint16_t USBDn_GetFrameNumber(const USBD_Info_t *const ptr_usbd_info)
@@ -986,7 +984,7 @@ static uint16_t USBDn_GetFrameNumber(const USBD_Info_t *const ptr_usbd_info)
 /**
   \fn          void USBD_DataOutStage (const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
   \brief       Data OUT stage.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
                 - ep_addr.0..3: Address
                 - ep_addr.7:    Direction
@@ -1044,7 +1042,7 @@ static void USBD_DataOutStage(const USBD_Info_t *const ptr_usbd_info, uint8_t ep
 /**
   \fn          void USBD_DataInStage (const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
   \brief       Data IN stage.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
                 - ep_addr.0..3: Address
                 - ep_addr.7:    Direction
@@ -1092,7 +1090,7 @@ static void USBD_DataInStage(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_
 /**
   \fn          USBD_SetupStage (const USBD_Info_t *const ptr_usbd_info)
   \brief       Setup stage.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   */
 static void USBD_SetupStage(const USBD_Info_t *const ptr_usbd_info)
 {
@@ -1108,7 +1106,7 @@ static void USBD_SetupStage(const USBD_Info_t *const ptr_usbd_info)
 /**
   \fn          void USBD_BusReset (const USBD_t *husbd)
   \brief       USBD Bus Reset.
-  \param[in]   ptr_usbd_info   Pointer to USBD info structure (USBD_Info_t)
+  \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   */
 static void USBD_BusReset(const USBD_Info_t *const ptr_usbd_info)
 {
@@ -1116,7 +1114,7 @@ static void USBD_BusReset(const USBD_Info_t *const ptr_usbd_info)
     // Clear Endpoints information
     memset((void *)ptr_usbd_info->ptr_rw_info->ep_info, 0U, USBD_MAX_ENDPOINT_NUM * sizeof(EP_Info_t));
 
-    for (enum ep_enum ep_index = PERIPH_EP0; ep_index < PERIPH_MAX_EP; ep_index++)
+    for (EP_Num_t ep_index = PERIPH_EP0; ep_index < PERIPH_MAX_EP; ep_index++)
     {
         husbd->EP[ep_index].CFG = 0U;
     }
@@ -1232,11 +1230,10 @@ NVT_ITCM void USBDn_IRQHandler(const USBD_Info_t *const ptr_usbd_info)
         // EP event
         if (u32EpIntSts)
         {
-            enum ep_enum ep_index;
+            EP_Num_t ep_index;
             uint32_t mask;
-            USBD_EP_t *ep;
 
-            for (ep_index = PERIPH_EP0, mask = USBD_EPINTSTS_EPEVT0_Msk, ep = &husbd->EP[PERIPH_EP0]; ep_index < PERIPH_MAX_EP; ep_index++, mask <<= 1U, ep++)
+            for (ep_index = PERIPH_EP0, mask = USBD_EPINTSTS_EPEVT0_Msk; ep_index < PERIPH_MAX_EP; ep_index++, mask <<= 1U)
             {
                 if (u32EpIntSts & mask)
                 {

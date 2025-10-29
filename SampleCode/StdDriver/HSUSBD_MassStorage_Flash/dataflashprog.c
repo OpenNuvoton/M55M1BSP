@@ -57,7 +57,7 @@ void DataFlashRead(uint32_t addr, uint32_t size, uint32_t buffer)
 void DataFlashWrite(uint32_t addr, uint32_t size, uint32_t buffer)
 {
     /* This is low level write function of USB Mass Storage */
-    int32_t len, i, offset;
+    uint32_t len, i, offset;
     uint32_t *pu32;
     uint32_t alignAddr;
 

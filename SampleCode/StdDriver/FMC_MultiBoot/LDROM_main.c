@@ -39,7 +39,6 @@ void SYS_Init(void)
 
 int main(void)
 {
-    uint8_t u8Char;     /* variables */
 
     /* Init System, IP clock and multi-function I/O */
     SYS_Init();

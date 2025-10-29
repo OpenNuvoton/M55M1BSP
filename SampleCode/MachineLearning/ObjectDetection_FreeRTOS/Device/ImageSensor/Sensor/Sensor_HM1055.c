@@ -396,6 +396,7 @@ static void Delay(uint32_t nCount)
 
 int32_t InitHM1055_QVGA_YUV422(uint32_t u32Param)
 {
+    (void)u32Param;
     uint32_t i;
     uint8_t u8DeviceID = 0x48;
     uint8_t u8ID[2] = {0};
@@ -431,6 +432,7 @@ int32_t InitHM1055_QVGA_YUV422(uint32_t u32Param)
 
 int32_t InitHM1055_VGA_YUV422(uint32_t u32Param)
 {
+    (void)u32Param;
     uint32_t i;
     uint8_t u8DeviceID = 0x48;
     uint8_t u8ID[2] = {0};

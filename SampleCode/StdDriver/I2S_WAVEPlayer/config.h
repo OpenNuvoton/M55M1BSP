@@ -34,7 +34,7 @@ extern FATFS FatFs[];      /* File system object for logical drive */
 extern uint8_t u8AudioPlaying;
 #if (NVT_DCACHE_ON == 1)
     /* Declare a DCache-line aligned variable for the I2S PCM DMA buffer.  */
-    extern signed int aiPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)];
+    extern signed int aiPCMBuffer[2][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)];
 #else
     /* Declare a non-aligned variable for the I2S PCM DMA buffer.  */
     extern signed int aiPCMBuffer[2][PCM_BUFFER_SIZE];

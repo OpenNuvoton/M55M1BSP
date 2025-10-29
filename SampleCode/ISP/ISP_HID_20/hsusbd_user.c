@@ -64,6 +64,9 @@ int32_t HSUSBD_Open(S_HSUSBD_INFO_T *param, HSUSBD_CLASS_REQ pfnClassReq, HSUSBD
 {
     uint32_t u32TimeOutCnt = HSUSBD_TIMEOUT;
 
+    NVT_UNUSED(param);
+    NVT_UNUSED(pfnClassReq);
+    NVT_UNUSED(pfnSetInterface);
     /* Initial USB engine */
     /* Enable PHY */
     HSUSBD_ENABLE_PHY();

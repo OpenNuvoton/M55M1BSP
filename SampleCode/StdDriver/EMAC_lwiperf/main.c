@@ -33,6 +33,7 @@
 extern struct pbuf *queue_try_get(void);
 static err_t netif_output(struct netif *netif, struct pbuf *p)
 {
+    (void)netif;
     uint16_t len = 0;
     u8_t *buf = NULL;
 

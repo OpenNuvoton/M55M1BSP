@@ -66,9 +66,13 @@ void EADC_Open(EADC_T *eadc, uint32_t u32InputMode)
 void EADC_Calibration(EADC_T *eadc)
 {
     uint32_t u32Delay = SystemCoreClock;    /* 1 second */
-    uint32_t u32EADCClkSel, u32EADCClkDiv;
+    uint32_t u32EADCClkSel, u32EADCClkDiv, u32RegLockBackup = 0;
 
     g_EADC_i32ErrCode = 0;
+
+    /* Unlock protected registers */
+    u32RegLockBackup = SYS_IsRegLocked();
+    SYS_UnlockReg();
 
     /* record EADC clock settings */
     u32EADCClkSel = CLK->EADCSEL;
@@ -114,6 +118,12 @@ void EADC_Calibration(EADC_T *eadc)
     /* Restore EADC clock settings */
     CLK->EADCSEL = u32EADCClkSel;
     CLK->EADCDIV = u32EADCClkDiv;
+
+    if (u32RegLockBackup)
+    {
+        /* Lock protected registers */
+        SYS_LockReg();
+    }
 }
 
 /**

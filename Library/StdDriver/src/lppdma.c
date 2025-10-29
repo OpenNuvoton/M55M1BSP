@@ -9,7 +9,7 @@
 
 #include "NuMicro.h"
 
-static uint8_t u32ChSelect[LPPDMA_CH_MAX];
+static uint32_t u32ChSelect[LPPDMA_CH_MAX];
 
 /** @addtogroup Standard_Driver Standard Driver
   @{
@@ -221,18 +221,14 @@ void LPPDMA_Trigger(LPPDMA_T *lppdma, uint32_t u32Ch)
  */
 void LPPDMA_EnableInt(LPPDMA_T *lppdma, uint32_t u32Ch, uint32_t u32Mask)
 {
-    switch (u32Mask)
+    if (u32Mask & LPPDMA_INT_TRANS_DONE)
     {
-        case LPPDMA_INT_TRANS_DONE:
-            lppdma->INTEN |= (1ul << u32Ch);
-            break;
+        (lppdma)->INTEN |= (1UL << u32Ch);
+    }
 
-        case LPPDMA_INT_TEMPTY:
-            lppdma->LPDSCT[u32Ch].CTL &= ~LPPDMA_DSCT_CTL_TBINTDIS_Msk;
-            break;
-
-        default:
-            break;
+    if (u32Mask & LPPDMA_INT_TEMPTY)
+    {
+        (lppdma)->LPDSCT[u32Ch].CTL &= ~LPPDMA_DSCT_CTL_TBINTDIS_Msk;
     }
 }
 
@@ -249,18 +245,14 @@ void LPPDMA_EnableInt(LPPDMA_T *lppdma, uint32_t u32Ch, uint32_t u32Mask)
  */
 void LPPDMA_DisableInt(LPPDMA_T *lppdma, uint32_t u32Ch, uint32_t u32Mask)
 {
-    switch (u32Mask)
+    if (u32Mask & LPPDMA_INT_TRANS_DONE)
     {
-        case LPPDMA_INT_TRANS_DONE:
-            lppdma->INTEN &= ~(1ul << u32Ch);
-            break;
+        (lppdma)->INTEN &= ~(1UL << u32Ch);
+    }
 
-        case LPPDMA_INT_TEMPTY:
-            lppdma->LPDSCT[u32Ch].CTL |= LPPDMA_DSCT_CTL_TBINTDIS_Msk;
-            break;
-
-        default:
-            break;
+    if (u32Mask & LPPDMA_INT_TEMPTY)
+    {
+        (lppdma)->LPDSCT[u32Ch].CTL |= LPPDMA_DSCT_CTL_TBINTDIS_Msk;
     }
 }
 

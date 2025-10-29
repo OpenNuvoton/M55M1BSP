@@ -241,7 +241,7 @@ static void DrawImageDetectionBoxes(
 static void main_task(void *pvParameters)
 {
     BaseType_t ret;
-
+    (void)pvParameters;
     info("main task running \n");
     /* Model object creation and initialisation. */
     arm::app::YoloFastestModel model;
@@ -322,7 +322,6 @@ static void main_task(void *pvParameters)
 #endif
 
     TfLiteTensor *inputTensor   = model.GetInputTensor(0);
-    TfLiteTensor *outputTensor = model.GetOutputTensor(0);
 
     if (!inputTensor->dims)
     {
@@ -406,16 +405,7 @@ static void main_task(void *pvParameters)
 
         if (infFramebuf)
         {
-            /* Detector post-processing*/
-
-            inferenceJob->responseQueue = inferenceResponseQueue;
-            inferenceJob->pPostProc = &postProcess;
-            inferenceJob->modelCols = inputImgCols;
-            inferenceJob->mode1Rows = inputImgRows;
-            inferenceJob->srcImgWidth = infFramebuf->frameImage.w;
-            inferenceJob->srcImgHeight = infFramebuf->frameImage.h;
-            inferenceJob->results = &infFramebuf->results; //&results;
-
+            /* Receive inference result */
             xQueueReceive(inferenceResponseQueue, &inferenceJob, portMAX_DELAY);
         }
 

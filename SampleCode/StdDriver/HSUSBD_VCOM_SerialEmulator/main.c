@@ -19,7 +19,7 @@ uint16_t gCtrlSignal = 0;     /* BIT0: DTR(Data Terminal Ready) , BIT1: RTS(Requ
 
 /*--------------------------------------------------------------------------*/
 #define RXBUFSIZE           512 /* RX buffer size */
-#define TXBUFSIZE           512 /* RX buffer size */
+#define TXBUFSIZE           512 /* TX buffer size */
 
 #define TX_FIFO_SIZE        16  /* TX Hardware FIFO size */
 
@@ -178,7 +178,7 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
 
 void VCOM_TransferData(void)
 {
-    int32_t i, i32Len;
+    uint32_t i, u32Len;
 
     /* Check whether USB is ready for next packet or not */
     if (gu32TxSize == 0)
@@ -186,12 +186,12 @@ void VCOM_TransferData(void)
         /* Check whether we have new COM Rx data to send to USB or not */
         if (comRbytes)
         {
-            i32Len = comRbytes;
+            u32Len = comRbytes;
 
-            if (i32Len > EPA_MAX_PKT_SIZE)
-                i32Len = EPA_MAX_PKT_SIZE;
+            if (u32Len > EPA_MAX_PKT_SIZE)
+                u32Len = EPA_MAX_PKT_SIZE;
 
-            for (i = 0; i < i32Len; i++)
+            for (i = 0; i < u32Len; i++)
             {
                 gRxBuf[i] = comRbuf[comRhead++];
 
@@ -200,16 +200,16 @@ void VCOM_TransferData(void)
             }
 
             NVIC_DisableIRQ(UART0_IRQn);
-            comRbytes -= i32Len;
+            comRbytes -= u32Len;
             NVIC_EnableIRQ(UART0_IRQn);
 
-            gu32TxSize = i32Len;
+            gu32TxSize = u32Len;
 
-            for (i = 0; i < i32Len; i++)
+            for (i = 0; i < u32Len; i++)
                 HSUSBD->EP[EPA].EPDAT_BYTE = gRxBuf[i];
 
             HSUSBD->EP[EPA].EPRSPCTL = HSUSBD_EP_RSPCTL_SHORTTXEN;    // packet end
-            HSUSBD->EP[EPA].EPTXCNT = i32Len;
+            HSUSBD->EP[EPA].EPTXCNT = u32Len;
             HSUSBD_ENABLE_EP_INT(EPA, HSUSBD_EPINTEN_INTKIEN_Msk);
         }
         else

@@ -186,7 +186,7 @@ static int  get_port_status(HUB_DEV_T *hub, int port, uint16_t *wPortStatus, uin
 static void hub_status_irq(UTR_T *utr)
 {
     HUB_DEV_T   *hub;
-    int         i;
+    uint32_t       i;
 
     // HUB_DBGMSG("hub_read_irq - %d\n", utr->xfer_len);
 
@@ -200,7 +200,7 @@ static void hub_status_irq(UTR_T *utr)
 
     if (utr->xfer_len)
     {
-        for (i = 0; i < utr->xfer_len; i++)
+        for (i = 0; i < (uint32_t)utr->xfer_len; i++)
         {
             hub->sc_bitmap |= (utr->buff[i] << (i * 8));
         }
@@ -428,7 +428,7 @@ static int do_port_reset(HUB_DEV_T *hub, int port)
 
         t0 = get_ticks();                   /* get start time                             */
 
-        while (get_ticks() - t0 < (reset_time / 10) + 1) /* time-out?                      */
+        while (get_ticks() - t0 < (uint32_t)(reset_time / 10) + 1) /* time-out?                      */
         {
             delay_us(12000);
 

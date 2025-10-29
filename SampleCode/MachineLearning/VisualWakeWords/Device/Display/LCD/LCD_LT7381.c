@@ -576,7 +576,7 @@ static uint32_t lt7381_vram_fifo_isempty(void)
 }
 #endif
 
-static void lt7381_send_pixels(uint16_t *pixels, uint32_t destWidth, uint32_t destHeight, uint32_t fixedColor, int32_t byteLen, int32_t scaleUpFactory)
+static void lt7381_send_pixels(uint16_t *pixels, uint32_t destWidth, uint32_t destHeight, uint32_t fixedColor, int32_t byteLen, uint32_t scaleUpFactory)
 {
 
     /* Set Graphic Read/Write position */

@@ -44,11 +44,11 @@ uint32_t PcmTxBuff[2][BUFF_LEN] = {0};
 
 //------------------------------------------------------------------------------
 /* Once PDMA has transferred, software need to reset Scatter-Gather table */
-void PDMA_ResetTxSGTable(uint8_t id)
-{
-    //g_asDescTable_TX[id].CTL |= PDMA_OP_SCATTER;
-    //g_asDescTable_TX[id].CTL |= ((BUFF_LEN - 1) << PDMA_DSCT_CTL_TXCNT_Pos);
-}
+//void PDMA_ResetTxSGTable(uint8_t u8Id)
+//{
+//g_asDescTable_TX[u8Id].CTL |= PDMA_OP_SCATTER;
+//g_asDescTable_TX[u8Id].CTL |= ((BUFF_LEN - 1) << PDMA_DSCT_CTL_TXCNT_Pos);
+//}
 
 NVT_ITCM void PDMA0_IRQHandler(void)
 {
@@ -64,7 +64,7 @@ NVT_ITCM void PDMA0_IRQHandler(void)
         if (PDMA_GET_TD_STS(PDMA0) & 0x1)            /* channel 0 done */
         {
             /* Reset PDMA Scater-Gatter table */
-            PDMA_ResetTxSGTable(u8TxIdx);
+            //PDMA_ResetTxSGTable(u8TxIdx);
             u8TxIdx ^= 1;
         }
 

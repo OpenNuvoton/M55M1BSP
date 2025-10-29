@@ -252,6 +252,7 @@ NVT_ITCM void TIMER1_IRQHandler(void)
  */
 void UTCPD_Callback(int port, E_UTCPD_PD_EVENT event, uint32_t op)
 {
+    NVT_UNUSED(port);
     printf("Callback event = %d\n", event);
     printf("op = %d\n", op);
 }
@@ -380,6 +381,7 @@ void HardFault_Handler(void)
 #else
 void hard_fault_handler_c(unsigned int *hardfault_args, unsigned lr_value)
 {
+    NVT_UNUSED(hardfault_args), NVT_UNUSED(lr_value);
 #if 0
     unsigned int stacked_r0;
     unsigned int stacked_r1;

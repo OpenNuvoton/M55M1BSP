@@ -153,7 +153,6 @@ static void mp3PrintHeader(mp3Header *pHdr)
 
 int mp3CountV1L3Headers(unsigned char *pBytes, size_t size)
 {
-    int             offset              = 0;
     int             result              = 0;
     mp3Header       header;
 
@@ -169,13 +168,12 @@ int mp3CountV1L3Headers(unsigned char *pBytes, size_t size)
             {
                 int framelength = mp3GetFrameLength(&header);
 
-                if ((framelength > 0) && (size > framelength + 4))
+                if ((framelength > 0) && ((int)size > framelength + 4))
                 {
                     MP3_DECODE_HEADER(pBytes + framelength, &header);
 
                     if (MP3_IS_VALID_HEADER(&header))
                     {
-                        offset = 0;
                         mp3PrintHeader(&header);
                         result++;
                     }
@@ -183,7 +181,6 @@ int mp3CountV1L3Headers(unsigned char *pBytes, size_t size)
             }
         }
 
-        offset++;
         pBytes++;
         size--;
     }

@@ -24,6 +24,8 @@
 int32_t TVMEthosULaunch(tvm_device_ethos_u_t *context, void *cms_data, size_t cms_data_size,
                         uint64_t *base_addrs, size_t *base_addrs_size, int num_tensors)
 {
+    (void)context;
+
     //  struct ethosu_driver* driver = (struct ethosu_driver*)context;
     struct ethosu_driver *driver = ethosu_reserve_driver();
 
@@ -43,17 +45,21 @@ int32_t TVMEthosULaunch(tvm_device_ethos_u_t *context, void *cms_data, size_t cm
 
 int32_t TVMDeviceEthosUActivate(tvm_device_ethos_u_t *context)
 {
+    (void)context;
     return 0;
 }
 int32_t TVMDeviceEthosUOpen(tvm_device_ethos_u_t *context)
 {
+    (void)context;
     return 0;
 }
 int32_t TVMDeviceEthosUClose(tvm_device_ethos_u_t *context)
 {
+    (void)context;
     return 0;
 }
 int32_t TVMDeviceEthosUDeactivate(tvm_device_ethos_u_t *context)
 {
+    (void)context;
     return 0;
 }

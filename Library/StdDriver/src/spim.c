@@ -1868,7 +1868,7 @@ void SPIM_ChipErase(SPIM_T *spim, uint32_t u32NBit, int32_t i32IsSync)
  * @param[in]  u32Is4ByteAddr  Whether the flash uses a 4-byte address.
  *                             - 0: 3-byte address mode
  *                             - 1: 4-byte address mode
- * @param[in]  u8ErsCmd        Block erase command opcode.
+ * @param[in]  u32ErsCmd       Block erase command opcode.
  *                             - \ref OPCODE_SE_4K  : Sector Erase 4KB
  *                             - \ref OPCODE_BE_32K : Block Erase 32KB
  *                             - \ref OPCODE_BE_64K : Block Erase 64KB
@@ -1884,17 +1884,17 @@ void SPIM_ChipErase(SPIM_T *spim, uint32_t u32NBit, int32_t i32IsSync)
  * @note       Ensure the flash is write-enabled before calling this function.
  *             The erase command will affect the entire block that contains the given address.
  */
-void SPIM_EraseBlock(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint8_t u8ErsCmd, uint32_t u32NBit, int32_t i32IsSync)
+void SPIM_EraseBlock(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32ErsCmd, uint32_t u32NBit, int32_t i32IsSync)
 {
     uint8_t cmdBuf[6] = {0};
     uint32_t buf_idx = 0UL;
 
-    cmdBuf[buf_idx++] = u8ErsCmd;
+    cmdBuf[buf_idx++] = (uint8_t)u32ErsCmd;
 
     if ((SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) &&
             (u32NBit == SPIM_BITMODE_8))
     {
-        cmdBuf[buf_idx++] = u8ErsCmd;
+        cmdBuf[buf_idx++] = (uint8_t)u32ErsCmd;
         u32Is4ByteAddr = SPIM_OP_ENABLE;
     }
 
@@ -2237,7 +2237,7 @@ void SPIM_IO_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint3
  *                            - 1: 4-byte address mode
  * @param[in]  u32NTx         Number of bytes to write.
  * @param[in]  pu8TxBuf       Pointer to the transmit buffer.
- * @param[in]  wrCmd          Write command opcode.
+ * @param[in]  u32WrCmd       Write command opcode.
  *
  * @note       This function is optimized for aligned and page-boundary write operations.
  *             Make sure that the flash is write-enabled and ready before calling this function.
@@ -2274,7 +2274,7 @@ void SPIM_DMA_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
  * @param[in]  u32NRx         Number of bytes to read.
  * @param[out] pu8RxBuf       Pointer to the receive buffer.
  * @param[in]  u32RdCmd       Read command opcode.
- * @param[in]  isSync         Specify whether to use blocking mode.
+ * @param[in]  u32IsSync      Specify whether to use blocking mode.
  *                            - 0: Non-blocking (return immediately)
  *                            - 1: Blocking (wait for completion)
  *
@@ -2548,8 +2548,7 @@ static int32_t _SPIM_SetContReadPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t
                       (u32NBit << SPIM_PHDMAR_BM_MODE_Pos) |
                       (u32DTREn << SPIM_PHDMAR_DTR_MODE_Pos));
 
-    if ((u32ContEn == PHASE_ENABLE_CONT_READ) /*&&
-            (u32OPMode == SPIM_CTL0_OPMODE_DIRECTMAP)*/)
+    if (u32ContEn == PHASE_ENABLE_CONT_READ)
     {
         SPIM_ENABLE_DMM_CREN(spim);
 

@@ -73,7 +73,7 @@ struct nu_module
 typedef struct nu_module *nu_module_t;
 
 int nu_pdma_channel_allocate(int32_t i32PeripType);
-int nu_pdma_channel_free(int i32ChannID);
+int nu_pdma_channel_free(uint32_t u32ChannID);
 int nu_pdma_callback_register(int i32ChannID, nu_pdma_chn_cb_t psChnCb);
 int nu_pdma_transfer(int i32ChannID, uint32_t u32DataWidth, uint32_t u32AddrSrc, uint32_t u32AddrDst, uint32_t i32TransferCnt, uint32_t u32IdleTimeout_us);
 int nu_pdma_transferred_byte_get(int32_t i32ChannID, int32_t i32TriggerByteLen);
@@ -86,12 +86,12 @@ int nu_pdma_filtering_set(int i32ChannID, uint32_t u32EventFilter);
 uint32_t nu_pdma_filtering_get(int i32ChannID);
 
 // For scatter-gather DMA
-int nu_pdma_desc_setup(int i32ChannID, nu_pdma_desc_t dma_desc, uint32_t u32DataWidth, uint32_t u32AddrSrc, uint32_t u32AddrDst, int32_t TransferCnt, nu_pdma_desc_t next, uint32_t u32BeSilent);
+int nu_pdma_desc_setup(int i32ChannID, nu_pdma_desc_t dma_desc, uint32_t u32DataWidth, uint32_t u32AddrSrc, uint32_t u32AddrDst, uint32_t u32TransferCnt, nu_pdma_desc_t next, uint32_t u32BeSilent);
 int nu_pdma_sg_transfer(int i32ChannID, nu_pdma_desc_t head, uint32_t u32IdleTimeout_us);
-int nu_pdma_sgtbls_allocate(nu_pdma_desc_t *ppsSgtbls, int num);
-void nu_pdma_sgtbls_free(nu_pdma_desc_t *ppsSgtbls, int num);
+int nu_pdma_sgtbls_allocate(nu_pdma_desc_t *ppsSgtbls, uint32_t num);
+void nu_pdma_sgtbls_free(nu_pdma_desc_t *ppsSgtbls, uint32_t num);
 int nu_pdma_m2m_desc_setup(nu_pdma_desc_t dma_desc, uint32_t u32DataWidth, uint32_t u32AddrSrc,
-                           uint32_t u32AddrDst, int32_t i32TransferCnt, nu_pdma_memctrl_t evMemCtrl, nu_pdma_desc_t next, uint32_t u32BeSilent);
+                           uint32_t u32AddrDst, uint32_t u32TransferCnt, nu_pdma_memctrl_t evMemCtrl, nu_pdma_desc_t next, uint32_t u32BeSilent);
 
 // For memory actor
 void *nu_pdma_memcpy(void *dest, void *src, unsigned int count);

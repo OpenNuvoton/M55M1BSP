@@ -52,7 +52,7 @@ volatile uint8_t u8AudioPlaying = 0;
 // Provide PDMA description for ping-pong.
 #if (NVT_DCACHE_ON == 1)
     // If DCACHE is enabled, use a cache-line aligned buffer for the I2S PCM DMA
-    signed int aiPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(BUF_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    signed int aiPCMBuffer[2][DCACHE_ALIGN_LINE_SIZE(BUF_COUNT)] __attribute__((aligned(DCACHE_LINE_SIZE)));
     /* DMA descriptor table, must be aligned to 32 bytes and placed in DTCM */
     NVT_DTCM __ALIGNED(32) static DSCT_T sPDMA_I2STX[2];
 #else

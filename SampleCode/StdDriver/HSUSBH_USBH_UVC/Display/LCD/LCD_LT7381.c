@@ -588,7 +588,8 @@ static void lt7381_send_pixels(uint16_t *pixels, uint32_t destWidth, uint32_t de
     /* Memory Data Read/Write Port */
     LT7381_WRITE_REG(0x04);
 
-    uint32_t w, h, r_x, r_y;
+    uint32_t w, h;
+    int32_t r_x, r_y;
     uint16_t *pixels_y = NULL;
     uint16_t *pixels_x = NULL;
     uint16_t color = fixedColor;

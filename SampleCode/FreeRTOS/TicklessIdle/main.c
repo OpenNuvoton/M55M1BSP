@@ -63,6 +63,8 @@ int main(void)
 /* Tickless Task */
 static void Tickless_task(void *pvParameters)
 {
+    (void)pvParameters;
+
     for (;;)
     {
         printf("%d\n", xTaskGetTickCount());

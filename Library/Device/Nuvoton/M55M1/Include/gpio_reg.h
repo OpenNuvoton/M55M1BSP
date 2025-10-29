@@ -207,11 +207,11 @@ typedef struct
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[2n+1:2n]|HSRENn    |Port A-J Pin[n] High Slew Rate Control
-     * |        |          |00 = Px.n output with normal slew rate mode (maximum 40 MHz at 2.7V).
-     * |        |          |01 = Px.n output with high slew rate mode (maximum 72 MHz at 2.7V).
-     * |        |          |10 = Reserved.
-     * |        |          |11 = Reserved.
+     * |[2n+1:2n]|HSRENn   |Port A-J Pin[n] High Slew Rate Control
+     * |        |          |00 = Px.n output with normal slew rate mode (maximum 20 MHz at 2.7V).
+     * |        |          |01 = Px.n output with high slew rate mode (maximum 40 MHz at 2.7V).
+     * |        |          |10 = Px.n output with fast slew rate mode (maximum 80 MHz at 2.7V).
+     * |        |          |11 = Px.n output with fast slew rate mode (maximum 100 MHz cloud at 35pF / maximum 120 MHz cloud at 25pF at 2.7V).
      * |        |          |Note:
      * |        |          |Max. n=15 for port A/B/E/G/I.
      * |        |          |Max. n=14 for port C/D.

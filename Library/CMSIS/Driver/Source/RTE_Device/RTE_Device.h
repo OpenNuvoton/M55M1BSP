@@ -26,18 +26,42 @@
      (num == 8) ? GPIOI : \
      NULL)
 
-#include "RTE_Device_GPIO.h"
-#include "RTE_Device_GPIO_LPGPIO.h"
-#include "RTE_Device_USART.h"
-#include "RTE_Device_I2C.h"
-#include "RTE_Device_SAI.h"
-#include "RTE_Device_SPI.h"
-#include "RTE_Device_MCI.h"
-#include "RTE_Device_CAN.h"
-#include "RTE_Device_ETH_MAC.h"
-#include "RTE_Device_USBD.h"
-#include "RTE_Device_USBH.h"
-#include "RTE_Device_Flash.h"
+#if __has_include("RTE_Device_GPIO.h")
+    #include "RTE_Device_GPIO.h"
+#endif
+#if __has_include("RTE_Device_GPIO_LPGPIO.h")
+    #include "RTE_Device_GPIO_LPGPIO.h"
+#endif
+#if __has_include("RTE_Device_USART.h")
+    #include "RTE_Device_USART.h"
+#endif
+#if __has_include("RTE_Device_I2C.h")
+    #include "RTE_Device_I2C.h"
+#endif
+#if __has_include("RTE_Device_SAI.h")
+    #include "RTE_Device_SAI.h"
+#endif
+#if __has_include("RTE_Device_SPI.h")
+    #include "RTE_Device_SPI.h"
+#endif
+#if __has_include("RTE_Device_MCI.h")
+    #include "RTE_Device_MCI.h"
+#endif
+#if __has_include("RTE_Device_CAN.h")
+    #include "RTE_Device_CAN.h"
+#endif
+#if __has_include("RTE_Device_ETH_MAC.h")
+    #include "RTE_Device_ETH_MAC.h"
+#endif
+#if __has_include("RTE_Device_USBD.h")
+    #include "RTE_Device_USBD.h"
+#endif
+#if __has_include("RTE_Device_USBH.h")
+    #include "RTE_Device_USBH.h"
+#endif
+#if __has_include("RTE_Device_Flash.h")
+    #include "RTE_Device_Flash.h"
+#endif
 
 
 #endif  /* __RTE_DEVICE_H */

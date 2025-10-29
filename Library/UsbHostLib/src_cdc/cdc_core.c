@@ -395,6 +395,7 @@ int32_t usbh_cdc_start_to_receive_data(CDC_DEV_T *cdev, CDC_CB_FUNC *func)
 static volatile int  bulk_out_done;
 static void  cdc_bulk_out_irq(UTR_T *utr)
 {
+    NVT_UNUSED(utr);
     bulk_out_done = 1;
 }
 

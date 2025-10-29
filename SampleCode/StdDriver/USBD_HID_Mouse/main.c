@@ -221,7 +221,7 @@ int32_t main(void)
 
         {
             /* Update mouse data per 1 ms */
-            int32_t volatile delay = SystemCoreClock / 1000;
+            volatile uint32_t delay = SystemCoreClock / 1000;
 
             for (; delay > 0UL; delay--)
             {

@@ -18,8 +18,8 @@
 #define LPSPI_CLK_FREQ      20000000
 
 //------------------------------------------------------------------------------
-uint32_t g_au32SourceData[DATA_COUNT];
-uint32_t g_au32DestinationData[DATA_COUNT];
+static uint32_t g_au32SourceData[DATA_COUNT];
+static uint32_t g_au32DestinationData[DATA_COUNT];
 
 /* Function prototype declaration */
 void SYS_Init(void);

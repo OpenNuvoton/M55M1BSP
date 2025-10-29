@@ -35,10 +35,13 @@
 #include "spi_hal.h"
 
 //------------------------------------------------------------------------------
+#define RTE_SPI_LPSPI0                   RTE_SPI6
+//#define RTE_SPI_LPSPI1                   RTE_SPIx
+
 // Configuration depending on RTE_SPI.h
 // Check if at least one peripheral instance is configured in RTE_SPI.h
-#if (!(RTE_SPI0) && !(RTE_SPI1) && !(RTE_SPI2) && !(RTE_SPI3) && !(RTE_SPI4) && !(RTE_SPI5) && !(RTE_SPI6) && !(RTE_SPI7) && !(RTE_SPI8))
-    #warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
+#if (!(RTE_SPI_LPSPI0) && !(RTE_SPI_LPSPI1))
+    //#warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
 #else
     #define DRIVER_CONFIG_VALID     1
 #endif
@@ -47,53 +50,101 @@
 
 #ifdef DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
 
-#define SPI_TO_LPSPI_INSTANCE(n)            (n == 6 ? 0 : 0)
-#define SPI_TO_LPSPI(n)                     (n == 6 ? LPSPI0 : LPSPI0)
-#define SPI_TO_LPSPI_CLK_SRC(n)             (n == 6 ? RTE_LPSPI0_CLK_SRC : RTE_LPSPI0_CLK_SRC)
-#define SPI_TO_LPSPI_XFER_MODE(n)           (n == 6 ? RTE_LPSPI0_XFER_MODE : RTE_LPSPI0_XFER_MODE)
-#define SPI_TO_LPSPI_PDMA_RX(n)             (n == 6 ? RTE_LPSPI0_RX_PDMA : RTE_LPSPI0_RX_PDMA)
-#define SPI_TO_LPSPI_PDMA_TX(n)             (n == 6 ? RTE_LPSPI0_RX_PDMA : RTE_LPSPI0_RX_PDMA)
-#define SPI_TO_LPSPI_PDMA_RX_PORT(n)        (n == 6 ? 0 : 0)
-#define SPI_TO_LPSPI_PDMA_TX_PORT(n)        (n == 6 ? 0 : 0)
-#define SPI_TO_LPSPI_PDMA_RX_CH(n)          (n == 6 ? RTE_LPSPI0_RX_PDMA_CHANNEL : RTE_LPSPI0_RX_PDMA_CHANNEL)
-#define SPI_TO_LPSPI_PDMA_TX_CH(n)          (n == 6 ? RTE_LPSPI0_TX_PDMA_CHANNEL : RTE_LPSPI0_TX_PDMA_CHANNEL)
-#define SPI_TO_LPSPI_PDMA_RX_NUM(n)         (n == 6 ? LPPDMA_LPSPI0_RX : LPPDMA_LPSPI0_RX)
-#define SPI_TO_LPSPI_PDMA_TX_NUM(n)         (n == 6 ? LPPDMA_LPSPI0_TX : LPPDMA_LPSPI0_TX)
+#if (RTE_SPI_LPSPI0 == 1)
+    #define SPI_LPSPI_IDX0              6
+    #define SPI_LPSPI_PORT0             0
+    #define LPSPI_PORTSYM_FROM_RTE_6    SPI_LPSPI_PORT0
+#endif
+
+#if (RTE_SPI_LPSPI1 == 1)
+    #define SPI_LPSPI_IDX1              8
+    #define SPI_LPSPI_PORT1             1
+    #define LPSPI_PORTSYM_FROM_RTE_8    SPI_LPSPI_PORT1
+#endif
+
+static inline uint32_t spi_idx_from_port_rt(uint32_t n)
+{
+    switch (n)
+    {
+#if (RTE_SPI_LPSPI0 == 1)
+
+        case SPI_LPSPI_IDX0:
+            return SPI_LPSPI_PORT0;
+#endif
+
+#if (RTE_SPI_LPSPI1 == 1)
+
+        case SPI_LPSPI_IDX1:
+            return SPI_LPSPI_PORT1;
+#endif
+
+        default:
+            return 0;
+    }
+}
+
+#define LPSPI_IDX_FROM_PORT_CAT(x)        LPSPI_PORTSYM_FROM_RTE_##x
+#define LPSPI_IDX_FROM_PORT(x)            LPSPI_IDX_FROM_PORT_CAT(x)
+
+#define SPI_TO_LPSPI_INSTANCE(n)          ( spi_idx_from_port_rt((uint32_t)(n)) )
+#define SPI_TO_LPSPI(n)                   ( SPI_CONCAT2(LPSPI, LPSPI_IDX_FROM_PORT(n)) )
+
+#define SPI_TO_LPSPI_XFER_MODE(n)         ( SPI_CONCAT3(RTE_LPSPI, LPSPI_IDX_FROM_PORT(n), _XFER_MODE) )
+#define SPI_TO_LPSPI_PDMA_RX(n)           ( SPI_CONCAT3(RTE_LPSPI, LPSPI_IDX_FROM_PORT(n), _RX_PDMA) )
+#define SPI_TO_LPSPI_PDMA_TX(n)           ( SPI_CONCAT3(RTE_LPSPI, LPSPI_IDX_FROM_PORT(n), _TX_PDMA) )
+#define SPI_TO_LPSPI_PDMA_RX_PORT(n)      ( SPI_CONCAT3(RTE_LPSPI, LPSPI_IDX_FROM_PORT(n), _RX_PDMA_PORT) )
+#define SPI_TO_LPSPI_PDMA_TX_PORT(n)      ( SPI_CONCAT3(RTE_LPSPI, LPSPI_IDX_FROM_PORT(n), _TX_PDMA_PORT) )
+#define SPI_TO_LPSPI_PDMA_RX_CH(n)        ( SPI_CONCAT3(RTE_LPSPI, LPSPI_IDX_FROM_PORT(n), _RX_PDMA_CHANNEL) )
+#define SPI_TO_LPSPI_PDMA_TX_CH(n)        ( SPI_CONCAT3(RTE_LPSPI, LPSPI_IDX_FROM_PORT(n), _TX_PDMA_CHANNEL) )
+
+#define SPI_TO_LPSPI_PDMA_RX_NUM(n)       ( SPI_CONCAT3(LPPDMA_LPSPI, LPSPI_IDX_FROM_PORT(n), _RX) )
+#define SPI_TO_LPSPI_PDMA_TX_NUM(n)       ( SPI_CONCAT3(LPPDMA_LPSPI, LPSPI_IDX_FROM_PORT(n), _TX) )
 
 // Local driver functions declarations (for instances)
-#define SPI_INFO_DEFINE(n)                                                  \
-    static SPI_RESOURCES spi##n##_res = { SPI_TO_LPSPI(n),                  \
-                                          {\
-                                           SPI_TO_LPSPI_XFER_MODE(n),       \
-                                          },                                \
-                                          {0},                              \
-                                          {0},                              \
-                                          {-1,                              \
-                                           -1,                              \
-                                           SPI_TO_LPSPI_PDMA_RX(n),         \
-                                           SPI_TO_LPSPI_PDMA_TX(n),         \
-                                           SPI_TO_LPSPI_PDMA_RX_PORT(n),    \
-                                           SPI_TO_LPSPI_PDMA_TX_PORT(n),    \
-                                           SPI_TO_LPSPI_PDMA_RX_CH(n),      \
-                                           SPI_TO_LPSPI_PDMA_TX_CH(n),      \
-                                           SPI_TO_LPSPI_PDMA_RX_NUM(n),     \
-                                           SPI_TO_LPSPI_PDMA_TX_NUM(n),     \
-                                          }                                \
-                                        };
+#define SPI_INFO_DEFINE(n)                                                     \
+    static SPI_RESOURCES SPI_RES_NAME(n) = { SPI_TO_LPSPI(n),                  \
+                                             { \
+                                               SPI_TO_LPSPI_XFER_MODE(n),      \
+                                               0,                              \
+                                             },                                \
+                                             {0},                              \
+                                             {0},                              \
+                                             {-1,                              \
+                                              -1,                              \
+                                              SPI_TO_LPSPI_PDMA_RX(n),         \
+                                              SPI_TO_LPSPI_PDMA_TX(n),         \
+                                              SPI_TO_LPSPI_PDMA_RX_PORT(n),    \
+                                              SPI_TO_LPSPI_PDMA_TX_PORT(n),    \
+                                              SPI_TO_LPSPI_PDMA_RX_CH(n),      \
+                                              SPI_TO_LPSPI_PDMA_TX_CH(n),      \
+                                              SPI_TO_LPSPI_PDMA_RX_NUM(n),     \
+                                              SPI_TO_LPSPI_PDMA_TX_NUM(n),     \
+                                             }                                 \
+                                           };
 
 // Local driver functions declarations (for instances)
-#if (RTE_SPI6 == 1)
-    SPI_INFO_DEFINE(6)
+#if (RTE_SPI_LPSPI0 == 1)
+    SPI_INFO_DEFINE(SPI_LPSPI_IDX0)
+#endif
+
+#if (RTE_SPI_LPSPI1 == 1)
+    SPI_INFO_DEFINE(SPI_LPSPI_IDX1)
 #endif
 
 // List of available SPI instance infos
 static const SPI_RESOURCES *const spi_res_list[] =
 {
-#if defined(RTE_SPI6) && (RTE_SPI6 == 1)
-    &spi6_res,
+#if defined(RTE_SPI_LPSPI0) && (RTE_SPI_LPSPI0 == 1)
+    &SPI_RES_NAME(SPI_LPSPI_IDX0),
 #else
     NULL,
-#endif // RTE_SPI6
+#endif
+
+#if defined(RTE_SPI_LPSPI1) && (RTE_SPI_LPSPI1 == 1)
+    &SPI_RES_NAME(SPI_LPSPI_IDX1),
+#else
+    NULL,
+#endif
 
     NULL,
 };
@@ -117,8 +168,12 @@ static void SPI_ReleaseDefaultTxBuffer(SPI_RESOURCES *pSPIn);
 static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn);
 static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn);
 
-#if (RTE_SPI6 == 1)
-    FUNCS_DECLARE(6)
+#if (RTE_SPI_LPSPI0 == 1)
+    FUNCS_DECLARE(SPI_LPSPI_IDX0)
+#endif
+
+#if (RTE_SPI_LPSPI1 == 1)
+    FUNCS_DECLARE(SPI_LPSPI_IDX1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -238,7 +293,6 @@ static void SPI_RxIRQHandler(uint32_t u32Inst, uint32_t u32DataBits, uint32_t u3
     LPSPI_T *phspi = pSPIn->phspi;
     uint32_t au32RxBuf[8] = {0};  // Local temporary buffer for batch RX from FIFO
     uint32_t u32Count = 0, u32i = 0;
-    volatile int32_t i32TimeoutCnt = SystemCoreClock / 1000;
 
     // Step 1: Batch read all available data from RX FIFO (store raw data first)
     while (!LPSPI_GET_RX_FIFO_EMPTY_FLAG(phspi) &&
@@ -362,6 +416,8 @@ static void LPSPI_InterruptConfig(uint32_t u32Inst, uint32_t u32IntEn)
     IRQn_Type irq_n = LPSPI0_IRQn; // Default SPI0 interrupt
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
+    irq_n = (phspi == LPSPI0) ? LPSPI0_IRQn : LPSPI0_IRQn;
+
     /* Unlock protected registers */
     if (u32RegLockLevel)
     {
@@ -415,7 +471,6 @@ static ARM_SPI_CAPABILITIES SPIn_GetCapabilities(void)
 static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_LPSPI_INSTANCE(u32Inst)];
-    LPSPI_T *phspi = (LPSPI_T *)pSPIn->phspi;
 
     if (pSPIn->sState.u8State & SPI_INITIALIZED) return ARM_DRIVER_OK;
 
@@ -432,7 +487,7 @@ static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
     if (pSPIn->spdma.u32RxUsed == 1)
     {
         if ((pSPIn->spdma.i32RxChnId >= 0) &&
-                (pSPIn->spdma.i32RxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pSPIn->spdma.i32RxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_lppdma_channel_terminate(pSPIn->spdma.i32RxChnId);
             nu_lppdma_channel_free(pSPIn->spdma.i32RxChnId);
@@ -443,7 +498,7 @@ static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
     if (pSPIn->spdma.u32TxUsed == 1)
     {
         if ((pSPIn->spdma.i32TxChnId >= 0) &&
-                (pSPIn->spdma.i32TxChnId < PDMA_CH_MAX * PDMA_CNT))
+                (pSPIn->spdma.i32TxChnId < (int32_t)(PDMA_CH_MAX * PDMA_CNT)))
         {
             nu_lppdma_channel_terminate(pSPIn->spdma.i32TxChnId);
             nu_lppdma_channel_free(pSPIn->spdma.i32TxChnId);
@@ -905,7 +960,6 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
 static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_LPSPI_INSTANCE(u32Inst)];
-    LPSPI_T *phspi = (LPSPI_T *)pSPIn->phspi;
 
     // Check if the SPI is configured
     if (!(pSPIn->sState.u8State & SPI_CONFIGURED))
@@ -1348,15 +1402,24 @@ static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn)
 
 // Local driver functions definitions (for instances)
 // Information definitions (for instances)
-#if (RTE_SPI6 == 1)
-FUNCS_DEFINE(6)
-SPI_DRIVER(6)
+#if (RTE_SPI_LPSPI0 == 1)
+FUNCS_DEFINE(SPI_LPSPI_IDX0)
+SPI_DRIVER(SPI_LPSPI_IDX0)
 
 NVT_ITCM void LPSPI0_IRQHandler(void)
 {
-    LPSPI_IRQHandler(6);
+    LPSPI_IRQHandler(SPI_LPSPI_IDX0);
 }
 #endif
 
+#if (RTE_SPI_LPSPI1 == 1)
+FUNCS_DEFINE(SPI_LPSPI_IDX1)
+SPI_DRIVER(SPI_LPSPI_IDX1)
+
+NVT_ITCM void LPSPI1_IRQHandler(void)
+{
+    LPSPI_IRQHandler(SPI_LPSPI_IDX1);
+}
+#endif
 
 #endif //DRIVER_CONFIG_VALID

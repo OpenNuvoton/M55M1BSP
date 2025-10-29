@@ -558,8 +558,10 @@ void SYS_Init(void)
 int32_t main(void)
 {
     UAC_DEV_T *uac_dev = NULL;
+    UAC_DEV_T *uac_dev_save = NULL;
     int i8Ch;
     uint16_t u16Val;
+    int in_ret, out_ret;
 
     SYS_Init();                        /* Init System, IP clock and multi-function I/O */
 
@@ -589,19 +591,27 @@ int32_t main(void)
             uac_dev = usbh_uac_get_device_list();
 
             if (uac_dev == NULL)
-                continue;
-
-            if (uac_dev != NULL)              /* should be newly connected UAC device */
             {
+                uac_dev_save = uac_dev;
+                continue;
+            }
+
+            if (uac_dev != uac_dev_save)              /* should be newly connected UAC device */
+            {
+                printf("====>Conect dev [%p]\n", uac_dev);
                 usbh_uac_open(uac_dev);
 
                 uac_control_example(uac_dev);
 
                 ResetAudioLoopBack();
 
-                usbh_uac_start_audio_out(uac_dev, audio_out_callback);
+                out_ret = usbh_uac_start_audio_out(uac_dev, audio_out_callback);
 
-                usbh_uac_start_audio_in(uac_dev, audio_in_callback);
+                in_ret = usbh_uac_start_audio_in(uac_dev, audio_in_callback);
+
+                printf("[Start]in_ret:%d,out_ret:%d\n", in_ret, out_ret);
+
+                uac_dev_save = uac_dev;
             }
         }
 
@@ -614,6 +624,8 @@ int32_t main(void)
                 i8Ch = getchar();
                 usbh_memory_used();
             }
+
+            uac_dev_save = uac_dev;
 
             continue;
         }

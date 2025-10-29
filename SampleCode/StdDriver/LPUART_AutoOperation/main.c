@@ -187,7 +187,7 @@ void LPPDMA_TX_init(uint8_t u8TestCh, uint32_t u8TestLen)
     LPPDMA_Open(LPPDMA, 1 << u8TestCh);
 
     /* Setup Scatter-gather table for TX transfer */
-    BuildSCTab(MAX_SG_TAB_NUM, SG_TX_LENGTH, (uint32_t)&SrcArray);
+    BuildSCTab(MAX_SG_TAB_NUM, u8TestLen, (uint32_t)&SrcArray);
 
     LPPDMA_SetTransferMode(LPPDMA, 0, LPPDMA_LPUART0_TX, 1, (uint32_t)&DMA_DESC_SC[0]);
 
@@ -216,6 +216,7 @@ void LPPDMA_RX_init(uint8_t u8TestCh, uint32_t u8TestLen)
     LPPDMA_EnableInt(LPPDMA, u8TestCh, LPPDMA_INT_TRANS_DONE);
     NVIC_EnableIRQ(LPPDMA_IRQn);
 }
+
 /*---------------------------------------------------------------------------------------------------------*/
 /*  LPUART Function                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/

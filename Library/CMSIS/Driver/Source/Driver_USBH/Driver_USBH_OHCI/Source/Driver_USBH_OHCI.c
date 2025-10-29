@@ -1647,6 +1647,8 @@ static int32_t USBH1_HW_PortReset(uint8_t port)
 */
 static int32_t USBH_HW_PortSuspend(uint8_t ctrl, uint8_t port)
 {
+    (void)(port);
+
     // Port Suspend
     if (usbh_ohci_ptr[ctrl]->ctrl == USBH0_OHCI_DRV_NUM)
     {
@@ -1687,6 +1689,7 @@ static int32_t USBH1_HW_PortSuspend(uint8_t port)
 */
 static int32_t USBH_HW_PortResume(uint8_t ctrl, uint8_t port)
 {
+    (void)(port);
 
     // Port Resume
     if (usbh_ohci_ptr[ctrl]->ctrl == USBH0_OHCI_DRV_NUM)

@@ -39,7 +39,7 @@ void DMIC_Stop(void);
 /* Define global variables and constants                                                                   */
 /*---------------------------------------------------------------------------------------------------------*/
 volatile S_BUFCTRL sInBufCtrl;//, sOutBufCtrl; // Buffer control handler.
-int32_t s_SampleRate;     // Buffer array: store audio data receiced from DMIC(4Channel)
+uint32_t s_SampleRate;     // Buffer array: store audio data receiced from DMIC(4Channel)
 char s_strFileName[100];
 
 #define DMIC_LPPDMA_CH       (2)

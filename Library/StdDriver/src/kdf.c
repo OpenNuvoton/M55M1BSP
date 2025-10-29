@@ -146,7 +146,7 @@ int32_t KDF_DeriveKey(E_KDF_MODE eMode, uint32_t u32DeriveKeyParam, uint32_t u32
 
     while (i32LeftKeyBitSize > 0)
     {
-        if (i32LeftKeyBitSize == u32KeyBitSize)
+        if (i32LeftKeyBitSize == (int32_t)u32KeyBitSize)
             KDF->CTL |= KDF_CTL_START_Msk;  /* Trigger to start key derive operation */
         else
             KDF->CTL |= KDF_CTL_NEXT_Msk;   /* Trigger to derive next partial key output */
@@ -173,7 +173,7 @@ int32_t KDF_DeriveKey(E_KDF_MODE eMode, uint32_t u32DeriveKeyParam, uint32_t u32
         if (u32ByteCnt > 32)
             u32ByteCnt = 32;
 
-        for (i = 0; i < u32ByteCnt; i += 4)
+        for (i = 0; i < (int32_t)u32ByteCnt; i += 4)
         {
             pu32KeyOut[(u32Idx + i) / 4] = KDF->KEYOUT[i / 4];
         }

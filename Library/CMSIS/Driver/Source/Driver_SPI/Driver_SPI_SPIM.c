@@ -36,11 +36,14 @@
 #include "spi_hal.h"
 
 //------------------------------------------------------------------------------
+#define RTE_SPI_SPIM0                   RTE_SPI8
+//#define RTE_SPI_SPIM1                   RTE_SPIx
+
 // Configuration depending on RTE_SPI.h
 // Check if at least one peripheral instance is configured in RTE_SPI.h
 //#if (!(RTE_SPI8) && !(RTE_SPI1) && !(RTE_SPI2) && !(RTE_SPI3) && !(RTE_SPI4) && !(RTE_SPI5) && !(RTE_SPI6) && !(RTE_SPI7) && !(RTE_SPI8))
-#if (!defined(RTE_SPI0)) && (!defined(RTE_SPI1)) && (!defined(RTE_SPI2)) && (!defined(RTE_SPI3)) && (!defined(RTE_SPI4)) && (!defined(RTE_SPI5)) && (!defined(RTE_SPI6)) && (!defined(RTE_SPI7)) && (!defined(RTE_SPI8))
-    #warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
+#if (!(RTE_SPI_SPIM0) && !(RTE_SPI_SPIM1))
+    //#warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
 #else
     #define DRIVER_CONFIG_VALID     1
 #endif
@@ -49,48 +52,92 @@
 
 #ifdef DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
 
-// SPI Resources
-#define SPI_TO_SPIM_INSTANCE(n)             (n == 8 ? 0 : 0)
-#define SPI_TO_SPIM(n)                      (n == 8 ? SPIM0 : SPIM0)
-//#define SPI_TO_SPIM_PDMA_RX(n)              (n == 8 ? RTE_SPIM0_RX_PDMA : RTE_SPIM0_RX_PDMA)
-//#define SPI_TO_SPIM_PDMA_TX(n)              (n == 8 ? RTE_SPIM0_TX_PDMA : RTE_SPIM0_TX_PDMA)
+#if (RTE_SPI_SPIM0 == 1)
+    #define SPI_SPIM_IDX0              8
+    #define SPI_SPIM_PORT0             0
+    #define SPIM_PORTSYM_FROM_RTE_8    SPI_SPIM_PORT0
+#endif
+
+#if (RTE_SPI_SPIM1 == 1)
+    #define SPI_SPIM_IDX1              8
+    #define SPI_SPIM_PORT1             1
+    #define SPIM_PORTSYM_FROM_RTE_8    SPI_SPIM_PORT1
+#endif
+
+static inline uint32_t spi_idx_from_port_rt(uint32_t n)
+{
+    switch (n)
+    {
+#if (RTE_SPI_SPIM0 == 1)
+
+        case SPI_SPIM_IDX0:
+            return SPI_SPIM_PORT0;
+#endif
+
+#if (RTE_SPI_SPIM1 == 1)
+
+        case SPI_SPIM_IDX1:
+            return SPI_SPIM_PORT1;
+#endif
+
+        default:
+            return 0;
+    }
+}
+
+#define SPIM_IDX_FROM_PORT_CAT(x)        SPIM_PORTSYM_FROM_RTE_##x
+#define SPIM_IDX_FROM_PORT(x)            SPIM_IDX_FROM_PORT_CAT(x)
+
+#define SPI_TO_SPIM_INSTANCE(n)          ( spi_idx_from_port_rt((uint32_t)(n)) )
+#define SPI_TO_SPIM(n)                   ( SPI_CONCAT2(SPIM, SPIM_IDX_FROM_PORT(n)) )
 
 #define SPIM_TRX_MAX_SIZE                   0x2
 
 // Local driver functions declarations (for instances)
-#define SPI_INFO_DEFINE(n)                                                  \
-    static SPI_RESOURCES spi##n##_res = { SPI_TO_SPIM(n),                   \
-                                          {\
-                                           0,                               \
-                                          },                                \
-                                          {0},                              \
-                                          {0},                              \
-                                          {-1,                              \
-                                           -1,                              \
-                                           0,                                                   \
-                                           0,                                                   \
-                                           0,                               \
-                                           0,                               \
-                                           0,                               \
-                                           0,                               \
-                                           0,                               \
-                                           0,                               \
-                                          }                                 \
-                                        };
+#define SPI_INFO_DEFINE(n)                                                     \
+    static SPI_RESOURCES SPI_RES_NAME(n) = { SPI_TO_SPIM(n),                   \
+                                             {\
+                                              0,                               \
+                                              0,                               \
+                                             },                                \
+                                             {0},                              \
+                                             {0},                              \
+                                             {-1,                              \
+                                              -1,                              \
+                                              0,                               \
+                                              0,                               \
+                                              0,                               \
+                                              0,                               \
+                                              0,                               \
+                                              0,                               \
+                                              0,                               \
+                                              0,                               \
+                                             }                                 \
+                                           };
 
 // Local driver functions declarations (for instances)
-#if (RTE_SPI8 == 1)
-    SPI_INFO_DEFINE(8)
+#if (RTE_SPI_SPIM0 == 1)
+    SPI_INFO_DEFINE(SPI_SPIM_IDX0)
+#endif
+
+#if (RTE_SPI_SPIM1 == 1)
+    SPI_INFO_DEFINE(SPI_SPIM_IDX1)
 #endif
 
 // List of available SPI instance infos
 static const SPI_RESOURCES *const spi_res_list[] =
 {
-#if defined(RTE_SPI8) && (RTE_SPI8 == 1)
-    &spi8_res,
+#if defined(RTE_SPI_SPIM0) && (RTE_SPI_SPIM0 == 1)
+    &SPI_RES_NAME(SPI_SPIM_IDX0),
 #else
     NULL,
-#endif // RTE_SPI8
+#endif
+
+#if defined(RTE_SPI_SPIM1) && (RTE_SPI_SPIM1 == 1)
+    &SPI_RES_NAME(SPI_SPIM_IDX1),
+#else
+    NULL,
+#endif
 
     NULL,
 };
@@ -110,14 +157,15 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst);
 static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg);
 static ARM_SPI_STATUS SPIn_GetStatus(uint32_t u32Inst);
 
-void SPI_IO_RWDataByPhase(SPI_RESOURCES *pSPIn, uint32_t u32OPMode, uint8_t *pu8TRxBuf, uint32_t u32TRxSize, uint32_t u32DataPhase, uint32_t u32DTREn, uint32_t u32RdDQS);
-static int32_t SPI_PrepareDefaultRxBuffer(SPI_RESOURCES *pSPIn, uint32_t u32DataBits, uint32_t u32Num);
-static int32_t SPI_PrepareDefaultTxBuffer(SPI_RESOURCES *pSPIn, uint32_t u32DataBits, uint32_t u32Num);
-static void SPI_ReleaseDefaultTxBuffer(SPI_RESOURCES *pSPIn);
+void SPI_IO_RWDataByPhase(SPI_RESOURCES *pSPIn, uint32_t u32OPMode, uint8_t *pu8TRxBuf, uint32_t u32TRxSize, uint32_t u32DataPhase, uint32_t u32DTREn);
 static void SPIM_Close(SPIM_T *spim);
 
-#if (RTE_SPI8 == 1)
-    FUNCS_DECLARE(8)
+#if (RTE_SPI_SPIM0 == 1)
+    FUNCS_DECLARE(SPI_SPIM_IDX0)
+#endif
+
+#if (RTE_SPI_SPIM1 == 1)
+    FUNCS_DECLARE(SPI_SPIM_IDX1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -145,8 +193,6 @@ static void SPI_IRQHandler(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPIM_INSTANCE(u32Inst)];
     SPIM_T *phspi = (SPIM_T *)pSPIn->phspi;
-    uint32_t u32DataBits = SPIM_GET_DATA_WIDTH(phspi);
-    uint32_t u32PatternMask = (0xFFFFFFFF >> (32 - ((u32DataBits == 0) ? 32 : u32DataBits)));
 
     if (SPIM_IS_IF_ON(phspi))
     {
@@ -173,6 +219,8 @@ static void SPI_InterruptConfig(uint32_t u32Inst, uint32_t u32IntEn)
     SPIM_T *phspi = (SPIM_T *)pSPIn->phspi;
     IRQn_Type irq_n = SPIM0_IRQn; // Default SPI0 interrupt
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    irq_n = (phspi == SPIM0) ? SPIM0_IRQn : SPIM0_IRQn;
 
     /* Unlock protected registers */
     if (u32RegLockLevel)
@@ -227,7 +275,6 @@ static ARM_SPI_CAPABILITIES SPIn_GetCapabilities(void)
 static int32_t SPIn_Initialize(uint32_t u32Inst, ARM_SPI_SignalEvent_t cb_event)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPIM_INSTANCE(u32Inst)];
-    SPIM_T *phspi = (SPIM_T *)pSPIn->phspi;
 
     if (pSPIn->sState.u8State & SPI_INITIALIZED) return ARM_DRIVER_OK;
 
@@ -377,6 +424,7 @@ static int32_t SPIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
         PHASE_NORMAL_MODE, PHASE_WIDTH_0, PHASE_DISABLE_DTR,       //Address Phase
         PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,  //Data Phase
         0,
+        PHASE_DISABLE_CONT_READM, 0, 0, 0
     };
 
     // Check if data and num are valid
@@ -428,7 +476,7 @@ static int32_t SPIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
     else
     {
         SPI_IO_RWDataByPhase(pSPIn, SPIM_IO_WRITE_PHASE, pSPIn->sXfer.pu8TxBuf, pSPIn->sXfer.u32Num,
-                             PHASE_NORMAL_MODE, SPIM_OP_DISABLE, SPIM_OP_DISABLE);
+                             PHASE_NORMAL_MODE, SPIM_OP_DISABLE);
     }
 
     //while (gu8INTDone != SPIM_OP_ENABLE) {}
@@ -494,7 +542,7 @@ static int32_t SPIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
     else
     {
         SPI_IO_RWDataByPhase(pSPIn, SPIM_IO_READ_PHASE, pSPIn->sXfer.pu8RxBuf, pSPIn->sXfer.u32Num,
-                             PHASE_NORMAL_MODE, SPIM_OP_DISABLE, SPIM_OP_ENABLE);
+                             PHASE_NORMAL_MODE, SPIM_OP_DISABLE);
     }
 
     //while (gu8INTDone != SPIM_OP_ENABLE) {}
@@ -574,7 +622,6 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
 static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPIM_INSTANCE(u32Inst)];
-    SPIM_T *phspi = (SPIM_T *)pSPIn->phspi;
 
     // Check if the SPI is configured
     if (!(pSPIn->sState.u8State & SPI_CONFIGURED))
@@ -601,7 +648,6 @@ static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
     SPIM_T *phspi = (SPIM_T *)pSPIn->phspi;
     uint32_t u32DataBits;
     uint32_t u32Div = 0;
-    volatile int32_t i32TimeoutCnt = (SystemCoreClock / 1000);
 
     if (!(pSPIn->sState.u8State & SPI_POWERED))
     {
@@ -854,92 +900,6 @@ static ARM_SPI_STATUS SPIn_GetStatus(uint32_t u32Inst)
     return (status);
 }
 
-static int32_t SPI_PrepareDefaultRxBuffer(SPI_RESOURCES *pSPIn, uint32_t u32DataBits, uint32_t u32Num)
-{
-    uint32_t u32ItemSize = (u32DataBits == 0) ? 4 : ((u32DataBits + 7) / 8);
-    uint32_t u32TotalBytes = u32Num * u32ItemSize;
-
-    if ((u32Num == 0) || (pSPIn->sXfer.pu8RxBuf != NULL))
-        return ARM_DRIVER_OK;
-
-    void *pBuf = malloc(u32TotalBytes);
-
-    if (!pBuf)
-        return ARM_DRIVER_ERROR;
-
-    // Store the result and pointer of malloc for TX use
-    pSPIn->sXfer.pu8RxBuf = (uint8_t *)pBuf;
-
-    pSPIn->sXfer.u32RxPrepared = SPI_OP_ENABLE;
-
-    return ARM_DRIVER_OK;
-}
-
-static int32_t SPI_PrepareDefaultTxBuffer(SPI_RESOURCES *pSPIn, uint32_t u32DataBits, uint32_t u32Num)
-{
-    uint32_t u32DefVal = pSPIn->sXfer.u32DefVal;
-    uint32_t u32ItemSize = (u32DataBits == 0) ? 4 : ((u32DataBits + 7) / 8);
-    uint32_t u32TotalBytes = u32Num * u32ItemSize;
-
-    if ((u32Num == 0) || (pSPIn->sXfer.pu8TxBuf != NULL))
-        return ARM_DRIVER_OK;
-
-    void *pBuf = malloc(u32TotalBytes);
-
-    if (!pBuf)
-        return ARM_DRIVER_ERROR;
-
-    if ((u32DataBits <= 8) && (u32DataBits > 0))
-    {
-        uint8_t *buf = (uint8_t *)pBuf;
-
-        for (uint32_t i = 0; i < u32Num; i++)
-            buf[i] = (uint8_t)(u32DefVal & 0xFF);
-    }
-    else if ((u32DataBits <= 16) && (u32DataBits > 0))
-    {
-        uint16_t *buf = (uint16_t *)pBuf;
-
-        for (uint32_t i = 0; i < u32Num; i++)
-            buf[i] = (uint16_t)(u32DefVal & 0xFFFF);
-    }
-    else
-    {
-        uint32_t *buf = (uint32_t *)pBuf;
-
-        for (uint32_t i = 0; i < u32Num; i++)
-            buf[i] = u32DefVal;
-    }
-
-    // Store the result and pointer of malloc for TX use
-    pSPIn->sXfer.pu8TxBuf = (uint8_t *)pBuf;
-
-    pSPIn->sXfer.u32TxPrepared = SPI_OP_ENABLE;
-
-    return ARM_DRIVER_OK;
-}
-
-static void SPI_ReleaseDefaultTxBuffer(SPI_RESOURCES *pSPIn)
-{
-    if ((pSPIn->sXfer.pu8TxBuf == NULL) ||
-            ((!pSPIn->sXfer.u32TxPrepared) && (!pSPIn->sXfer.u32RxPrepared)))
-        return;
-
-    if (pSPIn->sXfer.u32TxPrepared == SPI_OP_ENABLE)
-    {
-        pSPIn->sXfer.u32TxPrepared = SPI_OP_DISABLE;
-        free(pSPIn->sXfer.pu8TxBuf);
-        pSPIn->sXfer.pu8TxBuf = NULL;
-    }
-
-    if (pSPIn->sXfer.u32RxPrepared)
-    {
-        pSPIn->sXfer.u32RxPrepared = SPI_OP_DISABLE;
-        free(pSPIn->sXfer.pu8RxBuf);
-        pSPIn->sXfer.pu8RxBuf = NULL;
-    }
-}
-
 /**
  * @brief      Write data to SPI slave.
  * @param      spim
@@ -1140,7 +1100,7 @@ static int32_t SPI_ReadData(SPI_RESOURCES *pSPIn, uint8_t pu8RxBuf[], uint32_t u
  *                      - \ref SPIM_OP_DISABLE
  */
 void SPI_IO_RWDataByPhase(SPI_RESOURCES *pSPIn, uint32_t u32OPMode, uint8_t *pu8TRxBuf,
-                          uint32_t u32TRxSize, uint32_t u32DataPhase, uint32_t u32DTREn, uint32_t u32RdDQS)
+                          uint32_t u32TRxSize, uint32_t u32DataPhase, uint32_t u32DTREn)
 {
     SPIM_T *phspi = (SPIM_T *)pSPIn->phspi;
 
@@ -1198,14 +1158,23 @@ static void SPIM_Close(SPIM_T *spim)
 
 // Local driver functions definitions (for instances)
 // Information definitions (for instances)
-#if (RTE_SPI8 == 1)
-FUNCS_DEFINE(8)
-SPI_DRIVER(8)
+#if (RTE_SPI_SPIM0 == 1)
+FUNCS_DEFINE(SPI_SPIM_IDX0)
+SPI_DRIVER(SPI_SPIM_IDX0)
 
 NVT_ITCM void SPIM0_IRQHandler(void)
 {
-    //printf("+++");
-    SPI_IRQHandler(8);
+    SPI_IRQHandler(SPI_SPIM_IDX0);
+}
+#endif
+
+#if (RTE_SPI_SPIM1 == 1)
+FUNCS_DEFINE(SPI_SPIM_IDX1)
+SPI_DRIVER(SPI_SPIM_IDX1)
+
+NVT_ITCM void SPIM1_IRQHandler(void)
+{
+    SPI_IRQHandler(SPI_SPIM_IDX1);
 }
 #endif
 

@@ -290,7 +290,6 @@ NVT_ITCM void LPPDMA_IRQHandler(void)
   */
 void UAC_SendRecData(void)
 {
-    uint32_t volatile i;
     uint32_t *pBuff;
 
     /* when record buffer full, send data to host */
@@ -445,7 +444,7 @@ int32_t DMICRecord_StartRec(void)
 {
     if (s_sAudioBufCtrl.pi16AudioInBuf != NULL)
     {
-        uint32_t u32ChanMask;
+        uint32_t u32ChanMask = 0;
 
         if (s_sAudioBufCtrl.u32Channels == 1)
         {
@@ -476,7 +475,7 @@ int32_t DMICRecord_StopRec(void)
 {
     DMIC_DISABLE_LPPDMA(DMIC0);
 
-    uint32_t u32ChanMask;
+    uint32_t u32ChanMask = 0;
 
     if (s_sAudioBufCtrl.u32Channels == 1)
     {

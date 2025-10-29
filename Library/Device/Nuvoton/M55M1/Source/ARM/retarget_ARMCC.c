@@ -269,6 +269,8 @@ void __aeabi_assert(const char *expr, const char *file, int line)
 __attribute__((weak))
 int fputc(int ch, FILE *f)
 {
+    NVT_UNUSED(f);
+
     SendChar(ch);
     return ch;
 }
@@ -277,6 +279,8 @@ __attribute__((weak))
 int fgetc(FILE *f)
 {
     char ch = GetChar();
+
+    NVT_UNUSED(f);
 
 #if (STDIN_ECHO != 0)
     SendChar(ch);

@@ -22,6 +22,26 @@
   @{
 */
 
+
+/**
+ * @brief Get the clock source frequency for the specified USPI peripheral.
+ *
+ * @param uspi Pointer to the USPI_T structure that represents the USPI
+ *             peripheral.
+ * @return The clock frequency in Hz for the specified USPI peripheral.
+ */
+static uint32_t USPI_GetPCLKSrcFreq(USPI_T *uspi)
+{
+    uint32_t u32Pclk = 0;
+
+    if ((uint32_t)uspi == (uint32_t)USPI0)
+    {
+        u32Pclk = CLK_GetPCLK1Freq();
+    }
+
+    return u32Pclk;
+}
+
 /**
   * @brief  This function make USCI_SPI module be ready to transfer.
   *         By default, the USCI_SPI transfer sequence is MSB first, the slave selection
@@ -43,26 +63,19 @@
   */
 uint32_t USPI_Open(USPI_T *uspi, uint32_t u32MasterSlave, uint32_t u32SPIMode,  uint32_t u32DataWidth, uint32_t u32BusClock)
 {
-    uint32_t u32ClkDiv = 0ul;
-    uint32_t u32Pclk;
     uint32_t u32UspiClk = 0ul;
 
-    if (uspi == (USPI_T *)USPI0)
-    {
-        u32Pclk = CLK_GetPCLK1Freq();
-    }
-
-    if (u32BusClock != 0ul)
-    {
-        u32ClkDiv = (uint32_t)((((((u32Pclk / 2ul) * 10ul) / (u32BusClock)) + 5ul) / 10ul) - 1ul); /* Compute proper divider for USCI_SPI clock */
-    }
 
     /* Enable USCI_SPI protocol */
     uspi->CTL &= ~(USPI_CTL_FUNMODE_Msk);
     uspi->CTL |= (1ul << USPI_CTL_FUNMODE_Pos);
 
     /* Data format configuration */
-    if (u32DataWidth >= 16ul)
+    if ((u32DataWidth < 4) && (u32DataWidth > 0))
+    {
+        u32DataWidth = 4ul;
+    }
+    else if (u32DataWidth >= 16ul)
     {
         u32DataWidth = 0ul;
     }
@@ -90,14 +103,9 @@ uint32_t USPI_Open(USPI_T *uspi, uint32_t u32MasterSlave, uint32_t u32SPIMode,  
     uspi->PROTCTL |= (u32MasterSlave | u32SPIMode);
 
     /* Set USCI_SPI bus clock */
-    uspi->BRGEN &= ~(USPI_BRGEN_CLKDIV_Msk);
-    uspi->BRGEN |= (u32ClkDiv << USPI_BRGEN_CLKDIV_Pos);
-    uspi->PROTCTL |= USPI_PROTCTL_PROTEN_Msk;
+    u32UspiClk = USPI_SetBusClock(uspi, u32BusClock);
 
-    if (u32BusClock != 0ul)
-    {
-        u32UspiClk = (uint32_t)(u32Pclk / ((u32ClkDiv + 1ul) << 1));
-    }
+    uspi->PROTCTL |= USPI_PROTCTL_PROTEN_Msk;
 
     return u32UspiClk;
 }
@@ -162,8 +170,9 @@ void USPI_DisableAutoSS(USPI_T *uspi)
   */
 void USPI_EnableAutoSS(USPI_T *uspi, uint32_t u32SSPinMask, uint32_t u32ActiveLevel)
 {
+    u32SSPinMask = USPI_PROTCTL_AUTOSS_Msk;
     uspi->LINECTL = (uspi->LINECTL & ~USPI_LINECTL_CTLOINV_Msk) | u32ActiveLevel;
-    uspi->PROTCTL |= USPI_PROTCTL_AUTOSS_Msk;
+    uspi->PROTCTL |= u32SSPinMask;
 }
 
 /**
@@ -174,21 +183,21 @@ void USPI_EnableAutoSS(USPI_T *uspi, uint32_t u32SSPinMask, uint32_t u32ActiveLe
   */
 uint32_t USPI_SetBusClock(USPI_T *uspi, uint32_t u32BusClock)
 {
-    uint32_t u32ClkDiv = 0;
-    uint32_t u32Pclk = 0;
+    uint32_t u32ClkDiv = 0, u32Pclk = 0, u32UspiClk = 0;
 
-    if (uspi == USPI0)
-    {
-        u32Pclk = CLK_GetPCLK1Freq();
-    }
+    u32Pclk = USPI_GetPCLKSrcFreq(uspi);
 
-    u32ClkDiv = (uint32_t)((((((u32Pclk / 2ul) * 10ul) / (u32BusClock)) + 5ul) / 10ul) - 1ul); /* Compute proper divider for USCI_SPI clock */
+    if (u32BusClock != 0ul)
+        u32ClkDiv = (uint32_t)((((((u32Pclk / 2ul) * 10ul) / (u32BusClock)) + 5ul) / 10ul) - 1ul); /* Compute proper divider for USCI_SPI clock */
 
     /* Set USCI_SPI bus clock */
     uspi->BRGEN &= ~USPI_BRGEN_CLKDIV_Msk;
     uspi->BRGEN |= (u32ClkDiv << USPI_BRGEN_CLKDIV_Pos);
 
-    return (u32Pclk / ((u32ClkDiv + 1ul) << 1));
+    if (u32BusClock != 0ul)
+        u32UspiClk = (u32Pclk / ((u32ClkDiv + 1ul) << 1));
+
+    return u32UspiClk;
 }
 
 /**
@@ -198,17 +207,13 @@ uint32_t USPI_SetBusClock(USPI_T *uspi, uint32_t u32BusClock)
   */
 uint32_t USPI_GetBusClock(USPI_T *uspi)
 {
-    uint32_t u32BusClk = 0;
-    uint32_t u32ClkDiv = 0;
+    uint32_t u32ClkDiv = 0, u32Pclk = 0;
 
-    u32ClkDiv = (uspi->BRGEN & USPI_BRGEN_CLKDIV_Msk) >> USPI_BRGEN_CLKDIV_Pos;
+    u32Pclk = USPI_GetPCLKSrcFreq(uspi);
 
-    if (uspi == USPI0)
-    {
-        u32BusClk = (uint32_t)(CLK_GetPCLK1Freq() / ((u32ClkDiv + 1ul) << 1));
-    }
+    u32ClkDiv = ((uspi->BRGEN & USPI_BRGEN_CLKDIV_Msk) >> USPI_BRGEN_CLKDIV_Pos);
 
-    return u32BusClk;
+    return (u32Pclk / ((u32ClkDiv + 1ul) << 1));
 }
 
 /**

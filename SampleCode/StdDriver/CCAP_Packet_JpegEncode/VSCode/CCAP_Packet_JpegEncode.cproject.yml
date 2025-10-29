@@ -22,7 +22,7 @@ project:
           C:
             - -std=c11
           C-CPP:
-            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
           CPP:
             - -xc++
@@ -41,8 +41,9 @@ project:
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
   linker:
-    - script: ./CCAP_Packet_JpegEncode.scatter
+    - script: ./CCAP_Packet_JpegEncode.scf
       for-compiler: AC6
     - script: ./CCAP_Packet_JpegEncode.ld
       for-compiler: GCC
@@ -51,6 +52,8 @@ project:
       files:
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/GCC/_syscalls.c
+          for-compiler: GCC
     - group: Library
       files:
         - file: ../../../../Library/StdDriver/src/retarget.c
@@ -70,6 +73,10 @@ project:
         - file: ../../../../Library/JpegAcceleratorLib/libJpegAccelerator.a
           for-compiler: GCC
     - group: libjpeg
+      misc:
+      - for-compiler: AC6
+        C-CPP:
+        - -w
       files:
         - file: ../../../../ThirdParty/libjpeg/jdapimin.c
         - file: ../../../../ThirdParty/libjpeg/jaricom.c

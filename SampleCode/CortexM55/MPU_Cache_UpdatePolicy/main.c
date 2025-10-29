@@ -132,7 +132,7 @@ int32_t PDMA_Transfer(uint32_t u32Chan, uint32_t *pu32SrcBuf, uint32_t u32TranBy
 int32_t TestCacheWrite(uint32_t *pu32BaseAddr, uint32_t u32ByteSize, uint32_t bWriteBack, uint32_t bClean)
 {
     uint8_t  au8TestPattern[] = { 0x55, 0xAA };
-    int32_t  i;
+    uint32_t i;
     uint32_t u32Offset, u32DataErrCnt;
 
     memset(g_au32PDMA_DstBuf, 0x0, sizeof(g_au32PDMA_DstBuf));

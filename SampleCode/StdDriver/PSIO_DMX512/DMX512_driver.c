@@ -11,6 +11,10 @@
 #include "NuMicro.h"
 #include <stdio.h>
 
+//------------------------------------------------------------------------------
+extern void PSIO_IRQHandler(void);
+
+//------------------------------------------------------------------------------
 static volatile uint8_t s_u8RcvDone = 0;
 static volatile E_DMX512_FILTER_STATE s_eFilterState = eDMX512_READY;
 static S_PSIO_DMX512_CFG *s_psRxConfig = NULL;      /* For RX handler use */
@@ -18,11 +22,15 @@ static volatile uint16_t s_u16CurChannel = 0;       /* Record current channel cn
 static volatile uint16_t s_u16TargetChannel = 0;    /* For filter function compute */
 static volatile uint16_t s_u16DataTmp;
 static volatile uint16_t *s_pu16DataResult = NULL;
+static tPSIO_IRQHandler pfPSIO_IRQHandler = NULL;
 
-tPSIO_IRQHandler pfPSIO_IRQHandler = NULL;
+//------------------------------------------------------------------------------
+E_DMX512_FRAME_TYPE  DMX512_FrameDecoder(uint16_t *pu16Data);
+void DMX512_ISRHandler_Receive_with_Filter(void);
 
+//------------------------------------------------------------------------------
 /* Decode DMX512 frame */
-E_DMX512_FRAME_TYPE  DMX512_FrameDecoder(S_PSIO_DMX512_CFG *psConfig, uint16_t *pu16Data)
+E_DMX512_FRAME_TYPE  DMX512_FrameDecoder(uint16_t *pu16Data)
 {
     /* Special pattern */
     switch (*pu16Data)
@@ -51,7 +59,7 @@ void DMX512_ISRHandler_Receive_with_Filter(void)
 {
     uint16_t u16TargetChannel = s_u16TargetChannel;
 
-    while (!PSIO_GET_TRANSFER_STATUS(PSIO, PSIO_TRANSTS_INFULL1_Msk)) {};
+    while (!PSIO_GET_TRANSFER_STATUS(PSIO, PSIO_TRANSTS_INFULL1_Msk)) {}
 
     if (PSIO_GET_INT_FLAG(PSIO, PSIO_INTSTS_CON0IF_Msk))   /* INT0 interrupt */
     {
@@ -59,7 +67,7 @@ void DMX512_ISRHandler_Receive_with_Filter(void)
 
         s_u16DataTmp = (uint16_t) PSIO_GET_INPUT_DATA(PSIO, s_psRxConfig->u8RxPin);
 
-        switch (DMX512_FrameDecoder(s_psRxConfig, (uint16_t *)&s_u16DataTmp))
+        switch (DMX512_FrameDecoder((uint16_t *)&s_u16DataTmp))
         {
             case eDMX512_DATA:
 
@@ -108,7 +116,7 @@ void DMX512_ISRHandler_Receive_with_Filter(void)
                 printf("impossible.!\n");
                 break;
 
-            default:
+						case eDMX512_UNDEFINE:
                 printf("undefined\n");
         }
     }
@@ -251,8 +259,10 @@ int PSIO_DMX512_Tx(S_PSIO_DMX512_CFG *psConfig, uint32_t u32OutData, E_DMX512_FR
                 setToData(psConfig);
                 psConfig->eState = eDMX512_DATA;
                 break;
-
-            default:
+						
+						case eDMX512_BREAK:
+						case eDMX512_START:
+						case eDMX512_UNDEFINE:
                 printf("error: wrong state\n");
                 psConfig->eState = eDMX512_UNDEFINE;
                 return -1;
@@ -261,14 +271,17 @@ int PSIO_DMX512_Tx(S_PSIO_DMX512_CFG *psConfig, uint32_t u32OutData, E_DMX512_FR
 
     switch (eFrameType)
     {
+			    			
         case eDMX512_DATA:
             PSIO_SET_OUTPUT_DATA(PSIO, psConfig->u8TxPin, u32OutData);
             break;
 
         case eDMX512_BREAK_START:
             break;
-
-        default:
+				
+				case eDMX512_BREAK:
+				case eDMX512_START:
+				case eDMX512_UNDEFINE:
             printf("wrong FrameType\n");
             psConfig->eState = eDMX512_UNDEFINE;
             return -1;

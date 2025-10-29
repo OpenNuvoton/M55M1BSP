@@ -247,7 +247,7 @@ int32_t ConfigLPTMR(LPTMR_T *psLPTMR, uint32_t u32PreiodInMS)
 
 int32_t PacketMotionDetection(S_SENSOR_INFO *psSensorInfo)
 {
-    int32_t  i;
+    uint32_t  i;
 
     /* Initialize sensor and set sensor output YUV422 format */
     if (psSensorInfo->pfnInitSensor((uint32_t)psSensorInfo) == FALSE)
@@ -362,8 +362,7 @@ int32_t PacketFormatDownScale(S_SENSOR_INFO *psSensorInfo)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
-    int32_t  i;
-    uint32_t u32Threshold;
+    uint32_t i, u32Threshold;
 
     /* Init System, peripheral clock and multi-function I/O */
     SYS_Init();

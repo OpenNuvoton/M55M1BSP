@@ -152,7 +152,7 @@ static int  uac_set_microphone_feature_unit(UAC_DEV_T *uac)
     /*------------------------------------------------------------------------------------*/
     /*  Find the Terminal Descriptor                                                      */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         hdr = (AC_FU_T *)bptr;
 
@@ -206,7 +206,7 @@ int uac_parse_control_interface(UAC_DEV_T *uac, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Find the Standard AC Interface Descriptor                                         */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         ifd = (DESC_IF_T *)bptr;
 
@@ -221,7 +221,7 @@ int uac_parse_control_interface(UAC_DEV_T *uac, IFACE_T *iface)
         size -= ifd->bLength;
     }
 
-    if (size < sizeof(DESC_IF_T))           /* cannot find the Standard AC descriptor     */
+    if (size < (int)sizeof(DESC_IF_T))           /* cannot find the Standard AC descriptor     */
     {
         UAC_ERRMSG("UAC_RET_PARSER! - AC standard not found!\n");
         return UAC_RET_PARSER;
@@ -233,7 +233,7 @@ int uac_parse_control_interface(UAC_DEV_T *uac, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Walk though all Class-Specific AC Interface Descriptor (4.3.2)                    */
     /*------------------------------------------------------------------------------------*/
-    while (size > sizeof(DESC_HDR_T))
+    while (size > (int)sizeof(DESC_HDR_T))
     {
         ifd = (DESC_IF_T *)bptr;
 
@@ -389,7 +389,7 @@ static void *uac_find_terminal(UAC_DEV_T *uac, uint8_t bTerminalID)
     /*------------------------------------------------------------------------------------*/
     /*  Find the Terminal Descriptor                                                      */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         hdr = (AC_OT_T *)bptr;
 
@@ -480,7 +480,7 @@ int uac_parse_streaming_interface(UAC_DEV_T *uac, IFACE_T *iface, uint8_t bAlter
     /*------------------------------------------------------------------------------------*/
     /*  Find the Standard AS Interface Descriptor                                         */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         ifd = (DESC_IF_T *)bptr;
 
@@ -496,7 +496,7 @@ int uac_parse_streaming_interface(UAC_DEV_T *uac, IFACE_T *iface, uint8_t bAlter
         size -= ifd->bLength;
     }
 
-    if (size < sizeof(DESC_IF_T))           /* cannot find the Standard AC descriptor     */
+    if (size < (int)sizeof(DESC_IF_T))           /* cannot find the Standard AC descriptor     */
     {
         UAC_ERRMSG("UAC_RET_PARSER! - AC standard not found!\n");
         return UAC_RET_PARSER;
@@ -514,7 +514,7 @@ int uac_parse_streaming_interface(UAC_DEV_T *uac, IFACE_T *iface, uint8_t bAlter
     /*------------------------------------------------------------------------------------*/
     /*  Walk though all Class-Specific AS Interface Descriptor (4.5.2)                    */
     /*------------------------------------------------------------------------------------*/
-    while (size > sizeof(DESC_HDR_T))
+    while (size > (int)sizeof(DESC_HDR_T))
     {
         ifd = (DESC_IF_T *)bptr;
 

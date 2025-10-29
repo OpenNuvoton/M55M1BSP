@@ -223,6 +223,8 @@ void myfclose(FILE *f)
 
 FILE *myfopen(char const *fname, char const *mode)
 {
+    (void)(fname);
+    (void)(mode);
     g_myfile.base = _dat;
     g_myfile.limit = _dat + sizeof(_dat);
     g_myfile.ofs = 0;

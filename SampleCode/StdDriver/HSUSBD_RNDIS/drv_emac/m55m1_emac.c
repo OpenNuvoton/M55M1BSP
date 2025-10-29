@@ -150,7 +150,6 @@ void EMAC_Open(uint8_t *macaddr)
  *----------------------------------------------------------------------------*/
 NVT_ITCM void EMAC0_IRQHandler(void)
 {
-    uint32_t u32Status;
     u32 interrupt, dma_status_reg;
     s32 status;
     u32 u32GmacIntSts;
@@ -354,7 +353,7 @@ uint32_t My_EMAC_SendPkt(uint8_t *pu8Data, uint32_t u32Size)
 uint32_t EMAC_CheckLinkStatus(void)
 {
     uint32_t linkstatus;
-
+    (void)linkstatus;
     linkstatus = (uint32_t)mii_ethtool_gset(&GMACdev, 0);
 
     return GMACdev.LinkState;

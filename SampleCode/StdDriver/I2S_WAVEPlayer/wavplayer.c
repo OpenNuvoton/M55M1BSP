@@ -28,7 +28,7 @@ static size_t ReturnSize;
 
 #if (NVT_DCACHE_ON == 1)
     // If DCACHE is enabled, use a cache-line aligned buffer for the I2S PCM DMA
-    signed int aiPCMBuffer[DCACHE_ALIGN_LINE_SIZE(2)][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    signed int aiPCMBuffer[2][DCACHE_ALIGN_LINE_SIZE(PCM_BUFFER_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
 #else
     // If DCACHE is not enabled, use a standard buffer for the I2S PCM DMA
     signed int aiPCMBuffer[2][PCM_BUFFER_SIZE];

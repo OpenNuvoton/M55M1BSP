@@ -31,7 +31,8 @@ SPIM_PHASE_T sWb02hWrCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_8,  PHASE_DISABLE_DTR,       //Command Phase
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,       //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,   //Data Phase
-    0,
+    0,                                                          // Dummy Cycle Phase
+    0, 0, 0, 0
 };
 
 /* 0x0B: CMD_DMA_FAST_READ Command Phase Table */
@@ -42,6 +43,7 @@ SPIM_PHASE_T sWb03hRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,       // Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE,    // Data Phase
     8,                                                          // Dummy Cycle Phase
+    0, 0, 0, 0
 };
 
 
@@ -131,18 +133,6 @@ void delay_us(int usec)
 
     while (TIMER_GetIntFlag(TIMER0) == 0);
 }
-
-/*
- *  Set stack base address to SP register.
- */
-#ifdef __ARMCC_VERSION                 /* for Keil compiler */
-void __set_SP(uint32_t _sp)
-{
-    __ASM volatile("msr msp, r0");
-    __ASM volatile("bx  lr");
-}
-#endif
-
 
 void SYS_Init(void)
 {
@@ -816,7 +806,6 @@ int SPIM_TrimRXClkDlyNum(SPIM_T *pSPIMx, SPIM_PHASE_T *psWbRdCMD)
     uint8_t u8RdDelayIdx = 0;
     uint8_t u8RdDelayRes[0x0F] = {0};
     uint32_t u32SAddr = 0x0;
-    volatile uint32_t u32i = 0;
     uint32_t u32Div = SPIM_GET_CLOCK_DIVIDER(pSPIMx);
     uint8_t au8TrimPatten[32] =
     {
@@ -830,7 +819,9 @@ int SPIM_TrimRXClkDlyNum(SPIM_T *pSPIMx, SPIM_PHASE_T *psWbRdCMD)
     uint32_t u32RdDataCnt = 0;
     uint32_t u32DMMAddr = SPIM_GetDMMAddress(pSPIMx);
     uint32_t *pu32RdData = NULL;
-#endif //
+#else
+    NVT_UNUSED(psWbRdCMD);
+#endif
 
     SPIM_SET_CLOCK_DIVIDER(pSPIMx, 8);
 
@@ -857,6 +848,8 @@ int SPIM_TrimRXClkDlyNum(SPIM_T *pSPIMx, SPIM_PHASE_T *psWbRdCMD)
         SCB_InvalidateDCache_by_Addr((void *)au8CmpBuf, sizeof(au8CmpBuf));
 #endif
 #else
+        volatile uint32_t u32i = 0;
+
         u32RdDataCnt = 0;
         pu32RdData = (uint32_t *)tstbuf2;
 
@@ -909,7 +902,7 @@ int32_t main(void)
 
     SYS_UnlockReg();                             /* Unlock register lock protect               */
 
-    SPIM_SET_CLOCK_DIVIDER(SPIM0, 8);            /* Set SPIM clock as HCLK divided by 4        */
+    SPIM_SET_CLOCK_DIVIDER(SPIM0, 8);            /* Set SPIM clock as HCLK divided by 8        */
 
     SPIM_DISABLE_CIPHER(SPIM0);
 
@@ -932,9 +925,6 @@ int32_t main(void)
     SPIM_DMADMM_InitPhase(SPIM0, &sWb03hRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
     SPIM_DMADMM_InitPhase(SPIM0, &sWb02hWrCMD, SPIM_CTL0_OPMODE_PAGEWRITE);
     SPIM_DMADMM_InitPhase(SPIM0, &sWb03hRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
-
-    /* Trim RX clock delay cycle. Adjust the sampling clock of received data to latch the correct data. */
-    SPIM_TrimRXClkDlyNum(SPIM0, &sWb03hRdCMD);
 
     /*
      *  Erase flash page

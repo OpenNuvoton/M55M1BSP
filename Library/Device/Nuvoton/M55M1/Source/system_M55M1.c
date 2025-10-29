@@ -160,7 +160,7 @@ __WEAK int32_t InitPreDefMPURegion(const ARM_MPU_Region_t *psMPURegion, uint32_t
 {
     int32_t i32RetCode = 0;
 
-    int32_t i32RegionIdx = 0;
+    uint32_t ui32RegionIdx = 0;
     const uint8_t WTRA   = ARM_MPU_ATTR_MEMORY_(1, 0, 1, 0); // Non-transient, Write-Through, Read-allocate, Not Write-allocate
     const uint8_t WBWARA = ARM_MPU_ATTR_MEMORY_(1, 1, 1, 1); // Non-transient, Write-Back, Read-allocate, Write-allocate
 
@@ -195,67 +195,58 @@ __WEAK int32_t InitPreDefMPURegion(const ARM_MPU_Region_t *psMPURegion, uint32_t
     ARM_MPU_SetMemAttr(eMPU_ATTR_CACHEABLE_WBWARA,  ARM_MPU_ATTR(WBWARA, WBWARA));
 #endif
 
-    i32RegionIdx = 0;
+    ui32RegionIdx = 0;
 
 #if (MPU_INIT_REGIONS != 0)
 
     if (MPU_INIT_REGION(0) != 0)
     {
-        //printf("[0] Base: 0x%08X, Limit: 0x%08X\n", MPU_INIT_BASE(0), MPU_INIT_LIMIT(0));
-        ARM_MPU_SetRegion(i32RegionIdx, MPU_INIT_RBAR(0, MPU_INIT_BASE(0)), ARM_MPU_RLAR(MPU_INIT_LIMIT(0), MPU_MEM_ATTR(0)));
-        i32RegionIdx++;
+        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(0, MPU_INIT_BASE(0)), ARM_MPU_RLAR(MPU_INIT_LIMIT(0), MPU_MEM_ATTR(0)));
+        ui32RegionIdx++;
     }
 
     if (MPU_INIT_REGION(1) != 0)
     {
-        //printf("[1] Base: 0x%08X, Limit: 0x%08X\n", MPU_INIT_BASE(1), MPU_INIT_LIMIT(1));
-        ARM_MPU_SetRegion(i32RegionIdx, MPU_INIT_RBAR(1, MPU_INIT_BASE(1)), ARM_MPU_RLAR(MPU_INIT_LIMIT(1), MPU_MEM_ATTR(1)));
-        i32RegionIdx++;
+        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(1, MPU_INIT_BASE(1)), ARM_MPU_RLAR(MPU_INIT_LIMIT(1), MPU_MEM_ATTR(1)));
+        ui32RegionIdx++;
     }
 
     if (MPU_INIT_REGION(2) != 0)
     {
-        //printf("[2] Base: 0x%08X, Limit: 0x%08X\n", MPU_INIT_BASE(2), MPU_INIT_LIMIT(2));
-        ARM_MPU_SetRegion(i32RegionIdx, MPU_INIT_RBAR(2, MPU_INIT_BASE(2)), ARM_MPU_RLAR(MPU_INIT_LIMIT(2), MPU_MEM_ATTR(2)));
-        i32RegionIdx++;
+        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(2, MPU_INIT_BASE(2)), ARM_MPU_RLAR(MPU_INIT_LIMIT(2), MPU_MEM_ATTR(2)));
+        ui32RegionIdx++;
     }
 
     if (MPU_INIT_REGION(3) != 0)
     {
-        //printf("[3] Base: 0x%08X, Limit: 0x%08X\n", MPU_INIT_BASE(3), MPU_INIT_LIMIT(3));
-        ARM_MPU_SetRegion(i32RegionIdx, MPU_INIT_RBAR(3, MPU_INIT_BASE(3)), ARM_MPU_RLAR(MPU_INIT_LIMIT(3), MPU_MEM_ATTR(3)));
-        i32RegionIdx++;
+        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(3, MPU_INIT_BASE(3)), ARM_MPU_RLAR(MPU_INIT_LIMIT(3), MPU_MEM_ATTR(3)));
+        ui32RegionIdx++;
     }
 
     if (MPU_INIT_REGION(4) != 0)
     {
-        //printf("[4] Base: 0x%08X, Limit: 0x%08X\n", MPU_INIT_BASE(4), MPU_INIT_LIMIT(4));
-        ARM_MPU_SetRegion(i32RegionIdx, MPU_INIT_RBAR(4, MPU_INIT_BASE(4)), ARM_MPU_RLAR(MPU_INIT_LIMIT(4), MPU_MEM_ATTR(4)));
-        i32RegionIdx++;
+        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(4, MPU_INIT_BASE(4)), ARM_MPU_RLAR(MPU_INIT_LIMIT(4), MPU_MEM_ATTR(4)));
+        ui32RegionIdx++;
     }
 
     if (MPU_INIT_REGION(5) != 0)
     {
-        //printf("[5] Base: 0x%08X, Limit: 0x%08X\n", MPU_INIT_BASE(5), MPU_INIT_LIMIT(5));
-        ARM_MPU_SetRegion(i32RegionIdx, MPU_INIT_RBAR(5, MPU_INIT_BASE(5)), ARM_MPU_RLAR(MPU_INIT_LIMIT(5), MPU_MEM_ATTR(5)));
-        i32RegionIdx++;
+        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(5, MPU_INIT_BASE(5)), ARM_MPU_RLAR(MPU_INIT_LIMIT(5), MPU_MEM_ATTR(5)));
+        ui32RegionIdx++;
     }
 
     if (MPU_INIT_REGION(6) != 0)
     {
-        //printf("[6] Base: 0x%08X, Limit: 0x%08X\n", MPU_INIT_BASE(6), MPU_INIT_LIMIT(6));
-        ARM_MPU_SetRegion(i32RegionIdx, MPU_INIT_RBAR(6, MPU_INIT_BASE(6)), ARM_MPU_RLAR(MPU_INIT_LIMIT(6), MPU_MEM_ATTR(6)));
-        i32RegionIdx++;
+        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(6, MPU_INIT_BASE(6)), ARM_MPU_RLAR(MPU_INIT_LIMIT(6), MPU_MEM_ATTR(6)));
+        ui32RegionIdx++;
     }
 
 #endif  // (MPU_INIT_REGIONS != 0)
 
     if (psMPURegion != NULL)
     {
-        //printf("u32RegionCnt: %d, (MPU_REGIONS_MAX - i32RegionIdx): %d\n", u32RegionCnt, (MPU_REGIONS_MAX - i32RegionIdx));
-
-        if (u32RegionCnt < (MPU_REGIONS_MAX - i32RegionIdx - 1))
-            ARM_MPU_Load(i32RegionIdx, psMPURegion, u32RegionCnt);
+        if (u32RegionCnt < (MPU_REGIONS_MAX - ui32RegionIdx - 1))
+            ARM_MPU_Load(ui32RegionIdx, psMPURegion, u32RegionCnt);
         else
             return -1;
     }

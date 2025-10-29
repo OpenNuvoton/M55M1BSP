@@ -233,13 +233,13 @@ uint32_t SDH_Write(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32
 
 uint32_t SDH_CardDetection(SDH_T *sdh);
 void SDH_Get_SD_info(SDH_T *sdh);
-void SDH_Set_clock(SDH_T *sdh, uint32_t sd_clock_khz);
+void SDH_Set_clock(SDH_T *sdh, uint32_t u32SD_clk_khz);
 uint32_t SDH_SwitchToHighSpeed(SDH_T *sdh, SDH_INFO_T *pSD);
 
 int32_t SDH_CheckRB(SDH_T *sdh);
-uint32_t SDH_SDCmdAndRsp(SDH_T *sdh, uint32_t ucCmd, uint32_t uArg, uint32_t ntickCount);
-uint32_t SDH_SDCmdAndRsp2(SDH_T *sdh, uint32_t ucCmd, uint32_t uArg, uint32_t puR2ptr[]);
-uint32_t SDH_SDCommand(SDH_T *sdh, uint32_t ucCmd, uint32_t uArg);
+uint32_t SDH_SDCmdAndRsp(SDH_T *sdh, uint32_t u32Cmd, uint32_t u32Arg, uint32_t u32NtickCount);
+uint32_t SDH_SDCmdAndRsp2(SDH_T *sdh, uint32_t u32Cmd, uint32_t u32Arg, uint32_t pu32R2ptr[]);
+uint32_t SDH_SDCommand(SDH_T *sdh, uint32_t u32Cmd, uint32_t u32Arg);
 uint32_t SDH_SelectCardType(SDH_T *sdh);
 
 int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc);

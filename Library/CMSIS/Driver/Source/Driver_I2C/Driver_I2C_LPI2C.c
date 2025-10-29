@@ -342,7 +342,7 @@ static int32_t LPI2C0_Control(uint32_t control, uint32_t arg)
     return ARM_DRIVER_OK;
 }
 
-static ARM_I2C_STATUS LPI2C0_GetARMStatus(void)
+static ARM_I2C_STATUS LPI2C0_GetStatus(void)
 {
     return lpi2c0_rw_info.status;
 }
@@ -367,7 +367,7 @@ NVT_ITCM void LPI2C0_IRQHandler(void)
 static void LPI2C0_MasterRx(void)
 {
     LPI2C_T *i2c = (LPI2C_T *)LPI2C0;
-    uint32_t u32TimeOutCnt, u32Status;
+    uint32_t u32Status;
     u32Status = LPI2C_GET_STATUS(i2c);
     ARM_I2C_SignalEvent_t cb_event = lpi2c0_rw_info.cb_event;
     uint32_t event = 0;
@@ -856,7 +856,7 @@ ARM_DRIVER_I2C Driver_I2C4 =
     LPI2C0_SlaveReceive,
     LPI2C0_GetDataCount,
     LPI2C0_Control,
-    LPI2C0_GetARMStatus
+    LPI2C0_GetStatus
 };
 
 #endif // #if (RTE_I2C4 == 1)

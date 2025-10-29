@@ -110,7 +110,6 @@ int main()
     }
 
     /* Get input shape for feature extraction. */
-    TfLiteIntArray *inputShape     = model.GetInputShape(0);
 #if defined (MODEL_DS_CNN)
     const uint32_t numMfccFeatures = 10;
     const uint32_t numMfccFrames = 49;
@@ -140,7 +139,7 @@ int main()
 #define AUDIO_CHANNEL       1
 
 
-    const auto audioSlidingSamples = (numMfccFrames + 1) * mfccFrameStride; //(49+1)*320 = 16000 = 1 sec
+    int32_t audioSlidingSamples = (numMfccFrames + 1) * mfccFrameStride; //(49+1)*320 = 16000 = 1 sec
     const auto audioStrideSamples = audioSlidingSamples / 2;
 
     int16_t *audioSlidingBuf = new int16_t[audioSlidingSamples];
@@ -297,12 +296,10 @@ int main()
         {
 
             std::string topKeyword{"<none>"};
-            float score = 0.f;
 
             if (!result.m_resultVec.empty())
             {
                 topKeyword = result.m_resultVec[0].m_label;
-                score      = result.m_resultVec[0].m_normalisedVal;
             }
 
             if (result.m_resultVec.empty())

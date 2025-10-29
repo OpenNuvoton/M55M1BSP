@@ -770,7 +770,7 @@ void RNDIS_IsAvaiable(void)
 
 void RNDIS_ProcessQueryOID(uint32_t oid)
 {
-    int volatile i;
+    volatile uint32_t i;
     uint32_t *ptr = (uint32_t *)rndis_response;
 
     switch (oid)
@@ -972,7 +972,6 @@ void RNDIS_ProcessQueryOID(uint32_t oid)
 
 void RNDIS_ProcessSetOID(uint32_t oid)
 {
-    int volatile i;
     uint32_t *ptr = (uint32_t *)rndis_response;
 
     switch (oid)

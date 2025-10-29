@@ -447,7 +447,7 @@ int main()
         //show result
         info("Final results:\n");
 
-        for (int i = 0; i < results.size(); i ++)
+        for (uint32_t i = 0; i < results.size(); i ++)
         {
             info("%" PRIu32 ") %" PRIu32 " (%f) -> %s\n", i,
                  results[i].m_labelIdx, results[i].m_normalisedVal,

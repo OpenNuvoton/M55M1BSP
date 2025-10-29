@@ -65,6 +65,7 @@ static void PollingToSwitchRole(void)
     if ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk) == 0U)
     {
         char ch = (char)DEBUG_PORT->DAT;
+        (void)ch;
 
         do
         {

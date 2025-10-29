@@ -1,0 +1,237 @@
+project:
+  packs:
+    - pack: Nuvoton::NuMicroM55_DFP
+
+  setups:
+    - output:
+        type: [elf, bin]
+
+    # SDH - AC6
+    - setup: Options for SDH_ARMCLANG
+      for-context: +SDH_ARMCLANG
+      processor:
+        fpu: dp
+        mve: fp
+        endian: little
+        trustzone: "off"
+      add-path:
+        - ../../../../Library/CMSIS/Core/Include
+        - ../../../../Library/Device/Nuvoton/M55M1/Include
+        - ../../../../Library/StdDriver/inc
+        - ../../../../Library/UsbHostLib/inc
+        - ../../../../Library/UsbHostLib/src_core
+        - ../../../../Library/UsbHostLib/src_msc
+        - ../../../../Library/Storage
+        - ../../../../ThirdParty/FatFs/source
+        - ../../../../ThirdParty/libmad/inc
+        - ../../../../ThirdParty/shine/src/lib
+        - ..
+      define:
+        - USE_SDH: 1
+        - __WINS__
+        - OPT_SPEED
+      misc:
+        - for-compiler: AC6
+          C:      [ -std=c11 ]
+          C-CPP:  [ -fno-rtti, -funsigned-char, -fshort-enums, -fshort-wchar, -ffunction-sections, -fdata-sections, -Wall, -D__MICROLIB ]
+          CPP:    [ -xc++, -std=c++11 ]
+          ASM:    [ -masm=auto ]
+          Link:
+            - --library_type=microlib --map --load_addr_map_info --xref --callgraph --symbols
+            - --info sizes --info totals --info unused --info veneers
+            - --strict --summary_stderr --info summarysizes
+            - --pd="-DSTACK_SIZE=0x1000" --pd="-DHEAP_SIZE=0x20000"
+    # SDH - GCC
+    - setup: Options for SDH_GNUC
+      for-context: +SDH_GNUC
+      processor: { fpu: dp, mve: fp, endian: little, trustzone: "off" }
+      add-path:
+        - ../../../../Library/CMSIS/Core/Include
+        - ../../../../Library/Device/Nuvoton/M55M1/Include
+        - ../../../../Library/StdDriver/inc
+        - ../../../../Library/UsbHostLib/inc
+        - ../../../../Library/UsbHostLib/src_core
+        - ../../../../Library/UsbHostLib/src_msc
+        - ../../../../Library/Storage
+        - ../../../../ThirdParty/FatFs/source
+        - ../../../../ThirdParty/libmad/inc
+        - ../../../../ThirdParty/shine/src/lib
+        - ..
+      define: [ USE_SDH: 1, __WINS__, OPT_SPEED ]
+      misc:
+        - for-compiler: GCC
+          C: [ -std=gnu11, -Wno-stringop-overflow ]
+          C-CPP: [ -mthumb, -masm-syntax-unified, -fmessage-length=0, -fsigned-char, -ffunction-sections, -fdata-sections ]
+          Link:
+            - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
+            - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
+            - -Wl,-defsym=STACK_SIZE=0x1000 -Wl,-defsym=HEAP_SIZE=0x20000
+          Library: [ "m" ]
+
+    # USBH - AC6
+    - setup: Options for USBH_ARMCLANG
+      for-context: +USBH_ARMCLANG
+      processor: { fpu: dp, mve: fp, endian: little, trustzone: "off" }
+      add-path:
+        - ../../../../Library/CMSIS/Core/Include
+        - ../../../../Library/Device/Nuvoton/M55M1/Include
+        - ../../../../Library/StdDriver/inc
+        - ../../../../Library/UsbHostLib/inc
+        - ../../../../Library/UsbHostLib/src_core
+        - ../../../../Library/UsbHostLib/src_msc
+        - ../../../../Library/Storage
+        - ../../../../ThirdParty/FatFs/source
+        - ../../../../ThirdParty/libmad/inc
+        - ../../../../ThirdParty/shine/src/lib
+        - ..
+      define: [ USE_SDH: 0, STDIN_ECHO: 0, __WINS__, OPT_SPEED ]
+      misc:
+        - for-compiler: AC6
+          C: [ -std=c11 ]
+          C-CPP: [ -fno-rtti, -funsigned-char, -fshort-enums, -fshort-wchar, -ffunction-sections, -fdata-sections, -Wall, -D__MICROLIB ]
+          CPP: [ -xc++, -std=c++11 ]
+          ASM: [ -masm=auto ]
+          Link:
+            - --library_type=microlib --map --load_addr_map_info --xref --callgraph --symbols
+            - --info sizes --info totals --info unused --info veneers
+            - --strict --summary_stderr --info summarysizes
+            - --pd="-DSTACK_SIZE=0x1000" --pd="-DHEAP_SIZE=0x20000"
+
+    # USBH - GCC
+    - setup: Options for USBH_GNUC
+      for-context: +USBH_GNUC
+      processor: { fpu: dp, mve: fp, endian: little, trustzone: "off" }
+      add-path:
+        - ../../../../Library/CMSIS/Core/Include
+        - ../../../../Library/Device/Nuvoton/M55M1/Include
+        - ../../../../Library/StdDriver/inc
+        - ../../../../Library/UsbHostLib/inc
+        - ../../../../Library/UsbHostLib/src_core
+        - ../../../../Library/UsbHostLib/src_msc
+        - ../../../../Library/Storage
+        - ../../../../ThirdParty/FatFs/source
+        - ../../../../ThirdParty/libmad/inc
+        - ../../../../ThirdParty/shine/src/lib
+        - ..
+      define: [ USE_SDH: 0, STDIN_ECHO: 0, __WINS__, OPT_SPEED ]
+      misc:
+        - for-compiler: GCC
+          C: [ -std=gnu11, -Wno-stringop-overflow ]
+          C-CPP: [ -mthumb, -masm-syntax-unified, -fmessage-length=0, -fsigned-char, -ffunction-sections, -fdata-sections ]
+          Link:
+            - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
+            - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
+            - -Wl,-defsym=STACK_SIZE=0x1000 -Wl,-defsym=HEAP_SIZE=0x20000
+          Library: [ "m" ]
+
+  linker:
+    - script: ../../../../Library/Device/Nuvoton/M55M1/Source/ARM/M55M1.scf
+      for-compiler: AC6
+    - script: ../../../../Library/Device/Nuvoton/M55M1/Source/GCC/M55M1.ld
+      for-compiler: GCC
+
+  groups:
+    - group: CMSIS
+      files:
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
+        - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+
+
+    - group: Library
+      files:
+        - file: ../../../../Library/StdDriver/src/retarget.c
+        - file: ../../../../Library/StdDriver/src/clk.c
+        - file: ../../../../Library/StdDriver/src/sys.c
+        - file: ../../../../Library/StdDriver/src/uart.c
+        - file: ../../../../Library/StdDriver/src/gpio.c
+        - file: ../../../../Library/StdDriver/src/i2s.c
+        - file: ../../../../Library/StdDriver/src/i2c.c
+        - file: ../../../../Library/StdDriver/src/pdma.c
+        - file: ../../../../Library/StdDriver/src/sdh.c
+        - file: ../../../../Library/StdDriver/src/spi.c
+        - file: ../../../../Library/StdDriver/src/spim_hyper.c
+
+    - group: FATFS
+      files:
+        - file: ../../../../ThirdParty/FatFs/source/ff.c
+
+    - group: MP3Lib
+      misc:
+      - for-compiler: AC6
+        C-CPP:
+        - -w
+      files:
+        - file: ../../../../ThirdParty/libmad/src/version.c
+        - file: ../../../../ThirdParty/libmad/src/bit.c
+        - file: ../../../../ThirdParty/libmad/src/decoder.c
+        - file: ../../../../ThirdParty/libmad/src/fixed.c
+        - file: ../../../../ThirdParty/libmad/src/frame.c
+        - file: ../../../../ThirdParty/libmad/src/huffman.c
+        - file: ../../../../ThirdParty/libmad/src/layer3.c
+        - file: ../../../../ThirdParty/libmad/src/layer12.c
+        - file: ../../../../ThirdParty/libmad/src/MP3Func.c
+        - file: ../../../../ThirdParty/libmad/src/stream.c
+        - file: ../../../../ThirdParty/libmad/src/synth.c
+        - file: ../../../../ThirdParty/libmad/src/timer.c
+
+    - group: SHINE
+      misc:
+      - for-compiler: AC6
+        C-CPP:
+        - -w
+      files:
+        - file: ../../../../ThirdParty/shine/src/lib/bitstream.c
+        - file: ../../../../ThirdParty/shine/src/lib/huffm.c
+        - file: ../../../../ThirdParty/shine/src/lib/l3.c
+        - file: ../../../../ThirdParty/shine/src/lib/l3bitstream.c
+        - file: ../../../../ThirdParty/shine/src/lib/l3loop.c
+        - file: ../../../../ThirdParty/shine/src/lib/l3mdct.c
+        - file: ../../../../ThirdParty/shine/src/lib/l3subband.c
+        - file: ../../../../ThirdParty/shine/src/lib/reservoir.c
+        - file: ../../../../ThirdParty/shine/src/lib/tables.c
+
+    - group: Source_SDH
+      for-context: [ +SDH_ARMCLANG, +SDH_GNUC ]
+      files:
+        - file: ../main.c
+        - file: ../../../../Library/Storage/diskio_SDH.c
+        - file: ../sdglue.c
+        - file: ../mp3.c
+        - file: ../mp3headerparser.c
+        - file: ../isr.c
+        - file: ../audio_codec.c
+        - file: ../mp3recorder.c
+        - file: ../mp3_storage.c
+        - file: ../hyperram_code.c
+
+    - group: Source_USBH
+      for-context: [ +USBH_ARMCLANG, +USBH_GNUC ]
+      files:
+        - file: ../main.c
+        - file: ../../../../Library/Storage/diskio_USBHost.c
+        - file: ../mp3.c
+        - file: ../mp3headerparser.c
+        - file: ../isr.c
+        - file: ../audio_codec.c
+        - file: ../mp3recorder.c
+        - file: ../mp3_storage.c
+        - file: ../hyperram_code.c
+
+    - group: UsbHostLib
+      for-context: [ +USBH_ARMCLANG, +USBH_GNUC ]
+      files:
+        - file: ../../../../Library/UsbHostLib/src_core/ehci.c
+        - file: ../../../../Library/UsbHostLib/src_core/ehci_iso.c
+        - file: ../../../../Library/UsbHostLib/src_core/hub.c
+        - file: ../../../../Library/UsbHostLib/src_core/mem_alloc.c
+        - file: ../../../../Library/UsbHostLib/src_core/ohci_0.c
+        - file: ../../../../Library/UsbHostLib/src_core/ohci_1.c
+        - file: ../../../../Library/UsbHostLib/src_core/usb_core.c
+
+    - group: UsbHostLib_MSC
+      for-context: [ +USBH_ARMCLANG, +USBH_GNUC ]
+      files:
+        - file: ../../../../Library/UsbHostLib/src_msc/msc_driver.c
+        - file: ../../../../Library/UsbHostLib/src_msc/msc_xfer.c

@@ -18,7 +18,22 @@
 #define SPI_OP_ENABLE                       (1)
 #define SPI_OP_DISABLE                      (0)
 
-#define SPI_ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#define SPI_ARRAY_SIZE(arr)                 (sizeof(arr) / sizeof((arr)[0]))
+
+#define SPI_RES_NAME_INNER(n)               spi##n##_res
+#define SPI_RES_NAME(n)                     SPI_RES_NAME_INNER(n)
+
+#define SPI_DRIVER_NAME_INNER(n)            Driver_SPI##n
+#define SPI_DRIVER_NAME(n)                  SPI_DRIVER_NAME_INNER(n)
+
+#ifndef SPI_CONCAT2
+    #define SPI_CAT2_INNER(a, b)            a##b
+    #define SPI_CONCAT2(a, b)               SPI_CAT2_INNER(a, b)
+#endif
+#ifndef SPI_CONCAT3
+    #define SPI_CAT3_INNER(a, b, c)         a##b##c
+    #define SPI_CONCAT3(a, b, c)            SPI_CAT3_INNER(a, b, c)
+#endif
 
 // Macro for declaring functions (for instances)
 #define FUNCS_DECLARE(n)                                                                                        \
@@ -51,19 +66,19 @@
 
 // Macro for defining driver structures (for instances)
 #define SPI_DRIVER(n)                   \
-    ARM_DRIVER_SPI Driver_SPI##n = {    \
-                                        SPI##n##_GetVersion,        \
-                                        SPI##n##_GetCapabilities,   \
-                                        SPI##n##_Initialize,        \
-                                        SPI##n##_Uninitialize,      \
-                                        SPI##n##_PowerControl,      \
-                                        SPI##n##_Send,              \
-                                        SPI##n##_Receive,           \
-                                        SPI##n##_Transfer,          \
-                                        SPI##n##_GetDataCount,      \
-                                        SPI##n##_Control,           \
-                                        SPI##n##_GetStatus          \
-                                   };
+    ARM_DRIVER_SPI SPI_DRIVER_NAME(n) = {   \
+                                            SPI##n##_GetVersion,        \
+                                            SPI##n##_GetCapabilities,   \
+                                            SPI##n##_Initialize,        \
+                                            SPI##n##_Uninitialize,      \
+                                            SPI##n##_PowerControl,      \
+                                            SPI##n##_Send,              \
+                                            SPI##n##_Receive,           \
+                                            SPI##n##_Transfer,          \
+                                            SPI##n##_GetDataCount,      \
+                                            SPI##n##_Control,           \
+                                            SPI##n##_GetStatus          \
+                                        };
 
 //------------------------------------------------------------------------------
 /* SPI status */

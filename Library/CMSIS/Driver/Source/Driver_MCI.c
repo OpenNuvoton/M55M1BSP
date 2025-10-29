@@ -155,22 +155,22 @@ typedef struct MCI_Resources
 #endif
 
 // List of available SDH instance infos
-static const MCI_RESOURCES *const mci_res_list[] =
-{
-#if (RTE_MCI0 == 1)
-    &mci0_res,
-#else
-    NULL,
-#endif // RTE_MCI0
-
-#if (RTE_MCI1 == 1)
-    &mci1_res,
-#else
-    NULL,
-#endif // RTE_MCI1
-
-    NULL,
-};
+//static const MCI_RESOURCES *const mci_res_list[] =
+//{
+//#if (RTE_MCI0 == 1)
+//    &mci0_res,
+//#else
+//    NULL,
+//#endif // RTE_MCI0
+//
+//#if (RTE_MCI1 == 1)
+//    &mci1_res,
+//#else
+//    NULL,
+//#endif // RTE_MCI1
+//
+//    NULL,
+//};
 
 /* Local Functions */
 static ARM_DRIVER_VERSION MCIn_GetVersion(void);
@@ -186,12 +186,10 @@ static int32_t MCIn_SetupTransfer(MCI_RESOURCES *pMCIn, uint8_t  *data, uint32_t
 static int32_t MCIn_AbortTransfer(MCI_RESOURCES *pMCIn);
 static int32_t MCIn_Control(MCI_RESOURCES *pMCIn, uint32_t control, uint32_t arg);
 static ARM_MCI_STATUS MCIn_GetStatus(MCI_RESOURCES *pMCIn);
-static void MCIn_SignalEvent(MCI_RESOURCES *pMCIn, uint32_t event);
 
 static void SDH_InitCard(SDH_T *sdh, uint32_t u32CardDetect);
 static int32_t SDH_SetClock(MCI_RESOURCES *pMCIn, uint32_t u32ClkEn);
 static uint32_t SDH_Get_clock(SDH_T *sdh);
-static int32_t MCIn_UnlockCard(MCI_RESOURCES *pMCIn);
 
 extern uint32_t SDH_SwitchToHighSpeed(SDH_T *sdh, SDH_INFO_T *pSD);
 
@@ -254,7 +252,7 @@ void SDH_IRQHandler(MCI_RESOURCES *pMCIn)
     unsigned int volatile isr;
     unsigned int volatile ier;
     uint32_t u32CDState = 0;
-    uint32_t u32Event = 0;
+    //uint32_t u32Event = 0;
 
     // FMI data abort interrupt
     if (pMCIn->phsdh->GINTSTS & SDH_GINTSTS_DTAIF_Msk)
@@ -281,11 +279,11 @@ void SDH_IRQHandler(MCI_RESOURCES *pMCIn)
             (isr & SDH_INTSTS_CDIF_Msk))    // card detect
     {
         //----- SD interrupt status
-        // it is work to delay 50 times for SD_CLK = 200KHz
+        // delay 50 us to sync the GPIO and SDH
         {
-            int volatile u32i;         // delay 30 fail, 50 OK
+            (void)pMCIn->phsdh->INTSTS;
 
-            for (u32i = 0; u32i < 0x500; u32i++); // delay to make sure got updated value from REG_SDISR.
+            CLK_SysTickDelay(50);
 
             isr = pMCIn->phsdh->INTSTS;
         }
@@ -293,20 +291,15 @@ void SDH_IRQHandler(MCI_RESOURCES *pMCIn)
         u32CDState = (pMCIn->u32CDPinEn == SDH_OP_DISABLE) ? (!(isr & SDH_INTSTS_CDSTS_Msk)) :
                      (isr & SDH_INTSTS_CDSTS_Msk);
 
-        //#if (DEF_CARD_DETECT_SOURCE == CardDetect_From_DAT3)
-        //        if (!(isr & SDH_INTSTS_CDSTS_Msk))
-        //#else
-        //        if (isr & SDH_INTSTS_CDSTS_Msk)
-        //#endif
         if (u32CDState)
         {
-            printf("\n***** card remove !\n");
+            //printf("\n***** card remove !\n");
             pMCIn->pSD->IsCardInsert = FALSE;   // SDISR_CD_Card = 1 means card remove for GPIO mode
             memset(pMCIn->pSD, 0, sizeof(SDH_INFO_T));
         }
         else
         {
-            printf("***** card insert !\n");
+            //printf("***** card insert !\n");
             //SDH_Open(SDH0, CardDetect_From_GPIO);
             //SDH_Probe(SDH0);
         }
@@ -411,8 +404,6 @@ static int32_t MCIn_Uninitialize(MCI_RESOURCES *pMCIn)
 
 static int32_t MCIn_PowerControl(MCI_RESOURCES *pMCIn, ARM_POWER_STATE state)
 {
-    uint32_t tout_cnt;
-
     if ((state != ARM_POWER_OFF)  &&
             (state != ARM_POWER_FULL) &&
             (state != ARM_POWER_LOW))
@@ -508,7 +499,6 @@ static void MCIn_GetSdInfo(SDH_T *sdh, uint32_t *u32Resp)
     unsigned int R_LEN, C_Size, MULT, size;
     uint32_t Buffer[4];
     SDH_INFO_T *pSD;
-    int32_t u32TimeOutCount = SDH_TIMEOUT_CNT;
 
     if (sdh == SDH0)
     {
@@ -618,7 +608,6 @@ int32_t MCIn_SendCommand(MCI_RESOURCES *pMCIn, uint32_t cmd, uint32_t arg,
     int32_t i32Res = 0;
     int32_t i32CbEvent = ARM_MCI_EVENT_COMMAND_COMPLETE;
     //uint32_t card_type = pSD->CardType;
-    uint32_t timeout = SDH_TIMEOUT_CNT;
     uint32_t u32Sector = 0;
 
     if ((flags & MCI_RESPONSE_EXPECTED_Msk) && (response == NULL))
@@ -830,16 +819,6 @@ IgnoreSendCMD:
                     break;
                 }
 
-                // Check if the card is locked
-                //if ((resp7 >> 25) & 0x1)
-                //{
-                //if (MCIn_UnlockCard(pMCIn) != ARM_DRIVER_OK)
-                //{
-                //    i32CbEvent = ARM_MCI_EVENT_COMMAND_ERROR;
-                //    break;
-                //}
-                //}
-
                 // Simulate response status: Simulate entering TRAN state based on card type
                 uint32_t fake_r1 = 0;
                 fake_r1 |= (1UL << 8);         // Ready for Data
@@ -1020,7 +999,14 @@ static int32_t MCIn_SetupTransfer(MCI_RESOURCES *pMCIn, uint8_t *data,
     pMCIn->sCtrl.sDrvStatus.sdio_interrupt   = 0U;
     pMCIn->sCtrl.sDrvStatus.ccs = 0U;
 
-    pMCIn->sCtrl.u8Flags |= MCI_DATA;
+    if ((mode & ARM_MCI_TRANSFER_WRITE) == 0)
+    {
+        pMCIn->sCtrl.u8Flags |= MCI_DATA;
+    }
+    else
+    {
+        pMCIn->sCtrl.u8Flags &= ~MCI_DATA;
+    }
 
     //printf("MCIn_SetupTransfer: block_count %d, block_size %d, mode %d\n",
     //       block_count, block_size, mode);
@@ -1186,103 +1172,6 @@ static ARM_MCI_STATUS MCIn_GetStatus(MCI_RESOURCES *pMCIn)
     return pMCIn->sCtrl.sDrvStatus;
 }
 
-static int32_t MCIn_UnlockCard(MCI_RESOURCES *pMCIn)
-{
-    SDH_T *sdh = pMCIn->phsdh;
-    SDH_INFO_T *pSD = pMCIn->pSD;
-    uint8_t *buf;
-    uint32_t arg = 0;
-    int32_t status;
-    int32_t timeout = SDH_TIMEOUT_CNT;
-
-    /* Prepare unlock data format (CMD42) */
-    uint8_t unlock_cmd42_buf[6] __attribute__((aligned(4))) =
-    {
-        0x00,  // Set password (0x00) + No password length
-        0x00,  // password length = 0
-        0x00,  // reserved
-        0x00,  // reserved
-        0x00,  // reserved
-        0x00   // reserved
-    };
-
-    /* Set block length to 6 bytes */
-    sdh->BLEN = 6 - 1;
-
-    /* Set DMA transfer data address */
-    buf = (uint8_t *)(((uint32_t)unlock_cmd42_buf + 3) & ~0x3UL); // 4-byte 對齊
-    memcpy(buf, unlock_cmd42_buf, 6);
-    sdh->DMASA = (uint32_t)buf;
-
-    /* Wait for DMA Reset to complete */
-    sdh->DMACTL |= SDH_DMACTL_DMARST_Msk;
-
-    while ((sdh->DMACTL & SDH_DMACTL_DMARST_Msk) && (--timeout > 0));
-
-    if (timeout <= 0) return SDH_ERR_TIMEOUT;
-
-    /* Clear error and interrupt flags */
-    sdh->INTSTS = 0xFFFFFFFF;
-    pSD->i32ErrCode = 0;
-
-    /* Send CMD42 command (Unlock Command) */
-    sdh->CMDARG = arg;
-    sdh->CTL = (42ul << 8) |
-               SDH_CTL_COEN_Msk |
-               SDH_CTL_RIEN_Msk |
-               SDH_CTL_DOEN_Msk;
-
-    timeout = SDH_TIMEOUT_CNT;
-
-    while ((sdh->CTL & SDH_CTL_COEN_Msk) && (--timeout > 0));
-
-    if (timeout <= 0) return SDH_ERR_TIMEOUT;
-
-    /* Check if the unlock was successful */
-    if ((sdh->INTSTS & SDH_INTSTS_CRCIF_Msk) && !(sdh->INTSTS & SDH_INTSTS_CRC16_Msk))
-    {
-        sdh->INTSTS = SDH_INTSTS_CRCIF_Msk;
-        return SDH_CRC_ERROR;
-    }
-
-    return Successful;
-}
-
-static void SDH_Show_info(SDH_T *sdh)
-{
-    SDH_INFO_T *pSDHxInfo = (uint32_t)sdh == (uint32_t)SDH0 ? &SD0 : &SD1;
-
-    // get information about SD card
-    SDH_Get_SD_info(sdh);
-
-    // show card type
-    switch (pSDHxInfo->CardType)
-    {
-        case SDH_TYPE_SD_HIGH:
-            printf("    SDHC card insert to SD port!\n");
-            break;
-
-        case SDH_TYPE_SD_LOW:
-            printf("    SD1.1 card insert to SD port!\n");
-            break;
-
-        case SDH_TYPE_MMC:
-            printf("    MMC card insert to SD port!\n");
-            break;
-
-        default:
-            printf("    Unknown card insert to SD port!\n");
-            break;
-    }
-
-    printf("    SD Card size = %d Kbytes\n",
-           pSDHxInfo->diskSize);
-    printf("                 = %d bytes * %d sectors\n",
-           pSDHxInfo->sectorSize,
-           pSDHxInfo->totalSectorN);
-    return;
-}
-
 static int32_t SDH_SetClock(MCI_RESOURCES *pMCIn, uint32_t u32ClkEn)
 {
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
@@ -1421,9 +1310,6 @@ static void SDH_InitCard(SDH_T *sdh, uint32_t u32CardDetect)
     SDH_Probe(sdh);
 
     sdh->INTEN &= ~SDH_INTEN_CDIEN_Msk;
-
-    // Show SDH info
-    //SDH_Show_info(sdh);
 
     /* Lock protected registers */
     if (u32RegLockLevel)

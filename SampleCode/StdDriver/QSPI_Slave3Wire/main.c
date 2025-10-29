@@ -15,8 +15,6 @@
 
 static uint32_t g_au32SourceData[TEST_COUNT] = {0};
 static uint32_t g_au32DestinationData[TEST_COUNT] = {0};
-static volatile uint32_t g_u32TxDataCount = 0;
-static volatile uint32_t g_u32RxDataCount = 0;
 
 void SYS_Init(void)
 {

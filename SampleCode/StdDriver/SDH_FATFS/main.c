@@ -316,6 +316,7 @@ NVT_ITCM void SDH0_IRQHandler(void)
 {
     unsigned int volatile isr;
     unsigned int volatile ier;
+    volatile uint32_t u32CDState;
 
     // FMI data abort interrupt
     if (SDH0->GINTSTS & SDH_GINTSTS_DTAIF_Msk)
@@ -340,21 +341,19 @@ NVT_ITCM void SDH0_IRQHandler(void)
             (isr & SDH_INTSTS_CDIF_Msk))    // card detect
     {
         //----- SD interrupt status
-        // it is work to delay 50 times for SD_CLK = 200KHz
+        // delay 50 us to sync the GPIO and SDH
         {
-            int volatile i;         // delay 30 fail, 50 OK
+            (void)SDH0->INTSTS;
 
-            for (i = 0; i < 0x500; i++); // delay to make sure got updated value from REG_SDISR.
+            CLK_SysTickDelay(50);
 
             isr = SDH0->INTSTS;
         }
 
-#if (DEF_CARD_DETECT_SOURCE == CardDetect_From_DAT3)
+        u32CDState = (((SDH0->INTEN & SDH_INTEN_CDSRC_Msk) >> SDH_INTEN_CDSRC_Pos) == 0) ?
+                     (!(SDH0->INTSTS & SDH_INTSTS_CDSTS_Msk)) : (SDH0->INTSTS & SDH_INTSTS_CDSTS_Msk);
 
-        if (!(isr & SDH_INTSTS_CDSTS_Msk))
-#else
-        if (isr & SDH_INTSTS_CDSTS_Msk)
-#endif
+        if (u32CDState)
         {
             printf("\n***** card remove !\n");
             SD0.IsCardInsert = FALSE;   // SDISR_CD_Card = 1 means card remove for GPIO mode

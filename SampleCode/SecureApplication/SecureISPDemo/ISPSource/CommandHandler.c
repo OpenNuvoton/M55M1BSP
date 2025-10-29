@@ -84,11 +84,11 @@ void BytesSwap(char *buf, int32_t len)
 int32_t CalculateSHA256(uint32_t start, uint32_t end, uint32_t digest[], E_SHA_OP_MODE mode, E_SHA_SRC src)
 {
     volatile int32_t    i, bytes;
-    uint32_t            *ptr, addr, data, Hash[8];
+    uint32_t            *ptr, u32Addr, data, Hash[8];
 
     bytes   = end - start;
     ptr     = (uint32_t *)start;
-    addr    = (uint32_t)ptr;
+    u32Addr = (uint32_t)ptr;
 
     if ((mode == SHA_ONESHOT) || (mode == SHA_CONTI_START))
     {
@@ -121,12 +121,12 @@ int32_t CalculateSHA256(uint32_t start, uint32_t end, uint32_t digest[], E_SHA_O
             else if (src == SHA_SRC_FLASH)
             {
                 /* NOT Support calculate XOM region */
-                if (addr < 512)
-                    data = FMC_Read((addr & 0x0FFFFFFF)); /* First 512Byte using FMC ISP command */
+                if (u32Addr < FMC_VECMAP_SIZE)
+                    data = FMC_Read((u32Addr & 0x0FFFFFFF)); /* First FMC_VECMAP_SIZE using FMC ISP read command */
                 else
-                    data = inpw((addr & 0x0FFFFFFF));
+                    data = inpw((u32Addr & 0x0FFFFFFF));
 
-                addr += 4;
+                u32Addr += 4;
                 bytes -= 4;
             }
 
@@ -288,8 +288,6 @@ static uint32_t PACKET_ExecCRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
   */
 static int32_t PACKET_AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    volatile int32_t    i;
-
     /* KEY and IV are byte order (32 bit) reversed, Swap32(x) and stored in ISP_INFO_T */
     memcpy((void *)&CRYPTO->AES_KEY[0], KEY, (4 * 8));
     memcpy((void *)&CRYPTO->AES_IV[0], IV, (4 * 4));
@@ -331,7 +329,7 @@ static int32_t PACKET_AES256Decrypt(uint32_t *in, uint32_t *out, uint32_t len, u
 
 int32_t CMD_GenRspPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    i;
+    uint32_t    i;
 
     /* Generate CCITT */
     PACKET_ExecCCITT((uint32_t *)pCMD, sizeof(CMD_PACKET_T) - 8, 0);
@@ -423,7 +421,7 @@ int32_t CMD_GenRspPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 
 int32_t CMD_ParseReqPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t  i;
+    uint32_t i;
 
 #if (0)
     {
@@ -1077,21 +1075,23 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
     return ret;
 }
 
-int32_t _PageErase(uint32_t addr, uint32_t count, uint32_t u32CmdMask)
+int32_t _PageErase(uint32_t u32Addr, uint32_t u32Count, uint32_t u32CmdMask)
 {
-    volatile int32_t    i, ret = -1;
+    uint32_t i;
+    int32_t  ret = -1;
 
-    DBG("[Page erase] addr: 0x%x, page counts: %d.\n", addr, count);
+    NVT_UNUSED(u32CmdMask);
+    DBG("[Page erase] u32Addr: 0x%x, page counts: %d.\n", u32Addr, u32Count);
 
-    addr &= ~NS_OFFSET;
+    u32Addr &= ~NS_OFFSET;
 
     /* Check address and counts */
-    if (((addr % FMC_FLASH_PAGE_SIZE) != 0) || (count == 0))
+    if (((u32Addr % FMC_FLASH_PAGE_SIZE) != 0) || (u32Count == 0))
         return ERR_PAGE_ALIGN;
 
     /* Not use u32CmdMask */
     //    /* Check for erase LDROM or APROM */
-    //    if(addr & FMC_LDROM_BASE)
+    //    if(u32Addr & FMC_LDROM_BASE)
     //    {
     //        if(u32CmdMask & MASK_UPDATE_LDROM)
     //            return CMD_IS_MASKED;
@@ -1102,22 +1102,22 @@ int32_t _PageErase(uint32_t addr, uint32_t count, uint32_t u32CmdMask)
     //            return CMD_IS_MASKED;
     //    }
 
-    if ((addr < GetMaxAPROMSize()) && (addr >= FMC_APROM_BASE))
+    if ((u32Addr < GetMaxAPROMSize()) && (u32Addr >= FMC_APROM_BASE))
     {
-        if (count > (GetMaxAPROMSize() / FMC_FLASH_PAGE_SIZE))
+        if (u32Count > (GetMaxAPROMSize() / FMC_FLASH_PAGE_SIZE))
             return ERR_OVER_RANGE;
 
-        if ((addr + (count * FMC_FLASH_PAGE_SIZE)) > GetMaxAPROMSize())
+        if ((u32Addr + (u32Count * FMC_FLASH_PAGE_SIZE)) > GetMaxAPROMSize())
             return ERR_OVER_RANGE;
 
         FMC_ENABLE_AP_UPDATE();
     }
-    else if ((addr < FMC_LDROM_END) && (addr >= FMC_LDROM_BASE))
+    else if ((u32Addr < FMC_LDROM_END) && (u32Addr >= FMC_LDROM_BASE))
     {
-        if (count > (FMC_LDROM_SIZE / FMC_FLASH_PAGE_SIZE))
+        if (u32Count > (FMC_LDROM_SIZE / FMC_FLASH_PAGE_SIZE))
             return ERR_OVER_RANGE;
 
-        if ((addr + (count * FMC_FLASH_PAGE_SIZE)) > FMC_LDROM_END)
+        if ((u32Addr + (u32Count * FMC_FLASH_PAGE_SIZE)) > FMC_LDROM_END)
             return ERR_OVER_RANGE;
 
         FMC_ENABLE_LD_UPDATE();
@@ -1127,19 +1127,19 @@ int32_t _PageErase(uint32_t addr, uint32_t count, uint32_t u32CmdMask)
         return ERR_OVER_RANGE;
     }
 
-    for (i = 0; i < count; i++)
+    for (i = 0; i < u32Count; i++)
     {
         ret = ERR_ISP_ERASE;
 
         /* perform erase page */
-        if (FMC_Erase(addr) < 0)
+        if (FMC_Erase(u32Addr) < 0)
             break;
 
         /* Run 2 page checksum and verify its result */
-        if (FMC_GetChkSum(addr, FMC_FLASH_PAGE_SIZE) != ALL_ONE_2PAGE_CHKS)
+        if (FMC_GetChkSum(u32Addr, FMC_FLASH_PAGE_SIZE) != ALL_ONE_2PAGE_CHKS)
             break;
 
-        addr += FMC_FLASH_PAGE_SIZE;
+        u32Addr += FMC_FLASH_PAGE_SIZE;
         ret = 0;
     }
 
@@ -1148,16 +1148,17 @@ int32_t _PageErase(uint32_t addr, uint32_t count, uint32_t u32CmdMask)
     return ret;
 }
 
-static int32_t _IsValidFlashRegion(uint32_t addr, uint32_t size, uint32_t u32CmdMask)
+static int32_t _IsValidFlashRegion(uint32_t u32Addr, uint32_t size, uint32_t u32CmdMask)
 {
-    DBG("[Check flash region] addr: 0x%x, size: %d.\n", addr, size);
+    NVT_UNUSED(u32CmdMask);
+    DBG("[Check flash region] u32Addr: 0x%x, size: %d.\n", u32Addr, size);
 
     /* Not use u32CmdMask */
 
-    addr &= ~NS_OFFSET;
+    u32Addr &= ~NS_OFFSET;
 
     /* Check address and length */
-    if ((addr % 4) != 0)
+    if ((u32Addr % 4) != 0)
         return ERR_INVALID_ADDRESS;
 
     if (((size % 4) != 0) || (size == 0))
@@ -1165,7 +1166,7 @@ static int32_t _IsValidFlashRegion(uint32_t addr, uint32_t size, uint32_t u32Cmd
 
     /* Not use u32CmdMask */
     //    /* Check for erase LDROM or APROM */
-    //    if(addr & FMC_LDROM_BASE)
+    //    if(u32Addr & FMC_LDROM_BASE)
     //    {
     //        if(u32CmdMask & MASK_UPDATE_LDROM)
     //            return CMD_IS_MASKED;
@@ -1176,16 +1177,16 @@ static int32_t _IsValidFlashRegion(uint32_t addr, uint32_t size, uint32_t u32Cmd
     //            return CMD_IS_MASKED;
     //    }
 
-    if ((addr < GetMaxAPROMSize()) && (addr >= FMC_APROM_BASE))
+    if ((u32Addr < GetMaxAPROMSize()) && (u32Addr >= FMC_APROM_BASE))
     {
-        if (((addr + size) > GetMaxAPROMSize()) || ((addr + size) < addr))
+        if (((u32Addr + size) > GetMaxAPROMSize()) || ((u32Addr + size) < u32Addr))
             return ERR_OVER_RANGE;
 
         FMC_ENABLE_AP_UPDATE();
     }
-    else if ((addr < FMC_LDROM_END) && (addr >= FMC_LDROM_BASE))
+    else if ((u32Addr < FMC_LDROM_END) && (u32Addr >= FMC_LDROM_BASE))
     {
-        if (((addr + size) > FMC_LDROM_END) || ((addr + size) < addr))
+        if (((u32Addr + size) > FMC_LDROM_END) || ((u32Addr + size) < u32Addr))
             return ERR_OVER_RANGE;
 
         FMC_ENABLE_LD_UPDATE();
@@ -1198,12 +1199,12 @@ static int32_t _IsValidFlashRegion(uint32_t addr, uint32_t size, uint32_t u32Cmd
     return 0;
 }
 
-static int32_t _ISPWrite(uint32_t addr, uint32_t data)
+static int32_t _ISPWrite(uint32_t u32Addr, uint32_t data)
 {
-    FMC->ISPCMD = FMC_ISPCMD_PROGRAM;
-    FMC->ISPADDR = addr;
-    FMC->ISPDAT = data;
-    FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
+    FMC->ISPCMD  = FMC_ISPCMD_PROGRAM;
+    FMC->ISPADDR = u32Addr;
+    FMC->ISPDAT  = data;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
 
     while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) ;
 
@@ -1217,11 +1218,11 @@ static int32_t _ISPWrite(uint32_t addr, uint32_t data)
     return 0;
 }
 
-static uint32_t _ISPRead(uint32_t addr)
+static uint32_t _ISPRead(uint32_t u32Addr)
 {
-    FMC->ISPCMD = FMC_ISPCMD_READ;
-    FMC->ISPADDR = addr;
-    FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
+    FMC->ISPCMD  = FMC_ISPCMD_READ;
+    FMC->ISPADDR = u32Addr;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
 
     while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) { }
 
@@ -1235,34 +1236,35 @@ static uint32_t _ISPRead(uint32_t addr)
     return FMC->ISPDAT;
 }
 
-static int32_t _WriteFlash(uint32_t addr, uint32_t size, uint32_t *pu32Data, uint32_t u32CmdMask)
+static int32_t _WriteFlash(uint32_t u32Addr, uint32_t size, uint32_t *pu32Data, uint32_t u32CmdMask)
 {
-    volatile int32_t    i, ret = -1;
+    uint32_t i;
+    int32_t ret = -1;
 
-    DBG("[Write flash] addr: 0x%x, size: %d.\n", addr, size);
+    DBG("[Write flash] u32Addr: 0x%x, size: %d.\n", u32Addr, size);
 
-    if ((ret = _IsValidFlashRegion(addr, size, u32CmdMask)) != 0)
+    if ((ret = _IsValidFlashRegion(u32Addr, size, u32CmdMask)) != 0)
         return ret;
 
-    addr &= ~NS_OFFSET;
+    u32Addr &= ~NS_OFFSET;
 
     for (i = 0; i < (size / 4); i++)
     {
         /* write */
-        if (_ISPWrite(addr, pu32Data[i]) != 0)
+        if (_ISPWrite(u32Addr, pu32Data[i]) != 0)
         {
             ret = ERR_ISP_WRITE;
             break;
         }
 
         /* verify */
-        if (_ISPRead(addr) != pu32Data[i])
+        if (_ISPRead(u32Addr) != pu32Data[i])
         {
             ret = ERR_ISP_WRITE;
             break;
         }
 
-        addr += 4;
+        u32Addr += 4;
         ret = 0;
     }
 
@@ -1290,9 +1292,9 @@ static int32_t _WriteFlash(uint32_t addr, uint32_t size, uint32_t *pu32Data, uin
 */
 int32_t ParseCommands(ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    i, ret = 0, cmd_case, tmp;
+    volatile int32_t    ret = 0, cmd_case;
     CMD_PACKET_T        cmd;
-    uint32_t            addr, size;
+    uint32_t            u32Addr, size;
     uint32_t            msg[8], R[8], S[8];
     ECC_PUBKEY_T        PubKey;
 
@@ -1364,9 +1366,9 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
 
                 case CMD_WRITE:
                     DBG("[CMD_WRITE] (0x%x, 0x%x, 0x%x)\n", cmd.au32Data[0], cmd.au32Data[1], cmd.au32Data[2]);
-                    addr = cmd.au32Data[0];
+                    u32Addr = cmd.au32Data[0];
                     size = cmd.au32Data[1];
-                    ret = _WriteFlash(addr, size, &cmd.au32Data[2], pISPInfo->u32CmdMask);
+                    ret = _WriteFlash(u32Addr, size, &cmd.au32Data[2], pISPInfo->u32CmdMask);
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
                     cmd.au32Data[0] = (ret == 0) ? STS_OK : ret;
                     cmd.u16Len      = (4 * 1);
@@ -1393,9 +1395,9 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
 
                 case CMD_MASS_WRITE:
                     DBG("[CMD_MASS_WRITE]\n");
-                    addr = pISPInfo->tmp0[0] + (cmd.u16PacketID * 48); // maximum data length is 48
+                    u32Addr = pISPInfo->tmp0[0] + (cmd.u16PacketID * 48); // maximum data length is 48
                     size = cmd.u16Len;
-                    ret = _WriteFlash(addr, size, cmd.au32Data, pISPInfo->u32CmdMask);
+                    ret = _WriteFlash(u32Addr, size, cmd.au32Data, pISPInfo->u32CmdMask);
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
                     cmd.au32Data[0] = (ret == 0) ? STS_OK : ret;
                     cmd.u16Len      = (4 * 1);

@@ -46,7 +46,7 @@ volatile uint8_t u8TxIdx = 0, u8RxIdx = 0;
 volatile uint32_t u32BuffPos = 0;
 
 //------------------------------------------------------------------------------
-void Delay(int count)
+void Delay(uint32_t count)
 {
     volatile uint32_t i;
 

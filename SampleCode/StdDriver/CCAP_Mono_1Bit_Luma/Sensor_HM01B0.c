@@ -134,6 +134,9 @@ int32_t InitHM01B0_4BIT_YUV422(uint32_t u32Param)
     uint8_t HM01B0_Addr0 = 0x24;
     uint8_t u8DeviceID = (HM01B0_Addr0 << 1);
     uint8_t u8ID[2] = {0};
+
+    NVT_UNUSED(u32Param);
+
     SET_GPIO_PH2();        /* PH2 for GPIO to act as SCL */
     SET_GPIO_PH3();        /* PH3 for GPIO to act as SDA */
 

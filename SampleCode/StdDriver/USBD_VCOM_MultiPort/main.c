@@ -509,7 +509,7 @@ void UART0_Init(void)
 NVT_ITCM void DEBUG_PORT_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = DEBUG_PORT->INTSTS;
@@ -548,14 +548,14 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
         if (g_u16ComTbytes0 && (DEBUG_PORT->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes0;
+            u32Size = g_u16ComTbytes0;
 
-            if (i32Size >= DEBUG_PORT_FIFO_SIZE)
+            if (u32Size >= DEBUG_PORT_FIFO_SIZE)
             {
-                i32Size = DEBUG_PORT_FIFO_SIZE;
+                u32Size = DEBUG_PORT_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf0[g_u16ComThead0++];
                 DEBUG_PORT->DAT = u8InChar;
@@ -564,7 +564,7 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
                     g_u16ComThead0 = 0;
 
                 g_u16ComTbytes0--;
-                i32Size--;
+                u32Size--;
             }
         }
         else
@@ -580,7 +580,7 @@ NVT_ITCM void DEBUG_PORT_IRQHandler(void)
 NVT_ITCM void UART1_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = UART1->INTSTS;
@@ -619,14 +619,14 @@ NVT_ITCM void UART1_IRQHandler(void)
         if (g_u16ComTbytes1 && (UART1->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes1;
+            u32Size = g_u16ComTbytes1;
 
-            if (i32Size >= UART1_FIFO_SIZE)
+            if (u32Size >= UART1_FIFO_SIZE)
             {
-                i32Size = UART1_FIFO_SIZE;
+                u32Size = UART1_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf1[g_u16ComThead1++];
                 UART1->DAT = u8InChar;
@@ -635,7 +635,7 @@ NVT_ITCM void UART1_IRQHandler(void)
                     g_u16ComThead1 = 0;
 
                 g_u16ComTbytes1--;
-                i32Size--;
+                u32Size--;
             }
         }
         else
@@ -651,7 +651,7 @@ NVT_ITCM void UART1_IRQHandler(void)
 NVT_ITCM void UART2_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = UART2->INTSTS;
@@ -692,14 +692,14 @@ NVT_ITCM void UART2_IRQHandler(void)
         if (g_u16ComTbytes2 && (UART2->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes2;
+            u32Size = g_u16ComTbytes2;
 
-            if (i32Size >= UART2_FIFO_SIZE)
+            if (u32Size >= UART2_FIFO_SIZE)
             {
-                i32Size = UART2_FIFO_SIZE;
+                u32Size = UART2_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf2[g_u16ComThead2++];
                 UART2->DAT = u8InChar;
@@ -710,7 +710,7 @@ NVT_ITCM void UART2_IRQHandler(void)
                 }
 
                 g_u16ComTbytes2--;
-                i32Size--;
+                u32Size--;
             }
         }
         else
@@ -726,7 +726,7 @@ NVT_ITCM void UART2_IRQHandler(void)
 NVT_ITCM void UART3_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = UART3->INTSTS;
@@ -767,14 +767,14 @@ NVT_ITCM void UART3_IRQHandler(void)
         if (g_u16ComTbytes3 && (UART3->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes3;
+            u32Size = g_u16ComTbytes3;
 
-            if (i32Size >= UART3_FIFO_SIZE)
+            if (u32Size >= UART3_FIFO_SIZE)
             {
-                i32Size = UART3_FIFO_SIZE;
+                u32Size = UART3_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf3[g_u16ComThead3++];
                 UART3->DAT = u8InChar;
@@ -785,7 +785,7 @@ NVT_ITCM void UART3_IRQHandler(void)
                 }
 
                 g_u16ComTbytes3--;
-                i32Size--;
+                u32Size--;
             }
         }
         else
@@ -801,7 +801,7 @@ NVT_ITCM void UART3_IRQHandler(void)
 NVT_ITCM void UART4_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = UART4->INTSTS;
@@ -842,14 +842,14 @@ NVT_ITCM void UART4_IRQHandler(void)
         if (g_u16ComTbytes4 && (UART4->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes4;
+            u32Size = g_u16ComTbytes4;
 
-            if (i32Size >= UART4_FIFO_SIZE)
+            if (u32Size >= UART4_FIFO_SIZE)
             {
-                i32Size = UART4_FIFO_SIZE;
+                u32Size = UART4_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf4[g_u16ComThead4++];
                 UART4->DAT = u8InChar;
@@ -860,7 +860,7 @@ NVT_ITCM void UART4_IRQHandler(void)
                 }
 
                 g_u16ComTbytes4--;
-                i32Size--;
+                u32Size--;
             }
         }
         else
@@ -876,7 +876,7 @@ NVT_ITCM void UART4_IRQHandler(void)
 NVT_ITCM void UART5_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = UART5->INTSTS;
@@ -917,14 +917,14 @@ NVT_ITCM void UART5_IRQHandler(void)
         if (g_u16ComTbytes5 && (UART5->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes5;
+            u32Size = g_u16ComTbytes5;
 
-            if (i32Size >= UART5_FIFO_SIZE)
+            if (u32Size >= UART5_FIFO_SIZE)
             {
-                i32Size = UART5_FIFO_SIZE;
+                u32Size = UART5_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf5[g_u16ComThead5++];
                 UART5->DAT = u8InChar;
@@ -935,7 +935,7 @@ NVT_ITCM void UART5_IRQHandler(void)
                 }
 
                 g_u16ComTbytes5--;
-                i32Size--;
+                u32Size--;
             }
         }
         else
@@ -953,7 +953,7 @@ NVT_ITCM void UART5_IRQHandler(void)
 NVT_ITCM void UART6_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = UART6->INTSTS;
@@ -994,14 +994,14 @@ NVT_ITCM void UART6_IRQHandler(void)
         if (g_u16ComTbytes6 && (UART6->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes6;
+            u32Size = g_u16ComTbytes6;
 
-            if (i32Size >= UART6_FIFO_SIZE)
+            if (u32Size >= UART6_FIFO_SIZE)
             {
-                i32Size = UART6_FIFO_SIZE;
+                u32Size = UART6_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf6[g_u16ComThead6++];
                 UART6->DAT = u8InChar;
@@ -1012,7 +1012,7 @@ NVT_ITCM void UART6_IRQHandler(void)
                 }
 
                 g_u16ComTbytes6--;
-                i32Size--;
+                u32Size--;
             }
         }
         else
@@ -1026,7 +1026,7 @@ NVT_ITCM void UART6_IRQHandler(void)
 NVT_ITCM void UART0_IRQHandler(void)
 {
     uint8_t u8InChar;
-    int32_t i32Size;
+    uint32_t u32Size;
     uint32_t u32IntStatus;
 
     u32IntStatus = UART0->INTSTS;
@@ -1067,14 +1067,14 @@ NVT_ITCM void UART0_IRQHandler(void)
         if (g_u16ComTbytes6 && (UART0->INTEN & UART_INTEN_THREIEN_Msk))
         {
             /* Fill the Tx FIFO */
-            i32Size = g_u16ComTbytes6;
+            u32Size = g_u16ComTbytes6;
 
-            if (i32Size >= UART0_FIFO_SIZE)
+            if (u32Size >= UART0_FIFO_SIZE)
             {
-                i32Size = UART0_FIFO_SIZE;
+                u32Size = UART0_FIFO_SIZE;
             }
 
-            while (i32Size)
+            while (u32Size)
             {
                 u8InChar = s_au8ComTbuf6[g_u16ComThead6++];
                 UART0->DAT = u8InChar;
@@ -1085,7 +1085,7 @@ NVT_ITCM void UART0_IRQHandler(void)
                 }
 
                 g_u16ComTbytes6--;
-                i32Size--;
+                u32Size--;
             }
         }
         else

@@ -592,7 +592,7 @@ int32_t HID_CmdReadPages(CMD_T *pCmd)
     uint32_t u32StartPage;
     uint32_t u32Pages;
     uint32_t len;
-    int32_t i;
+    uint32_t i;
 
     u32StartPage = pCmd->u32Arg1;
     u32Pages     = pCmd->u32Arg2;
@@ -747,7 +747,6 @@ int32_t ProcessCommand(uint8_t *pu8Buffer, uint32_t u32BufferLen)
 
 void HID_GetOutReport(uint8_t *pu8EpBuf, uint32_t u32Size)
 {
-    uint32_t volatile i;
     uint8_t  u8Cmd;
     uint32_t u32StartPage;
     uint32_t u32Pages;
@@ -807,7 +806,7 @@ void HID_SetInReport(void)
     uint32_t u32TotalPages;
     uint32_t u32PageCnt;
     uint32_t len;
-    int32_t i;
+    uint32_t i;
     uint8_t u8Cmd;
 
     u8Cmd        = gCmd.u8Cmd;

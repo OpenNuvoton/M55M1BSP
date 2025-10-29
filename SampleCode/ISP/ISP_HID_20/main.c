@@ -19,6 +19,7 @@
 // Empty function to reduce code size
 uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 {
+    NVT_UNUSED(pu32StackFrame);
     return 0;
 }
 

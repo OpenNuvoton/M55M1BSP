@@ -349,6 +349,8 @@ void myfclose(FILE *f)
 
 FILE *myfopen(char const *fname, char const *mode)
 {
+    (void)(fname);
+    (void)(mode);
     g_myfile.base = _dat;
     g_myfile.limit = _dat + sizeof(_dat);
     g_myfile.ofs = 0;
@@ -375,7 +377,7 @@ void dump_data(char *chptr, uint16_t len)
 
 void dump_tlsdata(data_t *dd)
 {
-    int ii;
+    uint32_t ii;
 
     for (ii = 0; ii < dd->len; ii++)
         printf("%02x", dd->x[ii]);
@@ -438,7 +440,7 @@ void Byte2Reg_Order(char byteInput[], uint32_t volatile u32Reg[], uint16_t u16in
 
 void DumpKey(uint32_t *pu32KeyBuf, uint32_t u32WordCnt)
 {
-    int32_t i;
+    uint32_t i;
 
     printf("Derived key: ");
 
@@ -450,7 +452,7 @@ void DumpKey(uint32_t *pu32KeyBuf, uint32_t u32WordCnt)
 
 void dump_tlsokm(data_t *e_okm, unsigned char *ucpokm)
 {
-    int ii;
+    uint32_t ii;
 
     //printf("e_okm->len=%d\r\n",e_okm->len);
     for (ii = 0; ii < e_okm->len; ii++)
@@ -464,8 +466,8 @@ void test_test_hkdf_sha256(data_t *ikm, data_t *salt, data_t *info,
                            data_t *expected_okm)
 {
     int ret;
-    int32_t i32RetCode = 0;
-    uint32_t g_au32Keyout[16]  = { 0 };
+    //int32_t i32RetCode = 0;
+    //uint32_t g_au32Keyout[16]  = { 0 };
     size_t mylen;
     unsigned char okm[128] = { '\0' };
     unsigned char okm_rev[128] = { '\0' };
@@ -1565,7 +1567,7 @@ static void try_chdir_if_supported(const char *argv0)
 
     mbedtls_free(path);
 }
-#else /* MBEDTLS_HAVE_CHDIR */
+//#else /* MBEDTLS_HAVE_CHDIR */
 /* No chdir() or no support for parsing argv[0] on this platform. */
 static void try_chdir_if_supported(const char *argv0)
 {

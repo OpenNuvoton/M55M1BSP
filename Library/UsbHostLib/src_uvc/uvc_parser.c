@@ -58,7 +58,7 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Find this Standard Video Control Interface Descriptor                             */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         ifd = (DESC_IF_T *)bptr;
 
@@ -72,7 +72,7 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         size -= ifd->bLength;
     }
 
-    if (size < sizeof(DESC_IF_T))
+    if (size < (int)sizeof(DESC_IF_T))
     {
         /* cannot find the Standard VC descriptor     */
         UVC_ERRMSG("UVC_RET_PARSER! - Can't find the Standard Video Control Interface!\n");
@@ -112,7 +112,7 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Walk though Video Control interface descriptor group                              */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_HDR_T))
+    while (size >= (int)sizeof(DESC_HDR_T))
     {
 #ifdef UVC_DEBUG
         DESC_VC_IT_T  *ifd_it;
@@ -215,7 +215,7 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Parsing Endpoint descriptors of Video Control interface                           */
     /*------------------------------------------------------------------------------------*/
-    while (size > sizeof(DESC_HDR_T))
+    while (size > (int)sizeof(DESC_HDR_T))
     {
         DESC_EP_T   *epd;
 
@@ -291,7 +291,7 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Find the starting of Standard Video Streaming Interface Descriptor                */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         ifd = (DESC_IF_T *)bptr;
 
@@ -306,7 +306,7 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         size -= ifd->bLength;
     }
 
-    if (size < sizeof(DESC_IF_T))
+    if (size < (int)sizeof(DESC_IF_T))
     {
         UVC_ERRMSG("UVC_RET_PARSER! - Can't find the Standard Video Streaming Interface!\n");
         return UVC_RET_PARSER;
@@ -318,7 +318,7 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Parsing Video Streaming interface alternative setting 0                           */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         DESC_VSU_FORMAT_T   *vsu_format;
         DESC_VSU_FRAME_T    *vsu_frame;
@@ -550,7 +550,7 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Find all alternative interface of Standard Video Streaming Interface              */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         int   pksz;
 

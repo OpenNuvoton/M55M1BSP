@@ -10,6 +10,10 @@
 #include "NuMicro.h"
 #include "DS18B20_driver_thermometer.h"
 
+//------------------------------------------------------------------------------
+void SYS_Init(void);
+
+//------------------------------------------------------------------------------
 void SYS_Init(void)
 {
     /* Enable Internal RC 12MHz clock */

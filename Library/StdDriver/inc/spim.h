@@ -187,8 +187,6 @@ extern "C"
 #define CMD_OCTAL_DDR_FAST_READ_OUTPUT      (0x9DUL)    /*!< SPIM_CMDCODE: DTR Fast Read Octal Output (Page Read Mode Use) */
 #define CMD_OCTAL_DDR_FAST_IO_READ          (0xFDUL)    /*!< SPIM_CMDCODE: DTR Fast Read Octal I/O (Page Read Mode Use) */
 
-/** @cond HIDDEN_SYMBOLS */
-
 typedef enum
 {
     MFGID_UNKNOW    = 0x00U,
@@ -308,8 +306,6 @@ E_MFGID;
 #define SR3_ADR                             (0x01U)   /* 4-byte u32Address mode */
 
 #define SCUR_4BYTE                          (0x04U)   /* 4-byte u32Address mode */
-
-/** @endcond HIDDEN_SYMBOLS */
 
 /* SPIM Define Error Code */
 #define SPIM_TIMEOUT                        SystemCoreClock     /*!< SPIM time-out counter (1 second time-out) */
@@ -1905,7 +1901,7 @@ void SPIM_SwitchNBitInput(SPIM_T *spim, uint32_t u32NBit);
 int32_t SPIM_WaitOpDone(SPIM_T *spim, uint32_t u32IsSync);
 
 void SPIM_ChipErase(SPIM_T *spim, uint32_t u32NBit, int32_t i32IsSync);
-void SPIM_EraseBlock(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint8_t u8ErsCmd, uint32_t u32NBit, int32_t i32IsSync);
+void SPIM_EraseBlock(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32ErsCmd, uint32_t u32NBit, int32_t i32IsSync);
 
 void SPIM_IO_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NTx, uint8_t pu8TxBuf[], uint8_t wrCmd, uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat);
 void SPIM_IO_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NRx, uint8_t pu8RxBuf[], uint8_t rdCmd, uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat,

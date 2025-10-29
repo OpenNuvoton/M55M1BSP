@@ -112,6 +112,8 @@ static void print_usage(uint8_t usage)
     }
 
     printf("(?? - 0x%x)", usage);
+#else
+    NVT_UNUSED(usage);
 #endif
 }
 
@@ -213,7 +215,7 @@ int hid_parse_report_descriptor(HID_DEV_T *hdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Find the Interface Descriptor of this HID interface                               */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_IF_T))
+    while (size >= (int)sizeof(DESC_IF_T))
     {
         ifd = (DESC_IF_T *)bptr;
 
@@ -228,7 +230,7 @@ int hid_parse_report_descriptor(HID_DEV_T *hdev, IFACE_T *iface)
         size -= ifd->bLength;
     }
 
-    if (size < sizeof(DESC_IF_T))
+    if (size < (int)sizeof(DESC_IF_T))
     {
         HID_ERRMSG("Can't find the HID interface!\n");
         return HID_RET_PARSING;
@@ -240,7 +242,7 @@ int hid_parse_report_descriptor(HID_DEV_T *hdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     /*  Continue to find the subsequent HID Descriptor                                    */
     /*------------------------------------------------------------------------------------*/
-    while (size >= sizeof(DESC_HID_T))
+    while (size >= (int)sizeof(DESC_HID_T))
     {
         hidd = (DESC_HID_T *)bptr;
 
@@ -255,7 +257,7 @@ int hid_parse_report_descriptor(HID_DEV_T *hdev, IFACE_T *iface)
         size -= ifd->bLength;
     }
 
-    if (size < sizeof(DESC_HID_T))
+    if (size < (int)sizeof(DESC_HID_T))
     {
         HID_ERRMSG("Can't find the HID interface!\n");
         return HID_RET_PARSING;

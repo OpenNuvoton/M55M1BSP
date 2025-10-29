@@ -20,17 +20,10 @@
 /** @addtogroup QSPI_EXPORTED_FUNCTIONS QSPI Exported Functions
   @{
 */
+
 /* Set PCLK as the clock source of QSPI */
 static void QSPI_SetPCLKSrc(QSPI_T *qspi)
 {
-    uint32_t u32RegLockLevel = SYS_IsRegLocked();
-
-    if (u32RegLockLevel)
-    {
-        /* Unlock protected registers */
-        SYS_UnlockReg();
-    }
-
     if (qspi == QSPI0)
     {
         CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI0SEL_Msk)) | (CLK_QSPISEL_QSPI0SEL_PCLK0);
@@ -38,12 +31,6 @@ static void QSPI_SetPCLKSrc(QSPI_T *qspi)
     else if (qspi == QSPI1)
     {
         CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI1SEL_Msk)) | (CLK_QSPISEL_QSPI1SEL_PCLK2);
-    }
-
-    if (u32RegLockLevel)
-    {
-        /* Lock protected registers */
-        SYS_LockReg();
     }
 }
 
@@ -76,20 +63,12 @@ static uint32_t QSPI_GetModuleClkSrcFrq(QSPI_T *qspi)
     uint32_t u32RetValue = 0ul;
 
     /* Get QSPI clock source selection */
-    switch ((uint32_t)qspi)
-    {
-        case (uint32_t)QSPI0:
-            u32QSPIClkSrcSel = ((CLK->QSPISEL & CLK_QSPISEL_QSPI0SEL_Msk) >> CLK_QSPISEL_QSPI0SEL_Pos);
-            break;
-
-        case (uint32_t)QSPI1:
-            u32QSPIClkSrcSel = ((CLK->QSPISEL & CLK_QSPISEL_QSPI1SEL_Msk) >> CLK_QSPISEL_QSPI1SEL_Pos);
-            break;
-
-        default:
-            u32QSPIClkSrcSel = QSPI_CLKSEL_HXT;
-            break;
-    }
+    if (qspi == QSPI0)
+        u32QSPIClkSrcSel = ((CLK->QSPISEL & CLK_QSPISEL_QSPI0SEL_Msk) >> CLK_QSPISEL_QSPI0SEL_Pos);
+    else if (qspi == QSPI1)
+        u32QSPIClkSrcSel = ((CLK->QSPISEL & CLK_QSPISEL_QSPI1SEL_Msk) >> CLK_QSPISEL_QSPI1SEL_Pos);
+    else
+        u32QSPIClkSrcSel = QSPI_CLKSEL_HXT;
 
     switch (u32QSPIClkSrcSel)
     {
@@ -142,20 +121,19 @@ static uint32_t QSPI_GetModuleClkSrcFrq(QSPI_T *qspi)
   */
 uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, uint32_t u32DataWidth, uint32_t u32BusClock)
 {
-    uint32_t u32HCLKFreq, u32RetValue = 0U, u32Div;
+    uint32_t u32RetValue = 0U;
 
-    if (u32DataWidth == 32U)
+    if ((u32DataWidth < 8) && (u32DataWidth > 0U))
+    {
+        u32DataWidth = 8U;
+    }
+    else if (u32DataWidth >= 32U)
     {
         u32DataWidth = 0U;
     }
 
-    /* Get system clock frequency */
-    u32HCLKFreq = CLK_GetSCLKFreq();
-
     if (u32MasterSlave == QSPI_MASTER)
     {
-        uint32_t u32ClkSrc = 0U;
-
         /* Default setting: slave selection signal is active low; disable automatic slave selection function. */
         qspi->SSCTL = QSPI_SS_ACTIVE_LOW;
 
@@ -165,55 +143,8 @@ uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, 
                      (u32QSPIMode) |
                      QSPI_CTL_QSPIEN_Msk);
 
-        if (u32BusClock >= u32HCLKFreq)
-        {
-            /* Select PCLK as the clock source of QSPI */
-            QSPI_SetPCLKSrc(qspi);
-        }
-
-        /* Get clock source of QSPI */
-        u32ClkSrc = QSPI_GetModuleClkSrcFrq(qspi);
-
-        if (u32BusClock >= u32HCLKFreq)
-        {
-            /* Set DIVIDER = 0 */
-            qspi->CLKDIV = 0U;
-            /* Return master peripheral clock rate */
-            u32RetValue = u32ClkSrc;
-        }
-        else if (u32BusClock >= u32ClkSrc)
-        {
-            /* Set DIVIDER = 0 */
-            qspi->CLKDIV = 0U;
-            /* Return master peripheral clock rate */
-            u32RetValue = u32ClkSrc;
-        }
-        else if (u32BusClock == 0U)
-        {
-            /* Set DIVIDER to the maximum value 0xFF. f_qspi = f_qspi_clk_src / (DIVIDER + 1) */
-            qspi->CLKDIV |= QSPI_CLKDIV_DIVIDER_Msk;
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-        }
-        else
-        {
-            u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
-
-            if (u32Div > 0xFFU)
-            {
-                //u32Div = 0xFFU;
-                qspi->CLKDIV |= QSPI_CLKDIV_DIVIDER_Msk;
-                /* Return master peripheral clock rate */
-                u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-            }
-            else
-            {
-                qspi->CLKDIV = (qspi->CLKDIV & (~QSPI_CLKDIV_DIVIDER_Msk)) |
-                               (u32Div << QSPI_CLKDIV_DIVIDER_Pos);
-                /* Return master peripheral clock rate */
-                u32RetValue = (u32ClkSrc / (u32Div + 1U));
-            }
-        }
+        // Set the bus clock for the QSPI module and store the actual frequency in u32RetValue
+        u32RetValue = QSPI_SetBusClock(qspi, u32BusClock);
     }
     else     /* For slave mode, force the QSPI peripheral clock rate to equal APB clock rate. */
     {
@@ -358,29 +289,24 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
     }
     else if (u32BusClock == 0U)
     {
-        /* Set DIVIDER to the maximum value 0xFF. f_qspi = f_qspi_clk_src / (DIVIDER + 1) */
+        /* Set DIVIDER to the maximum value. f_qspi = f_qspi_clk_src / (DIVIDER + 1) */
         qspi->CLKDIV |= QSPI_CLKDIV_DIVIDER_Msk;
         /* Return master peripheral clock rate */
-        u32RetValue = (u32ClkSrc / (0xFFU + 1U));
+        u32RetValue = (u32ClkSrc / ((QSPI_CLKDIV_DIVIDER_Msk >> QSPI_CLKDIV_DIVIDER_Pos) + 1U));
     }
     else
     {
         u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
 
-        if (u32Div > 0x1FFU)
-        {
-            //u32Div = 0x1FFU;
-            qspi->CLKDIV |= QSPI_CLKDIV_DIVIDER_Msk;
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-        }
-        else
-        {
-            qspi->CLKDIV = (qspi->CLKDIV & (~QSPI_CLKDIV_DIVIDER_Msk)) |
-                           (u32Div << QSPI_CLKDIV_DIVIDER_Pos);
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (u32Div + 1U));
-        }
+        // Ensure the divider does not exceed the maximum allowed value
+        u32Div = ((u32Div > (QSPI_CLKDIV_DIVIDER_Msk >> QSPI_CLKDIV_DIVIDER_Pos)) ?
+                  (QSPI_CLKDIV_DIVIDER_Msk >> QSPI_CLKDIV_DIVIDER_Pos) : u32Div);
+
+        // Update the CLKDIV register with the new divider value
+        qspi->CLKDIV = (qspi->CLKDIV & ~(QSPI_CLKDIV_DIVIDER_Msk)) | (u32Div << QSPI_CLKDIV_DIVIDER_Pos);
+
+        /* Return master peripheral clock rate */
+        u32RetValue = (u32ClkSrc / (u32Div + 1U));
     }
 
     return u32RetValue;

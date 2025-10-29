@@ -166,7 +166,7 @@ void show(void)
 
 void dump(uint8_t *p, uint32_t size)
 {
-    int i;
+    uint32_t i;
 
     for (i = 0; i < size; i++)
     {
@@ -183,9 +183,9 @@ void dump(uint8_t *p, uint32_t size)
 
 
 
-int mbedtls_platform_entropy_poll(void *data,
-                                  unsigned char *output, size_t len, size_t *olen)
-{
-    return 0;
-}
+//int mbedtls_platform_entropy_poll(void *data,
+//                                  unsigned char *output, size_t len, size_t *olen)
+//{
+//    return 0;
+//}
 

@@ -12,8 +12,11 @@
 //------------------------------------------------------------------------------
 #include "NuMicro.h"
 
-#define I2C_PORT            I2C3
-#define NAU8822             1
+#define PDMA_PORT               PDMA0
+#define I2S_TX_DMA_CH           2
+#define I2S_PORT                                I2S0
+#define I2C_PORT                    I2C3
+#define NAU8822                     1
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */

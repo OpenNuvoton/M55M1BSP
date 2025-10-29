@@ -968,8 +968,14 @@ void MSC_AckCmd(uint32_t u32Residue)
 
 void MSC_ReadMedia(uint32_t addr, uint32_t size, uint8_t *buffer)
 {
+    NVT_UNUSED(addr);
+    NVT_UNUSED(size);
+    NVT_UNUSED(buffer);
 }
 
 void MSC_WriteMedia(uint32_t addr, uint32_t size, uint8_t *buffer)
 {
+    NVT_UNUSED(addr);
+    NVT_UNUSED(size);
+    NVT_UNUSED(buffer);
 }

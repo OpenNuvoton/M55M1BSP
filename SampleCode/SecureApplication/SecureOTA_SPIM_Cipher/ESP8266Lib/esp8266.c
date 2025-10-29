@@ -3806,6 +3806,7 @@ ESP_Result_t ESP_CONN_CloseAll(evol ESP_t *ESP, uint32_t blocking)
 
 ESP_Result_t ESP_CONN_SetArg(evol ESP_t *ESP, ESP_CONN_t *conn, void *arg, uint32_t blocking)
 {
+    (void)(blocking);
     __CHECK_INPUTS(conn);                                   /* Check inputs */
     conn->Arg = arg;
     return espOK;
@@ -3813,11 +3814,13 @@ ESP_Result_t ESP_CONN_SetArg(evol ESP_t *ESP, ESP_CONN_t *conn, void *arg, uint3
 
 void *ESP_CONN_GetArg(evol ESP_t *ESP, ESP_CONN_t *conn)
 {
+    (void)(ESP);
     return conn->Arg;
 }
 
 ESP_Result_t ESP_CONN_SetCallback(evol ESP_t *ESP, ESP_CONN_t *conn, ESP_EventCallback_t cb, uint32_t blocking)
 {
+    (void)(blocking);
     __CHECK_INPUTS(conn);                                   /* Check inputs */
     conn->Cb = cb ? cb : ESP->Callback;                     /* Set connection callback */
     return espOK;

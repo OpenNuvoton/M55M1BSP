@@ -86,6 +86,7 @@ void pd_power_supply_reset(int port)
 
 int pd_snk_is_vbus_provided(int port)
 {
+    NVT_UNUSED(port);
 #ifdef SW
     /* assume the alert was programmed to detect bus voltage above 4.5V */
     return (gpio_get_level(GPIO_VBUS_ALERT_L) == 0);
@@ -96,6 +97,7 @@ int pd_snk_is_vbus_provided(int port)
 
 __override int pd_check_power_swap(int port)
 {
+    NVT_UNUSED(port);
     /* Always allow power swap */
     return 1;
 }
@@ -103,6 +105,7 @@ __override int pd_check_power_swap(int port)
 __override int pd_check_data_swap(int port,
                                   enum pd_data_role data_role)
 {
+    NVT_UNUSED(port), NVT_UNUSED(data_role);
     /* Always allow data swap */
     return 1;
 }
@@ -111,18 +114,20 @@ __override void pd_check_pr_role(int port,
                                  enum pd_power_role pr_role,
                                  int flags)
 {
-
+    NVT_UNUSED(port), NVT_UNUSED(pr_role), NVT_UNUSED(flags);
 }
 
 __override void pd_check_dr_role(int port,
                                  enum pd_data_role dr_role,
                                  int flags)
 {
+    NVT_UNUSED(port), NVT_UNUSED(dr_role), NVT_UNUSED(flags);
 }
 
 __override int pd_custom_vdm(int port, int cnt, uint32_t *payload,
                              uint32_t **rpayload)
 {
+    NVT_UNUSED(port), NVT_UNUSED(cnt), NVT_UNUSED(payload), NVT_UNUSED(rpayload);
     return 0;
 }
 
@@ -162,6 +167,8 @@ int board_vbus_sink_enable(int port, int enable)
 void pd_set_input_current_limit(int port, uint32_t max_ma,
                                 uint32_t supply_voltage)
 {
+    NVT_UNUSED(max_ma);
+
     /* No battery, nothing to do */
     if (supply_voltage == 0)
         board_vbus_sink_enable(port, 0);        //disable sink vbus
@@ -174,6 +181,7 @@ void pd_set_input_current_limit(int port, uint32_t max_ma,
 /* Copy from board/ambassador/usb_pd_policy.c */
 int pd_check_vconn_swap(int port)
 {
+    NVT_UNUSED(port);
     /* Only allow vconn swap if pp5000_A rail is enabled */
 #ifdef SW
     return gpio_get_level(GPIO_EN_PP5000_A);
@@ -191,6 +199,8 @@ int pd_check_vconn_swap(int port)
 __overridable bool port_discovery_dr_swap_policy(int port,
                                                  enum pd_data_role dr, bool dr_swap_flag)
 {
+    NVT_UNUSED(port);
+
     if (dr_swap_flag && dr == PD_ROLE_UFP)
         return true;
 
@@ -208,6 +218,7 @@ __overridable bool port_discovery_dr_swap_policy(int port,
 __overridable bool port_discovery_vconn_swap_policy(int port,
                                                     bool vconn_swap_flag)
 {
+    NVT_UNUSED(port), NVT_UNUSED(vconn_swap_flag);
 #ifdef SW
 
     if (IS_ENABLED(CONFIG_USBC_VCONN) && vconn_swap_flag &&
@@ -265,6 +276,7 @@ const uint32_t vdo_ama = VDO_AMA(CONFIG_USB_PD_IDENTITY_HW_VERS,
 #endif
 static int svdm_response_identity(int port, uint32_t *payload)
 {
+    NVT_UNUSED(port), NVT_UNUSED(payload);
     payload[VDO_I(IDH)] = vdo_idh;
     /* TODO(tbroch): Do we plan to obtain TID (test ID) for hoho */
     payload[VDO_I(CSTAT)] = VDO_CSTAT(0);
@@ -275,6 +287,7 @@ static int svdm_response_identity(int port, uint32_t *payload)
 
 static int svdm_response_svids(int port, uint32_t *payload)
 {
+    NVT_UNUSED(port), NVT_UNUSED(payload);
     payload[1] = VDO_SVID(USB_SID_DISPLAYPORT, USB_VID_GOOGLE);
     payload[2] = 0;
     return 3;
@@ -300,6 +313,8 @@ const uint32_t vdo_goog_modes[1] =
 
 static int svdm_response_modes(int port, uint32_t *payload)
 {
+    NVT_UNUSED(port);
+
     if (PD_VDO_VID(payload[0]) == USB_SID_DISPLAYPORT)
     {
         memcpy(payload + 1, vdo_dp_modes, sizeof(vdo_dp_modes));
@@ -318,6 +333,7 @@ static int svdm_response_modes(int port, uint32_t *payload)
 #if 1
 static int fdp_status(int port, uint32_t *payload)
 {
+    NVT_UNUSED(port), NVT_UNUSED(payload);
 #if 0
     int opos = PD_VDO_OPOS(payload[0]);
     int hpd = gpio_get_level(GPIO_DP_HPD);
@@ -341,6 +357,7 @@ static int fdp_status(int port, uint32_t *payload)
 
 static int fdp_config(int port, uint32_t *payload)
 {
+    NVT_UNUSED(port), NVT_UNUSED(payload);
 #if 0
 
     if (PD_DP_CFG_DPON(payload[1]))
@@ -353,6 +370,7 @@ static int fdp_config(int port, uint32_t *payload)
 static int svdm_enter_mode(int port, uint32_t *payload)
 {
     int rv = 0; /* will generate a NAK */
+    NVT_UNUSED(port);
 
     /* SID & mode request is valid */
     if ((PD_VDO_VID(payload[0]) == USB_SID_DISPLAYPORT) &&
@@ -401,6 +419,7 @@ int pd_alt_mode(int port, enum tcpci_msg_type type, uint16_t svid)
 
 static int svdm_exit_mode(int port, uint32_t *payload)
 {
+    NVT_UNUSED(port), NVT_UNUSED(payload);
 #if 0
 
     if (PD_VDO_VID(payload[0]) == USB_SID_DISPLAYPORT)

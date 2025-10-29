@@ -70,7 +70,7 @@ static void generate_crc_table(void)
     }
 }
 
-static uint32_t crcbitbybit(uint8_t *p, uint32_t len, int8_t IsWrite1sCOM, int8_t IsCRC1sCOM)
+static uint32_t crcbitbybit(uint8_t *p, uint32_t len, int8_t IsWrite1sCOM)
 {
     unsigned long i, j, c, bit;
     unsigned long crc = crcinit_direct;
@@ -98,6 +98,8 @@ static uint32_t crcbitbybit(uint8_t *p, uint32_t len, int8_t IsWrite1sCOM, int8_
     }
 
     if (refout) crc = reflect(crc, order);
+
+
 
     crc ^= crcxor;
     crc &= crcmask;
@@ -173,7 +175,7 @@ uint32_t CRC_SWResult(uint32_t mode, uint32_t polynom, uint32_t seed, uint8_t *s
 
     crcinit_nondirect = crc;
 
-    crc_result = crcbitbybit((uint8_t *)string, count, IsWrite1sCOM, IsCRC1sCOM);
+    crc_result = crcbitbybit((uint8_t *)string, count, IsWrite1sCOM);
 
     return crc_result;
 }

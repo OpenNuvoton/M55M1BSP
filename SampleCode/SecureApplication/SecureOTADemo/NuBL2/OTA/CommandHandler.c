@@ -173,8 +173,6 @@ static uint32_t PACKET_ExecCRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
   */
 static int32_t PACKET_AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    volatile int32_t    i;
-
     /* KEY and IV are byte order (32 bit) reversed, Swap32(x) and stored in ISP_INFO_T */
     memcpy((void *)&CRYPTO->AES_KEY[0], KEY, (4 * 8));
     memcpy((void *)&CRYPTO->AES_IV[0], IV, (4 * 4));
@@ -196,8 +194,6 @@ static int32_t PACKET_AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, u
   */
 static int32_t PACKET_AES256Decrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    volatile int32_t    i;
-
     /* KEY and IV are byte order (32 bit) reversed, Swap32(x) and stored in ISP_INFO_T */
     memcpy((void *)&CRYPTO->AES_KEY[0], KEY, (4 * 8));
     memcpy((void *)&CRYPTO->AES_IV[0], IV, (4 * 4));
@@ -215,7 +211,7 @@ static int32_t PACKET_AES256Decrypt(uint32_t *in, uint32_t *out, uint32_t len, u
 
 int32_t CMD_GenRspPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    i;
+    uint32_t i;
 
     /* Generate CCITT */
     PACKET_ExecCCITT((uint32_t *)pCMD, sizeof(CMD_PACKET_T) - 8, 0);
@@ -311,7 +307,7 @@ int32_t CMD_GenRspPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 
 int32_t CMD_ParseReqPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    i;
+    uint32_t i;
 
 #if (0)
     {
@@ -965,8 +961,10 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
 
 int32_t _PageErase(uint32_t addr, uint32_t count, uint32_t u32CmdMask)
 {
-    volatile int32_t    i, ret = -1;
+    uint32_t i;
+    int32_t  ret = -1;
 
+    NVT_UNUSED(u32CmdMask);
     printf("[Page erase] addr: 0x%x, page counts: %d.\n", addr, count);
 
     addr &= ~NS_OFFSET;
@@ -1060,8 +1058,10 @@ static uint32_t _ISPRead(uint32_t addr)
 
 static int32_t _WriteFlash(uint32_t addr, uint32_t size, uint32_t *pu32Data, uint32_t u32CmdMask)
 {
-    volatile int32_t    i, ret = -1;
+    uint32_t i;
+    int32_t  ret = -1;
 
+    NVT_UNUSED(u32CmdMask);
     printf("[Write flash] addr: 0x%x, size: %d.\n", addr, size);
 
     if ((ret = _IsValidFlashRegion(addr, size)) != 0)
@@ -1113,7 +1113,7 @@ static int32_t _WriteFlash(uint32_t addr, uint32_t size, uint32_t *pu32Data, uin
 */
 int32_t ParseCommands(ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    i, ret = 0, cmd_case, tmp;
+    volatile int32_t    ret = 0, cmd_case;
     CMD_PACKET_T        cmd;
     uint32_t            addr, size;
     uint32_t            msg[8], R[8], S[8];

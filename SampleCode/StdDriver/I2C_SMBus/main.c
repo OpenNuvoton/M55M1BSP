@@ -64,7 +64,7 @@ NVT_ITCM void I2C0_IRQHandler(void)
         //printf("I2C0 PEC Error Interrupt !\n");
     }
     /* Check Alert Interrupt when I2C0 is Host */
-    else if (((I2C_SMBusGetStatus(I2C0) & I2C_BUSSTS_ALERT_Msk) == I2C_BUSSTS_ALERT_Msk) &
+    else if (((I2C_SMBusGetStatus(I2C0) & I2C_BUSSTS_ALERT_Msk) == I2C_BUSSTS_ALERT_Msk) &&
              ((I2C0->BUSCTL & I2C_BUSCTL_BMHEN_Msk) == I2C_BUSCTL_BMHEN_Msk))
     {
         I2C_SMBusClearInterruptFlag(I2C0, I2C_BUSSTS_ALERT_Msk);
@@ -109,7 +109,7 @@ NVT_ITCM void I2C1_IRQHandler(void)
         //printf("I2C1 PEC Error Interrupt !\n");
     }
     /* Check Alert Interrupt when I2C1 is Host */
-    else if (((I2C_SMBusGetStatus(I2C1) & I2C_BUSSTS_ALERT_Msk) == I2C_BUSSTS_ALERT_Msk) &
+    else if (((I2C_SMBusGetStatus(I2C1) & I2C_BUSSTS_ALERT_Msk) == I2C_BUSSTS_ALERT_Msk) &&
              ((I2C1->BUSCTL & I2C_BUSCTL_BMHEN_Msk) == I2C_BUSCTL_BMHEN_Msk))
     {
         I2C_SMBusClearInterruptFlag(I2C1, I2C_BUSSTS_ALERT_Msk);

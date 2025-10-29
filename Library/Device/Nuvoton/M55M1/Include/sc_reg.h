@@ -36,9 +36,9 @@ typedef struct
        * |[7:0]   |DAT       |Receive/Transmit Holding Buffer
        * |        |          |Write Operation:
        * |        |          |By writing data to DAT, the SC will send out an 8-bit data.
-       * |        |          |Note: If SCEN (SCn_CTL[0]) is not enabled, DAT cannot be programmed.
        * |        |          |Read Operation:
        * |        |          |By reading DAT, the SC will return an 8-bit received data.
+       * |        |          |Note: If SCEN (SCn_CTL[0]) is not enabled, DAT cannot be programmed.
        * @var SC_T::CTL
        * Offset: 0x04  SC Control Register
        * ---------------------------------------------------------------------------------------------------
@@ -48,12 +48,12 @@ typedef struct
        * |        |          |Set this bit to 1 to enable SC operation. If this bit is cleared,
        * |        |          |0 = SC will force all transition to IDLE state.
        * |        |          |1 = SC controller is enabled and all function can work correctly.
-       * |        |          |Note1: SCEN must be set to 1 before filling in other SC registers, or smart card will not work properly.
+       * |        |          |Note: SCEN must be set to 1 before filling in other SC registers, or smart card will not work properly.
        * |[1]     |RXOFF     |RX Transition Disable Control Bit
        * |        |          |This bit is used for disable Rx transition function.
        * |        |          |0 = The receiver Enabled.
        * |        |          |1 = The receiver Disabled.
-       * |        |          |Note1: If AUTOCEN (SCn_CTL[3]) is enabled, this field is ignored.
+       * |        |          |Note: If AUTOCEN (SCn_CTL[3]) is enabled, this field is ignored.
        * |[2]     |TXOFF     |TX Transition Disable Control Bit
        * |        |          |This bit is used for disable Tx transition function.
        * |        |          |0 = The transceiver Enabled.
@@ -62,14 +62,10 @@ typedef struct
        * |        |          |This bit is used for enable auto convention function.
        * |        |          |0 = Auto-convention Disabled.
        * |        |          |1 = Auto-convention Enabled.
-       * |        |          |If user enables auto convention function, the setting step must be done before Answer to Reset (ATR)
-       * |        |          |state and the first data must be 0x3B or 0x3F.
-       * |        |          |After hardware received first data and stored it at buffer, hardware will decided the convention and
-       * |        |          |change the CONSEL (SCn_CTL[5:4]) bits automatically when received first data is 0x3B or 0x3F.
-       * |        |          |If received first byte is 0x3B, TS is direct convention, CONSEL (SCn_CTL[5:4]) will be set to 00
-       * |        |          |automatically, otherwise the TS is inverse convention, and CONSEL (SCn_CTL[5:4]) will be set to 11.
-       * |        |          |If the first data is not 0x3B or 0x3F, hardware will set ACERRIF (SCn_INTSTS[10]) and generate an
-       * |        |          |interrupt to CPU when ACERRIEN (SCn_INTEN[10]) is enabled.
+       * |        |          |Note 1: If user enables auto convention function, the setting step must be done before Answer to Reset (ATR) state and the first data must be 0x3B or 0x3F
+       * |        |          |After hardware received first data and stored it at buffer, hardware will decided the convention and change the CONSEL (SCn_CTL[5:4]) bits automatically when received first data is 0x3B or 0x3F
+       * |        |          |If received first byte is 0x3B, TS is direct convention, CONSEL (SCn_CTL[5:4]) will be set to 00 automatically, otherwise the TS is inverse convention, and CONSEL (SCn_CTL[5:4]) will be set to 11.
+       * |        |          |Note 2: If the first data is not 0x3B or 0x3F, hardware will set ACERRIF (SCn_INTSTS[10]) and generate an interrupt to CPU when ACERRIEN (SCn_INTEN[10]) is enabled.
        * |[5:4]   |CONSEL    |Convention Selection
        * |        |          |00 = Direct convention.
        * |        |          |01 = Reserved.
@@ -79,16 +75,14 @@ typedef struct
        * |[7:6]   |RXTRGLV   |Rx Buffer Trigger Level
        * |        |          |When the number of bytes in the receiving buffer equals the RXTRGLV, the RDAIF will be set
        * |        |          |If RDAIEN (SCn_INTEN[0]) is enabled, an interrupt will be generated to CPU.
-       * |        |          |00 = Rx Buffer Trigger Level with 01 bytes.
-       * |        |          |01 = Rx Buffer Trigger Level with 02 bytes.
-       * |        |          |10 = Rx Buffer Trigger Level with 03 bytes.
+       * |        |          |00 = Rx Buffer Trigger Level with 1 bytes.
+       * |        |          |01 = Rx Buffer Trigger Level with 2 bytes.
+       * |        |          |10 = Rx Buffer Trigger Level with 3 bytes.
        * |        |          |11 = Reserved.
-       * |[12:8]  |BGT       |Block Guard Time (BGT)
-       * |        |          |Block guard time means the minimum interval between the leading edges of two consecutive characters
-       * |        |          |between different transfer directions
+       * |[12:8]  |BGT       |Block Guard Time
+       * |        |          |Block guard time means the minimum interval between the leading edges of two consecutive characters between different transfer directions
        * |        |          |This field indicates the counter for the bit length of block guard time
-       * |        |          |According to ISO 7816-3, in T = 0 mode, user must fill 15 (real block guard time = 16.5) to this
-       * |        |          |field; in T = 1 mode, user must fill 21 (real block guard time = 22.5) to it.
+       * |        |          |According to ISO 7816-3, in T = 0 mode, user must fill 15 (real block guard time = 16.5) to this field; in T = 1 mode, user must fill 21 (real block guard time = 22.5) to it.
        * |        |          |Note: The real block guard time is BGT + 1.
        * |[14:13] |TMRSEL    |Timer Channel Selection
        * |        |          |00 = All internal timer function Disabled.
@@ -99,12 +93,12 @@ typedef struct
        * |        |          |This field indicates the length of stop bit.
        * |        |          |0 = The stop bit length is 2 ETU.
        * |        |          |1= The stop bit length is 1 ETU.
-       * |        |          |Note1: The default stop bit length is 2. SC and UART adopts NSB to program the stop bit length.
-       * |        |          |Note2: In UART mode, RX can receive the data sequence in 1 stop bit or 2 stop bits with NSB is set to 0.
+       * |        |          |Note 1: The default stop bit length is 2. SC and UART adopts NSB to program the stop bit length.
+       * |        |          |Note 2: In UART mode, RX can receive the data sequence in 1 stop bit or 2 stop bits with NSB is set to 0.
        * |[18:16] |RXRTY     |RX Error Retry Count Number
-       * |        |          |This field indicates the maximum number of receiver retries that are allowed when parity error has occurred.
-       * |        |          |Note1: The real retry number is RXRTY + 1, so 8 is the maximum retry number.
-       * |        |          |Note2: This field cannot be changed when RXRTYEN enabled
+       * |        |          |This field indicates the maximum number of receiver retries that are allowed when parity error has occurred
+       * |        |          |Note 1: The real retry number is RXRTY + 1, so 8 is the maximum retry number.
+       * |        |          |Note 2: This field cannot be changed when RXRTYEN enabled
        * |        |          |The change flow is to disable RXRTYEN first and then fill in new retry value.
        * |[19]    |RXRTYEN   |RX Error Retry Enable Bit
        * |        |          |This bit enables receiver retry function when parity error has occurred.
@@ -112,10 +106,9 @@ typedef struct
        * |        |          |1 = RX error retry function Enabled.
        * |        |          |Note: User must fill in the RXRTY value before enabling this bit.
        * |[22:20] |TXRTY     |TX Error Retry Count Number
-       * |        |          |This field indicates the maximum number of transmitter retries that are allowed when parity
-       * |        |          |error has occurred.
-       * |        |          |Note1: The real retry number is TXRTY + 1, so 8 is the maximum retry number.
-       * |        |          |Note2: This field cannot be changed when TXRTYEN enabled
+       * |        |          |This field indicates the maximum number of transmitter retries that are allowed when parity error has occurred.
+       * |        |          |Note 1: The real retry number is TXRTY + 1, so 8 is the maximum retry number.
+       * |        |          |Note 2: This field cannot be changed when TXRTYEN enabled
        * |        |          |The change flow is to disable TXRTYEN first and then fill in new retry value.
        * |[23]    |TXRTYEN   |TX Error Retry Enable Bit
        * |        |          |This bit enables transmitter retry function when parity error has occurred.
@@ -153,100 +146,91 @@ typedef struct
        * |        |          |This bit enables SC controller to initiate the card by deactivation sequence.
        * |        |          |0 = No effect.
        * |        |          |1 = Deactivation sequence generator Enabled.
-       * |        |          |Note1: When the deactivation sequence completed, this bit will be cleared automatically and
-       * |        |          |the INITIF (SCn_INTSTS[8]) will be set to 1.
-       * |        |          |Note2: This field will be cleared by TXRST (SCn_ALTCTL[0]) and RXRST (SCn_ALTCTL[1])
+       * |        |          |Note 1: When the deactivation sequence completed, this bit will be cleared automatically and the INITIF (SCn_INTSTS[8]) will be set to 1.
+       * |        |          |Note 2: This field will be cleared by TXRST (SCn_ALTCTL[0]) and RXRST (SCn_ALTCTL[1])
        * |        |          |Thus, do not fill in this bit DACTEN, TXRST and RXRST at the same time.
-       * |        |          |Note3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
+       * |        |          |Note 3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
        * |[3]     |ACTEN     |Activation Sequence Generator Enable Bit
        * |        |          |This bit enables SC controller to initiate the card by activation sequence.
        * |        |          |0 = No effect.
        * |        |          |1 = Activation sequence generator Enabled.
-       * |        |          |Note1: When the activation sequence completed, this bit will be cleared automatically and the
-       * |        |          |INITIF (SCn_INTSTS[8]) will be set to 1.
-       * |        |          |Note2: This field will be cleared by TXRST (SCn_ALTCTL[0]) and RXRST (SCn_ALTCTL[1])
+       * |        |          |Note 1: When the activation sequence completed, this bit will be cleared automatically and the INITIF (SCn_INTSTS[8]) will be set to 1.
+       * |        |          |Note 2: This field will be cleared by TXRST (SCn_ALTCTL[0]) and RXRST (SCn_ALTCTL[1])
        * |        |          |Thus, do not fill in this bit ACTEN, TXRST and RXRST at the same time.
-       * |        |          |Note3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
-       * |        |          |Note4: During the activation sequence, RX is disabled automatically and can not receive data
+       * |        |          |Note 3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
+       * |        |          |Note 4: During the activation sequence, RX is disabled automatically and cannot receive data
        * |        |          |After the activation sequence completion, RXOFF (SCn_CTL[1]) keeps the state before hardware activation.
        * |[4]     |WARSTEN   |Warm Reset Sequence Generator Enable Bit
        * |        |          |This bit enables SC controller to initiate the card by warm reset sequence.
        * |        |          |0 = No effect.
        * |        |          |1 = Warm reset sequence generator Enabled.
-       * |        |          |Note1: When the warm reset sequence completed, this bit will be cleared automatically and the
-       * |        |          |INITIF (SCn_INTSTS[8]) will be set to 1.
-       * |        |          |Note2: This field will be cleared by TXRST (SCn_ALTCTL[0]) and RXRST (SCn_ALTCTL[1])
+       * |        |          |Note 1: When the warm reset sequence completed, this bit will be cleared automatically and the INITIF (SCn_INTSTS[8]) will be set to 1.
+       * |        |          |Note 2: This field will be cleared by TXRST (SCn_ALTCTL[0]) and RXRST (SCn_ALTCTL[1])
        * |        |          |Thus, do not fill in this bit WARSTEN, TXRST and RXRST at the same time.
-       * |        |          |Note3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
-       * |        |          |Note4: During the warm reset sequence, RX is disabled automatically and can not receive data
-       * |        |          |After the warm reset sequence completion, RXOFF (SCn_CTL[1]) keeps the state before perform
-       * |        |          |warm reset sequence.
+       * |        |          |Note 3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
+       * |        |          |Note 4: During the warm reset sequence, RX is disabled automatically and cannot receive data
+       * |        |          |After the warm reset sequence completion, RXOFF (SCn_CTL[1]) keeps the state before perform warm reset sequence.
        * |[5]     |CNTEN0    |Internal Timer0 Start Enable Bit
        * |        |          |This bit enables Timer 0 to start counting
        * |        |          |User can fill 0 to stop it and set 1 to reload and count
        * |        |          |The counter unit is ETU base.
        * |        |          |0 = Stops counting.
        * |        |          |1 = Start counting.
-       * |        |          |Note1: This field is used for internal 24 bit timer when TMRSEL (SCn_CTL[14:13]) is 11 only.
-       * |        |          |Note2: If the operation mode is not in auto-reload mode (SCn_TMRCTL0[26] = 0), this bit will
-       * |        |          |be auto-cleared by hardware.
-       * |        |          |Note3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
+       * |        |          |Note 1: This field is used for internal 24-bit timer when TMRSEL (SCn_CTL[14:13]) is 11 only.
+       * |        |          |Note 2: If the operation mode is not in auto-reload mode (SCn_TMRCTL0[26] = 0), this bit will be auto-cleared by hardware.
+       * |        |          |Note 3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
        * |[6]     |CNTEN1    |Internal Timer1 Start Enable Bit
        * |        |          |This bit enables Timer 1 to start counting
        * |        |          |User can fill 0 to stop it and set 1 to reload and count
        * |        |          |The counter unit is ETU base.
        * |        |          |0 = Stops counting.
        * |        |          |1 = Start counting.
-       * |        |          |Note1: This field is used for internal 8 bit timer when TMRSEL(SCn_CTL[14:13]) is 11 only
+       * |        |          |Note 1: This field is used for internal 8-bit timer when TMRSEL(SCn_CTL[14:13]) is 11 only
        * |        |          |Do not fill CNTEN1 when TMRSEL (SCn_CTL[14:13]) is not equal to 11.
-       * |        |          |Note2: If the operation mode is not in auto-reload mode (SCn_TMRCTL1[26] = 0), this bit will
-       * |        |          |be auto-cleared by hardware.
-       * |        |          |Note3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
+       * |        |          |Note 2: If the operation mode is not in auto-reload mode (SCn_TMRCTL1[26] = 0), this bit will be auto-cleared by hardware.
+       * |        |          |Note 3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
        * |[7]     |CNTEN2    |Internal Timer2 Start Enable Bit
        * |        |          |This bit enables Timer 2 to start counting
        * |        |          |User can fill 0 to stop it and set 1 to reload and count
        * |        |          |The counter unit is ETU base.
        * |        |          |0 = Stops counting.
        * |        |          |1 = Start counting.
-       * |        |          |Note1: This field is used for internal 8 bit timer when TMRSEL (SCn_CTL[14:13]) is 11 only
+       * |        |          |Note 1: This field is used for internal 8-bit timer when TMRSEL (SCn_CTL[14:13]) is 11 only
        * |        |          |Do not fill in CNTEN2 when TMRSEL (SCn_CTL[14:13]) is not equal to 11.
-       * |        |          |Note2: If the operation mode is not in auto-reload mode (SCn_TMRCTL2[26] = 0), this bit will
-       * |        |          |be auto-cleared by hardware.
-       * |        |          |Note3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
+       * |        |          |Note 2: If the operation mode is not in auto-reload mode (SCn_TMRCTL2[26] = 0), this bit will be auto-cleared by hardware.
+       * |        |          |Note 3: If SCEN (SCn_CTL[0]) is not enabled, this filed cannot be programmed.
        * |[9:8]   |INITSEL   |Initial Timing Selection
        * |        |          |This fields indicates the initial timing of hardware activation, warm-reset or deactivation.
        * |        |          |The unit of initial timing is SC module clock.
-       * |        |          |Activation: refer to SC Activation Sequence in Figure 7.17-54.
-       * |        |          |Warm-reset: refer to Warm-Reset Sequence in Figure 7.17-5.
-       * |        |          |Deactivation: refer to Deactivation Sequence in Figure 7.17-56.
-       * |        |          |Note: When set activation and warm reset in Timer0 operation mode 0011, it may have deviation
-       * |        |          |at most 128 SC module clock cycles.
+       * |        |          |Activation: refer to SC Activation Sequence in Figure 1.1-4.
+       * |        |          |Warm-reset: refer to Warm-Reset Sequence in Figure 1.1-5.
+       * |        |          |Deactivation: refer to Deactivation Sequence in Figure 1.1-6.
+       * |        |          |Note: When set activation and warm reset in Timer0 operation mode 0011, it may have deviation at most 128 SC module clock cycles.
        * |[11]    |ADACEN    |Auto Deactivation When Card Removal
        * |        |          |This bit is used for enable hardware auto deactivation when smart card is removed.
        * |        |          |0 = Auto deactivation Disabled.
        * |        |          |1 = Auto deactivation Enabled.
-       * |        |          |Note: When the card is removed, hardware will stop any process and then do deactivation sequence
-       * |        |          |if this bit is set
+       * |        |          |Note: When the card is removed, hardware will stop any process and then do deactivation sequence if this bit is set
        * |        |          |If auto deactivation process completes, hardware will set INITIF (SCn_INTSTS[8]) also.
        * |[12]    |RXBGTEN   |Receiver Block Guard Time Function Enable Bit
        * |        |          |This bit enables the receiver block guard time function.
        * |        |          |0 = Receiver block guard time function Disabled.
        * |        |          |1 = Receiver block guard time function Enabled.
        * |[13]    |ACTSTS0   |Internal Timer0 Active Status (Read Only)
-       * |        |          |This bit indicates the timer counter status of timer0.
+       * |        |          |This bit indicates the timer counter status of Timer0.
        * |        |          |0 = Timer0 is not active.
        * |        |          |1 = Timer0 is active.
-       * |        |          |Note: Timer0 is active does not always mean timer0 is counting the CNT (SCn_TMRCTL0[23:0]).
+       * |        |          |Note: Timer0 is active does not always mean Timer0 is counting the CNT (SCn_TMRCTL0[23:0]).
        * |[14]    |ACTSTS1   |Internal Timer1 Active Status (Read Only)
-       * |        |          |This bit indicates the timer counter status of timer1.
+       * |        |          |This bit indicates the timer counter status of Timer1.
        * |        |          |0 = Timer1 is not active.
        * |        |          |1 = Timer1 is active.
-       * |        |          |Note: Timer1 is active does not always mean timer1 is counting the CNT (SCn_TMRCTL1[7:0]).
+       * |        |          |Note: Timer1 is active does not always mean Timer1 is counting the CNT (SCn_TMRCTL1[7:0]).
        * |[15]    |ACTSTS2   |Internal Timer2 Active Status (Read Only)
-       * |        |          |This bit indicates the timer counter status of timer2.
+       * |        |          |This bit indicates the timer counter status of Timer2.
        * |        |          |0 = Timer2 is not active.
        * |        |          |1 = Timer2 is active.
-       * |        |          |Note: Timer2 is active does not always mean timer2 is counting the CNT (SCn_TMRCTL2[7:0]).
+       * |        |          |Note: Timer2 is active does not always mean Timer2 is counting the CNT (SCn_TMRCTL2[7:0]).
        * |[31]    |SYNC      |SYNC Flag Indicator (Read Only)
        * |        |          |Due to synchronization, user should check this bit when writing a new value to SCn_ALTCTL register.
        * |        |          |0 = Synchronizing is completion, user can write new data to SCn_ALTCTL register.
@@ -266,11 +250,9 @@ typedef struct
        * | :----: | :----:   | :---- |
        * |[8:0]   |RFTM      |SC Receiver FIFO Time-out Counter
        * |        |          |The time-out down counter resets and starts counting whenever the RX buffer received a new data
-       * |        |          |Once the counter decrease to 1 and no new data is received or CPU does not read data by
-       * |        |          |reading SCn_DAT, a receiver time-out flag RBTOIF (SCn_INTSTS[9]) will be set, and hardware will
-       * |        |          |generate an interrupt to CPU when RBTOIEN (SCn_INTEN[9]) is enabled.
-       * |        |          |Note1: The counter unit is ETU based and the interval of time-out is RFTM + 0.5.
-       * |        |          |Note2: Filling in all 0 to this field indicates to disable this function.
+       * |        |          |Once the counter decrease to 1 and no new data is received or CPU does not read data by reading SCn_DAT, a receiver time-out flag RXTOIF (SCn_INTSTS[9]) will be set, and hardware will generate an interrupt to CPU when RXTOIEN (SCn_INTEN[9]) is enabled.
+       * |        |          |Note 1: The counter unit is ETU based and the interval of time-out is RFTM + 0.5.
+       * |        |          |Note 2: Filling in all 0 to this field indicates to disable this function.
        * @var SC_T::ETUCTL
        * Offset: 0x14  SC Element Time Unit Control Register
        * ---------------------------------------------------------------------------------------------------
@@ -295,11 +277,7 @@ typedef struct
        * |        |          |1 = Transmit buffer empty interrupt Enabled.
        * |[2]     |TERRIEN   |Transfer Error Interrupt Enable Bit
        * |        |          |This field is used to enable transfer error interrupt
-       * |        |          |The transfer error states is at SCn_STATUS register which includes receiver break error
-       * |        |          |BEF (SCn_STATUS[6]), frame error FEF (SCn_STATUS[5]), parity error PEF (SCn_STATUS[4]), receive
-       * |        |          |buffer overflow error RXOV (SCn_STATUS[0]), transmit buffer overflow error TXOV (SCn_STATUS[8]),
-       * |        |          |receiver retry over limit error RXOVERR (SCn_STATUS[22]) and transmitter retry over limit error
-       * |        |          |TXOVERR (SCn_STATUS[30]).
+       * |        |          |The transfer error states is at SCn_STATUS register which includes receiver break error BEF (SCn_STATUS[6]), frame error FEF (SCn_STATUS[5]), parity error PEF (SCn_STATUS[4]), receive buffer overflow error RXOV (SCn_STATUS[0]), transmit buffer overflow error TXOV (SCn_STATUS[8]), receiver retry over limit error RXOVERR (SCn_STATUS[22]) and transmitter retry over limit error TXOVERR (SCn_STATUS[30]).
        * |        |          |0 = Transfer error interrupt Disabled.
        * |        |          |1 = Transfer error interrupt Enabled.
        * |[3]     |TMR0IEN   |Timer0 Interrupt Enable Bit
@@ -325,8 +303,7 @@ typedef struct
        * |        |          |0 = Card detect interrupt Disabled.
        * |        |          |1 = Card detect interrupt Enabled.
        * |[8]     |INITIEN   |Initial End Interrupt Enable Bit
-       * |        |          |This field is used to enable activation (ACTEN (SCn_ALTCTL[3] = 1)), deactivation
-       * |        |          |(DACTEN (SCn_ALTCTL[2] = 1)) and warm reset (WARSTEN (SCn_ALTCTL [4])) sequence complete interrupt.
+       * |        |          |This field is used to enable activation (ACTEN (SCn_ALTCTL[3] = 1)), deactivation (DACTEN (SCn_ALTCTL[2] = 1)) and warm reset (WARSTEN (SCn_ALTCTL [4])) sequence complete interrupt.
        * |        |          |0 = Initial end interrupt Disabled.
        * |        |          |1 = Initial end interrupt Enabled.
        * |[9]     |RXTOIEN   |Receiver Buffer Time-out Interrupt Enable Bit
@@ -347,26 +324,20 @@ typedef struct
        * |        |          |0 = Number of receive buffer is less than RXTRGLV setting.
        * |        |          |1 = Number of receive buffer data equals the RXTRGLV setting.
        * |        |          |Note: This bit is read only
-       * |        |          |If user reads data from SCn_DAT and receiver buffer data byte number is less than RXTRGLV,
-       * |        |          |this bit will be cleared automatically.
+       * |        |          |If user reads data from SCn_DAT and receiver buffer data byte number is less than RXTRGLV, this bit will be cleared automatically.
        * |[1]     |TBEIF     |Transmit Buffer Empty Interrupt Status Flag (Read Only)
        * |        |          |This field is used for transmit buffer empty interrupt status flag.
        * |        |          |0 = Transmit buffer is not empty.
        * |        |          |1 = Transmit buffer is empty.
        * |        |          |Note: This bit is read only
-       * |        |          |If user wants to clear this bit, user must write data to DAT (SCn_DAT[7:0]) and then this bit
-       * |        |          |will be cleared automatically.
+       * |        |          |If user wants to clear this bit, user must write data to DAT (SCn_DAT[7:0]) and then this bit will be cleared automatically.
        * |[2]     |TERRIF    |Transfer Error Interrupt Status Flag
        * |        |          |This field is used for transfer error interrupt status flag
-       * |        |          |The transfer error states is at SCn_STATUS register which includes receiver break error
-       * |        |          |BEF (SCn_STATUS[6]), frame error FEF (SCn_STATUS[5], parity error PEF (SCn_STATUS[4] and receive
-       * |        |          |buffer overflow error RXOV (SCn_STATUS[0]), transmit buffer overflow error TXOV (SCn_STATUS[8]),
-       * |        |          |receiver retry over limit error RXOVERR (SCn_STATUS[22] or transmitter retry over limit error
-       * |        |          |TXOVERR (SCn_STATUS[30]).
+       * |        |          |The transfer error states is at SCn_STATUS register which includes receiver break error BEF (SCn_STATUS[6]), frame error FEF (SCn_STATUS[5], parity error PEF (SCn_STATUS[4] and receive buffer overflow error RXOV (SCn_STATUS[0]), transmit buffer overflow error TXOV (SCn_STATUS[8]), receiver retry over limit error RXOVERR (SCn_STATUS[22] or transmitter retry over limit error TXOVERR (SCn_STATUS[30]).
        * |        |          |0 = Transfer error interrupt did not occur.
        * |        |          |1 = Transfer error interrupt occurred.
-       * |        |          |Note1: This field is the status flag of BEF, FEF, PEF, RXOV, TXOV, RXOVERR or TXOVERR.
-       * |        |          |Note2: This bit can be cleared by writing 1 to it.
+       * |        |          |Note 1: This field is the status flag of BEF, FEF, PEF, RXOV, TXOV, RXOVERR or TXOVERR.
+       * |        |          |Note 2: This bit can be cleared by writing 1 to it.
        * |[3]     |TMR0IF    |Timer0 Interrupt Status Flag
        * |        |          |This field is used for Timer0 interrupt status flag.
        * |        |          |0 = Timer0 interrupt did not occur.
@@ -386,8 +357,8 @@ typedef struct
        * |        |          |This field is used for indicate block guard time interrupt status flag in receive direction.
        * |        |          |0 = Block guard time interrupt did not occur.
        * |        |          |1 = Block guard time interrupt occurred.
-       * |        |          |Note1: This bit is valid only when RXBGTEN (SCn_ALTCTL[12]) is enabled.
-       * |        |          |Note2: This bit can be cleared by writing 1 to it.
+       * |        |          |Note 1: This bit is valid only when RXBGTEN (SCn_ALTCTL[12]) is enabled.
+       * |        |          |Note 2: This bit can be cleared by writing 1 to it.
        * |[7]     |CDIF      |Card Detect Interrupt Status Flag (Read Only)
        * |        |          |This field is used for card detect interrupt status flag
        * |        |          |The card detect status is CINSERT (SCn_STATUS[12]) and CREMOVE (SCn_STATUS[11]).
@@ -395,8 +366,7 @@ typedef struct
        * |        |          |1 = Card detect event occurred.
        * |        |          |Note: This bit is read only, user must to clear CINSERT or CREMOVE status to clear it.
        * |[8]     |INITIF    |Initial End Interrupt Status Flag
-       * |        |          |This field is used for activation (ACTEN (SCn_ALTCTL[3])), deactivation (DACTEN (SCn_ALTCTL[2]))
-       * |        |          |and warm reset (WARSTEN (SCn_ALTCTL[4])) sequence interrupt status flag.
+       * |        |          |This field is used for activation (ACTEN (SCn_ALTCTL[3])), deactivation (DACTEN (SCn_ALTCTL[2])) and warm reset (WARSTEN (SCn_ALTCTL[4])) sequence interrupt status flag.
        * |        |          |0 = Initial sequence is not complete.
        * |        |          |1 = Initial sequence is completed.
        * |        |          |Note: This bit can be cleared by writing 1 to it.
@@ -404,8 +374,7 @@ typedef struct
        * |        |          |This field is used for indicate receive buffer time-out interrupt status flag.
        * |        |          |0 = Receive buffer time-out interrupt did not occur.
        * |        |          |1 = Receive buffer time-out interrupt occurred.
-       * |        |          |Note: This bit is read only, user must read all receive buffer remaining data by reading SCn_DAT
-       * |        |          |register to clear it.
+       * |        |          |Note: This bit is read only, user must read all receive buffer remaining data by reading SCn_DAT register to clear it.
        * |[10]    |ACERRIF   |Auto Convention Error Interrupt Status Flag
        * |        |          |This field indicates auto convention sequence error.
        * |        |          |0 = Received TS at ATR state is 0x3B or 0x3F.
@@ -424,35 +393,31 @@ typedef struct
        * |[1]     |RXEMPTY   |Receive Buffer Empty Status Flag (Read Only)
        * |        |          |This bit indicates Rx buffer empty or not.
        * |        |          |0 = Rx buffer is not empty.
-       * |        |          |1 = Rx buffer is empty, it means the last byte of Rx buffer has read from DAT (SCn_DAT[7:0]) by CPU.
+       * |        |          |1 = Rx buffer is empty, which means the last byte of Rx buffer has read from DAT (SCn_DAT[7:0]) by CPU.
        * |[2]     |RXFULL    |Receive Buffer Full Status Flag (Read Only)
        * |        |          |This bit indicates Rx buffer full or not.
        * |        |          |0 = Rx buffer count is less than 4.
-       * |        |          |1 = Rx buffer count equals to 4.
+       * |        |          |1 = Rx buffer count equals 4.
        * |[4]     |PEF       |Receiver Parity Error Status Flag
-       * |        |          |This bit is set to logic 1 whenever the received character does not have a valid parity bit.
+       * |        |          |This bit is set to logic 1 whenever the received character does not have a valid "parity bit".
        * |        |          |0 = Receiver parity error flag did not occur.
        * |        |          |1 = Receiver parity error flag occurred.
-       * |        |          |Note1: This bit can be cleared by writing 1 to it.
-       * |        |          |Note2: If CPU sets receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware will not
-       * |        |          |set this flag.
+       * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+       * |        |          |Note 2: If CPU sets receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware will not set this flag.
        * |[5]     |FEF       |Receiver Frame Error Status Flag
-       * |        |          |This bit is set to logic 1 whenever the received character does not have a valid stop bit (that is,
-       * |        |          |the stop bit following the last data bit or parity bit is detected as logic 0).
+       * |        |          |This bit is set to logic 1 whenever the received character does not have a valid "stop bit" (that is, the stop bit following the last data bit or parity bit is detected as logic 0).
        * |        |          |0 = Receiver frame error flag did not occur.
        * |        |          |1 = Receiver frame error flag occurred.
-       * |        |          |Note1: This bit can be cleared by writing 1 to it.
-       * |        |          |Note2: If CPU sets receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware will not
-       * |        |          |set this flag.
+       * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+       * |        |          |Note 2: If CPU sets receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware will not set this flag.
        * |[6]     |BEF       |Receiver Break Error Status Flag
        * |        |          |This bit is set to logic 1 whenever the received data input (Rx) held in the spacing state
        * |        |          |(logic 0) is longer than a full word transmission time (that is, the total time of start bit +
        * |        |          |data bits + parity bit + stop bit).
        * |        |          |0 = Receiver break error flag did not occur.
        * |        |          |1 = Receiver break error flag occurred.
-       * |        |          |Note1: This bit can be cleared by writing 1 to it.
-       * |        |          |Note2: If CPU sets receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware will not set
-       * |        |          |this flag.
+       * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+       * |        |          |Note 2: If CPU sets receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware will not set this flag.
        * |[8]     |TXOV      |Transmit Overflow Error Interrupt Status Flag
        * |        |          |This bit is set when Tx buffer overflow.
        * |        |          |0 = Tx buffer is not overflow.
@@ -461,13 +426,12 @@ typedef struct
        * |[9]     |TXEMPTY   |Transmit Buffer Empty Status Flag (Read Only)
        * |        |          |This bit indicates TX buffer empty or not.
        * |        |          |0 = Tx buffer is not empty.
-       * |        |          |1 = Tx buffer is empty, it means the last byte of Tx buffer has been transferred to Transmitter
-       * |        |          |Shift Register.
+       * |        |          |1 = Tx buffer is empty, which means the last byte of Tx buffer has been transferred to Transmitter Shift Register.
        * |        |          |Note: This bit will be cleared when writing data into DAT (SCn_DAT[7:0]).
        * |[10]    |TXFULL    |Transmit Buffer Full Status Flag (Read Only)
        * |        |          |This bit indicates Tx buffer full or not.
        * |        |          |0 = Tx buffer count is less than 4.
-       * |        |          |1 = Tx buffer count equals to 4.
+       * |        |          |1 = Tx buffer count equals 4.
        * |[11]    |CREMOVE   |Card Removal Status of SCn_CD Pin
        * |        |          |This bit is set whenever card has been removal.
        * |        |          |0 = No effect.
@@ -498,16 +462,14 @@ typedef struct
        * |        |          |hardware will not set this flag.
        * |[22]    |RXOVERR   |Receiver over Retry Error
        * |        |          |This bit is used for receiver retry counts over than retry number limitation.
-       * |        |          |0 = Receiver retries counts is not over than RXRTY (SCn_CTL[18:16]) + 1.
-       * |        |          |1 = Receiver retries counts over than RXRTY (SCn_CTL[18:16]) + 1.
-       * |        |          |Note1: This bit can be cleared by writing 1 to it.
-       * |        |          |Note2: If CPU enables receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware
-       * |        |          |will not set this flag.
+       * |        |          |0 = Receiver retries counts is less than RXRTY (SCn_CTL[18:16]) + 1.
+       * |        |          |1 = Receiver retries counts is equal or over than RXRTY (SCn_CTL[18:16]) + 1.
+       * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+       * |        |          |Note 2: If CPU enables receiver retries function by setting RXRTYEN (SCn_CTL[19]), hardware will not set this flag.
        * |[23]    |RXACT     |Receiver in Active Status Flag (Read Only)
        * |        |          |This bit indicates Rx transfer status.
        * |        |          |0 = This bit is cleared automatically when Rx transfer is finished.
        * |        |          |1 = This bit is set by hardware when Rx transfer is in active.
-       * |        |          |Note: This bit is read only.
        * |[26:24] |TXPOINT   |Transmit Buffer Pointer Status (Read Only)
        * |        |          |This field indicates the Tx buffer pointer status
        * |        |          |When CPU writes data into SCn_DAT, TXPOINT increases one
@@ -516,20 +478,17 @@ typedef struct
        * |        |          |This bit is used for indicate transmitter error retry and set by hardware.
        * |        |          |0 = No Tx retry transfer.
        * |        |          |1 = Tx has any error and retries transfer.
-       * |        |          |Note1: This bit can be cleared by writing 1 to it.
-       * |        |          |Note2: This bit is a flag and cannot generate any interrupt to CPU.
+       * |        |          |Note 1: This bit can be cleared by writing 1 to it.
+       * |        |          |Note 2: This bit is a flag and cannot generate any interrupt to CPU.
        * |[30]    |TXOVERR   |Transmitter over Retry Error
        * |        |          |This bit is used for transmitter retry counts over than retry number limitation.
-       * |        |          |0 = Transmitter retries counts is not over than TXRTY (SCn_CTL[22:20]) + 1.
-       * |        |          |1 = Transmitter retries counts over than TXRTY (SCn_CTL[22:20]) + 1.
+       * |        |          |0 = Transmitter retries counts is less than TXRTY (SCn_CTL[22:20]) + 1.
+       * |        |          |1 = Transmitter retries counts is equal or over to TXRTY (SCn_CTL[22:20]) + 1.
        * |        |          |Note: This bit can be cleared by writing 1 to it.
        * |[31]    |TXACT     |Transmit in Active Status Flag (Read Only)
        * |        |          |This bit indicates Tx transmit status.
-       * |        |          |0 = This bit is cleared automatically when Tx transfer is finished or the last byte transmission
-       * |        |          |has completed.
-       * |        |          |1 = Transmit is active and this bit is set by hardware when Tx transfer is in active and the STOP
-       * |        |          |bit of the last byte has not been transmitted.
-       * |        |          |Note: This bit is read only.
+       * |        |          |0 = This bit is cleared automatically when Tx transfer is finished or the last byte transmission has completed.
+       * |        |          |1 = Transmit is active and this bit is set by hardware when Tx transfer is in active and the STOP bit of the last byte has not been transmitted.
        * @var SC_T::PINCTL
        * Offset: 0x24  SC Pin Control State Register
        * ---------------------------------------------------------------------------------------------------
@@ -537,12 +496,12 @@ typedef struct
        * | :----: | :----:   | :---- |
        * |[0]     |PWREN     |SCn_PWR Pin Signal
        * |        |          |User can set PWRINV (SCn_PINCTL[11]) and PWREN (SCn_PINCTL[0]) to decide SCn_PWR pin is in high or low level.
-       * |        |          |Write this field to drive SCn_PWR pin
+       * |        |          |Write this field to drive SCn_PWR pin.
        * |        |          |Refer PWRINV (SCn_PINCTL[11]) description for programming SCn_PWR pin voltage level.
        * |        |          |Read this field to get SCn_PWR signal status.
        * |        |          |0 = SCn_PWR signal status is low.
        * |        |          |1 = SCn_PWR signal status is high.
-       * |        |          |Note: When operating at activation, warm reset or deactivation mode, this bit will be changed automatically.
+       * |        |          |Note: When operating at activation, warm reset or deactivation mode, this bit will be changed automatically
        * |        |          |Thus, do not fill in this field when operating in these modes.
        * |[1]     |RSTEN     |SCn_RST Pin Signal
        * |        |          |User can set RSTEN (SCn_PINCTL[1]) to decide SCn_RST pin is in high or low level.
@@ -552,12 +511,12 @@ typedef struct
        * |        |          |Read this field to get SCn_RST signal status.
        * |        |          |0 = SCn_RST signal status is low.
        * |        |          |1 = SCn_RST signal status is high.
-       * |        |          |Note: When operating at activation, warm reset or deactivation mode, this bit will be changed automatically.
+       * |        |          |Note: When operating at activation, warm reset or deactivation mode, this bit will be changed automatically
        * |        |          |Thus, do not fill in this field when operating in these modes.
        * |[6]     |CLKKEEP   |SC Clock Enable Bit
        * |        |          |0 = SC clock generation Disabled.
        * |        |          |1 = SC clock always keeps free running.
-       * |        |          |Note: When operating in activation, warm reset or deactivation mode, this bit will be changed automatically.
+       * |        |          |Note: When operating in activation, warm reset or deactivation mode, this bit will be changed automatically
        * |        |          |Thus, do not fill in this field when operating in these modes.
        * |[9]     |SCDATA    |SCn_DATA Pin Signal
        * |        |          |This bit is the signal status of SCn_DATA but user can drive SCn_DATA pin to high or low by setting this bit.
@@ -566,15 +525,16 @@ typedef struct
        * |        |          |Read this field to get SCn_DATA signal status.
        * |        |          |0 = SCn_DATA signal status is low.
        * |        |          |1 = SCn_DATA signal status is high.
-       * |        |          |Note: When SC is at activation, warm reset or deactivation mode, this bit will be changed automatically.
+       * |        |          |Note: When SC is at activation, warm reset or deactivation mode, this bit will be changed automatically
        * |        |          |Thus, do not fill in this field when SC is in these modes.
        * |[11]    |PWRINV    |SCn_PWR Pin Inverse
        * |        |          |This bit is used for inverse the SCn_PWR pin.
        * |        |          |There are four kinds of combination for SCn_PWR pin setting by PWRINV (SCn_PINCTL[11]) and PWREN (SCn_PINCTL[0]).
-       * |        |          |PWRINV is 0 and PWREN is 0, SCn_PWR pin is 0.
-       * |        |          |PWRINV is 0 and PWREN is 1, SCn_PWR pin is 1.
-       * |        |          |PWRINV is 1 and PWREN is 0, SCn_PWR pin is 1.
-       * |        |          |PWRINV is 1 and PWREN is 1, SCn_PWR pin is 0.
+       * |        |          |PWRINV (SCn_PINCTL[11]) is bit 1 and PWREN (SCn_PINCTL[0]) is bit 0 and all conditions as below list,
+       * |        |          |00 = SCn_PWR pin is 0.
+       * |        |          |01 = SCn_PWR pin is 1.
+       * |        |          |10 = SCn_PWR pin is 1.
+       * |        |          |11 = SCn_PWR pin is 0.
        * |        |          |Note: User must select PWRINV (SCn_PINCTL[11]) before smart card is enabled by SCEN (SCn_CTL[0]).
        * |[16]    |DATASTS   |SCn_DATA Pin Status (Read Only)
        * |        |          |This bit is the pin status of SCn_DATA.
@@ -602,7 +562,7 @@ typedef struct
        * |        |          |Note: Unit of Timer0 counter is ETU base.
        * |[27:24] |OPMODE    |Timer0 Operation Mode Selection
        * |        |          |This field indicates the internal 24-bit Timer0 operation selection.
-       * |        |          |Refer to Table 7.17-3 for programming Timer0.
+       * |        |          |Refer to Table 1.1-3 for programming Timer0.
        * |[31]    |SYNC      |SYNC Flag Indicator (Read Only)
        * |        |          |Due to synchronization, user should check this bit when writing a new value to the SCn_TMRCTL0 register.
        * |        |          |0 = Synchronizing is completion, user can write new data to SCn_TMRCTL0 register.
@@ -617,7 +577,7 @@ typedef struct
        * |        |          |Note: Unit of Timer1 counter is ETU base.
        * |[27:24] |OPMODE    |Timer 1 Operation Mode Selection
        * |        |          |This field indicates the internal 8-bit Timer1 operation selection.
-       * |        |          |Refer to Table 7.17-3 for programming Timer1.
+       * |        |          |Refer to Table 1.1-3 for programming Timer1.
        * |[31]    |SYNC      |SYNC Flag Indicator (Read Only)
        * |        |          |Due to synchronization, software should check this bit when writing a new value to SCn_TMRCTL1 register.
        * |        |          |0 = Synchronizing is completion, user can write new data to SCn_TMRCTL1 register.
@@ -632,7 +592,7 @@ typedef struct
        * |        |          |Note: Unit of Timer2 counter is ETU base.
        * |[27:24] |OPMODE    |Timer 2 Operation Mode Selection
        * |        |          |This field indicates the internal 8-bit Timer2 operation selection
-       * |        |          |Refer to Table 7.17-3 for programming Timer2.
+       * |        |          |Refer to Table 1.1-3 for programming Timer2.
        * |[31]    |SYNC      |SYNC Flag Indicator (Read Only)
        * |        |          |Due to synchronization, user should check this bit when writing a new value to SCn_TMRCTL2 register.
        * |        |          |0 = Synchronizing is completion, user can write new data to SCn_TMRCTL2 register.
@@ -643,29 +603,29 @@ typedef struct
        * |Bits    |Field     |Descriptions
        * | :----: | :----:   | :---- |
        * |[0]     |UARTEN    |UART Mode Enable Bit
-       * |        |          |Sets this bit to enable UART mode function.
+       * |        |          |Set this bit to enable UART mode function.
        * |        |          |0 = Smart Card mode.
        * |        |          |1 = UART mode.
-       * |        |          |Note1: When operating in UART mode, user must set CONSEL (SCn_CTL[5:4]) = 00 and AUTOCEN (SCn_CTL[3]) = 0.
-       * |        |          |Note2: When operating in Smart Card mode, user must set UARTEN (SCn_UARTCTL[0]) = 0.
-       * |        |          |Note3: When UART mode is enabled, hardware will generate a reset to reset FIFO and internal state machine.
+       * |        |          |Note 1: When operating in UART mode, user must set CONSEL (SCn_CTL[5:4]) = 00 and AUTOCEN (SCn_CTL[3]) = 0.
+       * |        |          |Note 2: When operating in Smart Card mode, user must set UARTEN (SCn_UARTCTL[0]) = 0.
+       * |        |          |Note 3: When UART mode is enabled, hardware will generate a reset to reset FIFO and internal state machine.
        * |[5:4]   |WLS       |Word Length Selection
        * |        |          |This field is used for select UART data length.
        * |        |          |00 = Word length is 8 bits.
        * |        |          |01 = Word length is 7 bits.
        * |        |          |10 = Word length is 6 bits.
        * |        |          |11 = Word length is 5 bits.
-       * |        |          |Note: In smart card mode, this WLS must be '00'.
-       * |[6]     |PBOFF     |Parity Bit Disable Control
-       * |        |          |Sets this bit is used for disable parity check function.
+       * |        |          |Note: In smart card mode, this WLS must be 00.
+       * |[6]     |PBOFF     |Parity Bit Disable Bit
+       * |        |          |This bit is used for disable parity check function.
        * |        |          |0 = Parity bit is generated or checked between the last data word bit and stop bit of the serial data.
        * |        |          |1 = Parity bit is not generated (transmitting data) or checked (receiving data) during transfer.
-       * |        |          |Note: In smart card mode, this field must be '0' (default setting is with parity bit).
+       * |        |          |Note: In smart card mode, this field must be 0 (default setting is with parity bit).
        * |[7]     |OPE       |Odd Parity Enable Bit
        * |        |          |This is used for odd/even parity selection.
-       * |        |          |0 = Even number of logic 1's are transmitted or check the data word and parity bits in receiving mode.
-       * |        |          |1 = Odd number of logic 1's are transmitted or check the data word and parity bits in receiving mode.
-       * |        |          |Note: This bit has effect only when PBOFF bit is '0'.
+       * |        |          |0 = Even number of logic 1 are transmitted or check the data word and parity bits in receiving mode.
+       * |        |          |1 = Odd number of logic 1 are transmitted or check the data word and parity bits in receiving mode.
+       * |        |          |Note: This bit has effect only when PBOFF bit is 0.
        * @var SC_T::ACTCTL
        * Offset: 0x4C  SC Activation Control Register
        * ---------------------------------------------------------------------------------------------------
@@ -675,9 +635,9 @@ typedef struct
        * |        |          |This field provide the configurable cycles to extend the activation time T1 period.
        * |        |          |The cycle scaling factor is 2048.
        * |        |          |Extend cycles = (filled value * 2048) cycles.
-       * |        |          |Refer to SC activation sequence in Figure 7.17-4.
+       * |        |          |Refer to SC activation sequence in Figure 1.1-4.
        * |        |          |For example,
-       * |        |          |SCLK = 4MHz, each cycle = 0.25us,.
+       * |        |          |SCLK = 4 MHz, each cycle = 0.25 us.
        * |        |          |Filled 20 to this field
        * |        |          |Extend time = 20 * 2048 * 0.25us = 10.24 ms.
        * |        |          |Note: Setting 0 to this field conforms to the protocol ISO/IEC 7816-3

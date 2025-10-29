@@ -70,6 +70,7 @@ extern volatile unsigned long ulRegTest1LoopCounter, ulRegTest2LoopCounter;
 
 void vRegTest1Task(void *pvParameters)
 {
+    (void)pvParameters;
     __asm volatile
     (
         /* Fill the core registers with known values.  This is only done once. */
@@ -156,6 +157,7 @@ void vRegTest1Task(void *pvParameters)
 
 void vRegTest2Task(void *pvParameters)
 {
+    (void)pvParameters;
     __asm volatile
     (
         /* Repeatedly check that each register still contains the value written to it when the task started. */

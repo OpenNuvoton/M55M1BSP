@@ -2600,9 +2600,9 @@ extern const uint32_t pd_snk_pdo[];
  * @param mask host event mask.
  */
 #if defined(HAS_TASK_HOSTCMD) && !defined(TEST_BUILD)
-void pd_send_host_event(int mask);
+    void pd_send_host_event(int mask) __attribute__((unused));
 #else
-static inline void pd_send_host_event(int mask) { }
+    static inline void pd_send_host_event(int mask) __attribute__((unused));
 #endif
 
 /**

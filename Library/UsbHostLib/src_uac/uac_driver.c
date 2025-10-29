@@ -82,7 +82,7 @@ static int  uac_probe(IFACE_T *iface)
     DESC_IF_T    *ifd;
     UAC_DEV_T    *uac, *p;
     uint8_t      bAlternateSetting;
-    int          ret;
+    int          ret = 0;
 
     ifd = aif->ifd;
 

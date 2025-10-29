@@ -726,7 +726,7 @@ static void LBK_PrepareIsoInData(void)
 
 void VendorLBK_ProcessData(void)
 {
-    int         i;
+    uint32_t i;
 
     if (g_IntInDataEmpty)
     {

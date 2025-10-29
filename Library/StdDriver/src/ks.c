@@ -579,7 +579,7 @@ int32_t KS_WriteOTP(int32_t i32KeyIdx, uint32_t u32Meta, uint32_t au32Key[])
     sidx = (u32Meta & KS_METADATA_SIZE_Msk) >> KS_METADATA_SIZE_Pos;
 
     /* OTP only support maximum 256 bits */
-    if (sidx > (KS_META_256 >> KS_METADATA_SIZE_Pos))
+    if (sidx > (int32_t)(KS_META_256 >> KS_METADATA_SIZE_Pos))
         return KS_ERR_PARAMETER;
 
     i32Cnt = au8CntTbl[sidx];

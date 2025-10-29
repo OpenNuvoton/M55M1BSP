@@ -949,7 +949,6 @@ void AudioStartPlay(uint32_t u32SampleRate)
   */
 void UAC_SendRecData(void)
 {
-    uint32_t volatile i;
     uint32_t *pBuff;
 
     /* when record buffer full, send data to host */
@@ -1019,9 +1018,6 @@ void AudioStartRecord(uint32_t u32SampleRate)
     /* Enable PDMA channel */
     PDMA0->CHCTL |= (1 << PDMA_I2S_RX_CH);
     printf("Start Record ... \n");
-
-    //    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 0;
-    //    PDMA0->DSCT[PDMA_I2S_RX_CH].CTL = 2;
 }
 
 

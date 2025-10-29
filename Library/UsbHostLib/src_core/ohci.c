@@ -81,7 +81,6 @@ static void add_to_ED_remove_list(ED_T *ed)
 
 static int ohci_reset(void)
 {
-    volatile int  t0;
 
     /* Disable HC interrupts  */
     _ohci->HcInterruptDisable = USBH_HcInterruptDisable_MIE_Msk;
@@ -192,7 +191,7 @@ static int get_ohci_interval(int interval)
 static int  ohci_init(void)
 {
     uint32_t    fminterval;
-    volatile int    i;
+    volatile uint32_t    i;
 
     if (ohci_reset() < 0)
         return -1;
@@ -905,7 +904,7 @@ static int ohci_rh_port_reset(int port)
 
         t0 = get_ticks();
 
-        while (get_ticks() - t0 < (reset_time / 10) + 1)
+        while (get_ticks() - t0 < (uint32_t)(reset_time / 10) + 1)
         {
             /*
              *  If device is disconnected or port enabled, we can stop port reset.
@@ -1327,7 +1326,7 @@ NVT_ITCM void OHCI_IRQHandler(void)
     int_sts = _ohci->HcInterruptStatus;
 }
 
-#ifdef ENABLE_DEBUG_MSG
+#ifdef DUMP_DESCRIPTOR
 
 static void dump_ohci_int_table()
 {
@@ -1389,7 +1388,7 @@ static void dump_ohci_ports()
     USB_debug("_ohci port0=0x%x\n", _ohci->HcRhPortStatus[0]);
 }
 
-#endif  // ENABLE_DEBUG_MSG
+#endif  // DUMP_DESCRIPTOR
 //#if 0
 //HC_DRV_T  ohci_driver =
 //{

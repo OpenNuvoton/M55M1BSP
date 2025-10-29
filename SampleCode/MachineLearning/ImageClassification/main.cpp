@@ -165,7 +165,6 @@ int main()
     uint8_t u8ImgIdx = 0;
 
     TfLiteTensor *inputTensor   = model.GetInputTensor(0);
-    TfLiteTensor *outputTensor = model.GetOutputTensor(0);
 
     if (!inputTensor->dims)
     {
@@ -306,6 +305,28 @@ int main()
 
 #endif
 
+        //resize framebuffer image to model input
+        image_t resizeImg;
+
+        roi.x = 0;
+        roi.y = 0;
+        roi.w = frameBuffer.w;
+        roi.h = frameBuffer.h;
+
+        resizeImg.w = inputImgCols;
+        resizeImg.h = inputImgRows;
+        resizeImg.data = (uint8_t *)inputTensor->data.data; //direct resize to input tensor buffer
+        resizeImg.pixfmt = PIXFORMAT_RGB888;
+
+#if defined(__PROFILE__)
+        u64StartCycle = pmu_get_systick_Count();
+#endif
+        imlib_nvt_scale(&frameBuffer, &resizeImg, &roi);
+#if defined(__PROFILE__)
+        u64EndCycle = pmu_get_systick_Count();
+        info("resize cycles %llu \n", (u64EndCycle - u64StartCycle));
+#endif
+
 #if defined (__USE_UVC__)
 
         if (UVC_IsConnect())
@@ -351,28 +372,6 @@ int main()
 
 #endif
 
-
-        //resize framebuffer image to model input
-        image_t resizeImg;
-
-        roi.x = 0;
-        roi.y = 0;
-        roi.w = frameBuffer.w;
-        roi.h = frameBuffer.h;
-
-        resizeImg.w = inputImgCols;
-        resizeImg.h = inputImgRows;
-        resizeImg.data = (uint8_t *)inputTensor->data.data; //direct resize to input tensor buffer
-        resizeImg.pixfmt = PIXFORMAT_RGB888;
-
-#if defined(__PROFILE__)
-        u64StartCycle = pmu_get_systick_Count();
-#endif
-        imlib_nvt_scale(&frameBuffer, &resizeImg, &roi);
-#if defined(__PROFILE__)
-        u64EndCycle = pmu_get_systick_Count();
-        info("resize cycles %llu \n", (u64EndCycle - u64StartCycle));
-#endif
 
 #if defined (__USE_CCAP__)
         //Capture new image

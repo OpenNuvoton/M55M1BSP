@@ -43,7 +43,8 @@ static volatile uint32_t g_usbd_CtrlOutSizeLimit = 0ul;
 static volatile uint32_t g_usbd_UsbAddr = 0ul;
 static volatile uint32_t g_usbd_UsbConfig = 0ul;
 static volatile uint32_t g_usbd_CtrlMaxPktSize = 8ul;
-static volatile uint32_t g_usbd_UsbAltInterface = 0ul;
+// Uncomment if support GET_INTERFACE/SET_INTERFACE
+//static volatile uint32_t g_usbd_UsbAltInterface = 0ul;
 static volatile uint8_t g_usbd_CtrlInZeroFlag = 0ul;
 /**
  * @endcond

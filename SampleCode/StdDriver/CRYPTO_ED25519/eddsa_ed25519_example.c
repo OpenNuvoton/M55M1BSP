@@ -62,7 +62,7 @@ static inline uint8_t read8(const void *addr)
 static volatile int g_HMAC_error;
 static volatile int g_HMAC_done;
 
-static volatile uint64_t  _start_time = 0;
+//static volatile uint64_t  _start_time = 0;
 
 
 void CRYPTO_IRQHandler()
@@ -86,7 +86,7 @@ void CRYPTO_IRQHandler()
 void  dump_buff_hex(uint8_t *pucBuff, int nBytes)
 {
     uint32_t  addr, end_addr;
-    int   i;
+    uint32_t   i;
 
     addr = ptr_to_u32(pucBuff);
     end_addr = addr + nBytes - 1;

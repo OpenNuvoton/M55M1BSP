@@ -19,7 +19,7 @@ project:
           C:
             - -std=c11
           C-CPP:
-            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -w
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
           CPP:
             - -xc++
@@ -38,6 +38,7 @@ project:
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
+            - -Wl,--no-warn-rwx-segments
     - setup: Options for FMC_MultiBoot_0x100000
       for-context: .FMC_MultiBoot_0x100000
       output:
@@ -98,7 +99,7 @@ project:
       output:
         base-name: FMC_MultiBoot_LDROM
   linker:
-    - script: ./FMC_MultiBoot_APROM.scatter
+    - script: ./FMC_MultiBoot_APROM.scf
       for-compiler: AC6
       for-context:
         - .FMC_MultiBoot_0x100000
@@ -114,7 +115,7 @@ project:
         - .FMC_MultiBoot_0x1C0000
         - .FMC_MultiBoot_0x220000
         - .FMC_MultiBoot_0x280000
-    - script: ../../../../Library/Device/Nuvoton/M55M1/Source/ARM/M55M1-LDROM.scatter
+    - script: ../../../../Library/Device/Nuvoton/M55M1/Source/ARM/M55M1-LDROM.scf
       for-compiler: AC6
       for-context: .FMC_MultiBoot_LDROM
     - script: ../../../../Library/Device/Nuvoton/M55M1/Source/GCC/M55M1-LDROM.ld
@@ -132,6 +133,7 @@ project:
       files:
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/startup_M55M1.c
         - file: ../../../../Library/Device/Nuvoton/M55M1/Source/system_M55M1.c
+
       for-context:
         - .FMC_MultiBoot_0x100000
         - .FMC_MultiBoot_0x160000

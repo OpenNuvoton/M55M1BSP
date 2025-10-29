@@ -37,7 +37,7 @@
 This driver requires the M55M1 BSP.
 The driver instance is mapped to hardware as shown in the table below:
 
-  CMSIS Driver Instance | M55M1 Hardware Resource
+  CMSIS Driver Instance | Hardware Resource
   :---------------------|:-----------------------
   Driver_USART13        | LPUART0
 
@@ -84,10 +84,6 @@ static const ARM_DRIVER_VERSION DriverVersion =
 
 #ifdef  DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
 
-#define USART_TO_LPUART(n)                  (n == 13 ? LPUART0 : LPUART0)
-#define USART_TO_LPUART_LPPDMA_RX(n)          (n == 13 ? LPPDMA_LPUART0_RX : LPPDMA_LPUART0_RX)
-#define USART_TO_LPUART_LPPDMA_TX(n)        (n == 13 ? LPPDMA_LPUART0_TX : LPPDMA_LPUART0_TX)
-
 // Macros
 // Macro for section for RW info
 #ifdef  USART_SECTION_NAME
@@ -97,26 +93,31 @@ static const ARM_DRIVER_VERSION DriverVersion =
     #define USARTn_SECTION(n)
 #endif
 
-// Macro to create usart_ro_info and usart_rw_info (for U(S)ART instances)
-#define INFO_DEFINE(n)                                                      \
-    static        RW_Info_t         usart##n##_rw_info USARTn_SECTION(n) =  \
-                                                                            {                                                                       \
-                                                                                                                                                    .lppdma_rx_chan_id = -1,                                              \
-                                                                                                                                                    .lppdma_tx_chan_id = -1,                                              \
-                                                                            };                                                                      \
-    static  const USART_Info_t      usart##n##_info =                       \
-                                                                            {                                                                       \
-                                                                                                                                                    USART_TO_LPUART(n),                                                            \
-                                                                                                                                                    &usart##n##_rw_info,                                                \
-                                                                                                                                                    RTE_USART##n##_RX_LPPDMA,                                             \
-                                                                                                                                                    RTE_USART##n##_TX_LPPDMA,                                             \
-                                                                                                                                                    RTE_USART##n##_RX_LPPDMA_NUMBER,                                      \
-                                                                                                                                                    RTE_USART##n##_TX_LPPDMA_NUMBER,                                      \
-                                                                                                                                                    RTE_USART##n##_RX_LPPDMA_CHANNEL,                                     \
-                                                                                                                                                    RTE_USART##n##_TX_LPPDMA_CHANNEL,                                     \
-                                                                                                                                                    USART_TO_LPUART_LPPDMA_RX(n),                                                  \
-                                                                                                                                                    USART_TO_LPUART_LPPDMA_TX(n)                                                   \
-                                                                            };
+// Macro to create usart_ro_info (for U(S)ART instances)
+#define RO_INFO_DEFINE(n,huart,irq,pdma_rx,pdma_tx) \
+    static        RO_Info_t         usart##n##_ro_info = {  \
+                                                            huart,                             \
+                                                            irq,                               \
+                                                            RTE_USART##n##_RX_LPPDMA,          \
+                                                            RTE_USART##n##_TX_LPPDMA,          \
+                                                            RTE_USART##n##_RX_LPPDMA_NUMBER,   \
+                                                            RTE_USART##n##_TX_LPPDMA_NUMBER,   \
+                                                            RTE_USART##n##_RX_LPPDMA_CHANNEL,  \
+                                                            RTE_USART##n##_TX_LPPDMA_CHANNEL,  \
+                                                            pdma_rx,                           \
+                                                            pdma_tx                            \
+                                                         };
+// Macro to create usart_rw_info (for U(S)ART instances)
+#define RW_INFO_DEFINE(n)                                                      \
+    static        RW_Info_t         usart##n##_rw_info USARTn_SECTION(n) =  {  \
+                                                                               .lppdma_rx_chan_id = -1,  \
+                                                                               .lppdma_tx_chan_id = -1,  \
+                                                                            };                            \
+    static  const USART_Info_t      usart##n##_info = {  \
+                                                         &usart##n##_ro_info,  \
+                                                         &usart##n##_rw_info,  \
+                                                      };
+
 
 // Macro for declaring functions (for instances)
 #define FUNCS_DECLARE(n)                                                                                            \
@@ -213,32 +214,25 @@ typedef struct
 #define USART_HandleTypeDef  LPUART_T
 typedef struct
 {
-    USART_HandleTypeDef          *ptr_USART;              // Pointer to USART_HandleTypeDef structure
-    RW_Info_t                    *ptr_rw_info;            // Pointer to run-time information (RW)
-    uint32_t                     lppdma_rx_used;            // use LPPDMA for RX transfer
-    uint32_t                     lppdma_tx_used;          // use LPPDMA for TX transfer
-    uint32_t                     lppdma_rx_num;             // LPPDMA RX number
-    uint32_t                     lppdma_tx_num;           // LPPDMA TX number
-    uint32_t                     lppdma_rx_channel;         // LPPDMA RX channel
-    uint32_t                     lppdma_tx_channel;       // LPPDMA TX channel
-    uint32_t                     lppdma_rx_perip_mode;      // LPPDMA RX peripheral transfer moode
-    uint32_t                     lppdma_tx_perip_mode;    // LPPDMA TX peripheral transfer moode
+    USART_HandleTypeDef           *ptr_USART;
+    int32_t                       irq_n;
+    uint32_t                      lppdma_rx_used;          // use LPPDMA for RX transfer
+    uint32_t                      lppdma_tx_used;          // use LPPDMA for TX transfer
+    uint32_t                      lppdma_rx_num;           // LPPDMA RX number
+    uint32_t                      lppdma_tx_num;           // LPPDMA TX number
+    uint32_t                      lppdma_rx_channel;       // LPPDMA RX channel
+    uint32_t                      lppdma_tx_channel;       // LPPDMA TX channel
+    uint32_t                      lppdma_rx_perip_mode;    // LPPDMA RX peripheral transfer moode
+    uint32_t                      lppdma_tx_perip_mode;    // LPPDMA TX peripheral transfer moode
+} RO_Info_t;
+
+typedef struct
+{
+    const RO_Info_t              *ptr_ro_info;             // Pointer to compile-time information (RO)
+    RW_Info_t                    *ptr_rw_info;             // Pointer to run-time information (RW)
+
 } USART_Info_t;
 
-
-// Information definitions (for instances)
-#if (RTE_USART13)
-    INFO_DEFINE(13)
-#endif
-
-// List of available USART instance infos
-static const USART_Info_t *const usart_info_list[] =
-{
-#if (RTE_USART13)
-    &usart13_info,
-#endif
-    NULL
-};
 
 // Local functions prototypes
 static const USART_Info_t       *USART_GetInfo(const USART_HandleTypeDef *huart);
@@ -257,10 +251,22 @@ static ARM_USART_STATUS         USARTn_GetStatus(const USART_Info_t *ptr_usart_i
 static int32_t                  USART_SetModemControl(ARM_USART_MODEM_CONTROL control);
 static ARM_USART_MODEM_STATUS   USART_GetModemStatus(void);
 
-// Local driver functions declarations (for instances)
-#if (RTE_USART13)
+#if(RTE_USART13)
+    RO_INFO_DEFINE(13, LPUART0, LPUART0_IRQn, LPPDMA_LPUART0_RX, LPPDMA_LPUART0_TX)
+    RW_INFO_DEFINE(13)
     FUNCS_DECLARE(13)
+    FUNCS_DEFINE(13)
+    USART_DRIVER(13)
 #endif
+
+// List of available USART instance infos
+static const USART_Info_t *const usart_info_list[] =
+{
+#if (RTE_USART13)
+    &usart13_info,
+#endif
+    NULL
+};
 
 // Auxiliary functions
 
@@ -282,7 +288,7 @@ static const USART_Info_t *USART_GetInfo(const USART_HandleTypeDef *huart)
     {
         if (usart_info_list[i] != NULL)
         {
-            if (usart_info_list[i]->ptr_USART == huart)
+            if (usart_info_list[i]->ptr_ro_info->ptr_USART == huart)
             {
                 ptr_usart_info = usart_info_list[i];
                 break;
@@ -293,97 +299,6 @@ static const USART_Info_t *USART_GetInfo(const USART_HandleTypeDef *huart)
     return ptr_usart_info;
 }
 
-
-typedef struct
-{
-    USART_HandleTypeDef *huart;
-    int32_t irq_n;
-} S_IRQ_SEL_t;
-
-
-static S_IRQ_SEL_t uart_irq_table[] =
-{
-#if (RTE_USART13)
-    {LPUART0, LPUART0_IRQn},
-#endif
-};
-
-static S_IRQ_SEL_t *IRQSelector(USART_HandleTypeDef *huart)
-{
-    int cnt = sizeof(uart_irq_table) / sizeof(S_IRQ_SEL_t);
-    int i;
-
-    for (i = 0; i < cnt; i++)
-    {
-        if (uart_irq_table[i].huart == huart)
-            return &uart_irq_table[i];
-    }
-
-    return NULL;
-}
-
-
-/**
-  \fn          void USARTn_Set_NVIC (const USART_Info_t *ptr_usart_info)
-  \brief       Set USARTn NVIC
-  \param[in]   ptr_usart_info  Pointer to info structure (USART_Info_t)
-*/
-static void USARTn_Set_NVIC(const USART_Info_t *ptr_usart_info)
-{
-    USART_HandleTypeDef *huart = ptr_usart_info->ptr_USART;
-
-    if ((ptr_usart_info->lppdma_tx_used) || (ptr_usart_info->lppdma_rx_used))
-    {
-        CLK_EnableModuleClock(LPPDMA0_MODULE);
-    }
-
-    S_IRQ_SEL_t *irq_sel;
-
-    irq_sel = IRQSelector(huart);
-
-    if (irq_sel == NULL)
-    {
-        printf("Error! unable select LPUART irq table \n");
-        return;
-    }
-
-    /* Unlock protected registers */
-    SYS_UnlockReg();
-
-    NVIC_EnableIRQ(irq_sel->irq_n);
-
-    /* Lock protected registers */
-    SYS_LockReg();
-}
-
-/**
-  \fn          void USARTn_Clear_NVIC (const USART_HandleTypeDef *huart)
-  \brief       Clear USARTn NVIC
-  \param[in]   huart    Pointer to USART_HandleTypeDef structure (USART_HandleTypeDef)
-*/
-static void USARTn_Clear_NVIC(const USART_Info_t *ptr_usart_info)
-{
-    USART_HandleTypeDef *huart = ptr_usart_info->ptr_USART;
-
-    S_IRQ_SEL_t *irq_sel;
-
-    irq_sel = IRQSelector(huart);
-
-    if (irq_sel == NULL)
-    {
-        printf("Error! unable select UART irq table \n");
-        return;
-    }
-
-    /* Unlock protected registers */
-    SYS_UnlockReg();
-
-    NVIC_DisableIRQ(irq_sel->irq_n);
-
-    /* Lock protected registers */
-    SYS_LockReg();
-}
-
 static void LPPDMA_TX_CB_Handler(void *ptr_priv, uint32_t event)
 {
     USART_Info_t *ptr_usart_info = (USART_Info_t *)ptr_priv;
@@ -391,7 +306,7 @@ static void LPPDMA_TX_CB_Handler(void *ptr_priv, uint32_t event)
     TX_Trans_t *ptr_tx_trans = &ptr_rw_info->tx_trans;
 
     /* Disable UART Tx PDMA0 function */
-    LPUART_DISABLE_INT(ptr_usart_info->ptr_USART, LPUART_INTEN_TXPDMAEN_Msk);
+    LPUART_DISABLE_INT(ptr_usart_info->ptr_ro_info->ptr_USART, LPUART_INTEN_TXPDMAEN_Msk);
 
     if (event & (NU_PDMA_EVENT_TRANSFER_DONE | NU_PDMA_EVENT_ABORT))
     {
@@ -407,7 +322,7 @@ static void LPPDMA_TX_CB_Handler(void *ptr_priv, uint32_t event)
         if (ptr_rw_info->cb_event)
         {
             /* Wait the STOP bit of the last byte has been transmitted. */
-            LPUART_WAIT_TX_EMPTY(ptr_usart_info->ptr_USART);
+            LPUART_WAIT_TX_EMPTY(ptr_usart_info->ptr_ro_info->ptr_USART);
             ptr_rw_info->cb_event(ARM_USART_EVENT_TX_COMPLETE | ARM_USART_EVENT_SEND_COMPLETE);
         }
     }
@@ -420,7 +335,7 @@ static void LPPDMA_RX_CB_Handler(void *ptr_priv, uint32_t event)
     RX_Trans_t *ptr_rx_trans = &ptr_rw_info->rx_trans;
 
     /* Disable UART Tx PDMA0 function */
-    LPUART_DISABLE_INT(ptr_usart_info->ptr_USART, LPUART_INTEN_RXPDMAEN_Msk);
+    LPUART_DISABLE_INT(ptr_usart_info->ptr_ro_info->ptr_USART, LPUART_INTEN_RXPDMAEN_Msk);
 
     if (event & (NU_PDMA_EVENT_TRANSFER_DONE | NU_PDMA_EVENT_ABORT))
     {
@@ -490,7 +405,7 @@ static int32_t USARTn_Initialize(const USART_Info_t *ptr_usart_info, ARM_USART_S
 
     RW_Info_t *ptr_rw_info = ptr_usart_info->ptr_rw_info;
 
-    if (ptr_usart_info->lppdma_rx_used)
+    if (ptr_usart_info->ptr_ro_info->lppdma_rx_used)
     {
         if ((ptr_rw_info->lppdma_rx_chan_id >= 0) && ((uint32_t)ptr_rw_info->lppdma_rx_chan_id < PDMA_CH_MAX * PDMA_CNT))
         {
@@ -499,7 +414,7 @@ static int32_t USARTn_Initialize(const USART_Info_t *ptr_usart_info, ARM_USART_S
         }
     }
 
-    if (ptr_usart_info->lppdma_tx_used)
+    if (ptr_usart_info->ptr_ro_info->lppdma_tx_used)
     {
         if ((ptr_rw_info->lppdma_tx_chan_id >= 0) && ((uint32_t)ptr_rw_info->lppdma_tx_chan_id < PDMA_CH_MAX * PDMA_CNT))
         {
@@ -560,6 +475,7 @@ static int32_t USARTn_PowerControl(const USART_Info_t *ptr_usart_info, ARM_POWER
 {
 
     RW_Info_t *ptr_rw_info = ptr_usart_info->ptr_rw_info;
+    const RO_Info_t *ptr_ro_info = ptr_usart_info->ptr_ro_info;
 
     switch (state)
     {
@@ -574,28 +490,34 @@ static int32_t USARTn_PowerControl(const USART_Info_t *ptr_usart_info, ARM_POWER
             ptr_rw_info->rx_framing_error = 0U;
             ptr_rw_info->rx_parity_error  = 0U;
 
-            LPUART_Open(ptr_usart_info->ptr_USART, 0);
 
-            // Initialize interrupts and peripheral
-            USARTn_Set_NVIC(ptr_usart_info);
+
+            if ((ptr_usart_info->ptr_ro_info->lppdma_tx_used) || (ptr_usart_info->ptr_ro_info->lppdma_rx_used))
+            {
+                CLK_EnableModuleClock(LPPDMA0_MODULE);
+            }
+
+            // Initialize interrupt and peripheral
+            LPUART_Open(ptr_ro_info->ptr_USART, 0);
+            NVIC_EnableIRQ(ptr_ro_info->irq_n);
 
             // Allocate LPPDMA RX channel if LPPDMA RX used
-            if ((ptr_usart_info->lppdma_rx_used) && (ptr_rw_info->lppdma_rx_chan_id == -1))
+            if ((ptr_ro_info->lppdma_rx_used) && (ptr_rw_info->lppdma_rx_chan_id == -1))
             {
                 ptr_rw_info->lppdma_rx_chan_id = nu_lppdma_channel_allocate(
-                                                     ptr_usart_info->lppdma_rx_perip_mode,
-                                                     ptr_usart_info->lppdma_rx_num,
-                                                     ptr_usart_info->lppdma_rx_channel
+                                                     ptr_ro_info->lppdma_rx_perip_mode,
+                                                     ptr_ro_info->lppdma_rx_num,
+                                                     ptr_ro_info->lppdma_rx_channel
                                                  );
             }
 
             // Allocate LPPDMA TX channel if LPPDMA TX used
-            if ((ptr_usart_info->lppdma_tx_used) && (ptr_rw_info->lppdma_tx_chan_id == -1))
+            if ((ptr_ro_info->lppdma_tx_used) && (ptr_rw_info->lppdma_tx_chan_id == -1))
             {
                 ptr_rw_info->lppdma_tx_chan_id = nu_lppdma_channel_allocate(
-                                                     ptr_usart_info->lppdma_tx_perip_mode,
-                                                     ptr_usart_info->lppdma_tx_num,
-                                                     ptr_usart_info->lppdma_tx_channel
+                                                     ptr_ro_info->lppdma_tx_perip_mode,
+                                                     ptr_ro_info->lppdma_tx_num,
+                                                     ptr_ro_info->lppdma_tx_channel
                                                  );
             }
 
@@ -617,9 +539,9 @@ static int32_t USARTn_PowerControl(const USART_Info_t *ptr_usart_info, ARM_POWER
                 (void)USARTn_Control(ptr_usart_info, ARM_USART_ABORT_RECEIVE, 0U);
             }
 
-            // De-initialize pins, clocks, interrupts and peripheral
-            LPUART_Close(ptr_usart_info->ptr_USART);
-            USARTn_Clear_NVIC(ptr_usart_info);
+            // De-initialize interrupts and peripheral
+            LPUART_Close(ptr_ro_info->ptr_USART);
+            NVIC_DisableIRQ(ptr_ro_info->irq_n);
 
             // Free LPPDMA channels
             if (ptr_rw_info->lppdma_rx_chan_id != -1)
@@ -699,13 +621,13 @@ static int32_t USARTn_Send(const USART_Info_t *ptr_usart_info, const void *data,
         //Use LPPDMA transfer mode
         nu_lppdma_filtering_set(ptr_rw_info->lppdma_tx_chan_id, NU_PDMA_EVENT_TRANSFER_DONE | NU_PDMA_EVENT_ABORT);
         nu_lppdma_callback_register(ptr_rw_info->lppdma_tx_chan_id, &lppdma_chn_cb);
-        nu_lppdma_transfer(ptr_rw_info->lppdma_tx_chan_id, 8, (uint32_t)ptr_tx_trans->data, (uint32_t)&ptr_usart_info->ptr_USART->DAT, ptr_tx_trans->num_bytes, 0);
-        LPUART_EnableInt(ptr_usart_info->ptr_USART, (LPUART_INTEN_TXPDMAEN_Msk | LPUART_INTEN_BUFERRIEN_Msk));
+        nu_lppdma_transfer(ptr_rw_info->lppdma_tx_chan_id, 8, (uint32_t)ptr_tx_trans->data, (uint32_t)&ptr_usart_info->ptr_ro_info->ptr_USART->DAT, ptr_tx_trans->num_bytes, 0);
+        LPUART_EnableInt(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_TXPDMAEN_Msk | LPUART_INTEN_BUFERRIEN_Msk));
     }
     else
     {
         //Use IRQ transfer mode
-        LPUART_EnableInt(ptr_usart_info->ptr_USART, (LPUART_INTEN_THREIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk));
+        LPUART_EnableInt(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_THREIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk));
     }
 
     return ARM_DRIVER_OK;
@@ -762,13 +684,13 @@ static int32_t USARTn_Receive(const USART_Info_t *ptr_usart_info, void *data, ui
         //Use LPPDMA transfer mode
         nu_lppdma_filtering_set(ptr_rw_info->lppdma_rx_chan_id, NU_PDMA_EVENT_TRANSFER_DONE | NU_PDMA_EVENT_ABORT);
         nu_lppdma_callback_register(ptr_rw_info->lppdma_rx_chan_id, &pdma_chn_cb);
-        nu_lppdma_transfer(ptr_rw_info->lppdma_rx_chan_id, 8, (uint32_t)&ptr_usart_info->ptr_USART->DAT, (uint32_t)ptr_rx_trans->data, ptr_rx_trans->num_bytes, 0);
-        LPUART_EnableInt(ptr_usart_info->ptr_USART, (LPUART_INTEN_RXPDMAEN_Msk | LPUART_INTEN_RLSIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk | LPUART_INTEN_TOCNTEN_Msk | LPUART_INTEN_RXTOIEN_Msk));
+        nu_lppdma_transfer(ptr_rw_info->lppdma_rx_chan_id, 8, (uint32_t)&ptr_usart_info->ptr_ro_info->ptr_USART->DAT, (uint32_t)ptr_rx_trans->data, ptr_rx_trans->num_bytes, 0);
+        LPUART_EnableInt(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_RXPDMAEN_Msk | LPUART_INTEN_RLSIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk | LPUART_INTEN_TOCNTEN_Msk | LPUART_INTEN_RXTOIEN_Msk));
     }
     else
     {
         //Use IRQ transfer mode
-        LPUART_EnableInt(ptr_usart_info->ptr_USART, (LPUART_INTEN_RDAIEN_Msk | LPUART_INTEN_RLSIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk | LPUART_INTEN_TOCNTEN_Msk | LPUART_INTEN_RXTOIEN_Msk));
+        LPUART_EnableInt(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_RDAIEN_Msk | LPUART_INTEN_RLSIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk | LPUART_INTEN_TOCNTEN_Msk | LPUART_INTEN_RXTOIEN_Msk));
     }
 
     return ARM_DRIVER_OK;
@@ -820,7 +742,7 @@ static uint32_t USARTn_GetTxCount(const USART_Info_t *ptr_usart_info)
     if (ptr_rw_info->lppdma_tx_chan_id != -1)
     {
         if (ptr_tx_trans->trans_count != ptr_tx_trans->num_bytes)
-            ptr_tx_trans->trans_count =  nu_lppdma_transferred_byte_get(ptr_rw_info->lppdma_tx_chan_id, ptr_tx_trans->num_bytes);
+            ptr_tx_trans->trans_count = nu_lppdma_transferred_byte_get(ptr_rw_info->lppdma_tx_chan_id, ptr_tx_trans->num_bytes);
     }
 
     cnt = (uint32_t)ptr_rw_info->tx_trans.trans_count;
@@ -849,7 +771,7 @@ static uint32_t USARTn_GetRxCount(const USART_Info_t *ptr_usart_info)
     if (ptr_rw_info->lppdma_rx_chan_id != -1)
     {
         if (ptr_rx_trans->trans_count != ptr_rx_trans->num_bytes)
-            ptr_rx_trans->trans_count =  nu_lppdma_transferred_byte_get(ptr_rw_info->lppdma_rx_chan_id, ptr_rx_trans->num_bytes);
+            ptr_rx_trans->trans_count = nu_lppdma_transferred_byte_get(ptr_rw_info->lppdma_rx_chan_id, ptr_rx_trans->num_bytes);
     }
 
     cnt = (uint32_t)ptr_rw_info->rx_trans.trans_count;
@@ -867,14 +789,11 @@ static uint32_t USARTn_GetRxCount(const USART_Info_t *ptr_usart_info)
 static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t control, uint32_t arg)
 {
     ARM_USART_STATUS status;
-    uint8_t          parity_bits;
-    uint8_t          data_bits;
     uint32_t         word_len;
     uint32_t         parity = LPUART_PARITY_NONE;
     uint32_t         stop_bits = LPUART_STOP_BIT_1;
     uint32_t         baud_rate = 0;
     RW_Info_t *ptr_rw_info = ptr_usart_info->ptr_rw_info;
-    (void)data_bits;
 
     if (ptr_usart_info->ptr_rw_info->drv_status.powered == 0U)
     {
@@ -884,7 +803,7 @@ static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t contr
     // Special handling for Abort Send command
     if ((control & ARM_USART_CONTROL_Msk) == ARM_USART_ABORT_SEND)
     {
-        LPUART_DisableInt(ptr_usart_info->ptr_USART, (LPUART_INTEN_THREIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk));
+        LPUART_DisableInt(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_THREIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk));
 
         if (ptr_rw_info->lppdma_tx_chan_id != -1)
         {
@@ -900,7 +819,7 @@ static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t contr
     // Special handling for Abort Receive command
     if ((control & ARM_USART_CONTROL_Msk) == ARM_USART_ABORT_RECEIVE)
     {
-        LPUART_DisableInt(ptr_usart_info->ptr_USART, (LPUART_INTEN_RDAIEN_Msk | LPUART_INTEN_RLSIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk | LPUART_INTEN_TOCNTEN_Msk | LPUART_INTEN_RXTOIEN_Msk));
+        LPUART_DisableInt(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_RDAIEN_Msk | LPUART_INTEN_RLSIEN_Msk | LPUART_INTEN_BUFERRIEN_Msk | LPUART_INTEN_TOCNTEN_Msk | LPUART_INTEN_RXTOIEN_Msk));
 
         if (ptr_rw_info->lppdma_rx_chan_id != -1)
         {
@@ -941,12 +860,12 @@ static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t contr
             if (arg != 0U)
             {
                 // Enable transmitter
-                //UART_ENABLE_INT(ptr_usart_info->ptr_USART, UART_INTEN_THREIEN_Msk);
+                //UART_ENABLE_INT(ptr_usart_info->ptr_ro_info->ptr_USART, UART_INTEN_THREIEN_Msk);
             }
             else
             {
                 // Disable transmitter
-                LPUART_DISABLE_INT(ptr_usart_info->ptr_USART, (LPUART_INTEN_THREIEN_Msk | LPUART_INTEN_TXPDMAEN_Msk));
+                LPUART_DISABLE_INT(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_THREIEN_Msk | LPUART_INTEN_TXPDMAEN_Msk));
             }
 
             return ARM_DRIVER_OK;
@@ -955,12 +874,12 @@ static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t contr
             if (arg != 0U)
             {
                 // Enable receiver
-                //UART_ENABLE_INT(ptr_usart_info->ptr_USART, UART_INTEN_RDAIEN_Msk);
+                //UART_ENABLE_INT(ptr_usart_info->ptr_ro_info->ptr_USART, UART_INTEN_RDAIEN_Msk);
             }
             else
             {
                 // Disable receiver
-                LPUART_DISABLE_INT(ptr_usart_info->ptr_USART, (LPUART_INTEN_RDAIEN_Msk | LPUART_INTEN_RXPDMAEN_Msk));
+                LPUART_DISABLE_INT(ptr_usart_info->ptr_ro_info->ptr_USART, (LPUART_INTEN_RDAIEN_Msk | LPUART_INTEN_RXPDMAEN_Msk));
             }
 
             return ARM_DRIVER_OK;
@@ -980,30 +899,17 @@ static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t contr
 
     // Configure all other parameters if command was to set Asynchronous mode (ARM_USART_MODE_ASYNCHRONOUS)
 
-    // Determine number of parity bits used
-    parity_bits = 0U;
-
-    if ((control & ARM_USART_PARITY_Msk) != ARM_USART_PARITY_NONE)
-    {
-        parity_bits = 1U;
-    }
-
-    data_bits = 0U;
-
     switch (control & ARM_USART_DATA_BITS_Msk)    // --- Mode Parameters: Data Bits
     {
         case ARM_USART_DATA_BITS_6:                 // Data bits: 6
-            data_bits = 6 + parity_bits;
             word_len = LPUART_WORD_LEN_6;
             break;
 
         case ARM_USART_DATA_BITS_7:                 // Data bits: 7
-            data_bits = 7 + parity_bits;
             word_len = LPUART_WORD_LEN_7;
             break;
 
         case ARM_USART_DATA_BITS_8:                 // Data bits: 8
-            data_bits = 8 + parity_bits;
             word_len = LPUART_WORD_LEN_8;
             break;
 
@@ -1050,29 +956,29 @@ static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t contr
     switch (control & ARM_USART_FLOW_CONTROL_Msk)   // --- Mode Parameters: Flow Control
     {
         case ARM_USART_FLOW_CONTROL_NONE:             // Flow Control: none
-            LPUART_DisableFlowCtrl(ptr_usart_info->ptr_USART);
+            LPUART_DisableFlowCtrl(ptr_usart_info->ptr_ro_info->ptr_USART);
             break;
 
         case ARM_USART_FLOW_CONTROL_RTS:              // Flow Control: RTS
             /* Set RTS pin output is low level active */
-            ptr_usart_info->ptr_USART->MODEM |= LPUART_MODEM_RTSACTLV_Msk;
+            ptr_usart_info->ptr_ro_info->ptr_USART->MODEM |= LPUART_MODEM_RTSACTLV_Msk;
 
             /* Set RTS auto flow control enable */
-            ptr_usart_info->ptr_USART->INTEN |= LPUART_INTEN_ATORTSEN_Msk;
+            ptr_usart_info->ptr_ro_info->ptr_USART->INTEN |= LPUART_INTEN_ATORTSEN_Msk;
 
             break;
 
         case ARM_USART_FLOW_CONTROL_CTS:              // Flow Control: CTS
             /* Set CTS pin input is low level active */
-            ptr_usart_info->ptr_USART->MODEMSTS |= LPUART_MODEMSTS_CTSACTLV_Msk;
+            ptr_usart_info->ptr_ro_info->ptr_USART->MODEMSTS |= LPUART_MODEMSTS_CTSACTLV_Msk;
 
             /* Set CTS auto flow control enable */
-            ptr_usart_info->ptr_USART->INTEN |= LPUART_INTEN_ATOCTSEN_Msk;
+            ptr_usart_info->ptr_ro_info->ptr_USART->INTEN |= LPUART_INTEN_ATOCTSEN_Msk;
             break;
 
         case ARM_USART_FLOW_CONTROL_RTS_CTS:          // Flow Control: RTS/CTS
             /* Enable auto flow control function(RTS/CTS) */
-            LPUART_EnableFlowCtrl(ptr_usart_info->ptr_USART);
+            LPUART_EnableFlowCtrl(ptr_usart_info->ptr_ro_info->ptr_USART);
             break;
 
         default:
@@ -1082,7 +988,7 @@ static int32_t USARTn_Control(const USART_Info_t *ptr_usart_info, uint32_t contr
     baud_rate = arg;
 
     // Reconfigure USART
-    LPUART_SetLineConfig(ptr_usart_info->ptr_USART, baud_rate, word_len, parity, stop_bits);
+    LPUART_SetLineConfig(ptr_usart_info->ptr_ro_info->ptr_USART, baud_rate, word_len, parity, stop_bits);
 
     // Set driver status to configured
     ptr_rw_info->drv_status.configured = 1U;
@@ -1160,7 +1066,7 @@ static ARM_USART_MODEM_STATUS USART_GetModemStatus(void)
 // IRQ handler
 void LPUARTn_IRQHandler(const USART_Info_t *ptr_usart_info)
 {
-    USART_HandleTypeDef *huart = ptr_usart_info->ptr_USART;
+    USART_HandleTypeDef *huart = ptr_usart_info->ptr_ro_info->ptr_USART;
     RW_Info_t *ptr_rw_info = ptr_usart_info->ptr_rw_info;
     uint32_t u32IRQStatus = huart->INTSTS;
 
@@ -1286,18 +1192,4 @@ NVT_ITCM void LPUART0_IRQHandler(void)
 }
 
 #endif
-
-
-// Local driver functions definitions (for instances)
-#if (RTE_USART13)
-    FUNCS_DEFINE(13)
-#endif
-
-// Global driver structures ****************************************************
-
-#if (RTE_USART13)
-    USART_DRIVER(13)
-#endif
-
-
 #endif  // DRIVER_CONFIG_VALID

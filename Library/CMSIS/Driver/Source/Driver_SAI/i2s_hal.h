@@ -16,6 +16,22 @@
 
 #define ARM_SAI_DRV_VERSION ARM_DRIVER_VERSION_MAJOR_MINOR(1, 7)   // driver version
 
+#define SAI_RES_NAME_INNER(n)               sai##n##_res
+#define SAI_RES_NAME(n)                     SAI_RES_NAME_INNER(n)
+
+#define SAI_DRIVER_NAME_INNER(n)            Driver_SAI##n
+#define SAI_DRIVER_NAME(n)                  SAI_DRIVER_NAME_INNER(n)
+
+#ifndef SAI_CAT2
+    #define SAI_CAT2_INNER(a, b)            a##b
+    #define SAI_CAT2(a, b)                  SAI_CAT2_INNER(a, b)
+#endif
+
+#ifndef SAI_CAT3
+    #define SAI_CAT3_INNER(a, b, c)         a##b##c
+    #define SAI_CAT3(a, b, c)               SAI_CAT3_INNER(a,b,c)
+#endif
+
 // Macro for declaring functions (for instances)
 #define FUNCS_DECLARE(n)                                                                                        \
     static  ARM_DRIVER_VERSION   I2S##n##_GetVersion      (void);                                               \
@@ -47,19 +63,19 @@
 
 // Macro for defining driver structures (for instances)
 #define I2S_DRIVER(n)                   \
-    ARM_DRIVER_SAI Driver_SAI##n = {    \
-                                        I2S##n##_GetVersion,        \
-                                        I2S##n##_GetCapabilities,   \
-                                        I2S##n##_Initialize,        \
-                                        I2S##n##_Uninitialize,      \
-                                        I2S##n##_PowerControl,      \
-                                        I2S##n##_Send,              \
-                                        I2S##n##_Receive,           \
-                                        I2S##n##_GetTxCount,        \
-                                        I2S##n##_GetRxCount,        \
-                                        I2S##n##_Control,           \
-                                        I2S##n##_GetStatus          \
-                                   };
+    ARM_DRIVER_SAI SAI_DRIVER_NAME(n) = {    \
+                                             I2S##n##_GetVersion,        \
+                                             I2S##n##_GetCapabilities,   \
+                                             I2S##n##_Initialize,        \
+                                             I2S##n##_Uninitialize,      \
+                                             I2S##n##_PowerControl,      \
+                                             I2S##n##_Send,              \
+                                             I2S##n##_Receive,           \
+                                             I2S##n##_GetTxCount,        \
+                                             I2S##n##_GetRxCount,        \
+                                             I2S##n##_Control,           \
+                                             I2S##n##_GetStatus          \
+                                        };
 
 //------------------------------------------------------------------------------
 typedef struct
@@ -79,18 +95,18 @@ typedef struct
 // I2S Stream Information (Run-Time)
 typedef struct
 {
-    uint32_t u32Num;                    // Total number of data to be transmited/received
-    uint8_t *pu8Buf;                    // Pointer to data buffer
-    uint32_t u32Cnt;                    // Number of data transmited/receive
+    uint32_t u32Num;                // Total number of data to be transmited/received
+    uint8_t *pu8Buf;                // Pointer to data buffer
+    uint32_t u32Cnt;                // Number of data transmited/receive
 } I2S_STREAM_INFO;
 
 typedef struct
 {
-    uint8_t u8TxBusy;                       // Transmitter busy flag
-    uint8_t u8RxBusy;                       // Receiver busy flag
-    uint8_t u8TxUnderflow;                  // Transmit data underflow detected (cleared on start of next send operation)
-    uint8_t u8RxOverflow;                   // Receive data overflow detected (cleared on start of next receive operation)
-    uint8_t u8FrameError;                   // Sync Frame error detected (cleared on start of next send/receive operation)
+    uint8_t u8TxBusy;               // Transmitter busy flag
+    uint8_t u8RxBusy;               // Receiver busy flag
+    uint8_t u8TxUnderflow;          // Transmit data underflow detected (cleared on start of next send operation)
+    uint8_t u8RxOverflow;           // Receive data overflow detected (cleared on start of next receive operation)
+    uint8_t u8FrameError;           // Sync Frame error detected (cleared on start of next send/receive operation)
 } I2S_STATUS;
 
 // I2S Information (Run-Time)

@@ -36,11 +36,16 @@ void __attribute__((noreturn)) TVMPlatformAbort(tvm_crt_error_t error_code)
 
 tvm_crt_error_t TVMPlatformMemoryAllocate(size_t num_bytes, DLDevice dev, void **out_ptr)
 {
+    (void)num_bytes;
+    (void)dev;
+    (void)out_ptr;
     return kTvmErrorFunctionCallNotImplemented;
 }
 
 tvm_crt_error_t TVMPlatformMemoryFree(void *ptr, DLDevice dev)
 {
+    (void)ptr;
+    (void)dev;
     return kTvmErrorFunctionCallNotImplemented;
 }
 

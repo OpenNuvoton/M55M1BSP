@@ -410,9 +410,9 @@ extern UDEV_T *g_udev_list;
 /*----------------------------------------------------------------------------------*/
 extern void delay_us(int usec);
 
-//extern void dump_ohci_regs(void);
-//extern void dump_ohci_ports(void);
-//extern void dump_ohci_int_table(void);
+extern void dump_ohci_regs(void);
+extern void dump_ohci_ports(void);
+extern void dump_ohci_int_table(void);
 extern void dump_ehci_regs(void);
 extern void dump_ehci_qtd(qTD_T *qtd);
 extern void dump_ehci_asynclist(void);

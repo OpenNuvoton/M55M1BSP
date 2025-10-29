@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     lpspi.h
  * @version  V1.00
- * @brief    M55M1 series LPSPI driver header file
+ * @brief    LPSPI driver header file
  *
  * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.

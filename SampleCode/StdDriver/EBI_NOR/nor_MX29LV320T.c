@@ -20,6 +20,8 @@
   */
 void NOR_MX29LV320T_RESET(uint32_t u32Bank)
 {
+    (void)u32Bank;
+
     EBI1_WRITE_DATA16((0x0 << 1), 0xF0);
 }
 
@@ -109,6 +111,8 @@ int32_t NOR_MX29LV320T_CheckStatus(uint32_t u32DstAddr, uint16_t u16Data, uint32
   */
 uint16_t NOR_MX29LV320T_READ(uint32_t u32Bank, uint32_t u32DstAddr)
 {
+    (void)u32Bank;
+
     return EBI1_READ_DATA16(u32DstAddr);
 }
 
@@ -126,6 +130,8 @@ uint16_t NOR_MX29LV320T_READ(uint32_t u32Bank, uint32_t u32DstAddr)
   */
 int32_t NOR_MX29LV320T_WRITE(uint32_t u32Bank, uint32_t u32DstAddr, uint16_t u16Data)
 {
+    (void)u32Bank;
+
     /* Command */
     EBI1_WRITE_DATA16((0x555 << 1), 0xAA);
     EBI1_WRITE_DATA16((0x2AA << 1), 0x55);

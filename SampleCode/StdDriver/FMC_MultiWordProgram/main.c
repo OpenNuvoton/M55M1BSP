@@ -74,7 +74,7 @@ int main(void)
         printf("Program ... \n");
 
         /* Prepare test pattern */
-        for (i = 0; i < FMC_FLASH_PAGE_SIZE; i += 4)
+        for (i = 0; i < (int32_t)FMC_FLASH_PAGE_SIZE; i += 4)
             g_au32PageBuf[i / 4] = u32Addr + i;
 
         i = FMC_WriteMultiple(u32Addr, g_au32PageBuf, FMC_FLASH_PAGE_SIZE);
@@ -94,7 +94,7 @@ int main(void)
 
         printf("Verify ... \n");
 
-        for (i = 0; i < FMC_FLASH_PAGE_SIZE; i += 4)
+        for (i = 0; i < (int32_t)FMC_FLASH_PAGE_SIZE; i += 4)
         {
             if (FMC_Read(u32Addr + i) != g_au32PageBuf[i / 4])
             {

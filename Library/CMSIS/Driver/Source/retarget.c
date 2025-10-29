@@ -328,7 +328,7 @@ void MemManage_Handler(void)
     // 3. Get the faulting address (if available)
     if (u32MMFSR & SCB_CFSR_MMARVALID_Msk)
     {
-        uint32_t fault_address = SCB->MMFAR; // Memory Management Fault Address Register
+        //uint32_t fault_address = SCB->MMFAR; // Memory Management Fault Address Register
         // Use this address for debugging
     }
 

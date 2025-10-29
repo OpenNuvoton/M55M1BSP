@@ -21,6 +21,7 @@ SPIM_PHASE_T gsMt02hWrCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                           //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,   //Data Phase
     0,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0x12h : CMD_NORMAL_PAGE_PROGRAM_4B Command Phase Table */
@@ -31,6 +32,7 @@ SPIM_PHASE_T gsMt12hWrCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR,                           //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,   //Data Phase
     0,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0xC2h : CMD_OCTAL_EX_PAGE_PROG_MICRON Command Phase Table */
@@ -41,6 +43,7 @@ SPIM_PHASE_T gsMtC2hWrCMD =
     PHASE_OCTAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                            //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,    //Data Phase
     0,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0x8Eh : CMD_OCTAL_EX_PAGE_PROG_MICRON_4B Command Phase Table */
@@ -51,6 +54,7 @@ SPIM_PHASE_T gsMt8EhWrCMD =
     PHASE_OCTAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR,                        //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,   //Data Phase
     0,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 //------------------------------------------------------------------------------
@@ -64,6 +68,7 @@ SPIM_PHASE_T gsMt0BhRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                           //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,    //Data Phase
     8,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0x0Ch : CMD_DMA_FAST_READ_4B Command Phase Table */
@@ -74,6 +79,7 @@ SPIM_PHASE_T gsMt0ChRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR,                           //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,   //Data Phase
     8,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0x8Bh : CMD_OCTAL_FAST_READ_OUTPUT Single Data Rate Command Phase Table */
@@ -84,6 +90,7 @@ SPIM_PHASE_T gsMt8BhRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                           //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,    //Data Phase
     8,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0x7Ch : CMD_OCTAL_FAST_READ_OUTPUT_4B Command Phase Table */
@@ -94,6 +101,7 @@ SPIM_PHASE_T gsMt7ChRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR,                           //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,    //Data Phase
     8,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0xCBh : CMD_OCTAL_FAST_IO_READ Command Phase Table */
@@ -104,6 +112,7 @@ SPIM_PHASE_T gsMtCBhRdCMD =
     PHASE_OCTAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                        //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS, //Data Phase
     16,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0xCCh : CMD_OCTAL_FAST_IO_READ_4B Command Phase Table */
@@ -114,6 +123,7 @@ SPIM_PHASE_T gsMtCChRdCMD =
     PHASE_OCTAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR,                            //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, PHASE_DISABLE_RDQS,    //Data Phase
     16,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0x9Dh : CMD_OCTAL_DDR_FAST_READ_OUTPUT Command Phase Table */
@@ -124,6 +134,7 @@ SPIM_PHASE_T gsMt9DhRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_ENABLE_DTR,                            //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_ENABLE_DTR, PHASE_ENABLE_RDQS,     //Data Phase
     8,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0xFDh : CMD_OCTAL_DDR_FAST_IO_READ Command Phase Table */
@@ -134,6 +145,7 @@ SPIM_PHASE_T gsMtFDhRdCMD =
     PHASE_OCTAL_MODE, PHASE_WIDTH_32, PHASE_ENABLE_DTR,                             //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_ENABLE_DTR, PHASE_ENABLE_RDQS,     //Data Phase
     16,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 //------------------------------------------------------------------------------
@@ -152,6 +164,7 @@ SPIM_PHASE_T gsMt02hWrDDRCMD =
     PHASE_OCTAL_MODE, PHASE_WIDTH_32, PHASE_ENABLE_DTR,                             //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_ENABLE_DTR, PHASE_DISABLE_RDQS,     //Data Phase
     0,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };
 
 /* 0x8Bh : CMD_OCTAL_FAST_READ_OUTPUT Octal Double Data Rate Command Phase Table */
@@ -162,4 +175,5 @@ SPIM_PHASE_T gsMt8BhRdDDRCMD =
     PHASE_OCTAL_MODE, PHASE_WIDTH_32, PHASE_ENABLE_DTR,                             //Address Phase
     PHASE_OCTAL_MODE, PHASE_ORDER_MODE0,  PHASE_ENABLE_DTR, PHASE_ENABLE_RDQS,     //Data Phase
     16,
+    PHASE_DISABLE_CONT_READM, 0, 0, 0,
 };

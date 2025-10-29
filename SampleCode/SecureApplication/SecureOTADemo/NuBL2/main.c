@@ -125,6 +125,7 @@ uint32_t GetMaxAPROMSize(void)
   */
 int32_t _IsValidFlashRegion(uint32_t u32Addr, uint32_t u32ByteSize, uint32_t u32CmdMask)
 {
+    NVT_UNUSED(u32CmdMask);
     printf("[Check flash region] Addr: 0x%x, Size: 0x%x.\n", u32Addr, u32ByteSize);
 
     /* Not use u32CmdMask */

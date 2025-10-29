@@ -2,8 +2,6 @@
 
 To experience the powerful features of M55M1 series in few minutes, please select the sample code to download and execute on the NuMaker-M55M1 board. Open the project files to build them with Keil® MDK, IAR, NuEclipse or VS Code, and then download and trace them on the NuMaker board to see how it works.
 
-In Extentions of Visual Studio Code, please install Nuvoton NuMicro Cortex-M Pack. It is a complete development toolkit for Nuvoton's NuMicro Cortex-M microcontrollers.
-
 Please note that M55M1 Series CMSIS BSP enables CPU Level-1 I/D-Cache by default but does not guarantee Cache coherence.
 
 
@@ -17,6 +15,9 @@ Please note that M55M1 Series CMSIS BSP enables CPU Level-1 I/D-Cache by default
 
 - NuMicro M55M1 Series CMSIS BSP Revision History.pdf<br>
 	This document shows the revision history of M55M1 Series BSP.
+
+- VSCode Quick Start Guide
+	This documents guide to install, configure and use VS Code.
 
 
 ## .\Library\

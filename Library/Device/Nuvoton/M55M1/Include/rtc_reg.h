@@ -35,14 +35,8 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[0]     |ACTIVE    |RTC Active Status (Read Only)
      * |        |          |0 = RTC is at reset state.
-     * |        |          |1 = RTC is at normal active state.RTC Active Status (Read Only)
-     * |        |          |0 = RTC is at reset state.
      * |        |          |1 = RTC is at normal active state.
      * |[31:1]  |INIT      |RTC Initiation (Write Only)
-     * |        |          |When RTC block is powered on, RTC is at reset state
-     * |        |          |User has to write a number (0x a5eb1357) to INIT to make RTC leave reset state
-     * |        |          |Once the INIT is written as 0xa5eb1357, the RTC will be in un-reset state permanently.
-     * |        |          |The INIT is a write-only field and read value will be always 0.RTC Initiation
      * |        |          |When RTC block is powered on, RTC is at reset state
      * |        |          |User has to write a number (0x a5eb1357) to INIT to make RTC leave reset state
      * |        |          |Once the INIT is written as 0xa5eb1357, the RTC will be in un-reset state permanently.
@@ -91,7 +85,7 @@ typedef struct
      * |[31]    |FCRBUSY   |Frequency Compensation Register Write Operation Busy (Read Only)
      * |        |          |0 = The new register write operation is acceptable.
      * |        |          |1 = The last write operation is in progress and new register write operation prohibited.
-     * |        |          |Note: This bit is only used when DCOMPEN DYN_COMP_EN(RTC_CLKFMT[16]) enabled.
+     * |        |          |Note: This bit is only used when DCOMPEN (RTC_CLKFMT[16]) enabled.
      * @var RTC_T::TIME
      * Offset: 0x0C  RTC Time Loading Register
      * ---------------------------------------------------------------------------------------------------
@@ -297,7 +291,6 @@ typedef struct
      * |        |          |101 = Time tick is 1/32 second.
      * |        |          |110 = Time tick is 1/64 second.
      * |        |          |111 = Time tick is 1/128 second.
-     * |        |          |Note: This register can be read back after the RTC register access enable bit RWENF (RTC_RWEN[16]) is active.
      * @var RTC_T::TAMSK
      * Offset: 0x34  RTC Time Alarm Mask Register
      * ---------------------------------------------------------------------------------------------------
@@ -328,7 +321,7 @@ typedef struct
      * |[2]     |SPRRWEN   |Spare Register Enable Bit
      * |        |          |0 = Spare register Disabled.
      * |        |          |1 = Spare register Enabled.
-     * |        |          |Note: When spare register is disabled, RTC_SPR0 ~ RTC_SPR1919 cannot be accessed.
+     * |        |          |Note: When spare register is disabled, RTC_SPR0 ~ RTC_SPR19 cannot be accessed.
      * |[5]     |SPRCSTS   |SPR Clear Flag
      * |        |          |This bit indicates if the RTC_SPR0 ~ RTC_SPR19 content is cleared when specify tamper event is detected.
      * |        |          |0 = Spare register content is not cleared.
@@ -345,13 +338,13 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[31:0]  |SPARE     |Spare Register
      * |        |          |This field is used to store back-up information defined by user.
-     * |        |          |This field will be cleared by hardware automatically once a tamper pin event is detected.
+     * |        |          |This field will be cleared by hardware automatically in the following conditions, a tamper pin event is detected, or after Flash mass operation.
      * @var RTC_T::LXTCTL
-     * Offset: 0x100  RTC 32.768 KHz Oscillator Control Register
+     * Offset: 0x100  RTC 32.768 kHz Oscillator Control Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[0]     |LIRC32KEN |Enable LIRC32K Source
+     * |[0]     |LIRC32KEN |LIRC 32K Source Enable Bit
      * |        |          |0 = LIRC32K Disabled.
      * |        |          |1 = LIRC32K Enabled.
      * |[4:1]   |GAIN      |Oscillator Gain Option
@@ -360,11 +353,11 @@ typedef struct
      * |        |          |0000 = L0 mode.
      * |        |          |0001 = L1 mode.
      * |        |          |0010 = L2 mode.
-     * |        |          |0011 = L3 mode. (Default)
+     * |        |          |0011 = L3 mode.
      * |        |          |0100 = L4 mode.
      * |        |          |0101 = L5 mode.
      * |        |          |0110 = L6 mode.
-     * |        |          |0111 = L7 mode
+     * |        |          |0111 = L7 mode. (Default)
      * |        |          |1000 = L8 mode.
      * |        |          |1001 = L9 mode.
      * |        |          |1010 = L10 mode.
@@ -380,238 +373,173 @@ typedef struct
      * |        |          |0 = Clock source from external low speed crystal oscillator (LXT) or internal low speed RC 32K oscillator (LIRC32K) depended on C32KSEL value.
      * |        |          |1 = Clock source from internal low speed RC oscillator (LIRC).
      * |[8]     |IOCTLSEL  |I/O Pin Backup Control Selection
-     * |        |          |When low speed 32 kHz oscillator is disabled or TAMPxEN is disabled,
-     * |        |          |PF.4 pin (X32KO pin), PF.5 pin (X32KI pin) or PF.6~11 pin (TAMPERx pin) can be used as GPIO function.
+     * |        |          |When low speed 32 kHz oscillator is disabled or TAMPxEN is disabled, PF.4 pin (X32_OUT pin), PF.5 pin (X32_IN pin) or PF.6~11 pin (TAMPERx pin) can be used as GPIO function
      * |        |          |User can program IOCTLSEL to decide PF.4~11 I/O function is controlled by system power domain GPIO module or VBAT power domain RTC_GPIOCTL0/1 control register.
      * |        |          |0 = PF.4~11 pin I/O function is controlled by GPIO module.
      * |        |          |1 = PF.4~11 pin I/O function is controlled by VBAT power domain.
-     * |        |          |Note: IOCTLSEL will automatically be set by hardware to 1 when system power is off and any writable RTC registers has been written at RTCCKEN(CLK_APBCLK0[1]) enabled.
+     * |        |          |Note: IOCTLSEL will automatically be set by hardware to 1 when system power is off and any writable RTC registers has been written at RTC0CKEN(CLK_RTCCTL[0]) enabled.
      * @var RTC_T::GPIOCTL0
      * Offset: 0x104  RTC GPIO Control 0 Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[1:0]   |OPMODE0   |IO Operation Mode
-     * |        |          |00 = PF.4 is input only mode, without pull-up resistor.
+     * |[1:0]   |OPMODE0   |I/O Operation Mode
+     * |        |          |00 = PF.4 is input only mode.
      * |        |          |01 = PF.4 is output push pull mode.
      * |        |          |10 = PF.4 is open drain mode.
-     * |        |          |11 = PF.4 is quasi-bidirectional mode with internal pull up.
-     * |[2]     |DOUT0     |IO Output Data
+     * |        |          |11 = PF.4 is quasi-bidirectional mode.
+     * |[2]     |DOUT0     |I/O Output Data
      * |        |          |0 = PF.4 output low.
      * |        |          |1 = PF.4 output high.
-     * |[3]     |CTLSEL0   |IO Pin State Backup Selection
-     * |        |          |When low speed 32 kHz oscillator is disabled, PF.4 pin (X32KO pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL0 to decide PF.4 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL0 control register.
-     * |        |          |0 = PF.4 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL0 = 1 when system power is turned off.
-     * |        |          |1 = PF.4 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.4 pin function and I/O status are controlled by OPMODE0[1:0] and DOUT0 after CTLSEL0 is set to 1.
-     * |        |          |Note: CTLSEL0 will automatically be set by hardware to 1 when system power is off and INIT[0] (RTC_INIT[0]) is 1.
-     * |[5:4]   |PUSEL0    |IO Pull-up and Pull-down Enable
+     * |[3]     |DINOFF0   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.4 digital input path Enabled.
+     * |        |          |1 = PF.4 digital input path Disabled (digital input tied to low).
+     * |[5:4]   |PUSEL0    |I/O Pull-up and Pull-down Enable Bits
      * |        |          |Determine PF.4 I/O pull-up or pull-down.
-     * |        |          |00 = PF.4 pull-up and pull-up disable.
-     * |        |          |01 = PF.4 pull-down enable.
-     * |        |          |10 = PF.4 pull-up enable.
-     * |        |          |11 = PF.4 pull-up and pull-up disable.
-     * |        |          |Note:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE0 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE0 set as input tri-state mode.
-     * |[9:8]   |OPMODE1   |IO Operation Mode
-     * |        |          |00 = PF.5 is input only mode, without pull-up resistor.
+     * |        |          |00 = PF.4 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.4 pull-up Enabled.
+     * |        |          |10 = PF.4 pull-down Enabled.
+     * |        |          |11 = PF.4 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE0 is set as input tri-state and open-drain mode.
+     * |[9:8]   |OPMODE1   |I/O Operation Mode
+     * |        |          |00 = PF.5 is input only mode.
      * |        |          |01 = PF.5 is output push pull mode.
      * |        |          |10 = PF.5 is open drain mode.
-     * |        |          |11 = PF.5 is quasi-bidirectional mode with internal pull up.
-     * |[10]    |DOUT1     |IO Output Data
+     * |        |          |11 = PF.5 is quasi-bidirectional mode.
+     * |[10]    |DOUT1     |I/O Output Data
      * |        |          |0 = PF.5 output low.
      * |        |          |1 = PF.5 output high.
-     * |[11]    |CTLSEL1   |IO Pin State Backup Selection
-     * |        |          |When low speed 32 kHz oscillator is disabled, PF.5 pin (X32KI pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL1 to decide PF.5 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL0 control register.
-     * |        |          |0 = PF.5 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL1 = 1 when system power is turned off.
-     * |        |          |1 = PF.5 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.5 pin function and I/O status are controlled by OPMODE1[1:0] and DOUT1 after CTLSEL1 is set to 1.
-     * |        |          |Note: CTLSEL1 will automatically be set by hardware to 1 when system power is off and INIT[0] (RTC_INIT[0]) is 1.
-     * |[13:12] |PUSEL1    |IO Pull-up and Pull-down Enable
+     * |[11]    |DINOFF1   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.5 digital input path Enabled.
+     * |        |          |1 = PF.5 digital input path Disabled (digital input tied to low).
+     * |[13:12] |PUSEL1    |I/O Pull-up and Pull-down Enable Bits
      * |        |          |Determine PF.5 I/O pull-up or pull-down.
-     * |        |          |00 = PF.5 pull-up and pull-up disable.
-     * |        |          |01 = PF.5 pull-down enable.
-     * |        |          |10 = PF.5 pull-up enable.
-     * |        |          |11 = PF.5 pull-up and pull-up disable.
-     * |        |          |Note:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE1 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE1 set as input tri-state mode.
-     * |[17:16] |OPMODE2   |IO Operation Mode
-     * |        |          |00 = PF.6 is input only mode, without pull-up resistor.
+     * |        |          |00 = PF.5 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.5 pull-up Enabled.
+     * |        |          |10 = PF.5 pull-down Enabled.
+     * |        |          |11 = PF.5 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE1 is set as input tri-state and open-drain mode.
+     * |[17:16] |OPMODE2   |I/O Operation Mode
+     * |        |          |00 = PF.6 is input only mode.
      * |        |          |01 = PF.6 is output push pull mode.
      * |        |          |10 = PF.6 is open drain mode.
-     * |        |          |11 = PF.6 is quasi-bidirectional mode with internal pull up.
-     * |[18]    |DOUT2     |IO Output Data
+     * |        |          |11 = PF.6 is quasi-bidirectional mode.
+     * |[18]    |DOUT2     |I/O Output Data
      * |        |          |0 = PF.6 output low.
      * |        |          |1 = PF.6 output high.
-     * |[19]    |CTLSEL2   |IO Pin State Backup Selection
-     * |        |          |When TAMP0EN is disabled, PF.6 pin (TAMPER0 pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL2 to decide PF.6 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL0 control register.
-     * |        |          |0 = PF.6 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL2 = 1 when system power is turned off.
-     * |        |          |1 = PF.6 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.6 pin function and I/O status are controlled by OPMODE2[1:0] and DOUT2 after CTLSEL2 is set to 1.
-     * |        |          |Note: CTLSEL2 will automatically be set by hardware to 1 when system power is off and INIT[0] (RTC_INIT[0]) is 1.
-     * |[21:20] |PUSEL2    |IO Pull-up and Pull-down Enable
-     * |        |          |Determine PF.6 I/O pull-up or pull-down.
-     * |        |          |00 = PF.6 pull-up and pull-up disable.
-     * |        |          |01 = PF.6 pull-down enable.
-     * |        |          |10 = PF.6 pull-up enable.
-     * |        |          |11 = PF.6 pull-up and pull-up disable.
-     * |        |          |Note1:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE2 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE2 set as input tri-state mode.
-     * |[25:24] |OPMODE3   |IO Operation Mode
-     * |        |          |00 = PF.7 is input only mode, without pull-up resistor.
+     * |[19]    |DINOFF2   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.6 digital input path Enabled.
+     * |        |          |1 = PF.6 digital input path Disabled (digital input tied to low).
+     * |[21:20] |PUSEL2    |I/O Pull-up and Pull-down Enable Bits
+     * |        |          |Determine PF.6 I/O Pull-up or Pull-down.
+     * |        |          |00 = PF.6 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.6 pull-up Enabled.
+     * |        |          |10 = PF.6 pull-down Enabled.
+     * |        |          |11 = PF.6 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE2 is set as input tri-state and open-drain mode.
+     * |[25:24] |OPMODE3   |I/O Operation Mode
+     * |        |          |00 = PF.7 is input only mode.
      * |        |          |01 = PF.7 is output push pull mode.
      * |        |          |10 = PF.7 is open drain mode.
      * |        |          |11 = PF.7 is quasi-bidirectional mode.
-     * |[26]    |DOUT3     |IO Output Data
+     * |[26]    |DOUT3     |I/O Output Data
      * |        |          |0 = PF.7 output low.
      * |        |          |1 = PF.7 output high.
-     * |[27]    |CTLSEL3   |IO Pin State Backup Selection
-     * |        |          |When TAMP1EN is disabled, PF.7 pin (TAMPER1 pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL3 to decide PF.7 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL0 control register.
-     * |        |          |0 = PF.7 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL3 = 1 when system power is turned off.
-     * |        |          |1 = PF.7 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.7 pin function and I/O status are controlled by OPMODE3[1:0] and DOUT3 after CTLSEL3 is set to 1.
-     * |        |          |Note: CTLSEL3 will automatically be set by hardware to 1 when system power is off and RTC_INIT[0] (RTC Active Status) is 1.
-     * |[29:28] |PUSEL3    |IO Pull-up and Pull-down Enable
+     * |[27]    |DINOFF3   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.7 digital input path Enabled.
+     * |        |          |1 = PF.7 digital input path Disabled (digital input tied to low).
+     * |[29:28] |PUSEL3    |I/O Pull-up and Pull-down Enable Bits
      * |        |          |Determine PF.7 I/O pull-up or pull-down.
-     * |        |          |00 = PF.7 pull-up and pull-down disable.
-     * |        |          |01 = PF.7 pull-down enable.
-     * |        |          |10 = PF.7 pull-up enable.
-     * |        |          |11 = PF.7 pull-up and pull-down disable.
-     * |        |          |Note:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE3 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE3 set as input tri-state mode.
+     * |        |          |00 = PF.7 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.7 pull-up Enabled.
+     * |        |          |10 = PF.7 pull-down Enabled.
+     * |        |          |11 = PF.7 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE3 is set as input tri-state and open-drain mode.
      * @var RTC_T::GPIOCTL1
      * Offset: 0x108  RTC GPIO Control 1 Register
      * ---------------------------------------------------------------------------------------------------
      * |Bits    |Field     |Descriptions
      * | :----: | :----:   | :---- |
-     * |[1:0]   |OPMODE4   |IO Operation Mode
-     * |        |          |00 = PF.8 is input only mode, without pull-up resistor.
+     * |[1:0]   |OPMODE4   |I/O Operation Mode
+     * |        |          |00 = PF.8 is input only mode.
      * |        |          |01 = PF.8 is output push pull mode.
      * |        |          |10 = PF.8 is open drain mode.
      * |        |          |11 = PF.8 is quasi-bidirectional mode.
-     * |[2]     |DOUT4     |IO Output Data
+     * |[2]     |DOUT4     |I/O Output Data
      * |        |          |0 = PF.8 output low.
      * |        |          |1 = PF.8 output high.
-     * |[3]     |CTLSEL4   |IO Pin State Backup Selection
-     * |        |          |When TAMP2EN is disabled, PF.8 pin (TAMPER2 pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL4 to decide PF.8 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL1 control register.
-     * |        |          |0 = PF.8 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL4 = 1 when system power is turned off.
-     * |        |          |1 = PF.8 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.8 pin function and I/O status are controlled by OPMODE4[1:0] and DOUT4 after CTLSEL4 is set to 1.
-     * |        |          |Note: CTLSEL4 will automatically be set by hardware to 1 when system power is off and RTC_INIT[0] (RTC Active Status) is 1.
-     * |[5:4]   |PUSEL4    |IO Pull-up and Pull-down Enable
+     * |[3]     |DINOFF4   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.8 digital input path Enabled.
+     * |        |          |1 = PF.8 digital input path Disabled (digital input tied to low).
+     * |[5:4]   |PUSEL4    |I/O Pull-up and Pull-down Enable Bits
      * |        |          |Determine PF.8 I/O pull-up or pull-down.
-     * |        |          |00 = PF.8 pull-up and pull-down disable.
-     * |        |          |01 = PF.8 pull-down enable.
-     * |        |          |10 = PF.8 pull-up enable.
-     * |        |          |11 = PF.8 pull-up and pull-down disable.
-     * |        |          |Note:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE4 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE4 set as input tri-state mode.
-     * |[9:8]   |OPMODE5   |IO Operation Mode
-     * |        |          |00 = PF.9 is input only mode, without pull-up resistor.
+     * |        |          |00 = PF.8 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.8 pull-up Enabled.
+     * |        |          |10 = PF.8 pull-down Enabled.
+     * |        |          |11 = PF.8 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE4 is set as input tri-state and open-drain mode.
+     * |[9:8]   |OPMODE5   |I/O Operation Mode
+     * |        |          |00 = PF.9 is input only mode.
      * |        |          |01 = PF.9 is output push pull mode.
      * |        |          |10 = PF.9 is open drain mode.
-     * |        |          |11 = PF.9 is quasi-bidirectional mode.
-     * |[10]    |DOUT5     |IO Output Data
+     * |        |          |11 = PF.9 is quasi-bidirectional mode .
+     * |[10]    |DOUT5     |I/O Output Data
      * |        |          |0 = PF.9 output low.
      * |        |          |1 = PF.9 output high.
-     * |[11]    |CTLSEL5   |IO Pin State Backup Selection
-     * |        |          |When TAMP3EN is disabled, PF.9 pin (TAMPER3 pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL5 to decide PF.9 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL1 control register.
-     * |        |          |0 = PF.9 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL5 = 1 when system power is turned off.
-     * |        |          |1 = PF.9 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.9 pin function and I/O status are controlled by OPMODE5[1:0] and DOUT5 after CTLSEL5 is set to 1.
-     * |        |          |Note: CTLSEL5 will automatically be set by hardware to 1 when system power is off and INIT[0] (RTC_INIT[0]) is 1.
-     * |[13:12] |PUSEL5    |IO Pull-up and Pull-down Enable
+     * |[11]    |DINOFF5   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.9 digital input path Enabled.
+     * |        |          |1 = PF.9 digital input path Disabled (digital input tied to low).
+     * |[13:12] |PUSEL5    |I/O Pull-up and Pull-down Enable Bits
      * |        |          |Determine PF.9 I/O pull-up or pull-down.
-     * |        |          |00 = PF.9 pull-up and pull-down disable.
-     * |        |          |01 = PF.9 pull-down enable.
-     * |        |          |10 = PF.9 pull-up enable.
-     * |        |          |11 = PF.9 pull-up and pull-down disable.
-     * |        |          |Note:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE5 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE5 set as input tri-state mode.
-     * |[17:16] |OPMODE6   |IO Operation Mode
-     * |        |          |00 = PF.10 is input only mode, without pull-up resistor.
+     * |        |          |00 = PF.9 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.9 pull-up Enabled.
+     * |        |          |10 = PF.9 pull-down Enabled.
+     * |        |          |11 = PF.9 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE5 is set as input tri-state and open-drain mode.
+     * |[17:16] |OPMODE6   |I/O Operation Mode
+     * |        |          |00 = PF.10 is input only mode.
      * |        |          |01 = PF.10 is output push pull mode.
      * |        |          |10 = PF.10 is open drain mode.
-     * |        |          |11 = PF.10 is quasi-bidirectional mode.
-     * |[18]    |DOUT6     |IO Output Data
+     * |        |          |11 = PF.10 is quasi-bidirectional mode .
+     * |[18]    |DOUT6     |I/O Output Data
      * |        |          |0 = PF.10 output low.
      * |        |          |1 = PF.10 output high.
-     * |[19]    |CTLSEL6   |IO Pin State Backup Selection
-     * |        |          |When TAMP4EN is disabled, PF.10 pin (TAMPER4 pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL6 to decide PF.10 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL1 control register.
-     * |        |          |0 = PF.10 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL6 = 1 when system power is turned off.
-     * |        |          |1 = PF.10 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.10 pin function and I/O status are controlled by OPMODE6[1:0] and DOUT6 after CTLSEL6 is set to 1.
-     * |        |          |Note: CTLSEL6 will automatically be set by hardware to 1 when system power is off and INIT[0] (RTC_INIT[0]) is 1.
-     * |[21:20] |PUSEL6    |IO Pull-up and Pull-down Enable
+     * |[19]    |DINOFF6   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.10 digital input path Enabled.
+     * |        |          |1 = PF.10 digital input path Disabled (digital input tied to low).
+     * |[21:20] |PUSEL6    |I/O Pull-up and Pull-down Enable Bits
      * |        |          |Determine PF.10 I/O pull-up or pull-down.
-     * |        |          |00 = PF.10 pull-up and pull-down disable.
-     * |        |          |01 = PF.10 pull-down enable.
-     * |        |          |10 = PF.10 pull-up enable.
-     * |        |          |11 = PF.10 pull-up and pull-down disable.
-     * |        |          |Note:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE6 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE6 set as input tri-state mode.
-     * |[25:24] |OPMODE7   |IO Operation Mode
-     * |        |          |00 = PF.11 is input only mode, without pull-up resistor.
+     * |        |          |00 = PF.10 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.10 pull-up Enabled.
+     * |        |          |10 = PF.10 pull-down Enabled.
+     * |        |          |11 = PF.10 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE6 is set as input tri-state and open-drain mode.
+     * |[25:24] |OPMODE7   |I/O Operation Mode
+     * |        |          |00 = PF.11 is input only mode.
      * |        |          |01 = PF.11 is output push pull mode.
      * |        |          |10 = PF.11 is open drain mode.
      * |        |          |11 = PF.11 is quasi-bidirectional mode.
-     * |[26]    |DOUT7     |IO Output Data
+     * |[26]    |DOUT7     |I/O Output Data
      * |        |          |0 = PF.11 output low.
      * |        |          |1 = PF.11 output high.
-     * |[27]    |CTLSEL7   |IO Pin State Backup Selection
-     * |        |          |When TAMP5EN is disabled, PF.11 pin (TAMPER5 pin) can be used as GPIO function
-     * |        |          |User can program CTLSEL7 to decide PF.11 I/O function is controlled by system power domain GPIO module or
-     * |        |          |VBAT power domain RTC_GPIOCTL1 control register.
-     * |        |          |0 = PF.11 pin I/O function is controlled by GPIO module.
-     * |        |          |Hardware auto becomes CTLSEL7 = 1 when system power is turned off.
-     * |        |          |1 = PF.11 pin I/O function is controlled by VBAT power domain.
-     * |        |          |PF.11 pin function and I/O status are controlled by OPMODE7[1:0] and DOUT7 after CTLSEL7 is set to 1.
-     * |        |          |Note: CTLSEL7 will automatically be set by hardware to 1 when system power is off and INIT[0] (RTC_INIT[0]) is 1.
-     * |[29:28] |PUSEL7    |IO Pull-up and Pull-down Enable
+     * |[27]    |DINOFF7   |I/O Pin Digital Input Path Disable Bit
+     * |        |          |0 = PF.11 digital input path Enabled.
+     * |        |          |1 = PF.11 digital input path Disabled (digital input tied to low).
+     * |[29:28] |PUSEL7    |I/O Pull-up and Pull-down Enable Bits
      * |        |          |Determine PF.11 I/O pull-up or pull-down.
-     * |        |          |00 = PF.11 pull-up and pull-down disable.
-     * |        |          |01 = PF.11 pull-down enable.
-     * |        |          |10 = PF.11 pull-up enable.
-     * |        |          |11 = PF.11 pull-up and pull-down disable.
-     * |        |          |Note:
-     * |        |          |Basically, the pull-up control and pull-down control has following behavior limitation.
-     * |        |          |The independent pull-up control register only valid when OPMODE7 set as input tri-state and open-drain mode.
-     * |        |          |The independent pull-down control register only valid when OPMODE7 set as input tri-state mode.
+     * |        |          |00 = PF.11 pull-up and pull-down Disabled.
+     * |        |          |01 = PF.11 pull-up Enabled.
+     * |        |          |10 = PF.11 pull-down Enabled.
+     * |        |          |11 = PF.11 pull-up and pull-down Disabled.
+     * |        |          |Note: Basically, the pull-up control and pull-down control has following behavior limitation.
+     * |        |          |The independent pull-up / pull-down control register is only valid when OPMODE7 is set as input tri-state and open-drain mode.
      * @var RTC_T::DSTCTL
      * Offset: 0x110  RTC Daylight Saving Time Control Register
      * ---------------------------------------------------------------------------------------------------
@@ -1187,8 +1115,8 @@ typedef struct
 #define RTC_GPIOCTL1_DOUT4_Pos           (2)                                               /*!< RTC_T::GPIOCTL1: DOUT4 Position        */
 #define RTC_GPIOCTL1_DOUT4_Msk           (0x1ul << RTC_GPIOCTL1_DOUT4_Pos)                 /*!< RTC_T::GPIOCTL1: DOUT4 Mask            */
 
-#define RTC_GPIOCTL0_DINOFF4_Pos         (3)                                               /*!< RTC_T::GPIOCTL1: DINOFF4 Position      */
-#define RTC_GPIOCTL0_DINOFF4_Msk         (0x1ul << RTC_GPIOCTL0_DINOFF4_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF4 Mask          */
+#define RTC_GPIOCTL1_DINOFF4_Pos         (3)                                               /*!< RTC_T::GPIOCTL1: DINOFF4 Position      */
+#define RTC_GPIOCTL1_DINOFF4_Msk         (0x1ul << RTC_GPIOCTL1_DINOFF4_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF4 Mask          */
 
 #define RTC_GPIOCTL1_PUSEL4_Pos          (4)                                               /*!< RTC_T::GPIOCTL1: PUSEL4 Position       */
 #define RTC_GPIOCTL1_PUSEL4_Msk          (0x3ul << RTC_GPIOCTL1_PUSEL4_Pos)                /*!< RTC_T::GPIOCTL1: PUSEL4 Mask           */
@@ -1199,8 +1127,8 @@ typedef struct
 #define RTC_GPIOCTL1_DOUT5_Pos           (10)                                              /*!< RTC_T::GPIOCTL1: DOUT5 Position        */
 #define RTC_GPIOCTL1_DOUT5_Msk           (0x1ul << RTC_GPIOCTL1_DOUT5_Pos)                 /*!< RTC_T::GPIOCTL1: DOUT5 Mask            */
 
-#define RTC_GPIOCTL0_DINOFF5_Pos         (11)                                              /*!< RTC_T::GPIOCTL1: DINOFF5 Position      */
-#define RTC_GPIOCTL0_DINOFF5_Msk         (0x1ul << RTC_GPIOCTL0_DINOFF5_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF5 Mask          */
+#define RTC_GPIOCTL1_DINOFF5_Pos         (11)                                              /*!< RTC_T::GPIOCTL1: DINOFF5 Position      */
+#define RTC_GPIOCTL1_DINOFF5_Msk         (0x1ul << RTC_GPIOCTL1_DINOFF5_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF5 Mask          */
 
 #define RTC_GPIOCTL1_PUSEL5_Pos          (12)                                              /*!< RTC_T::GPIOCTL1: PUSEL5 Position       */
 #define RTC_GPIOCTL1_PUSEL5_Msk          (0x3ul << RTC_GPIOCTL1_PUSEL5_Pos)                /*!< RTC_T::GPIOCTL1: PUSEL5 Mask           */
@@ -1211,8 +1139,8 @@ typedef struct
 #define RTC_GPIOCTL1_DOUT6_Pos           (18)                                              /*!< RTC_T::GPIOCTL1: DOUT6 Position        */
 #define RTC_GPIOCTL1_DOUT6_Msk           (0x1ul << RTC_GPIOCTL1_DOUT6_Pos)                 /*!< RTC_T::GPIOCTL1: DOUT6 Mask            */
 
-#define RTC_GPIOCTL0_DINOFF6_Pos         (19)                                              /*!< RTC_T::GPIOCTL1: DINOFF6 Position      */
-#define RTC_GPIOCTL0_DINOFF6_Msk         (0x1ul << RTC_GPIOCTL0_DINOFF6_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF6 Mask          */
+#define RTC_GPIOCTL1_DINOFF6_Pos         (19)                                              /*!< RTC_T::GPIOCTL1: DINOFF6 Position      */
+#define RTC_GPIOCTL1_DINOFF6_Msk         (0x1ul << RTC_GPIOCTL1_DINOFF6_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF6 Mask          */
 
 #define RTC_GPIOCTL1_PUSEL6_Pos          (20)                                              /*!< RTC_T::GPIOCTL1: PUSEL6 Position       */
 #define RTC_GPIOCTL1_PUSEL6_Msk          (0x3ul << RTC_GPIOCTL1_PUSEL6_Pos)                /*!< RTC_T::GPIOCTL1: PUSEL6 Mask           */
@@ -1223,8 +1151,8 @@ typedef struct
 #define RTC_GPIOCTL1_DOUT7_Pos           (26)                                              /*!< RTC_T::GPIOCTL1: DOUT7 Position        */
 #define RTC_GPIOCTL1_DOUT7_Msk           (0x1ul << RTC_GPIOCTL1_DOUT7_Pos)                 /*!< RTC_T::GPIOCTL1: DOUT7 Mask            */
 
-#define RTC_GPIOCTL0_DINOFF7_Pos         (27)                                              /*!< RTC_T::GPIOCTL1: DINOFF7 Position      */
-#define RTC_GPIOCTL0_DINOFF7_Msk         (0x1ul << RTC_GPIOCTL0_DINOFF7_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF7 Mask          */
+#define RTC_GPIOCTL1_DINOFF7_Pos         (27)                                              /*!< RTC_T::GPIOCTL1: DINOFF7 Position      */
+#define RTC_GPIOCTL1_DINOFF7_Msk         (0x1ul << RTC_GPIOCTL1_DINOFF7_Pos)               /*!< RTC_T::GPIOCTL1: DINOFF7 Mask          */
 
 #define RTC_GPIOCTL1_PUSEL7_Pos          (28)                                              /*!< RTC_T::GPIOCTL1: PUSEL7 Position       */
 #define RTC_GPIOCTL1_PUSEL7_Msk          (0x3ul << RTC_GPIOCTL1_PUSEL7_Pos)                /*!< RTC_T::GPIOCTL1: PUSEL7 Mask           */

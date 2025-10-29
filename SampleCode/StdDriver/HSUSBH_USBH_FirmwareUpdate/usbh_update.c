@@ -112,7 +112,7 @@ int  program_flash_page(uint32_t page_addr, uint32_t *buff, int count)
 
 void usbh_firmware_update()
 {
-    uint32_t   addr, dfba;
+    uint32_t   addr;
     UINT       cnt;
     FRESULT    res;
 
@@ -166,6 +166,7 @@ void usbh_firmware_update()
     /*  Try to open Data Flash data image. If found, read and update Data Flash.          */
     /*------------------------------------------------------------------------------------*/
 #if 0 //M55M1 has not support this function.
+    uint32_t   dfba;
 
     if (FMC_Read(FMC_USER_CONFIG_0) & 0x1)   /* Data Flash is enabled?                     */
     {

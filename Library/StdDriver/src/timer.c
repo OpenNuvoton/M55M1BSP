@@ -337,6 +337,9 @@ void TIMER_EnableFreqCounter(TIMER_T *timer,
 {
     TIMER_T *t;    /* store the timer base to configure compare value */
 
+    NVT_UNUSED(u32DropCount);
+    NVT_UNUSED(u32Timeout);
+
     t = (timer == TIMER0) ? TIMER1 : TIMER3;
 
     t->CMP = 0xFFFFFFUL;

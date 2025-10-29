@@ -24,7 +24,6 @@ static volatile uint8_t g_u8UVC_PD = 0;
 static volatile uint8_t g_u8UVC_FID = 0;
 static volatile UVC_INFO_T uvcInfo __attribute__((aligned(4)));
 static volatile UVC_PU_INFO_T uvcPuInfo __attribute__((aligned(4))) = {0, 70, 7, -10, 10, 1, 0, 20, 2, -30, 30, 0, 0, 40, 4, 0, 50, 5, 1, 5, 3, 0, 2, 2};
-static volatile VIDEOSTREAMCMDDATA  VideoStreamCmdCtlData  __attribute__((aligned(4)));
 
 NVT_ITCM void HSUSBD_IRQHandler(void)
 {
@@ -790,6 +789,8 @@ uint32_t UVC_PU_Info(uint32_t Req, uint32_t Unit)
 /* Process Unit Control */
 uint32_t UVC_ProcessUnitControl(uint32_t u32ItemSelect, uint32_t u32Value)
 {
+    NVT_UNUSED(u32Value);
+
     switch (u32ItemSelect)
     {
         case PU_BACKLIGHT_COMPENSATION_CONTROL:

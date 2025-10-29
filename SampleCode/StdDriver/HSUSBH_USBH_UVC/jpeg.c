@@ -36,10 +36,8 @@ int decode_jpeg_to_rgb888(unsigned char *image, unsigned long jpegSize, unsigned
 {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
-    uint32_t width, height, pixel_size, row_stride;
+    uint32_t row_stride;
     int ret = FALSE;
-
-    JSAMPROW row_pointer[1];
 
     cinfo.err = jpeg_std_error(&jerr);
 
@@ -60,9 +58,6 @@ int decode_jpeg_to_rgb888(unsigned char *image, unsigned long jpegSize, unsigned
 
     if (ret == FALSE)
         return (ret);
-
-    int w = cinfo.output_width;
-    int h = cinfo.output_height;
 
     row_stride = cinfo.output_width * 3 ;
 

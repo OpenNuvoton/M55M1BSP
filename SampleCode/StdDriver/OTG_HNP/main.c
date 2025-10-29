@@ -70,6 +70,8 @@ void  connect_func(struct udev_t *udev, int param)
     struct hub_dev_t *parent;
     int    i;
 
+    NVT_UNUSED(param);
+
     gOTG_Dev_pet = udev;
     parent = udev->parent;
 
@@ -115,6 +117,8 @@ void  connect_func(struct udev_t *udev, int param)
  */
 void  disconnect_func(struct udev_t *udev, int param)
 {
+    NVT_UNUSED(param);
+
     gOTG_Dev_pet = NULL;
 
     printf("Device [0x%x,0x%x] was disconnected.\n",

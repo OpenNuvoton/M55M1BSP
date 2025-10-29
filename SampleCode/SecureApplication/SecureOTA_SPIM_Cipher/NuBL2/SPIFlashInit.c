@@ -11,6 +11,7 @@ static SPIM_PHASE_T s_sWb0BhRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                       // Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE,   // Data Phase
     8,                                                                          // Dummy Cycle Phase
+    0, 0, 0, 0
 };
 
 static SPIM_PHASE_T s_sWb02hWrCMD =
@@ -20,6 +21,7 @@ static SPIM_PHASE_T s_sWb02hWrCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                       // Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,  // Data Phase
     0,
+    0, 0, 0, 0
 };
 
 /**
@@ -284,6 +286,7 @@ int32_t SPIFlash_WritePage(SPIM_T *psSPIM, uint32_t u32Offset, uint32_t *pu32Dat
     uint32_t u32Is4ByteAddr = (s_sWb0BhRdCMD.u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
     uint32_t u32WrCmd = s_sWb02hWrCMD.u32CMDCode;
 
+    NVT_UNUSED(psSPIM);
     SPIM_DMA_Write(SPIM_PORT, u32Offset, u32Is4ByteAddr, u32ByteSize, (uint8_t *)pu32Data, u32WrCmd);
     return 0;
 }
@@ -293,17 +296,21 @@ int32_t SPIFlash_ReadPage(SPIM_T *psSPIM, uint32_t u32Offset, uint32_t *pu32Data
     uint32_t u32Is4ByteAddr = (s_sWb0BhRdCMD.u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
     uint32_t u32RdCmd = s_sWb0BhRdCMD.u32CMDCode;
 
+    NVT_UNUSED(psSPIM);
     SPIM_DMA_Read(SPIM_PORT, u32Offset, u32Is4ByteAddr, u32ByteSize, (uint8_t *)pu32Data, u32RdCmd, SPIM_OP_ENABLE);
     return 0;
 }
 
 int32_t SPIFlash_Write(SPIM_T *psSPIM, uint32_t u32Offset, uint32_t *pu32Data, uint32_t u32ByteSize)
 {
+    NVT_UNUSED(psSPIM);
+    NVT_UNUSED(u32ByteSize);
     SPIM_IO_WriteByPhase(SPIM_PORT, &s_sWb02hWrCMD, u32Offset, (uint8_t *)pu32Data, 4, SPIM_OP_ENABLE);
     return 0;
 }
 
 uint32_t SPIFlash_GetFlashSize(SPIM_T *psSPIM)
 {
+    NVT_UNUSED(psSPIM);
     return SPIM_DMM_SIZE;
 }

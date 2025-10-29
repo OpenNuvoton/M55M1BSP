@@ -18,6 +18,7 @@
 #define CLASSIFICATION_RESULT_HPP
 
 #include <string>
+#include <cstdint>
 
 namespace arm {
 namespace app {
@@ -29,7 +30,7 @@ namespace app {
     public:
         double          m_normalisedVal = 0.0;
         std::string     m_label;
-        uint32_t        m_labelIdx = 0;
+        std::uint32_t   m_labelIdx = 0;
 
         ClassificationResult() = default;
         ~ClassificationResult() = default;

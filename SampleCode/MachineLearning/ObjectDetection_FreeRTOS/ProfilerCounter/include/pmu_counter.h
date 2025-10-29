@@ -10,11 +10,12 @@
 #define __PMU_COUNTER_H__
 
 #ifdef __cplusplus
+
 extern "C" {
 #endif
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define NUM_PMU_COUNTERS     (10)     /**< Maximum number of available counters. */
 

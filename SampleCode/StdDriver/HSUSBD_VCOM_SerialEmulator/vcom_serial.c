@@ -256,7 +256,7 @@ NVT_ITCM void HSUSBD_IRQHandler(void)
     /* bulk out */
     if (IrqStL & HSUSBD_GINTSTS_EPBIF_Msk)
     {
-        int volatile i;
+        volatile uint32_t i;
 
         IrqSt = HSUSBD->EP[EPB].EPINTSTS & HSUSBD->EP[EPB].EPINTEN;
         gu32RxSize = HSUSBD->EP[EPB].EPDATCNT & 0xffff;

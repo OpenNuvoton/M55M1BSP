@@ -18,6 +18,7 @@ tvm_crt_error_t TVMPlatformTimerStart()
 // Called to stop system timer.
 tvm_crt_error_t TVMPlatformTimerStop(double *elapsed_time_seconds)
 {
+    (void)elapsed_time_seconds;
     return kTvmErrorNoError;
 }
 

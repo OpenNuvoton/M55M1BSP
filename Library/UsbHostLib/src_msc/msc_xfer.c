@@ -28,7 +28,11 @@ static int __tag = 0x10e24388;
 
 static void bulk_xfer_done(UTR_T *utr)
 {
-    // msc_debug_msg("BULK XFER done - %d\n", utr->status);
+#ifdef MSC_DEBUG
+    msc_debug_msg("BULK XFER done - %d\n", utr->status);
+#else
+    NVT_UNUSED(utr);
+#endif
 }
 
 int msc_bulk_transfer(MSC_T *msc, EP_INFO_T *ep, uint8_t *data_buff, int data_len, int timeout_ticks)
@@ -58,7 +62,7 @@ int msc_bulk_transfer(MSC_T *msc, EP_INFO_T *ep, uint8_t *data_buff, int data_le
 
     while (utr->bIsTransferDone == 0)
     {
-        if (get_ticks() - t0 > timeout_ticks)
+        if (get_ticks() - t0 > (uint32_t)timeout_ticks)
         {
             usbh_quit_utr(utr);
             free_utr(utr);

@@ -92,8 +92,8 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Interrupt Type Constant Definitions                                                                    */
 /*---------------------------------------------------------------------------------------------------------*/
-#define LPPDMA_INT_TRANS_DONE 0x00000000UL            /*!<Transfer Done Interrupt  \hideinitializer */
-#define LPPDMA_INT_TEMPTY     0x00000001UL            /*!<Table Empty Interrupt  \hideinitializer */
+#define LPPDMA_INT_TRANS_DONE 0x00000001UL            /*!<Transfer Done Interrupt  \hideinitializer */
+#define LPPDMA_INT_TEMPTY     0x00000002UL            /*!<Table Empty Interrupt  \hideinitializer */
 
 
 /** @} end of group LPPDMA_EXPORTED_CONSTANTS */

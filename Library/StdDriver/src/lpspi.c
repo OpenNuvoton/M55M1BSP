@@ -20,27 +20,12 @@
 /** @addtogroup LPSPI_EXPORTED_FUNCTIONS LPSPI Exported Functions
   @{
 */
-
 static void LPSPI_SetPCLKSrc(LPSPI_T *lpspi)
 {
-    uint32_t u32RegLockLevel = SYS_IsRegLocked();
-
-    if (u32RegLockLevel)
-    {
-        /* Unlock protected registers */
-        SYS_UnlockReg();
-    }
-
     /* Select PCLK as the clock source of LPSPI */
     if (lpspi == LPSPI0)
     {
         CLK->LPSPISEL = (CLK->LPSPISEL & (~CLK_LPSPISEL_LPSPI0SEL_Msk)) | CLK_LPSPISEL_LPSPI0SEL_PCLK4;
-    }
-
-    if (u32RegLockLevel)
-    {
-        /* Lock protected registers */
-        SYS_LockReg();
     }
 }
 
@@ -75,16 +60,10 @@ static uint32_t LPSPI_GetModuleClkSrcFreq(LPSPI_T *lpspi)
     uint32_t u32RetValue = 0ul;
 
     /* Get LPSPI clock source selection */
-    switch ((uint32_t)lpspi)
-    {
-        case (uint32_t)LPSPI0:
-            u32LPSPIClkSrcSel = ((CLK->LPSPISEL & CLK_LPSPISEL_LPSPI0SEL_Msk) >> CLK_LPSPISEL_LPSPI0SEL_Pos);
-            break;
-
-        default:
-            u32LPSPIClkSrcSel = LPSPI_CLKSEL_PCLK;
-            break;
-    }
+    if (lpspi == LPSPI0)
+        u32LPSPIClkSrcSel = ((CLK->LPSPISEL & CLK_LPSPISEL_LPSPI0SEL_Msk) >> CLK_LPSPISEL_LPSPI0SEL_Pos);
+    else
+        u32LPSPIClkSrcSel = LPSPI_CLKSEL_PCLK;
 
     switch (u32LPSPIClkSrcSel)
     {
@@ -129,77 +108,27 @@ static uint32_t LPSPI_GetModuleClkSrcFreq(LPSPI_T *lpspi)
   */
 uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMode, uint32_t u32DataWidth, uint32_t u32BusClock)
 {
-    uint32_t u32HCLKFreq = 0, u32RetValue = 0U;
+    uint32_t u32RetValue = 0U;
 
-    if (u32DataWidth == 32U)
+    if ((u32DataWidth < 4U) && (u32DataWidth > 0U))
+    {
+        u32DataWidth = 4U;
+    }
+    else if (u32DataWidth >= 32U)
     {
         u32DataWidth = 0U;
     }
 
-    /* Get system clock frequency */
-    u32HCLKFreq = CLK_GetSCLKFreq();
-
     if (u32MasterSlave == LPSPI_MASTER)
     {
-        uint32_t u32ClkSrc = 0U;
-
         /* Default setting: slave selection signal is active low; disable automatic slave selection function. */
         lpspi->SSCTL = LPSPI_SS_ACTIVE_LOW;
 
         /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
         lpspi->CTL = u32MasterSlave | (u32DataWidth << LPSPI_CTL_DWIDTH_Pos) | (u32LPSPIMode) | LPSPI_CTL_SPIEN_Msk;
 
-        if (u32BusClock >= u32HCLKFreq)
-        {
-            /* Select PCLK4 as the clock source of LPSPI */
-            LPSPI_SetPCLKSrc(lpspi);
-        }
-
-        /* Get clock source of LPSPI */
-        u32ClkSrc = LPSPI_GetModuleClkSrcFreq(lpspi);
-
-        if (u32BusClock >= u32HCLKFreq)
-        {
-            /* Set DIVIDER = 0 */
-            lpspi->CLKDIV = 0U;
-            /* Return master peripheral clock rate */
-            u32RetValue = u32ClkSrc;
-        }
-        else if (u32BusClock >= u32ClkSrc)
-        {
-            /* Set DIVIDER = 0 */
-            lpspi->CLKDIV = 0U;
-            /* Return master peripheral clock rate */
-            u32RetValue = u32ClkSrc;
-        }
-        else if (u32BusClock == 0U)
-        {
-            /* Set DIVIDER to the maximum value 0xFF. f_lpspi = f_lpspi_clk_src / (DIVIDER + 1) */
-            lpspi->CLKDIV |= LPSPI_CLKDIV_DIVIDER_Msk;
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-        }
-        else
-        {
-            uint32_t u32Div = 0;
-
-            u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
-
-            if (u32Div > 0xFFU)
-            {
-                //u32Div = 0xFFU;
-                lpspi->CLKDIV |= LPSPI_CLKDIV_DIVIDER_Msk;
-                /* Return master peripheral clock rate */
-                u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-            }
-            else
-            {
-                lpspi->CLKDIV = (lpspi->CLKDIV & (~LPSPI_CLKDIV_DIVIDER_Msk)) |
-                                (u32Div << LPSPI_CLKDIV_DIVIDER_Pos);
-                /* Return master peripheral clock rate */
-                u32RetValue = (u32ClkSrc / (u32Div + 1U));
-            }
-        }
+        // Set the bus clock for the LPSPI module and store the actual frequency in u32RetValue
+        u32RetValue = LPSPI_SetBusClock(lpspi, u32BusClock);
     }
     else     /* For slave mode, force the LPSPI peripheral clock rate to equal APB clock rate. */
     {
@@ -336,10 +265,11 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
     }
     else if (u32BusClock == 0U)
     {
-        /* Set DIVIDER to the maximum value 0xFF. f_lpspi = f_lpspi_clk_src / (DIVIDER + 1) */
+        /* Set DIVIDER to the maximum value. f_lpspi = f_lpspi_clk_src / (DIVIDER + 1) */
         lpspi->CLKDIV |= LPSPI_CLKDIV_DIVIDER_Msk;
+
         /* Return master peripheral clock rate */
-        u32RetValue = (u32ClkSrc / (0xFFU + 1U));
+        u32RetValue = (u32ClkSrc / ((LPSPI_CLKDIV_DIVIDER_Msk >> LPSPI_CLKDIV_DIVIDER_Pos) + 1U));
     }
     else
     {
@@ -347,20 +277,15 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
 
         u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
 
-        if (u32Div > 0x1FFU)
-        {
-            //u32Div = 0x1FFU;
-            lpspi->CLKDIV |= LPSPI_CLKDIV_DIVIDER_Msk;
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (0xFFU + 1U));
-        }
-        else
-        {
-            lpspi->CLKDIV = (lpspi->CLKDIV & (~LPSPI_CLKDIV_DIVIDER_Msk)) |
-                            (u32Div << LPSPI_CLKDIV_DIVIDER_Pos);
-            /* Return master peripheral clock rate */
-            u32RetValue = (u32ClkSrc / (u32Div + 1U));
-        }
+        // Ensure the calculated divider does not exceed the maximum allowed value
+        u32Div = ((u32Div > (LPSPI_CLKDIV_DIVIDER_Msk >> LPSPI_CLKDIV_DIVIDER_Pos)) ?
+                  (LPSPI_CLKDIV_DIVIDER_Msk >> LPSPI_CLKDIV_DIVIDER_Pos) : u32Div);
+
+        // Update the CLKDIV register with the new divider value
+        lpspi->CLKDIV = (lpspi->CLKDIV & (~LPSPI_CLKDIV_DIVIDER_Msk)) | (u32Div << LPSPI_CLKDIV_DIVIDER_Pos);
+
+        /* Return master peripheral clock rate */
+        u32RetValue = (u32ClkSrc / (u32Div + 1U));
     }
 
     return u32RetValue;

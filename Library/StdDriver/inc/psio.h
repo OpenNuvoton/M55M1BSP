@@ -818,7 +818,7 @@ typedef struct
 * @details     This macro set specified pin output data.
 * \hideinitializer
 */
-#define PSIO_SET_OUTPUT_DATA(psio, u32Pin, u32Data) (psio->GNCT[u32Pin].OUTDAT = (u32Data))
+#define PSIO_SET_OUTPUT_DATA(psio, u32Pin, u32Data) (psio->GNCT[u32Pin].OUTDAT = (uint32_t)(u32Data))
 
 /**
 * @brief       Set specified pin check point and slot link
@@ -1174,8 +1174,10 @@ __STATIC_INLINE void PSIO_SWITCH_MODE(PSIO_T *psio, uint32_t u32Pin, uint32_t u3
 */
 __STATIC_INLINE void PSIO_SET_CP_CONFIG(PSIO_T *psio, uint32_t u32Pin, const S_PSIO_CP_CONFIG *sConfig)
 {
-    psio->GNCT[u32Pin].CPCTL0 = *(uint32_t *)sConfig;
-    psio->GNCT[u32Pin].CPCTL1 = *((uint32_t *)sConfig + 1);
+    const uint32_t *pu32Config = (const uint32_t *)sConfig;
+
+    psio->GNCT[u32Pin].CPCTL0 = pu32Config[0];
+    psio->GNCT[u32Pin].CPCTL1 = pu32Config[1];
 }
 
 /** @} end of group PSIO_EXPORTED_FUNCTIONS */

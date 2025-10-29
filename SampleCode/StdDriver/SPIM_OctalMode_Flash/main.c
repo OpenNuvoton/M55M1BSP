@@ -203,7 +203,6 @@ void SPIM_TrimDLLDelayNum(SPIM_T *spim, SPIM_PHASE_T *pMTWrCMD, SPIM_PHASE_T *pM
     uint32_t u32k = 0;
     uint32_t u32ReTrimCnt = 0;
     uint32_t u32SrcAddr = OCFLH_TRIM_ADDR;
-    uint32_t u32Div = SPIM_GET_CLOCK_DIVIDER(spim); // Divider value
     /*
         SPIM DMA requires memory buffers to be 8-byte aligned.
         TRIM_PAT_SIZE is in bytes and must be divisible by 8.
@@ -375,7 +374,6 @@ void SPIM_TrimRxClkDlyNum(SPIM_T *spim, SPIM_PHASE_T *pMTWrCMD, SPIM_PHASE_T *pM
     uint32_t u32k = 0;
     uint32_t u32ReTrimCnt = 0;
     uint32_t u32SrcAddr = OCFLH_TRIM_ADDR;
-    uint32_t u32Div = SPIM_GET_CLOCK_DIVIDER(spim); // Divider value
     /*
         SPIM DMA requires memory buffers to be 8-byte aligned.
         TRIM_PAT_SIZE is in bytes and must be divisible by 8.

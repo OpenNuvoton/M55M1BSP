@@ -168,7 +168,7 @@ static void SendChar_ToUART(int ch)
  *
  * @returns   None
  */
-static void SendChar(int ch)
+void SendChar(int ch)
 {
 #if defined(DEBUG_ENABLE_SEMIHOST)
     g_buf[g_buf_len++] = (char)ch;
@@ -211,7 +211,7 @@ static void SendChar(int ch)
  *
  * @returns  Get character data from UART debug port or semihost
  */
-static char GetChar(void)
+char GetChar(void)
 {
 #ifdef DEBUG_ENABLE_SEMIHOST
 
@@ -543,18 +543,26 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 #endif
 }
 
+/* To be compatible with CMSIS RTE (retargeting files will be copied to the local RTE folder),
+   check the toolchain dependent retarget_XXX.c with __has_include macro to prevent compiler error. */
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION)
     #ifndef NVT_ISP_FUNC
-        #include "../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c"
+        #if __has_include("../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c")
+            #include "../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c"
+        #endif
     #else
         // To reduce code size
     #endif
 #endif
 
 #if defined (__ARMCC_VERSION)
-    #include "../../Device/Nuvoton/M55M1/Source/ARM/retarget_ARMCC.c"
+    #if __has_include("../../Device/Nuvoton/M55M1/Source/ARM/retarget_ARMCC.c")
+        #include "../../Device/Nuvoton/M55M1/Source/ARM/retarget_ARMCC.c"
+    #endif
 #endif
 
 #if defined (__ICCARM__)
-    #include "../../Device/Nuvoton/M55M1/Source/IAR/retarget_ICC.c"
+    #if __has_include("../../Device/Nuvoton/M55M1/Source/IAR/retarget_ICC.c")
+        #include "../../Device/Nuvoton/M55M1/Source/IAR/retarget_ICC.c"
+    #endif
 #endif

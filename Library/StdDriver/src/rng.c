@@ -166,6 +166,8 @@ int32_t RNG_ECDSA_Init(uint32_t u32KeySize, uint32_t au32ECC_N[18])
 {
     int32_t i;
 
+    (void)(u32KeySize);
+
     /* Initial TRNG and PRNG for random number */
     if (RNG_Open())
         return -1;
@@ -240,6 +242,8 @@ int32_t RNG_ECDSA(uint32_t u32KeySize)
 int32_t RNG_ECDH_Init(uint32_t u32KeySize, uint32_t au32ECC_N[18])
 {
     int32_t i;
+
+    (void)(u32KeySize);
 
     /* Initial Random Number Generator */
     if (RNG_Open())
