@@ -1,3 +1,6 @@
+![Eclipse](https://github.com/OpenNuvoton/M55M1BSP/actions/workflows/Eclipse.yml/badge.svg)
+![VSCode](https://github.com/OpenNuvoton/M55M1BSP/actions/workflows/VSCode.yml/badge.svg)
+
 # M55M1 Series CMSIS BSP
 
 To experience the powerful features of M55M1 series in few minutes, please select the sample code to download and execute on the NuMaker-M55M1 board. Open the project files to build them with Keil® MDK, IAR, NuEclipse or VS Code, and then download and trace them on the NuMaker board to see how it works.
