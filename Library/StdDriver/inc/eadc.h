@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     eadc.h
  * @version  V1.00
- * @brief    M55M1 series EADC driver header file
+ * @brief    EADC driver header file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -701,7 +701,7 @@ __STATIC_INLINE uint32_t EADC_GET_DATA_OVERRUN_FLAG(EADC_T *eadc, uint32_t u32Mo
 /* Define EADC functions prototype                                                                         */
 /*---------------------------------------------------------------------------------------------------------*/
 void EADC_Open(EADC_T *eadc, uint32_t u32InputMode);
-void EADC_Calibration(EADC_T *eadc);
+int32_t EADC_Calibration(EADC_T *eadc);
 void EADC_Close(EADC_T *eadc);
 void EADC_ConfigSampleModule(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32TriggerSrc, uint32_t u32Channel);
 void EADC_SetTriggerDelayTime(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32TriggerDelayTime, uint32_t u32DelayClockDivider);

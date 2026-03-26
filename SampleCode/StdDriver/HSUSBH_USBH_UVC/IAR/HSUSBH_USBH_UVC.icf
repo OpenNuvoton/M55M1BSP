@@ -12,8 +12,8 @@ define symbol __ICFEDIT_region_RAM_start__  = 0x20100000;
 define symbol __ICFEDIT_region_RAM_end__    = 0x2022FFFF;
 
 /*-Sizes-*/
-define symbol __ICFEDIT_size_cstack__ = 0x00001000;
-define symbol __ICFEDIT_size_heap__   = 0x00008000;
+define symbol __ICFEDIT_size_cstack__ = 0x00004000;
+define symbol __ICFEDIT_size_heap__   = 0x0000A000;
 /**** End of ICF editor section. ###ICF###*/
 
 /* Start address and size of NonCacheable region must be 32 byte alignment */

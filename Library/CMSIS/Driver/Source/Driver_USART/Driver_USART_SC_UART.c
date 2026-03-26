@@ -16,38 +16,12 @@
  * limitations under the License.
  */
 
-/**************************************************************************//**
- * @file     Driver_USART_SC_USART.c
- * @version  V1.00
- * @brief    USART driver for Nuvoton M55M1
- *
- * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright Copyright (C) 2024 Nuvoton Technology Corp. All rights reserved.
- ******************************************************************************/
-
-/*! \page Dirver_USART SC_USART
-
-# Revision History
-
-- Version 1.0
-  - Initial release
-
-# Requirements
-
-This driver requires the M55M1 BSP.
-The driver instance is mapped to hardware as shown in the table below:
-
-  CMSIS Driver Instance | M55M1 Hardware Resource
-  :---------------------|:-----------------------
-  Driver_USART10        | SCUART0
-  Driver_USART11        | SCUART1
-  Driver_USART12        | SCUART2
-
-*/
-
-
-#ifdef    RTE_device_header
-    #include  RTE_device_header
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
+/* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
+#ifdef    PRJ_RTE_DEVICE_HEADER
+    #include  PRJ_RTE_DEVICE_HEADER
 #else
     #include "RTE_Device/RTE_Device.h"
 #endif
@@ -58,20 +32,9 @@ The driver instance is mapped to hardware as shown in the table below:
 
 #include "Driver_USART.h"
 #include "NuMicro.h"
-#include "cmsis_os2.h"
 
 #include "drv_pdma.h"
 #include "misc.h"
-
-#define ARM_USART_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0)  /* driver version */
-
-/* Driver Version */
-static const ARM_DRIVER_VERSION DriverVersion =
-{
-    ARM_USART_API_VERSION,
-    ARM_USART_DRV_VERSION
-};
-
 
 // Compile-time configuration **************************************************
 
@@ -90,6 +53,9 @@ static const ARM_DRIVER_VERSION DriverVersion =
 #ifdef  DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
 
 // Macros
+#define ARM_USART_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0)  /* driver version */
+// Macro for porting compatibility
+#define UART_HWTypeDef  SC_T
 // Macro for section for RW info
 #ifdef  USART_SECTION_NAME
     #define USARTn_SECTION_(name,n) __attribute__((section(name #n)))
@@ -198,8 +164,6 @@ typedef struct
 
 // Instance compile-time information (RO)
 // also contains pointer to run-time information
-#define UART_HWTypeDef  SC_T
-
 typedef struct
 {
     UART_HWTypeDef               *ptr_UART;               // Pointer to SCUART handle
@@ -231,6 +195,13 @@ static const USART_Info_t *const usart_info_list[] =
     &usart12_info,
 #endif
     NULL
+};
+
+/* Driver Version */
+static const ARM_DRIVER_VERSION DriverVersion =
+{
+    ARM_USART_API_VERSION,
+    ARM_USART_DRV_VERSION
 };
 
 // Local functions prototypes

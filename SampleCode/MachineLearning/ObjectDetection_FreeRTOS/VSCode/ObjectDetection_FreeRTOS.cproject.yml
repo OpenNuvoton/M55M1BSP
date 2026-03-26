@@ -50,6 +50,7 @@ project:
             - -std=c11
           C-CPP:
             - -fno-exceptions -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++14
@@ -65,6 +66,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           CPP:
             - -Wno-subobject-linkage
             - -std=c++14
@@ -83,7 +85,7 @@ project:
             - -lomv
             - -lFreeRTOS
   linker:
-    - script: ../KEIL/M55M1.scf
+    - script: ../Keil/M55M1.scf
       for-compiler: AC6
     - script: ../GCC/M55M1.ld
       for-compiler: GCC
@@ -158,12 +160,12 @@ project:
     - group: libs
       files:
         - file: ../../../../ThirdParty/tflite_micro/Lib/tflu.lib
-          for-compiler: AC6    
-        - file: ../../../../Library/CMSIS/Lib/KEIL/cmsis_dsp.lib
-          for-compiler: AC6    
-        - file: ../../../../Library/CMSIS/Lib/KEIL/cmsis_nn.lib
-          for-compiler: AC6    
+          for-compiler: AC6
+        - file: ../../../../Library/CMSIS/Lib/Keil/cmsis_dsp.lib
+          for-compiler: AC6
+        - file: ../../../../Library/CMSIS/Lib/Keil/cmsis_nn.lib
+          for-compiler: AC6
         - file: ../../../../ThirdParty/openmv/omv/Lib/omv.lib
-          for-compiler: AC6    
+          for-compiler: AC6
         - file: ../../../../ThirdParty/FreeRTOS/Lib/FreeRTOS.lib
-          for-compiler: AC6    
+          for-compiler: AC6

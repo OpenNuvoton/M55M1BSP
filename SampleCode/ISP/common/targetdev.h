@@ -14,6 +14,7 @@
 #define PLL_CLOCK       FREQ_220MHZ
 #define I2C_ADDR        0x60
 #define DETECT_PIN      PI11    // NuMaker BTN_0
+#define TRIM_INIT       (SYS_BASE + 0xF40)
 
 #ifdef __cplusplus
 extern "C"

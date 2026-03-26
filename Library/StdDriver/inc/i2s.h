@@ -70,43 +70,43 @@ extern "C"
 #define I2S_MODE_MASTER             (0U)                            /*!< As master mode  \hideinitializer */
 
 /* I2S FIFO Threshold */
-#define I2S_FIFO_TX_LEVEL_WORD_0    (0U)                             /*!< TX threshold is 0 word  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_1    (1U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 1 word  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_2    (2U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 2 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_3    (3U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 3 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_4    (4U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 4 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_5    (5U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 5 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_6    (6U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 6 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_7    (7U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 7 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_8    (8U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 8 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_9    (9U << I2S_CTL1_TXTH_Pos)        /*!< TX threshold is 9 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_10   (10U << I2S_CTL1_TXTH_Pos)       /*!< TX threshold is 10 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_11   (11U << I2S_CTL1_TXTH_Pos)       /*!< TX threshold is 11 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_12   (12U << I2S_CTL1_TXTH_Pos)       /*!< TX threshold is 12 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_13   (13U << I2S_CTL1_TXTH_Pos)       /*!< TX threshold is 13 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_14   (14U << I2S_CTL1_TXTH_Pos)       /*!< TX threshold is 14 words  \hideinitializer */
-#define I2S_FIFO_TX_LEVEL_WORD_15   (15U << I2S_CTL1_TXTH_Pos)       /*!< TX threshold is 15 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_0    (((uint32_t)0U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 0 word  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_1    (((uint32_t)1U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 1 word  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_2    (((uint32_t)2U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 2 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_3    (((uint32_t)3U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 3 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_4    (((uint32_t)4U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 4 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_5    (((uint32_t)5U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 5 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_6    (((uint32_t)6U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 6 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_7    (((uint32_t)7U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 7 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_8    (((uint32_t)8U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 8 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_9    (((uint32_t)9U & 0xFU) << I2S_CTL1_TXTH_Pos)   /*!< TX threshold is 9 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_10   (((uint32_t)10U & 0xFU) << I2S_CTL1_TXTH_Pos)  /*!< TX threshold is 10 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_11   (((uint32_t)11U & 0xFU) << I2S_CTL1_TXTH_Pos)  /*!< TX threshold is 11 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_12   (((uint32_t)12U & 0xFU) << I2S_CTL1_TXTH_Pos)  /*!< TX threshold is 12 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_13   (((uint32_t)13U & 0xFU) << I2S_CTL1_TXTH_Pos)  /*!< TX threshold is 13 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_14   (((uint32_t)14U & 0xFU) << I2S_CTL1_TXTH_Pos)  /*!< TX threshold is 14 words  \hideinitializer */
+#define I2S_FIFO_TX_LEVEL_WORD_15   (((uint32_t)15U & 0xFU) << I2S_CTL1_TXTH_Pos)  /*!< TX threshold is 15 words  \hideinitializer */
 
-#define I2S_FIFO_RX_LEVEL_WORD_1    (0U)                             /*!< RX threshold is 1 word  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_2    (1U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 2 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_3    (2U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 3 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_4    (3U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 4 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_5    (4U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 5 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_6    (5U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 6 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_7    (6U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 7 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_8    (7U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 8 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_9    (8U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 9 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_10   (9U << I2S_CTL1_RXTH_Pos)        /*!< RX threshold is 10 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_11   (10U << I2S_CTL1_RXTH_Pos)       /*!< RX threshold is 11 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_12   (11U << I2S_CTL1_RXTH_Pos)       /*!< RX threshold is 12 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_13   (12U << I2S_CTL1_RXTH_Pos)       /*!< RX threshold is 13 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_14   (13U << I2S_CTL1_RXTH_Pos)       /*!< RX threshold is 14 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_15   (14U << I2S_CTL1_RXTH_Pos)       /*!< RX threshold is 15 words  \hideinitializer */
-#define I2S_FIFO_RX_LEVEL_WORD_16   (15U << I2S_CTL1_RXTH_Pos)       /*!< RX threshold is 16 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_1    (((uint32_t)0U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 1 word  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_2    (((uint32_t)1U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 2 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_3    (((uint32_t)2U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 3 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_4    (((uint32_t)3U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 4 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_5    (((uint32_t)4U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 5 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_6    (((uint32_t)5U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 6 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_7    (((uint32_t)6U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 7 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_8    (((uint32_t)7U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 8 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_9    (((uint32_t)8U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 9 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_10   (((uint32_t)9U & 0xFU) << I2S_CTL1_RXTH_Pos)   /*!< RX threshold is 10 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_11   (((uint32_t)10U & 0xFU) << I2S_CTL1_RXTH_Pos)  /*!< RX threshold is 11 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_12   (((uint32_t)11U & 0xFU) << I2S_CTL1_RXTH_Pos)  /*!< RX threshold is 12 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_13   (((uint32_t)12U & 0xFU) << I2S_CTL1_RXTH_Pos)  /*!< RX threshold is 13 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_14   (((uint32_t)13U & 0xFU) << I2S_CTL1_RXTH_Pos)  /*!< RX threshold is 14 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_15   (((uint32_t)14U & 0xFU) << I2S_CTL1_RXTH_Pos)  /*!< RX threshold is 15 words  \hideinitializer */
+#define I2S_FIFO_RX_LEVEL_WORD_16   (((uint32_t)15U & 0xFU) << I2S_CTL1_RXTH_Pos)  /*!< RX threshold is 16 words  \hideinitializer */
 
 /* I2S Record Channel */
-#define I2S_MONO_RIGHT              (0U)                             /*!< Record mono right channel  \hideinitializer */
-#define I2S_MONO_LEFT               I2S_CTL0_RXLCH_Msk               /*!< Record mono left channel  \hideinitializer */
+#define I2S_MONO_RIGHT              (0UL)                            /*!< Record mono right channel  \hideinitializer */
+#define I2S_MONO_LEFT               (1UL)                            /*!< Record mono left channel  \hideinitializer */
 
 /* I2S Channel */
 #define I2S_RIGHT                   (0U)                             /*!< Select right channel  \hideinitializer */
@@ -122,7 +122,7 @@ __STATIC_INLINE void I2S_ENABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask)
 {
     if ((u32ChMask > 0U) && (u32ChMask < 9U))
     {
-        i2s->CTL1 |= ((uint32_t)1U << (u32ChMask - 1U));
+        (i2s)->CTL1 |= ((uint32_t)1U << (u32ChMask - 1U));
     }
 }
 
@@ -136,7 +136,7 @@ __STATIC_INLINE void I2S_DISABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask)
 {
     if ((u32ChMask > 0U) && (u32ChMask < 9U))
     {
-        i2s->CTL1 &= ~((uint32_t)1U << (u32ChMask - 1U));
+        (i2s)->CTL1 &= ~((uint32_t)1U << (u32ChMask - 1U));
     }
 }
 
@@ -145,82 +145,82 @@ __STATIC_INLINE void I2S_DISABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask)
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_ENABLE_TXDMA(i2s)   (i2s->CTL0 |= I2S_CTL0_TXPDMAEN_Msk)
+#define I2S_ENABLE_TXDMA(i2s)   ((i2s)->CTL0 |= I2S_CTL0_TXPDMAEN_Msk)
 
 /**
   * @brief  Disable I2S Tx DMA function. I2S requests DMA to transfer data to Tx FIFO.
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_DISABLE_TXDMA(i2s)  (i2s->CTL0 &= ~(I2S_CTL0_TXPDMAEN_Msk))
+#define I2S_DISABLE_TXDMA(i2s)  ((i2s)->CTL0 &= ~(I2S_CTL0_TXPDMAEN_Msk))
 
 /**
   * @brief  Enable I2S Rx DMA function. I2S requests DMA to transfer data from Rx FIFO.
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_ENABLE_RXDMA(i2s)   (i2s->CTL0 |= I2S_CTL0_RXPDMAEN_Msk)
+#define I2S_ENABLE_RXDMA(i2s)   ((i2s)->CTL0 |= I2S_CTL0_RXPDMAEN_Msk)
 
 /**
   * @brief  Disable I2S Rx DMA function. I2S requests DMA to transfer data from Rx FIFO.
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_DISABLE_RXDMA(i2s)  (i2s->CTL0 &= ~(I2S_CTL0_RXPDMAEN_Msk))
+#define I2S_DISABLE_RXDMA(i2s)  ((i2s)->CTL0 &= ~(I2S_CTL0_RXPDMAEN_Msk))
 /**
   * @brief  Enable I2S Tx function .
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_ENABLE_TX(i2s)  (i2s->CTL0 |= I2S_CTL0_TXEN_Msk)
+#define I2S_ENABLE_TX(i2s)  ((i2s)->CTL0 |= I2S_CTL0_TXEN_Msk)
 
 /**
   * @brief  Disable I2S Tx function .
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_DISABLE_TX(i2s) (i2s->CTL0 &= ~(I2S_CTL0_TXEN_Msk))
+#define I2S_DISABLE_TX(i2s) ((i2s)->CTL0 &= ~(I2S_CTL0_TXEN_Msk))
 
 /**
   * @brief  Enable I2S Rx function .
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_ENABLE_RX(i2s)  (i2s->CTL0 |= I2S_CTL0_RXEN_Msk)
+#define I2S_ENABLE_RX(i2s)  ((i2s)->CTL0 |= I2S_CTL0_RXEN_Msk)
 /**
   * @brief  Disable I2S Rx function .
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_DISABLE_RX(i2s) (i2s->CTL0 &= ~(I2S_CTL0_RXEN_Msk))
+#define I2S_DISABLE_RX(i2s) ((i2s)->CTL0 &= ~(I2S_CTL0_RXEN_Msk))
 
 /**
   * @brief  Enable Tx Mute function .
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_ENABLE_TX_MUTE(i2s) (i2s->CTL0 |= I2S_CTL0_MUTE_Msk)
+#define I2S_ENABLE_TX_MUTE(i2s) ((i2s)->CTL0 |= I2S_CTL0_MUTE_Msk)
 
 /**
   * @brief  Disable Tx Mute function .
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_DISABLE_TX_MUTE(i2s)    (i2s->CTL0 &= ~(I2S_CTL0_MUTE_Msk))
+#define I2S_DISABLE_TX_MUTE(i2s)    ((i2s)->CTL0 &= ~(I2S_CTL0_MUTE_Msk))
 
 /**
   * @brief  Clear Tx FIFO. Internal pointer is reset to FIFO start point.
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_CLR_TX_FIFO(i2s)    (i2s->CTL0 |= I2S_CTL0_TXFBCLR_Msk)
+#define I2S_CLR_TX_FIFO(i2s)    ((i2s)->CTL0 |= I2S_CTL0_TXFBCLR_Msk)
 
 /**
   * @brief  Clear Rx FIFO. Internal pointer is reset to FIFO start point.
   * @param[in] i2s is the base address of I2S module.
   * \hideinitializer
   */
-#define I2S_CLR_RX_FIFO(i2s)    (i2s->CTL0 |= I2S_CTL0_RXFBCLR_Msk)
+#define I2S_CLR_RX_FIFO(i2s)    ((i2s)->CTL0 |= I2S_CTL0_RXFBCLR_Msk)
 
 /**
   * @brief  This function sets the recording source channel when mono mode is used.
@@ -232,9 +232,14 @@ __STATIC_INLINE void I2S_DISABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask)
   */
 __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
 {
-    u32Ch == I2S_MONO_LEFT ?
-    (i2s->CTL0 |= I2S_CTL0_RXLCH_Msk) :
-    (i2s->CTL0 &= ~I2S_CTL0_RXLCH_Msk);
+    if (u32Ch == I2S_MONO_LEFT)
+    {
+        (i2s)->CTL0 |= I2S_CTL0_RXLCH_Msk;
+    }
+    else
+    {
+        (i2s)->CTL0 &= ~I2S_CTL0_RXLCH_Msk;
+    }
 }
 
 /**
@@ -243,7 +248,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @param[in] u32Data: The data written to FIFO.
   * \hideinitializer
   */
-#define I2S_WRITE_TX_FIFO(i2s, u32Data) (i2s->TXFIFO = (u32Data))
+#define I2S_WRITE_TX_FIFO(i2s, u32Data) ((i2s)->TXFIFO = (u32Data))
 
 /**
   * @brief  Read Rx FIFO.
@@ -251,7 +256,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @return Data in Rx FIFO.
   * \hideinitializer
   */
-#define I2S_READ_RX_FIFO(i2s) (i2s->RXFIFO)
+#define I2S_READ_RX_FIFO(i2s) ((i2s)->RXFIFO)
 
 /**
   * @brief  This function gets the interrupt flag according to the mask parameter.
@@ -260,7 +265,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @return The masked bit value of interrupt flag.
   * \hideinitializer
   */
-#define I2S_GET_INT_FLAG(i2s, u32Mask)  (i2s->STATUS0 & (u32Mask))
+#define I2S_GET_INT_FLAG(i2s, u32Mask)  ((i2s)->STATUS0 & (u32Mask))
 
 /**
   * @brief  This function clears the interrupt flag according to the mask parameter.
@@ -268,7 +273,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @param[in] u32Mask is the mask for the all interrupt flags.
   * \hideinitializer
   */
-#define I2S_CLR_INT_FLAG(i2s, u32Mask)  (i2s->STATUS0 |= (u32Mask))
+#define I2S_CLR_INT_FLAG(i2s, u32Mask)  ((i2s)->STATUS0 |= (u32Mask))
 
 /**
   * @brief  This function gets the zero crossing interrupt flag according to the mask parameter.
@@ -277,7 +282,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @return The masked bit value of interrupt flag.
   * \hideinitializer
   */
-#define I2S_GET_ZC_INT_FLAG(i2s, u32Mask) (i2s->STATUS1 & (u32Mask))
+#define I2S_GET_ZC_INT_FLAG(i2s, u32Mask) ((i2s)->STATUS1 & (u32Mask))
 
 /**
   * @brief  This function clears the zero crossing interrupt flag according to the mask parameter.
@@ -285,7 +290,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @param[in] u32Mask is the mask for the all interrupt flags.
   * \hideinitializer
   */
-#define I2S_CLR_ZC_INT_FLAG(i2s, u32Mask)   (i2s->STATUS1 |= (u32Mask))
+#define I2S_CLR_ZC_INT_FLAG(i2s, u32Mask)   ((i2s)->STATUS1 |= (u32Mask))
 
 /**
   * @brief  Get transmit FIFO level
@@ -294,7 +299,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * \hideinitializer
   */
 #define I2S_GET_TX_FIFO_LEVEL(i2s)  \
-    (((i2s->STATUS1 & I2S_STATUS1_TXCNT_Msk) >> I2S_STATUS1_TXCNT_Pos) & 0x1F)
+    ((((i2s)->STATUS1 & I2S_STATUS1_TXCNT_Msk) >> I2S_STATUS1_TXCNT_Pos) & 0x1F)
 
 /**
   * @brief  Get receive FIFO level
@@ -303,7 +308,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * \hideinitializer
   */
 #define I2S_GET_RX_FIFO_LEVEL(i2s)  \
-    (((i2s->STATUS1 & I2S_STATUS1_RXCNT_Msk) >> I2S_STATUS1_RXCNT_Pos) & 0x1F)
+    ((((i2s)->STATUS1 & I2S_STATUS1_RXCNT_Msk) >> I2S_STATUS1_RXCNT_Pos) & 0x1F)
 
 /** @} end of group I2S_EXPORTED_CONSTANTS */
 
@@ -311,7 +316,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
 /** @addtogroup I2S_EXPORTED_FUNCTIONS I2S Exported Functions
   @{
 */
-uint32_t I2S_GetSourceClockFreq(I2S_T *i2s);
+uint32_t I2S_GetSourceClockFreq(const I2S_T *i2s);
 uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, uint32_t u32WordWidth, uint32_t u32MonoData, uint32_t u32DataFormat);
 void I2S_Close(I2S_T *i2s);
 void I2S_EnableInt(I2S_T *i2s, uint32_t u32Mask);

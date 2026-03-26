@@ -29,7 +29,9 @@
        - for performance consideration, the data buffer is restricted to word alignment.
     5. I3C is designed to prohibit clock stretching by target devices.
 */
-
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -290,7 +292,7 @@ static int32_t I3C0_MasterTransmit(uint32_t addr, const uint8_t *data, uint32_t 
         return ARM_DRIVER_ERROR_PARAMETER;
     }
 
-    I3C0->DEV1ADR = (addr & 0x7F) | I3C_DEVADR_DEVICE_Msk;
+    I3C0->DEVADR[0] = (addr & 0x7F) | I3C_DEVADR_DEVICE_Msk;
     NVIC_DisableIRQ(I3C0_IRQn);
     I3C0->INTSTSEN = 0xFFFFFFFF;
     I3C0->INTEN = I3C_INTEN_RESPRDY_Msk | I3C_INTEN_TFRABORT_Msk | I3C_INTEN_TFRERR_Msk;
@@ -336,7 +338,7 @@ static int32_t I3C0_MasterReceive(uint32_t addr, uint8_t *data, uint32_t num, bo
     }
 
     uint8_t u8DevIndex = 0;
-    I3C0->DEV1ADR = (addr & 0x7F) | I3C_DEVADR_DEVICE_Msk;
+    I3C0->DEVADR[0] = (addr & 0x7F) | I3C_DEVADR_DEVICE_Msk;
     NVIC_DisableIRQ(I3C0_IRQn);
     I3C0->INTSTSEN = 0xFFFFFFFF;
     I3C0->INTEN = I3C_INTEN_RXTH_Msk | I3C_INTEN_RESPRDY_Msk | I3C_INTEN_TFRABORT_Msk | I3C_INTEN_TFRERR_Msk;

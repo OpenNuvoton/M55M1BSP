@@ -400,6 +400,11 @@ static void  hid_read_irq(UTR_T *utr)
     HID_DEV_T   *hdev;
     int         ret;
 
+    if (utr->status == USBH_ERR_ABORT)
+    {
+        return;
+    }
+
     //HID_DBGMSG("hid_read_irq. %d\n", utr->xfer_len);
 
     hdev = (HID_DEV_T *)utr->context;
@@ -450,6 +455,11 @@ static void  hid_write_irq(UTR_T *utr)
     int           ret;
 
     //HID_DBGMSG("hid_write_irq. %d\n", urb->actual_length);
+
+    if (utr->status == USBH_ERR_ABORT)
+    {
+        return;
+    }
 
     hdev = (HID_DEV_T *)utr->context;
 
@@ -580,7 +590,7 @@ int32_t usbh_hid_start_int_read(HID_DEV_T *hdev, uint8_t ep_addr, HID_IR_FUNC *f
 int32_t usbh_hid_stop_int_read(HID_DEV_T *hdev, uint8_t ep_addr)
 {
     IFACE_T    *iface = (IFACE_T *)hdev->iface;
-    UTR_T      *utr;
+    UTR_T      *utr = NULL;
     int        i, ret;
 
     if ((!iface) || (!iface->udev))
@@ -728,7 +738,7 @@ int32_t usbh_hid_start_int_write(HID_DEV_T *hdev, uint8_t ep_addr, HID_IW_FUNC *
 int32_t usbh_hid_stop_int_write(HID_DEV_T *hdev, uint8_t ep_addr)
 {
     IFACE_T    *iface = (IFACE_T *)hdev->iface;
-    UTR_T      *utr;
+    UTR_T      *utr = NULL;
     int        i, ret;
 
     if ((!iface) || (!iface->udev))

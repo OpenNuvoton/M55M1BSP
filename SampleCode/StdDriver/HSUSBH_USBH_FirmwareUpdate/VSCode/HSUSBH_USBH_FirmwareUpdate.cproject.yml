@@ -28,6 +28,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -42,6 +43,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -88,16 +90,16 @@ project:
         - file: ../../../../ThirdParty/FatFs/source/ff.c
   executes:
     - execute: GenLDROMImage
-      run : arm-none-eabi-objcopy -O binary --only-section=.ldrom $input$ $output$
+      run: arm-none-eabi-objcopy -O binary --only-section=.ldrom $input$ $output$
       input:
         - $elf(.Release+GNUC)$
       output:
         - $OutDir()$/ldrom.bin
       for-context: .Release+GNUC
     - execute: GenAPROMImage
-      run : arm-none-eabi-objcopy -O binary --remove-section=.ldrom $input$ $output$
+      run: arm-none-eabi-objcopy -O binary --remove-section=.ldrom $input$ $output$
       input:
         - $elf(.Release+GNUC)$
       output:
         - $OutDir()$/aprom.bin
-      for-context: .Release+GNUC    
+      for-context: .Release+GNUC

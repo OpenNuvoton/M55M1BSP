@@ -57,8 +57,12 @@
                                           limited.  */
 
 #define MAX_UDEV_DRIVER        8       /*!< Maximum number of registered drivers                      */
-#define MAX_ALT_PER_IFACE      24       /*!< maximum number of alternative interfaces per interface    */
-#define MAX_EP_PER_IFACE       24       /*!< maximum number of endpoints per interface                 */
+#ifndef MAX_ALT_PER_IFACE
+    #define MAX_ALT_PER_IFACE      8       /*!< maximum number of alternative interfaces per interface    */
+#endif
+#ifndef MAX_EP_PER_IFACE
+    #define MAX_EP_PER_IFACE       8       /*!< maximum number of endpoints per interface                 */
+#endif
 #define MAX_HUB_DEVICE         8       /*!< Maximum number of hub devices                             */
 
 /* Host controller hardware transfer descriptors memory pool. ED/TD/ITD of OHCI and QH/QTD of EHCI
@@ -66,12 +70,12 @@
    May allocate one or more units depend on hardware descriptor type.                                 */
 
 #define HW_MEM_UNIT_SIZE       64       /*!< A fixed hard coding setting. Do not change it!            */
-#define HW_MEM_UNIT_NUM       256      /*!< Increase this or heap size if memory allocate failed.     */
+#define HW_MEM_UNIT_NUM        64      /*!< Increase this or heap size if memory allocate failed.     */
 
 /* USB transfer memory pool. For non-cache DMA memory allocation. */
 
 #define DMA_MEM_UNIT_SIZE    1024      /*!< A fixed hard coding setting. Do not change it!            */
-#define DMA_MEM_UNIT_NUM       72      /*!< Increase this or heap size if memory allocate failed.     */
+#define DMA_MEM_UNIT_NUM       64      /*!< Increase this or heap size if memory allocate failed.     */
 
 /*----------------------------------------------------------------------------------------*/
 /*   Re-defined staff for various compiler                                                */

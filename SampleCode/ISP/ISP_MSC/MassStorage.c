@@ -3,14 +3,13 @@
  * @version  V1.00
  * @brief    USB mass storage source file
  *
- * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 
 #include <string.h>
-#include "M55M1_User.h"
-#include "usbd_User.h"
-#include "massstorage.h"
+#include "NuMicro.h"
+#include "MassStorage.h"
 
 #if 0
     #define DBG_PRINTF      printf
@@ -137,7 +136,12 @@ NVT_ITCM void USBD_IRQHandler(void)
             /* Clear event flag */
             USBD_CLR_INT_FLAG(USBD_INTSTS_EP1);
 
+#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+            // To reduce code size for GNU compiler, we don't implement control OUT interrupt handler.
+#else
             /* control OUT */
+            USBD_CtrlOut();
+#endif
         }
 
         if (u32IntSts & USBD_INTSTS_EP2)
@@ -188,7 +192,14 @@ void MSC_Init(void)
     /* Buffer range for setup packet -> [0 ~ 0x7] */
     USBD->STBUFSEG = SETUP_BUF_BASE;
 
-    /*****************************************************/
+    USBD_Open(&gsInfo, MSC_ClassRequest, NULL);
+
+#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+    // To reduce code size for GNU compiler, forced to call predefined callback functions.
+#else
+    USBD_SetConfigCallback(MSC_SetConfig);
+#endif
+
     /* EP0 ==> control IN endpoint, address 0 */
     USBD_CONFIG_EP(EP0, USBD_CFG_CSTALL | USBD_CFG_EPMODE_IN | 0);
     /* Buffer range for EP0 */
@@ -199,23 +210,7 @@ void MSC_Init(void)
     /* Buffer range for EP1 */
     USBD_SET_EP_BUF_ADDR(EP1, EP1_BUF_BASE);
 
-    /*****************************************************/
-    /* EP2 ==> Bulk IN endpoint, address 2 */
-    USBD_CONFIG_EP(EP2, USBD_CFG_EPMODE_IN | BULK_IN_EP_NUM);
-    /* Buffer range for EP2 */
-    USBD_SET_EP_BUF_ADDR(EP2, EP2_BUF_BASE);
-
-    /* EP3 ==> Bulk Out endpoint, address 3 */
-    USBD_CONFIG_EP(EP3, USBD_CFG_EPMODE_OUT | BULK_OUT_EP_NUM);
-    /* Buffer range for EP3 */
-    USBD_SET_EP_BUF_ADDR(EP3, EP3_BUF_BASE);
-
-    /* trigger to receive OUT data */
-    USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
-
-    /*****************************************************/
-    g_u32BulkBuf0 = EP3_BUF_BASE;
-    g_u32BulkBuf1 = EP2_BUF_BASE;
+    MSC_SetConfig();
 
     g_sCSW.dCSWSignature = CSW_SIGNATURE;
     g_u32StorageSize = FMC_Init();
@@ -382,7 +377,7 @@ void MSC_Read(uint8_t u8IsTrig)
         if (g_u8Size > g_u32Length)
             g_u8Size = g_u32Length;
 
-        USBD_MemCopy((uint8_t *)((uint32_t)USBD_BUF_BASE + u32Buf), (uint8_t *)g_u32Address, g_u8Size);
+        USBD_MemCopy((uint8_t *)(USBD_BUF_BASE + u32Buf), (uint8_t *)g_u32Address, g_u8Size);
         g_u32Address += g_u8Size;
 
         if (u8IsTrig)
@@ -416,7 +411,7 @@ void MSC_ModeSense10(void)
         case 0x3F:
             *((uint8_t *)MassCMD_BUF) = 0x47;
 
-            USBD_MemCopy((uint8_t *)MassCMD_BUF + 8, g_au8ModePage_3F, sizeof(g_au8ModePage_3F));
+            USBD_MemCopy((uint8_t *)(MassCMD_BUF + 8), g_au8ModePage_3F, sizeof(g_au8ModePage_3F));
 
             NumHead = 2;
             NumSector = 64;
@@ -575,7 +570,7 @@ void MSC_ProcessCmd(void)
                         g_u8Size = g_u32Length;
 
                     /* Bulk IN buffer */
-                    USBD_MemCopy((uint8_t *)((uint32_t)USBD_BUF_BASE + g_u32BulkBuf1), (uint8_t *)g_u32Address, g_u8Size);
+                    USBD_MemCopy((uint8_t *)(USBD_BUF_BASE + g_u32BulkBuf1), (uint8_t *)g_u32Address, g_u8Size);
                     g_u32BytesInStorageBuf = g_u8Size;
 
                     g_u32Address += g_u8Size;
@@ -605,7 +600,7 @@ void MSC_ProcessCmd(void)
                 }
 
                 /* Bulk IN buffer */
-                USBD_MemCopy((uint8_t *)((uint32_t)USBD_BUF_BASE + g_u32BulkBuf1), (uint8_t *)g_au8InquiryID, sizeof(g_au8InquiryID));
+                USBD_MemCopy((uint8_t *)(USBD_BUF_BASE + g_u32BulkBuf1), (uint8_t *)g_au8InquiryID, sizeof(g_au8InquiryID));
                 USBD_SET_PAYLOAD_LEN(EP2, 36);
 
                 return;
@@ -661,7 +656,7 @@ void MSC_ProcessCmd(void)
 
                     /* Prepare the first data packet (DATA1) */
                     /* Bulk IN buffer */
-                    USBD_MemCopy((uint8_t *)((uint32_t)USBD_BUF_BASE + g_u32BulkBuf1), (uint8_t *)g_u32Address, g_u8Size);
+                    USBD_MemCopy((uint8_t *)(USBD_BUF_BASE + g_u32BulkBuf1), (uint8_t *)g_u32Address, g_u8Size);
                     g_u32Address += g_u8Size;
 
                     /* kick - start */
@@ -698,11 +693,14 @@ void MSC_ProcessCmd(void)
 
             case UFI_MODE_SENSE_6:
             {
-                uint32_t u32Data = 0x3;
-                g_u8BulkState = BULK_IN;
-                USBD_MemCopy((uint8_t *)((uint32_t)USBD_BUF_BASE + g_u32BulkBuf1), (uint8_t *)u32Data, 4);
-
+                /* Byte0 Mode Data Length = 03(Byte1~Byte3)
+                 * Byte1 Medium Type = 00
+                 * Byte2 Device-Specific = 00(WP=0)
+                 * Byte3 Block Descriptor Length = 00
+                 */
+                outp32((USBD_BUF_BASE + g_u32BulkBuf1), 0x3);
                 USBD_SET_PAYLOAD_LEN(EP2, 4);
+                g_u8BulkState = BULK_IN;
                 return;
             }
         }
@@ -850,8 +848,11 @@ void MSC_SetConfig(void)
     USBD_SET_PAYLOAD_LEN(EP3, EP3_MAX_PKT_SIZE);
 
     g_u8BulkState = BULK_CBW;
+    g_u8EP3Ready = 0;
+    g_u32BulkBuf0 = EP3_BUF_BASE;
+    g_u32BulkBuf1 = EP2_BUF_BASE;
 
     DBG_PRINTF("Set config\n");
 }
 
-/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

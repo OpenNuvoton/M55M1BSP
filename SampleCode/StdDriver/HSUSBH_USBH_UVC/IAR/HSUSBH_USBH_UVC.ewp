@@ -228,6 +228,8 @@
                 <option>
                     <name>CCDefines</name>
                     <state>NDEBUG</state>
+                    <state>MAX_ALT_PER_IFACE=12</state>
+                    <state>MAX_EP_PER_IFACE=24</state>
                 </option>
                 <option>
                     <name>CCPreprocFile</name>
@@ -689,7 +691,7 @@
             <data>
                 <extensions></extensions>
                 <cmdline></cmdline>
-                <hasPrio>208</hasPrio>
+                <hasPrio>1</hasPrio>
                 <buildSequence>inputOutputBased</buildSequence>
             </data>
         </settings>
@@ -1363,9 +1365,6 @@
     </group>
     <group>
         <name>User</name>
-        <file>
-            <name>$PROJ_DIR$\..\jpeg.c</name>
-        </file>
         <file>
             <name>$PROJ_DIR$\..\main.c</name>
         </file>

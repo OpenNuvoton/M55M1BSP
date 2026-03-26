@@ -58,7 +58,7 @@ void SYS_Init(void)
     /* Enable UART1 peripheral clock */
     CLK_EnableModuleClock(UART1_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

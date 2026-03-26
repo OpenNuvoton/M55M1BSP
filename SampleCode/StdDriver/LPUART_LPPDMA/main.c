@@ -394,7 +394,7 @@ void SYS_Init(void)
     /* User can use SystemCoreClockUpdate() to calculate PllClock, SystemCoreClock and CycylesPerUs automatically. */
     SystemCoreClockUpdate();
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

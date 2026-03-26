@@ -9,6 +9,11 @@
 #ifndef __USBD_CDC_H__
 #define __USBD_CDC_H__
 
+/* Legacy definitions */
+#if !defined(USING_UART0)
+    #define USING_UART0     1
+#endif
+
 /* Define the vendor id and product id */
 #define USBD_VID        0x0416
 #define USBD_PID        0x50A1

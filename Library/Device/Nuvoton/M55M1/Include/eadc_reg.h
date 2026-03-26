@@ -4,7 +4,7 @@
  * @brief    EADC register definition header file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * @copyright Copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 
 #ifndef __EADC_REG_H__
@@ -582,7 +582,7 @@ typedef struct
      * |        |          |Note: This bit is hardware auto cleared when calibration is done
      * |[1]     |CALIE     |Calibration Interrupt Enable Bit
      * |        |          |0 = Calibration interrupt Disabled.
-     * |        |          |1= Calibration interrupt Enabled.
+     * |        |          |1 = Calibration interrupt Enabled.
      * @var EADC_T::CALSR
      * Offset: 0x118  EADC Calibration Status Register
      * ---------------------------------------------------------------------------------------------------
@@ -1157,51 +1157,6 @@ typedef struct
 
 #define EADC_MCTL1_DBMEN_Pos             (20)                                              /*!< EADC_T::MCTL1: DBMEN Position          */
 #define EADC_MCTL1_DBMEN_Msk             (0x1ul << EADC_MCTL1_DBMEN_Pos)                   /*!< EADC_T::MCTL1: DBMEN Mask              */
-
-#define EADC_DAT19_RESULT_Pos            (0)                                               /*!< EADC_T::DAT19: RESULT Position         */
-#define EADC_DAT19_RESULT_Msk            (0xfffful << EADC_DAT19_RESULT_Pos)               /*!< EADC_T::DAT19: RESULT Mask             */
-
-#define EADC_DAT19_OV_Pos                (16)                                              /*!< EADC_T::DAT19: OV Position             */
-#define EADC_DAT19_OV_Msk                (0x1ul << EADC_DAT19_OV_Pos)                      /*!< EADC_T::DAT19: OV Mask                 */
-
-#define EADC_DAT19_VALID_Pos             (17)                                              /*!< EADC_T::DAT19: VALID Position          */
-#define EADC_DAT19_VALID_Msk             (0x1ul << EADC_DAT19_VALID_Pos)                   /*!< EADC_T::DAT19: VALID Mask              */
-
-#define EADC_SCTL19_CHSEL_Pos            (0)                                               /*!< EADC_T::SCTL19: CHSEL Position         */
-#define EADC_SCTL19_CHSEL_Msk            (0x1ful << EADC_SCTL19_CHSEL_Pos)                 /*!< EADC_T::SCTL19: CHSEL Mask             */
-
-#define EADC_SCTL19_INTPOS_Pos           (5)                                               /*!< EADC_T::SCTL19: INTPOS Position        */
-#define EADC_SCTL19_INTPOS_Msk           (0x1ul << EADC_SCTL19_INTPOS_Pos)                 /*!< EADC_T::SCTL19: INTPOS Mask            */
-
-#define EADC_SCTL19_TRGDLDIV_Pos         (6)                                               /*!< EADC_T::SCTL19: TRGDLDIV Position      */
-#define EADC_SCTL19_TRGDLDIV_Msk         (0x3ul << EADC_SCTL19_TRGDLDIV_Pos)               /*!< EADC_T::SCTL19: TRGDLDIV Mask          */
-
-#define EADC_SCTL19_TRGDLCNT_Pos         (8)                                               /*!< EADC_T::SCTL19: TRGDLCNT Position      */
-#define EADC_SCTL19_TRGDLCNT_Msk         (0xfful << EADC_SCTL19_TRGDLCNT_Pos)              /*!< EADC_T::SCTL19: TRGDLCNT Mask          */
-
-#define EADC_SCTL19_TRGSEL_Pos           (16)                                              /*!< EADC_T::SCTL19: TRGSEL Position        */
-#define EADC_SCTL19_TRGSEL_Msk           (0x3ful << EADC_SCTL19_TRGSEL_Pos)                /*!< EADC_T::SCTL19: TRGSEL Mask            */
-
-#define EADC_SCTL19_EXTREN_Pos           (22)                                              /*!< EADC_T::SCTL19: EXTREN Position        */
-#define EADC_SCTL19_EXTREN_Msk           (0x1ul << EADC_SCTL19_EXTREN_Pos)                 /*!< EADC_T::SCTL19: EXTREN Mask            */
-
-#define EADC_SCTL19_EXTFEN_Pos           (23)                                              /*!< EADC_T::SCTL19: EXTFEN Position        */
-#define EADC_SCTL19_EXTFEN_Msk           (0x1ul << EADC_SCTL19_EXTFEN_Pos)                 /*!< EADC_T::SCTL19: EXTFEN Mask            */
-
-#define EADC_SCTL19_EXTSMPT_Pos          (24)                                              /*!< EADC_T::SCTL19: EXTSMPT Position       */
-#define EADC_SCTL19_EXTSMPT_Msk          (0xfful << EADC_SCTL19_EXTSMPT_Pos)               /*!< EADC_T::SCTL19: EXTSMPT Mask           */
-
-#define EADC_M19CTL1_ALIGN_Pos           (0)                                               /*!< EADC_T::M19CTL1: ALIGN Position        */
-#define EADC_M19CTL1_ALIGN_Msk           (0x1ul << EADC_M19CTL1_ALIGN_Pos)                 /*!< EADC_T::M19CTL1: ALIGN Mask            */
-
-#define EADC_M19CTL1_AVG_Pos             (1)                                               /*!< EADC_T::M19CTL1: AVG Position          */
-#define EADC_M19CTL1_AVG_Msk             (0x1ul << EADC_M19CTL1_AVG_Pos)                   /*!< EADC_T::M19CTL1: AVG Mask              */
-
-#define EADC_M19CTL1_ACU_Pos             (4)                                               /*!< EADC_T::M19CTL1: ACU Position          */
-#define EADC_M19CTL1_ACU_Msk             (0xful << EADC_M19CTL1_ACU_Pos)                   /*!< EADC_T::M19CTL1: ACU Mask              */
-
-#define EADC_M19CTL1_EXTSTDIV_Pos        (16)                                              /*!< EADC_T::M19CTL1: EXTSTDIV Position     */
-#define EADC_M19CTL1_EXTSTDIV_Msk        (0x3ul << EADC_M19CTL1_EXTSTDIV_Pos)              /*!< EADC_T::M19CTL1: EXTSTDIV Mask         */
 
 /** @} EADC_CONST */
 /** @} end of EADC register group */

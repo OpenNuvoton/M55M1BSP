@@ -10,6 +10,26 @@
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 
+/*
+  CMSIS Driver Instance | Hardware Resource
+  :---------------------|:-----------------------
+  Driver_USART0         | UART0
+  Driver_USART1         | UART1
+  Driver_USART2         | UART2
+  Driver_USART3         | UART3
+  Driver_USART4         | UART4
+  Driver_USART5         | UART5
+  Driver_USART6         | UART6
+  Driver_USART7         | UART7
+  Driver_USART8         | UART8
+  Driver_USART9         | UART9
+  Driver_USART10        | SCUART0
+  Driver_USART11        | SCUART1
+  Driver_USART12        | SCUART2
+  Driver_USART13        | LPUART0
+  Driver_USART14        | UUART0
+*/
+
 #ifndef __RTE_DEVICE_USART_H
     #define __RTE_DEVICE_USART_H
 

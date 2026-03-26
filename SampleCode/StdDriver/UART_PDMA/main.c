@@ -384,7 +384,7 @@ void SYS_Init(void)
     /* Enable PDMA0 module clock */
     CLK_EnableModuleClock(PDMA0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

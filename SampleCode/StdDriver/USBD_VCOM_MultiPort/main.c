@@ -1,7 +1,7 @@
 /******************************************************************************
  * @file     main.c
  * @version  V1.00
- * @brief    Demonstrate how to implement a USB dual virtual COM port device.
+ * @brief    Demonstrate how to implement a USB multi virtual COM ports device.
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -248,7 +248,7 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
 #if (VCOM_CNT >= 1)
     SetDebugUartCLK();
 #endif
@@ -1859,7 +1859,7 @@ int32_t main(void)
 
     printf("\n");
     printf("+-------------------------------------------------------------+\n");
-    printf("|        NuMicro USB Virtual COM Dual Port Sample Code        |\n");
+    printf("|        NuMicro USB Virtual COM Multi-Port Sample Code       |\n");
     printf("+-------------------------------------------------------------+\n");
 
     USBD_Open(&gsInfo, VCOM_ClassRequest, NULL);

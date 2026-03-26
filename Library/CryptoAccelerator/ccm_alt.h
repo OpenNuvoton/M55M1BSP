@@ -108,6 +108,8 @@ typedef struct mbedtls_ccm_context
 
     uint8_t *MBEDTLS_PRIVATE(ccm_buf);
     uint8_t *MBEDTLS_PRIVATE(out_buf);
+    //__ALIGNED(4) uint8_t MBEDTLS_PRIVATE(ccm_buf)[MAX_CCM_BUF];
+    //__ALIGNED(4) uint8_t MBEDTLS_PRIVATE(out_buf)[MAX_CCM_BUF + 16];
     uint8_t MBEDTLS_PRIVATE(key)[32];
     uint32_t MBEDTLS_PRIVATE(keybits);
     uint32_t MBEDTLS_PRIVATE(basicOp);

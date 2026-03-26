@@ -1649,7 +1649,7 @@ estatic PT_THREAD(PT_Thread_BASIC(struct pt *pt, evol ESP_t *ESP))
 estatic PT_THREAD(PT_Thread_WIFI(struct pt *pt, evol ESP_t *ESP))
 {
     char str[7], ch = ':', i = 6;
-    uint8_t *ptr;
+    uint8_t *ptr = NULL;
     PT_BEGIN(pt);
 
     if (ESP->ActiveCmd == CMD_WIFI_CWMODE)                  /* Set device mode */

@@ -130,7 +130,7 @@ enum pd_task_timer
     PE_TIMER_VCONN_ON,  //14
 
     /*
-     * This timer is used by the Initiator’s Policy Engine to ensure that
+     * This timer is used by the Initiator's Policy Engine to ensure that
      * a Structured VDM Command request needing a response (e.g. Discover
      * Identity Command request) is responded to within a bounded time of
      * tVDMSenderResponse.

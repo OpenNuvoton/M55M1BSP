@@ -233,7 +233,7 @@ void scan_isochronous_list(void)
                 {
                     p = ITD_PTR(_PFList[frnidx]);     /* find the preceding iTD            */
 
-                    while ((ITD_PTR(p->Next_Link) != itd) && (p != NULL))
+                    while ((p != NULL) && (ITD_PTR(p->Next_Link) != itd))
                     {
                         p = ITD_PTR(p->Next_Link);
                     }
@@ -295,7 +295,7 @@ void scan_isochronous_list(void)
                 {
                     sp = SITD_PTR(_PFList[frnidx]);   /* find the preceding siTD           */
 
-                    while ((SITD_PTR(sp->Next_Link) != sitd) && (sp != NULL))
+                    while ((sp != NULL) && (SITD_PTR(sp->Next_Link) != sitd))
                     {
                         sp = SITD_PTR(sp->Next_Link);
                     }
@@ -845,6 +845,7 @@ int ehci_quit_iso_xfer(UTR_T *utr, EP_INFO_T *ep)
 {
     ISO_EP_T   *iso_ep;
     iTD_T      *itd, *itd_next, *p;
+    siTD_T     *sitd, *sitd_next, *sp;
     uint32_t   frnidx;
     uint32_t   now_frame;
 
@@ -913,7 +914,7 @@ int ehci_quit_iso_xfer(UTR_T *utr, EP_INFO_T *ep)
         {
             p = ITD_PTR(_PFList[frnidx]);   /* find the preceding iTD                     */
 
-            while ((ITD_PTR(p->Next_Link) != itd) && (p != NULL))
+            while ((p != NULL) && (ITD_PTR(p->Next_Link) != itd))
             {
                 p = ITD_PTR(p->Next_Link);
             }
@@ -928,6 +929,7 @@ int ehci_quit_iso_xfer(UTR_T *utr, EP_INFO_T *ep)
             }
         }
 
+        utr->status = USBH_ERR_ABORT;
         utr->td_cnt--;
 
         if (utr->td_cnt == 0)               /* All iTD of this UTR done                   */
@@ -937,11 +939,77 @@ int ehci_quit_iso_xfer(UTR_T *utr, EP_INFO_T *ep)
             if (utr->func)
                 utr->func(utr);
 
-            utr->status = USBH_ERR_ABORT;
+
         }
 
         free_ehci_iTD(itd);
         itd = itd_next;
+    }
+
+    /*------------------------------------------------------------------------------------*/
+    /*   Remove this siTD from period frame list                                          */
+    /*------------------------------------------------------------------------------------*/
+
+    sitd = iso_ep->sitd_list;
+
+    while (sitd != NULL)
+    {
+        sitd_next = sitd->next;
+        utr = sitd->utr;
+        frnidx = sitd->sched_frnidx;
+
+        /* Wait until HC passed through it */
+        while (1)
+        {
+            now_frame = (_ehci->UFINDR >> 3) & 0x3FF;
+
+            if ((now_frame == frnidx) || (((now_frame + 1) % 1024) == frnidx))
+                continue;
+
+            break;
+        }
+
+        /* Remove from Periodic Frame List */
+        if (_PFList[frnidx] == SITD_HLNK_SITD(sitd))
+        {
+            _PFList[frnidx] = sitd->Next_Link;
+        }
+        else
+        {
+            sp = SITD_PTR(_PFList[frnidx]);
+
+            while (sp != NULL)
+            {
+                if (SITD_PTR(sp->Next_Link) == sitd)
+                    break;
+
+                sp = SITD_PTR(sp->Next_Link);
+            }
+
+            if (sp == NULL)
+            {
+                USB_error("ehci_quit_iso_xfer - An siTD lost reference! 0x%x\n", (int)sitd);
+            }
+            else
+            {
+                sp->Next_Link = sitd->Next_Link;
+            }
+        }
+
+        utr->status = USBH_ERR_ABORT;
+        utr->td_cnt--;
+
+        if (utr->td_cnt == 0)
+        {
+            utr->bIsTransferDone = 1;
+
+            if (utr->func)
+                utr->func(utr);
+
+        }
+
+        free_ehci_siTD(sitd);
+        sitd = sitd_next;
     }
 
     /*

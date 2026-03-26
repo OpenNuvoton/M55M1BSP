@@ -51,14 +51,14 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/Device/Nuvoton/M55M1/Source/system_M55M1.c</locationURI>
 		</link>
 		<link>
+			<name>Driver/acmp.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/acmp.c</locationURI>
+		</link>
+		<link>
 			<name>Driver/clk.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/clk.c</locationURI>
-		</link>
-		<link>
-			<name>Driver/retarget.c</name>
-			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/retarget.c</locationURI>
 		</link>
 		<link>
 			<name>Driver/eadc.c</name>
@@ -71,9 +71,14 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/gpio.c</locationURI>
 		</link>
 		<link>
-			<name>Driver/acmp.c</name>
+			<name>Driver/pmc.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/acmp.c</locationURI>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/pmc.c</locationURI>
+		</link>
+		<link>
+			<name>Driver/retarget.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/retarget.c</locationURI>
 		</link>
 		<link>
 			<name>Driver/sys.c</name>

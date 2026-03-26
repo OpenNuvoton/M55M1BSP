@@ -90,7 +90,7 @@ extern "C"
 */
 
 /**
- *    @brief        Get Monitors the Module’s CAN Communication State Flag
+ *    @brief        Get Monitors the Module's CAN Communication State Flag
  *
  *    @param[in]    canfd    The pointer of the specified CANFD module
  *
@@ -99,7 +99,7 @@ extern "C"
  *    @retval       2 Receiver - node is operating as receiver.
  *    @retval       3 Transmitter - node is operating as transmitter.
  *
- *    @details      This macro get the module’s CANFD communication state.
+ *    @details      This macro get the module's CANFD communication state.
  *    \hideinitializer
  */
 #define CANFD_GET_COMMUNICATION_STATE(canfd)    (((canfd)->PSR  & CANFD_PSR_ACT_Msk) >> CANFD_PSR_ACT_Pos)
@@ -292,7 +292,7 @@ typedef struct
     uint16_t          u16RxTimestamp;                  /*! Rx Timestamp(CCCR.UTSU = 0)) */
     uint8_t           u8RxTimestampPointer;            /*! Rx Timestamp Pointer(CCCR.UTSU = 1)) */
     uint8_t           bTimestampCaptured;              /*! Timestamp Captured */
-    uint8_t           u8FilterIndex;                   /*! Filter Index(Index of matching Rx acceptance filter element (in valid if ANMF = ‘1’) */
+    uint8_t           u8FilterIndex;                   /*! Filter Index(Index of matching Rx acceptance filter element (in valid if ANMF = '1') */
     uint8_t           bNonMatchingFrame;               /*! Accepted Non-matching Frame */
     uint8_t           bFDFormat;                       /*! FD Format (1 = FD Format) */
     uint8_t           bBitRateSwitch;                  /*! Bit Rate Switch (1 = with Bit Rate Switch) */

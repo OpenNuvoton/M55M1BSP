@@ -43,13 +43,14 @@ project:
         - TF_LITE_STATIC_MEMORY
         - ARM_MATH_DSP
         - ARM_NPU
-        - CMSIS_NN        
+        - CMSIS_NN
       misc:
         - for-compiler: AC6
           C:
             - -std=c11
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -65,6 +66,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -78,7 +80,7 @@ project:
             - -lCMSIS_NN
             - -lomv
   linker:
-    - script: ../KEIL/M55M1.scf
+    - script: ../Keil/M55M1.scf
       for-compiler: AC6
     - script: ../GCC/M55M1.ld
       for-compiler: GCC
@@ -103,7 +105,7 @@ project:
       files:
         - file: ../NPU/ethosu_cpu_cache.c
         - file: ../NPU/ethosu_npu_init.c
-        - file: ../NPU/ethosu_profiler.c    
+        - file: ../NPU/ethosu_profiler.c
     - group: Driver
       files:
         - file: ../../../../Library/StdDriver/src/uart.c
@@ -121,24 +123,24 @@ project:
         - file: ../../../../Library/StdDriver/src/npu/ethosu_pmu.c
     - group: Device
       files:
-        - file: ../Device/Display/fsa506.c    
-        - file: ../Device/Display/st1633i.c 
+        - file: ../Device/Display/fsa506.c
+        - file: ../Device/Display/st1633i.c
     - group: ImageProcess
       files:
-        - file: ../ImageProcess/Src/ImgConvert.c  
+        - file: ../ImageProcess/Src/ImgConvert.c
     - group: ILI9341
       files:
-        - file: ../ili9341/fonts.c        
+        - file: ../ili9341/fonts.c
     - group: User
       files:
         - file: ../main.cpp
     - group: libs
       files:
         - file: ../../../../ThirdParty/tflite_micro/Lib/tflu.lib
-          for-compiler: AC6    
-        - file: ../../../../Library/CMSIS/Lib/KEIL/cmsis_dsp.lib
-          for-compiler: AC6    
-        - file: ../../../../Library/CMSIS/Lib/KEIL/cmsis_nn.lib
-          for-compiler: AC6    
+          for-compiler: AC6
+        - file: ../../../../Library/CMSIS/Lib/Keil/cmsis_dsp.lib
+          for-compiler: AC6
+        - file: ../../../../Library/CMSIS/Lib/Keil/cmsis_nn.lib
+          for-compiler: AC6
         - file: ../../../../ThirdParty/openmv/omv/Lib/omv.lib
-          for-compiler: AC6    
+          for-compiler: AC6

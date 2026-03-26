@@ -15,7 +15,21 @@
 #define TEST_NUMBER                 (1)       /* page numbers */
 #define TEST_LENGTH                 (256)     /* length */
 
+// *** <<< Use Configuration Wizard in Context Menu >>> ***
+// <o> GPIO Slew Rate Control
+// <0=> Normal <1=> High <2=> Fast0 <3=> Fast1
+#define SlewRateMode                2
+// <c1> Enable QSPI Optimize
+// <i> Use FIFO mechanism and enable PDMA for QSPI RX to maximize throughput.
+#define ENABLE_QSPI_OPTIMIZE
+// </c>
+// *** <<< end of configuration section >>> ***
+
 #define SPI_FLASH_PORT              QSPI0
+
+#ifdef ENABLE_QSPI_OPTIMIZE
+    #define QSPI_RX_PDMA_CH         0
+#endif
 
 /* SPI Flash Operation Code */
 #define OPCODE_DMY                  (0x00U)   /* Dummy data */
@@ -52,8 +66,15 @@
 /*******************************************************************************
  * GLOBAL VARIABLES
  ******************************************************************************/
+#if (NVT_DCACHE_ON == 1)
+/* DCache-line aligned buffer for SPI0 data transfer with PDMA */
+uint8_t g_au8SrcArray[DCACHE_ALIGN_LINE_SIZE(TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+uint8_t g_au8DestArray[DCACHE_ALIGN_LINE_SIZE(TEST_LENGTH)] __attribute__((aligned(DCACHE_LINE_SIZE))) = {0};
+#else
+/* Buffer for SPI0 data transfer with PDMA when DCache is disabled */
 static uint8_t g_au8SrcArray[TEST_LENGTH];
 static uint8_t g_au8DestArray[TEST_LENGTH];
+#endif
 
 void D2D3_SwitchToNormalMode(void);
 void D2D3_SwitchToQuadMode(void);
@@ -68,6 +89,60 @@ void spiFlash_EnableQEBit(void);
 void spiFlash_DisableQEBit(void);
 void SpiFlash_QuadFastRead(uint32_t u32StartAddress, uint8_t *u8DataBuffer);
 void SYS_Init(void);
+
+//------------------------------------------------------------------------------
+#ifdef ENABLE_QSPI_OPTIMIZE
+static void QSPI_PDMA_Rx_Init(QSPI_T *module, uint32_t *u32RxTargetAddr, uint32_t u32TransferCount)
+{
+    /* Reset PDMA module */
+    SYS_ResetModule(SYS_PDMA0RST);
+
+    PDMA_Open(PDMA0, (1 << QSPI_RX_PDMA_CH));
+
+    /* --- RX PDMA  --- */
+    /* Set transfer width (32 bits) and transfer count */
+    PDMA_SetTransferCnt(PDMA0, QSPI_RX_PDMA_CH, PDMA_WIDTH_32, u32TransferCount);
+    //:APB to MEM (QSPI RX RAM)
+    PDMA_SetTransferMode(PDMA0, QSPI_RX_PDMA_CH, PDMA_QSPI0_RX, FALSE, 0);
+
+    /* Set source/destination address and attributes */
+    PDMA_SetTransferAddr(PDMA0, QSPI_RX_PDMA_CH,
+                         (uint32_t) & (module)->RX,
+                         PDMA_SAR_FIX,
+                         (uint32_t)u32RxTargetAddr,
+                         PDMA_DAR_INC);
+    /* Single request type. SPI only support PDMA single request type. */
+    PDMA_SetBurstType(PDMA0, QSPI_RX_PDMA_CH, PDMA_REQ_SINGLE, 0);
+    /* Disable table interrupt */
+    PDMA0->DSCT[QSPI_RX_PDMA_CH].CTL |= PDMA_DSCT_CTL_TBINTDIS_Msk;
+}
+
+static void QSPI_PDMA_Rx_Polling(void)
+{
+    uint32_t u32RetryTimes = SystemCoreClock;
+
+    while (1)
+    {
+        /* Polling status flag. */
+        if (PDMA_GET_TD_STS(PDMA0) & (1 << QSPI_RX_PDMA_CH))
+        {
+            break;
+        }
+
+        u32RetryTimes--;
+
+        if (u32RetryTimes == 0)
+        {
+            break;
+        }
+    }
+
+    PDMA_CLR_TD_FLAG(PDMA0, (1 << QSPI_RX_PDMA_CH));
+
+    /* Disable SPI master's PDMA transfer function */
+    QSPI_DISABLE_RX_PDMA(QSPI0);
+}
+#endif
 
 void D2D3_SwitchToNormalMode(void)
 {
@@ -338,7 +413,27 @@ void spiFlash_DisableQEBit(void)
 
 void SpiFlash_QuadFastRead(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
 {
+#ifndef ENABLE_QSPI_OPTIMIZE
     uint32_t u32Cnt;
+#else
+    uint8_t u8TXS;
+    uint32_t u32TxDataCount = 0;
+
+#if (NVT_DCACHE_ON == 1)
+    /* If DCACHE is enabled, clean the data cache for the destination buffer before writing to it */
+    /* This is to ensure that the data written to the cache is actually written to the memory */
+    SCB_InvalidateDCache_by_Addr(u8DataBuffer, 64);
+#endif
+
+    /* Set transfer width (32 bits) and transfer count */
+    PDMA_SetTransferCnt(PDMA0, QSPI_RX_PDMA_CH, PDMA_WIDTH_32, 64);
+    /* Set source/destination address and attributes */
+    PDMA_SetTransferAddr(PDMA0, QSPI_RX_PDMA_CH,
+                         (uint32_t) & ((QSPI_T *)SPI_FLASH_PORT)->RX,
+                         PDMA_SAR_FIX,
+                         (uint32_t)u8DataBuffer,
+                         PDMA_DAR_INC);
+#endif
 
     // enable quad mode
     spiFlash_EnableQEBit();
@@ -370,19 +465,48 @@ void SpiFlash_QuadFastRead(uint32_t u32StartAddress, uint8_t *u8DataBuffer)
     // clear RX buffer
     QSPI_ClearRxFIFO(SPI_FLASH_PORT);
 
+#ifdef ENABLE_QSPI_OPTIMIZE
+    QSPI_ENABLE_BYTE_REORDER(SPI_FLASH_PORT);
+    QSPI_SET_DATA_WIDTH(SPI_FLASH_PORT, 32);
+
+    /* Enable SPI master PDMA function */
+    QSPI_TRIGGER_RX_PDMA(QSPI0);
+
+    while (u32TxDataCount < 64)
+    {
+        /* Check TX FIFO count. The Maximum FIFO is 8 layers. */
+        u8TXS = (8 - QSPI_GET_TX_FIFO_COUNT(SPI_FLASH_PORT));
+        u32TxDataCount += u8TXS;
+
+        while (u8TXS--)
+        {
+            QSPI_WRITE_TX(SPI_FLASH_PORT, 0xFFFFFFFF);
+        }
+    }
+
+    QSPI_PDMA_Rx_Polling();
+#else
+
     // read data
     for (u32Cnt = 0; u32Cnt < 256; u32Cnt++)
     {
-        QSPI_WRITE_TX(SPI_FLASH_PORT, OPCODE_DMY);
+        QSPI_WRITE_TX(SPI_FLASH_PORT, 0x00);
         wait_QSPI_IS_BUSY(SPI_FLASH_PORT);
         u8DataBuffer[u32Cnt] = (uint8_t)QSPI_READ_RX(SPI_FLASH_PORT);
     }
+
+#endif
 
     // wait tx finish
     wait_QSPI_IS_BUSY(SPI_FLASH_PORT);
 
     // /CS: de-active
     QSPI_SET_SS_HIGH(SPI_FLASH_PORT);
+
+#ifdef ENABLE_QSPI_OPTIMIZE
+    QSPI_DISABLE_BYTE_REORDER(SPI_FLASH_PORT);
+    QSPI_SET_DATA_WIDTH(SPI_FLASH_PORT, 8);
+#endif
 
     QSPI_DISABLE_QUAD_MODE(SPI_FLASH_PORT);
     D2D3_SwitchToNormalMode();
@@ -425,6 +549,11 @@ void SYS_Init(void)
     /* Enable QSPI0 peripheral clock */
     CLK_EnableModuleClock(QSPI0_MODULE);
 
+#ifdef ENABLE_QSPI_OPTIMIZE
+    /* Enable PDMA0 module clock */
+    CLK_EnableModuleClock(PDMA0_MODULE);
+#endif
+
     /* Enable GPIO Module clock */
     CLK_EnableModuleClock(GPIOA_MODULE);
 
@@ -447,8 +576,19 @@ void SYS_Init(void)
     /* Enable QSPI0 clock pin (PA2) schmitt trigger */
     PA->SMTEN |= GPIO_SMTEN_SMTEN2_Msk;
 
+#if (SlewRateMode == 0)
+    /* Enable QSPI0 I/O normal slew rate */
+    GPIO_SetSlewCtl(PA, BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5, GPIO_SLEWCTL_NORMAL);
+#elif (SlewRateMode == 1)
     /* Enable QSPI0 I/O high slew rate */
-    GPIO_SetSlewCtl(PA, 0x3F, GPIO_SLEWCTL_HIGH);
+    GPIO_SetSlewCtl(PA, BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5, GPIO_SLEWCTL_HIGH);
+#elif (SlewRateMode == 2)
+    /* Enable QSPI0 I/O fast0 slew rate */
+    GPIO_SetSlewCtl(PA, BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5, GPIO_SLEWCTL_FAST0);
+#elif (SlewRateMode == 3)
+    /* Enable QSPI0 I/O fast1 slew rate */
+    GPIO_SetSlewCtl(PA, BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5, GPIO_SLEWCTL_FAST1);
+#endif
 }
 
 /* Main */
@@ -477,6 +617,10 @@ int main(void)
 
     /* Disable auto SS function, control SS signal manually. */
     QSPI_DisableAutoSS(SPI_FLASH_PORT);
+
+#ifdef ENABLE_QSPI_OPTIMIZE
+    QSPI_PDMA_Rx_Init(SPI_FLASH_PORT, 0, 0);
+#endif
 
     printf("\n\n");
     printf("+-------------------------------------------------------------------------+\n");

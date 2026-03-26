@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 
 #ifndef STDIN_ECHO
     #define STDIN_ECHO         0    // STDIN: echo to STDOUT
@@ -168,7 +171,7 @@ static void SendChar_ToUART(int ch)
  *
  * @returns   None
  */
-void SendChar(int ch)
+static void SendChar(int ch)
 {
 #if defined(DEBUG_ENABLE_SEMIHOST)
     g_buf[g_buf_len++] = (char)ch;
@@ -211,7 +214,7 @@ void SendChar(int ch)
  *
  * @returns  Get character data from UART debug port or semihost
  */
-char GetChar(void)
+static char GetChar(void)
 {
 #ifdef DEBUG_ENABLE_SEMIHOST
 
@@ -313,7 +316,7 @@ static void usage_fault_track(uint32_t u32CFSR)
 static void bus_fault_track(uint32_t u32CFSR)
 {
     /* Bus Fault Status Register */
-    printf("usage fault: ");
+    printf("bus fault: ");
 
     if (u32CFSR & SCB_CFSR_IBUSERR_Msk)
     {
@@ -543,26 +546,44 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 #endif
 }
 
-/* To be compatible with CMSIS RTE (retargeting files will be copied to the local RTE folder),
-   check the toolchain dependent retarget_XXX.c with __has_include macro to prevent compiler error. */
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
-    #ifndef NVT_ISP_FUNC
-        #if __has_include("../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c")
-            #include "../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c"
-        #endif
-    #else
-        // To reduce code size
-    #endif
-#endif
+// RTE_CMSIS_Compiler_STDOUT
+int stdout_putchar(int ch)
+{
+    SendChar(ch);
+    return 0;
+}
 
-#if defined (__ARMCC_VERSION)
-    #if __has_include("../../Device/Nuvoton/M55M1/Source/ARM/retarget_ARMCC.c")
+// RTE_CMSIS_Compiler_STDIN
+int stdin_getchar(void)
+{
+    return GetChar();
+}
+
+// RTE_CMSIS_Compiler_STDERR
+int stderr_putchar(int ch)
+{
+    SendChar(ch);
+    return 0;
+}
+
+#if !defined (RTE_CMSIS_Compiler_STDOUT) && !defined (RTE_CMSIS_Compiler_STDIN) && \
+    !defined (RTE_CMSIS_Compiler_STDERR) && !defined (RTE_CMSIS_Compiler_TTY)   && \
+    !defined (RTE_CMSIS_Compiler_File_Interface) && !defined (RTE_CMSIS_Compiler_OS_Interface)
+
+    #if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+        #ifndef NVT_ISP_FUNC
+            #include "../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c"
+        #else
+            // To reduce code size
+        #endif
+    #endif
+
+    #if defined (__ARMCC_VERSION)
         #include "../../Device/Nuvoton/M55M1/Source/ARM/retarget_ARMCC.c"
     #endif
-#endif
 
-#if defined (__ICCARM__)
-    #if __has_include("../../Device/Nuvoton/M55M1/Source/IAR/retarget_ICC.c")
+    #if defined (__ICCARM__)
         #include "../../Device/Nuvoton/M55M1/Source/IAR/retarget_ICC.c"
     #endif
+
 #endif

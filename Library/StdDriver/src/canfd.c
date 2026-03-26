@@ -1846,7 +1846,7 @@ uint32_t CANFD_GetStatusFlag(CANFD_T *psCanfd, uint32_t u32IntTypeFlag)
 void CANFD_ClearStatusFlag(CANFD_T *psCanfd, uint32_t u32InterruptFlag)
 {
     /* Write 1 to clear status flag. */
-    psCanfd->IR |= u32InterruptFlag;
+    psCanfd->IR = u32InterruptFlag;
 }
 
 

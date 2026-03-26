@@ -12,7 +12,7 @@
 *****************************************************************************/
 #include <stdio.h>
 #include <string.h>
-
+#include "jpeglib.h"
 #include "NuMicro.h"
 #include "usbh_lib.h"
 #include "usbh_uvc.h"
@@ -30,6 +30,9 @@
 #define IMAGE_DISP_UPSCALE_FACTOR 1
 #define FONT_DISP_UPSCALE_FACTOR 2
 
+#define START_CAPTURE           0x01
+#define END_CAPTURE             0x00
+
 #if 0
     #define DEMO_YUYV_FORMAT
 #else
@@ -38,12 +41,15 @@
 /*----------------------------------------------------------------------
  * USB UVC
  */
-#define SELECT_RES_WIDTH     (320)
-#define SELECT_RES_HEIGHT    (240)
+#define SELECT_RES_WIDTH     (640)
+#define SELECT_RES_HEIGHT    (480)
+#ifdef DEMO_YUYV_FORMAT
+    #define IMAGE_MAX_SIZE       (SELECT_RES_WIDTH * SELECT_RES_HEIGHT * 2)
+#else
+    #define IMAGE_MAX_SIZE       (SELECT_RES_WIDTH * SELECT_RES_HEIGHT)
+#endif
 
-#define IMAGE_MAX_SIZE       (SELECT_RES_WIDTH * SELECT_RES_HEIGHT * 2)
-#define IMAGE_BUFF_CNT       4
-
+#define IMAGE_BUFF_CNT       2
 #define RGB_IMAGE_MAX_SIZE   (SELECT_RES_WIDTH * SELECT_RES_HEIGHT)
 
 enum
@@ -59,22 +65,34 @@ struct img_buff_t
     uint8_t   *buff;
     int       len;
     int       state;
+    int       sti;
 };
 
 
 //YUV or MJEPG Format
 struct img_buff_t  _imgs[IMAGE_BUFF_CNT];
-uint8_t  image_buff_pool[IMAGE_BUFF_CNT][IMAGE_MAX_SIZE] __attribute__((aligned(32)));
+#ifdef DEMO_YUYV_FORMAT
+    //Because the internal SRAM cannot store two 640*480 images.
+    uint8_t  image_buff_pool[IMAGE_BUFF_CNT - 1][IMAGE_MAX_SIZE] __attribute__((aligned(32)));
+#else
+    uint8_t  image_buff_pool[IMAGE_BUFF_CNT][IMAGE_MAX_SIZE] __attribute__((aligned(32)));
+#endif
 volatile int   _idx_usb = 0, _idx_post = 0;
 int   _total_frame_count = 0;
-uint8_t rgb888_image_buff[SELECT_RES_WIDTH * SELECT_RES_HEIGHT * 3]  __attribute__((aligned(32)));
-//RGB565
-uint16_t  rgb_image_buff_pool[RGB_IMAGE_MAX_SIZE] __attribute__((aligned(32)));
 
-extern int kbhit(void);                        /* function in retarget.c                 */
+#define STRIP_LINES          (40)
+#define STRIP_PIXELS         (SELECT_RES_WIDTH * STRIP_LINES)
+#define NUM_STRIPS           (SELECT_RES_HEIGHT / STRIP_LINES)
+
+uint16_t rgb565_strip_buff[STRIP_PIXELS] __attribute__((aligned(32)));
+
+/* Use a full-frame rgb888 buffer (still needed for full-frame decoder) */
+/* This requires enough memory - consider using non-cacheable SRAM */
+static uint8_t rgb888_strip_buff[SELECT_RES_WIDTH * STRIP_LINES * 3] __attribute__((aligned(32)));
 
 static volatile uint32_t s_u32TickCnt;
 
+extern int kbhit(void);                        /* function in retarget.c                 */
 void SysTick_Handler(void);
 void enable_sys_tick(int ticks_per_second);
 
@@ -91,37 +109,20 @@ static inline uint8_t clamp(int value)
     return (uint8_t)value;
 }
 
-//YUV422 (YUYV) to RGB565
 /**
-* @brief Converts a YUV422 (specifically YUYV format) image to RGB565 format.
-*
-* @param yuv_buffer Pointer to the input YUV422 image data.
-*                   The YUYV format stores data as Y0, U, Y1, V for every two pixels.
-* @param rgb_buffer Pointer to the output RGB565 image data.
-* @param width      Width of the image in pixels.
-* @param height     Height of the image in pixels.
-*
-* @details
-* This function iterates through the YUV422 data, taking 4 bytes at a time (Y0, U, Y1, V),
-* which represent two pixels. It then converts these two YUV pixels to two RGB565 pixels.
-* The conversion uses an integer-approximated version of the BT.601 standard formula.
-*
-* YUV to RGB conversion formula (approximated for integer arithmetic):
-*   R = Y + 1.402 * (V - 128)  => R = Y + (179 * (V-128)) >> 7
-*   G = Y - 0.344 * (U - 128) - 0.714 * (V - 128) => G = Y - (44 * (U-128) + 91 * (V-128)) >> 7
-*   B = Y + 1.772 * (U - 128)  => B = Y + (227 * (U-128)) >> 7
-*
-* RGB565 format packs R, G, B components into a 16-bit value:
-*   Bits 15-11: Red (5 bits)
-*   Bits 10-5:  Green (6 bits)
-*   Bits 4-0:   Blue (5 bits)
-*/
-void yuv422_to_rgb565(uint8_t *yuv_buffer, uint16_t *rgb_buffer, int width, int height)
+ * @brief Converts a strip of YUV422 (YUYV) image to RGB565 format.
+ *
+ * @param yuv_buffer Pointer to the start of this strip in the YUV422 image.
+ * @param rgb_buffer Pointer to the output RGB565 strip buffer.
+ * @param width      Width of the image in pixels.
+ * @param lines      Number of lines in this strip.
+ */
+void yuv422_to_rgb565_strip(uint8_t *yuv_buffer, uint16_t *rgb_buffer, int width, int lines)
 {
-    int frame_size = width * height * 2; // YUV422
+    int strip_size = width * lines * 2; /* YUV422: 2 bytes per pixel */
     int rgb_index = 0;
 
-    for (int i = 0; i < frame_size; i += 4)
+    for (int i = 0; i < strip_size; i += 4)
     {
         uint8_t Y0 = yuv_buffer[i];
         uint8_t U  = yuv_buffer[i + 1];
@@ -147,44 +148,22 @@ void yuv422_to_rgb565(uint8_t *yuv_buffer, uint16_t *rgb_buffer, int width, int 
         rgb_buffer[rgb_index++] = ((R & 0xF8) << 8) | ((G & 0xFC) << 3) | (B >> 3);
     }
 }
+
 /**
- * @brief Converts an RGB888 image to RGB565 format.
+ * @brief Converts a strip of RGB888 image to RGB565 format.
  *
- * @param src    Pointer to the input RGB888 image data.
- *               Each pixel is represented by 3 bytes (R, G, B).
- * @param dst    Pointer to the output RGB565 image data.
- *               Each pixel is represented by 2 bytes (16 bits).
- * @param pixels The total number of pixels in the image.
- *
- * @details
- * This function iterates through each pixel of the input RGB888 image,
- * extracts the 8-bit Red, Green, and Blue components, and then
- * converts them to their 5-bit (Red, Blue) and 6-bit (Green)
- * representations for the RGB565 format.
- *
- * RGB888 format:
- *   Red:   8 bits
- *   Green: 8 bits
- *   Blue:  8 bits
- *
- * RGB565 format (16 bits per pixel):
- *   Bits 15-11: Red   (5 bits) - Takes the most significant 5 bits of the 8-bit Red.
- *   Bits 10-5:  Green (6 bits) - Takes the most significant 6 bits of the 8-bit Green.
- *   Bits 4-0:   Blue  (5 bits) - Takes the most significant 5 bits of the 8-bit Blue.
+ * @param src    Pointer to the input RGB888 strip data.
+ * @param dst    Pointer to the output RGB565 strip data.
+ * @param pixels The total number of pixels in this strip.
  */
-void rgb888_to_rgb565(const uint8_t *src, uint16_t *dst, int pixels)
+void rgb888_to_rgb565_strip(const uint8_t *src, uint16_t *dst, int pixels)
 {
     for (int i = 0; i < pixels; i++)
     {
         uint8_t r = src[3 * i + 0];
         uint8_t g = src[3 * i + 1];
         uint8_t b = src[3 * i + 2];
-        /*
-         * RGB565
-         *   R[4:0] (High 5 bit) <- R[7:3]
-         *   G[5:0] (High 6 bit) <- G[7:2]
-         *   B[4:0] (High 5 bit) <- B[7:3]
-         */
+
         uint16_t r5 = (r >> 3) & 0x1F;
         uint16_t g6 = (g >> 2) & 0x3F;
         uint16_t b5 = (b >> 3) & 0x1F;
@@ -192,8 +171,228 @@ void rgb888_to_rgb565(const uint8_t *src, uint16_t *dst, int pixels)
     }
 }
 
-extern int decode_jpeg_to_rgb888(unsigned char *image, unsigned long jpegSize, unsigned char *rgb888Buf);
+/* To eliminate Warning[Pe188]: enumerated type mixed with another type.
+ * TRUE and FALSE are emulation and defined in jmorecfg.h */
+#ifdef TRUE
+    #undef TRUE
+#endif
 
+#ifdef FALSE
+    #undef FALSE
+#endif
+
+/**
+ * @brief  Decode MJPEG frame using libjpeg scanline API, strip-by-strip.
+ *
+ * @param  jpeg_buf    Pointer to the complete MJPEG frame data.
+ * @param  jpeg_size   Size of the MJPEG frame in bytes.
+ *
+ * @return 0 on success, -1 on decode failure.
+ *
+ * @details
+ * Uses jpeg_read_scanlines() to read STRIP_LINES lines at a time,
+ * convert rgb888 -> rgb565, and display each strip immediately.
+ *
+ * Memory usage:
+ *   rgb888_strip_buff: STRIP_LINES * width * 3 bytes (e.g., 40*640*3 = 75KB)
+ *   rgb565_strip_buff: STRIP_LINES * width * 2 bytes (e.g., 40*640*2 = 50KB)
+ *   No full-frame rgb888 buffer needed!
+ *
+ * This replaces the old decode_jpeg_to_rgb888() + full-frame approach.
+ */
+int mjpeg_decode_strip_display(uint8_t *jpeg_buf, int jpeg_size)
+{
+    static struct jpeg_decompress_struct cinfo;
+    static struct jpeg_error_mgr jerr;
+    static int initialized = 0;
+    int      lines_in_strip;
+    int      strip_y_start;
+#if (DISPALY == 1)
+    S_DISP_RECT sDispRect;
+#endif
+
+    /* Check JPEG SOI marker */
+    if (jpeg_size < 2 || jpeg_buf[0] != 0xFF || jpeg_buf[1] != 0xD8)
+    {
+        printf("Invalid JPEG SOI! 0x%x/0x%x/%d\n", jpeg_buf[0], jpeg_buf[1], jpeg_size);
+        return -1;
+    }
+
+#if 0
+    /*--- Setup error handler (must be before jpeg_create_decompress) ---*/
+    cinfo.err = jpeg_std_error(&jerr);
+
+    /*--- Create decompressor and set source ---*/
+    jpeg_create_decompress(&cinfo);
+#else
+
+    if (!initialized)
+    {
+        cinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_decompress(&cinfo);
+        initialized = 1;
+    }
+
+#endif
+    jpeg_mem_src(&cinfo, jpeg_buf, (unsigned long)jpeg_size);
+
+    /*--- Read JPEG header ---*/
+    if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK)
+    {
+        printf("JPEG header error!\n");
+        jpeg_destroy_decompress(&cinfo);
+        return -1;
+    }
+
+    /*--- Configure output: RGB888, no scaling ---*/
+    cinfo.out_color_space = JCS_RGB;
+    cinfo.dct_method = JDCT_IFAST;
+    cinfo.do_fancy_upsampling = FALSE;
+    cinfo.do_block_smoothing = FALSE;
+    cinfo.dither_mode = JDITHER_NONE;
+
+
+    /*--- Start decompression ---*/
+    if (!jpeg_start_decompress(&cinfo))
+    {
+        printf("jpeg_start_decompress failed!\n");
+        jpeg_destroy_decompress(&cinfo);
+        return -1;
+    }
+
+    /*
+     *  Verify dimensions match our expected resolution.
+     *  output_width / output_height are valid after jpeg_start_decompress().
+     */
+    if (cinfo.output_width != SELECT_RES_WIDTH ||
+            cinfo.output_height != SELECT_RES_HEIGHT ||
+            cinfo.output_components != 3)
+    {
+        printf("JPEG dimension mismatch: %dx%d (expected %dx%d)\n",
+               cinfo.output_width, cinfo.output_height,
+               SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+        jpeg_finish_decompress(&cinfo);
+        jpeg_destroy_decompress(&cinfo);
+        return -1;
+    }
+
+    /*
+     *  Read scanlines strip-by-strip.
+     *
+     *  jpeg_read_scanlines() reads up to max_lines scanlines per call.
+     *  cinfo.output_scanline tracks the current row (0 .. output_height-1).
+     *  Each scanline is output_width * output_components bytes of RGB888.
+     */
+    /* Use a static buffer large enough for STRIP_LINES of RGB888 */
+
+    strip_y_start = 0;
+    lines_in_strip = 0;
+
+    while (cinfo.output_scanline < cinfo.output_height)
+    {
+        /*
+         *  Build an array of row pointers for the entire strip.
+         *  jpeg_read_scanlines can read multiple lines at once,
+         *  which is MUCH faster than reading 1 line at a time
+         *  (avoids per-call overhead * 360 calls -> only 9 calls).
+         */
+        int lines_to_read = STRIP_LINES;
+
+        /* Handle last strip if image height is not perfectly divisible */
+        if (cinfo.output_scanline + lines_to_read > cinfo.output_height)
+            lines_to_read = cinfo.output_height - cinfo.output_scanline;
+
+        /* Build row pointer array for this strip */
+        JSAMPROW row_pointers[STRIP_LINES];
+
+        for (int r = 0; r < lines_to_read; r++)
+        {
+            row_pointers[r] = (JSAMPROW)(rgb888_strip_buff +
+                                         (r * SELECT_RES_WIDTH * 3));
+        }
+
+        /* Read all lines of this strip in one call */
+        lines_in_strip = 0;
+
+        while (lines_in_strip < lines_to_read)
+        {
+            JDIMENSION rows_read = jpeg_read_scanlines(
+                                       &cinfo,
+                                       &row_pointers[lines_in_strip],
+                                       lines_to_read - lines_in_strip);
+
+            if (rows_read == 0)
+                break;
+
+            lines_in_strip += (int)rows_read;
+        }
+
+        if (lines_in_strip == 0)
+            break;
+
+        /* Convert RGB888 -> RGB565 for this strip */
+        rgb888_to_rgb565_strip(rgb888_strip_buff,
+                               rgb565_strip_buff,
+                               SELECT_RES_WIDTH * lines_in_strip);
+
+#if (DISPALY == 1)
+        sDispRect.u32TopLeftX     = 0;
+        sDispRect.u32TopLeftY     = strip_y_start * IMAGE_DISP_UPSCALE_FACTOR;
+        sDispRect.u32BottonRightX = (SELECT_RES_WIDTH * IMAGE_DISP_UPSCALE_FACTOR) - 1;
+        sDispRect.u32BottonRightY = ((strip_y_start + lines_in_strip) * IMAGE_DISP_UPSCALE_FACTOR) - 1;
+
+        Display_FillRect((uint16_t *)rgb565_strip_buff,
+                         &sDispRect, IMAGE_DISP_UPSCALE_FACTOR);
+#endif
+
+        strip_y_start += lines_in_strip;
+    }
+
+    /*--- Finish decompression ---*/
+    jpeg_finish_decompress(&cinfo);
+    //jpeg_destroy_decompress(&cinfo);
+
+    return 0;
+}
+
+/**
+ * @brief  Process YUYV frame strip-by-strip to RGB565 and display.
+ *
+ * @param  yuv_buf   Pointer to the complete YUYV frame data.
+ * @param  yuv_size  Size of the YUYV frame in bytes.
+ *
+ * @details
+ * YUYV data is sequential scanline-based, so true strip processing
+ * works perfectly. Each strip is independent - no decoder state needed.
+ */
+void yuyv_strip_display(uint8_t *yuv_buf, int yuv_size)
+{
+#if (DISPALY == 1)
+    S_DISP_RECT sDispRect;
+#endif
+    int strip_yuv_size = SELECT_RES_WIDTH * STRIP_LINES * 2;
+
+    (void)yuv_size;
+
+    for (int strip = 0; strip < NUM_STRIPS; strip++)
+    {
+        int y_start = strip * STRIP_LINES;
+        uint8_t *yuv_src = yuv_buf + (strip * strip_yuv_size);
+
+        /* Convert this strip: YUV422 -> RGB565 */
+        yuv422_to_rgb565_strip(yuv_src, rgb565_strip_buff, SELECT_RES_WIDTH, STRIP_LINES);
+
+#if (DISPALY == 1)
+        /* Display this strip at the correct Y position */
+        sDispRect.u32TopLeftX     = 0;
+        sDispRect.u32TopLeftY     = y_start * IMAGE_DISP_UPSCALE_FACTOR;
+        sDispRect.u32BottonRightX = (SELECT_RES_WIDTH * IMAGE_DISP_UPSCALE_FACTOR) - 1;
+        sDispRect.u32BottonRightY = ((y_start + STRIP_LINES) * IMAGE_DISP_UPSCALE_FACTOR) - 1;
+
+        Display_FillRect((uint16_t *)rgb565_strip_buff, &sDispRect, IMAGE_DISP_UPSCALE_FACTOR);
+#endif
+    }
+}
 
 /**
  * @brief    Check any char input from UART
@@ -359,18 +558,22 @@ void SYS_Init(void)
     /* Lock protected registers */
     SYS_LockReg();
 }
-#if 1
+
 void  init_image_buffers(void)
 {
     int   i;
 
     for (i = 0; i < IMAGE_BUFF_CNT; i++)
     {
-        //nc_ptr
-        //_imgs[i].buff = nc_ptr(&image_buff_pool[i]);
+#ifdef DEMO_YUYV_FORMAT
+        //Because the internal SRAM cannot store two 640*480 images, so reuse image_buff_pool.
+        _imgs[i].buff = image_buff_pool[0];
+#else
         _imgs[i].buff = image_buff_pool[i];
+#endif
         _imgs[i].len = 0;
         _imgs[i].state = IMAGE_BUFF_FREE;
+        _imgs[i].sti = 0;
     }
 
     _idx_usb = 0;
@@ -379,7 +582,7 @@ void  init_image_buffers(void)
 
 int  uvc_rx_callbak(UVC_DEV_T *vdev, uint8_t *data, int len)
 {
-    int  next_idx;
+    int  next_idx = 0;
 
     NVT_UNUSED(data);
 
@@ -401,7 +604,7 @@ int  uvc_rx_callbak(UVC_DEV_T *vdev, uint8_t *data, int len)
     {
         _imgs[_idx_usb].state = IMAGE_BUFF_READY;   /* mark the current buffer as ready for decode/display */
         _imgs[_idx_usb].len   = len;                /* length of this newly received image   */
-
+        _imgs[_idx_usb].sti   = vdev->img_sti;
         /* proceed to the next image buffer */
         _idx_usb = next_idx;
         _imgs[_idx_usb].state = IMAGE_BUFF_USB;     /* mark the next image as used by USB    */
@@ -412,7 +615,7 @@ int  uvc_rx_callbak(UVC_DEV_T *vdev, uint8_t *data, int len)
 
     return 0;
 }
-#endif
+
 void show_menu()
 {
     printf("\n\n+---------------------------------------------+\n");
@@ -420,9 +623,9 @@ void show_menu()
     printf("+---------------------------------------------+\n");
     printf("|  [1] Stop video streaming                   |\n");
     printf("|  [2] Start video streaming                  |\n");
+    printf("|  [3] Start video Still Image Capture        |\n");
     printf("+---------------------------------------------+\n\n");
     usbh_memory_used();
-    //printf("UVC is_streaming = %d,\n",cur_vdev->is_streaming);
 }
 
 UVC_DEV_T *uvc_conn_check(UVC_DEV_T *cur_vdev)
@@ -468,6 +671,18 @@ UVC_DEV_T *uvc_conn_check(UVC_DEV_T *cur_vdev)
 
         for (i = 0; ; i++)
         {
+            ret = usbh_get_video_still_format(cur_vdev, i, &format, &width, &height);
+
+            if (ret != 0)
+                break;
+
+            printf("[Still][%d] %s, %d x %d\n", i, (format == UVC_FORMAT_MJPEG ? "MJPEG" : "YUYV"), width, height);
+        }
+
+        printf("\n");
+
+        for (i = 0; ; i++)
+        {
             ret = usbh_get_video_format(cur_vdev, i, &format, &width, &height);
 
             if (ret != 0)
@@ -478,9 +693,11 @@ UVC_DEV_T *uvc_conn_check(UVC_DEV_T *cur_vdev)
 
         printf("\n\n");
 #ifdef DEMO_YUYV_FORMAT
-        ret = usbh_set_video_format(cur_vdev, UVC_FORMAT_YUY2, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+        ret = usbh_set_video_format(vdev, UVC_FORMAT_YUY2, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+        ret = usbh_set_video_still_format(vdev, UVC_FORMAT_YUY2, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
 #else
-        ret = usbh_set_video_format(cur_vdev, UVC_FORMAT_MJPEG, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+        ret = usbh_set_video_format(vdev, UVC_FORMAT_MJPEG, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+        ret = usbh_set_video_still_format(vdev, UVC_FORMAT_MJPEG, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
 #endif
 
         if (ret != 0)
@@ -494,25 +711,24 @@ UVC_DEV_T *uvc_conn_check(UVC_DEV_T *cur_vdev)
         usbh_uvc_set_video_buffer(vdev, _imgs[_idx_usb].buff, IMAGE_MAX_SIZE);
         _imgs[_idx_usb].state = IMAGE_BUFF_USB;
 
-        ret = usbh_uvc_start_streaming(cur_vdev, uvc_rx_callbak);
 
-        if (ret != 0)
+        ret = usbh_uvc_start_streaming(vdev, uvc_rx_callbak);
+
+        if (ret < 0)
         {
-            printf("usbh_uvc_start_streaming failed! - %d\n", ret);
-            printf("Please re-connect UVC device...\n");
+            printf("Start still straming faill..\n");
         }
-        else
-            show_menu();
 
+        show_menu();
     }
 
     return cur_vdev;
 }
 
+
 int32_t main(void)
 {
     UVC_DEV_T       *vdev = NULL;
-    S_DISP_RECT     sDispRect;
     int             command, ret;
 
     SYS_Init();                        /* Init System, IP clock and multi-function I/O */
@@ -584,28 +800,134 @@ int32_t main(void)
                     if (ret != 0)
                         printf("\nusbh_uvc_stop_streaming failed! - %d\n", ret);
 
+                    init_image_buffers();
+
+                    //wait UVC Device command effective.
+
+                    /* assign the first image buffer to receive the image from USB */
+                    usbh_uvc_set_video_buffer(vdev, _imgs[_idx_usb].buff, IMAGE_MAX_SIZE);
+                    _imgs[_idx_usb].state = IMAGE_BUFF_USB;
+
+                    Display_ClearLCD(C_WHITE);
                     break;
 
                 case '2':
+                    if (vdev->is_streaming)
+                    {
+                        printf("uvc is streaming..\n");
+                        break;
+                    }
+
 #ifdef DEMO_YUYV_FORMAT
                     ret = usbh_set_video_format(vdev, UVC_FORMAT_YUY2, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+                    ret = usbh_set_video_still_format(vdev, UVC_FORMAT_YUY2, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
 #else
                     ret = usbh_set_video_format(vdev, UVC_FORMAT_MJPEG, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+                    ret = usbh_set_video_still_format(vdev, UVC_FORMAT_MJPEG, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
 #endif
-
-                    if (ret != 0)
-                        printf("usbh_set_video_format failed! - 0x%x\n", ret);
-
-                    printf("Start vdev->is_streaming:%d\n", vdev->is_streaming);
-
-                    if (vdev->is_streaming)
-                        break;
-
                     ret = usbh_uvc_start_streaming(vdev, uvc_rx_callbak);
 
                     if (ret != 0)
                         printf("\nusbh_uvc_start_streaming failed! - %d\n", ret);
 
+                    break;
+
+                case '3':
+                    printf("Triggre Still Image Test...\n");
+
+                    //Clear LCD to WHITE;
+                    Display_ClearLCD(C_WHITE);
+
+                    //stop video streaming if video is streaming.
+                    if (vdev->is_streaming)
+                    {
+                        ret = usbh_uvc_stop_streaming(vdev);
+
+                        if (ret != 0)
+                            printf("\nusbh_uvc_stop_streaming failed! - %d\n", ret);
+                    }
+
+                    //Init Image buffer..
+                    init_image_buffers();
+                    delay_us(20 * 1000); //wait 20ms
+                    /* assign the first image buffer to receive the image from USB */
+                    usbh_uvc_set_video_buffer(vdev, _imgs[_idx_usb].buff, IMAGE_MAX_SIZE);
+                    _imgs[_idx_usb].state = IMAGE_BUFF_USB;
+
+#ifdef DEMO_YUYV_FORMAT
+                    ret = usbh_set_video_format(vdev, UVC_FORMAT_YUY2, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+                    ret = usbh_set_video_still_format(vdev, UVC_FORMAT_YUY2, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+#else
+                    ret = usbh_set_video_format(vdev, UVC_FORMAT_MJPEG, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+                    ret = usbh_set_video_still_format(vdev, UVC_FORMAT_MJPEG, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+#endif
+
+                    if (ret != 0)
+                    {
+                        printf("usbh_set_video_format failed! - 0x%x\n", ret);
+                    }
+
+                    delay_us(20 * 1000); //wait 20ms
+
+                    ret = usbh_uvc_still_image_trigger_control(vdev, START_CAPTURE);
+
+                    if (ret < 0)
+                    {
+                        printf("still image trigger fail ..\n");
+                    }
+
+                    delay_us(20 * 1000); //wait 20ms
+
+                    ret = usbh_uvc_start_streaming(vdev, uvc_rx_callbak);
+
+                    if (ret < 0)
+                    {
+                        printf("Start still straming faill..\n");
+                    }
+
+                    while (_imgs[_idx_post].sti != 1)
+                    {
+                        usbh_uvc_still_image_trigger_control(vdev, START_CAPTURE);
+                        delay_us(200 * 1000); //wait
+
+                        if (_imgs[_idx_post].state == IMAGE_BUFF_READY)
+                        {
+                            if (_imgs[_idx_post].sti == 1)
+                            {
+#ifdef DEMO_YUYV_FORMAT
+                                /* YUYV: true strip processing - no full-frame RGB buffer needed */
+                                yuyv_strip_display(_imgs[_idx_post].buff, _imgs[_idx_post].len);
+#else
+                                mjpeg_decode_strip_display(_imgs[_idx_post].buff, _imgs[_idx_post].len);
+#endif
+
+                                _imgs[_idx_post].state = IMAGE_BUFF_FREE;
+                                _idx_post = (_idx_post + 1) % IMAGE_BUFF_CNT;
+
+                                break;
+                            }
+
+                            _imgs[_idx_post].state = IMAGE_BUFF_FREE;
+                            _idx_post = (_idx_post + 1) % IMAGE_BUFF_CNT;
+                        }
+
+                    };
+
+                    delay_us(20 * 1000); //wait 20ms
+
+                    //Stop Video Streaming.
+                    ret = usbh_uvc_stop_streaming(vdev);
+
+                    if (ret != 0)
+                    {
+                        printf("\nusbh_uvc_stop_streaming failed! - %d\n", ret);
+                    }
+
+                    delay_us(20 * 1000); //wait 20ms
+
+                    usbh_uvc_still_image_trigger_control(vdev, END_CAPTURE);
+                    printf("Test Done\n");
+                    printf("Please reopen Video Streaming command[2]..\n");
                     break;
             }
         }
@@ -613,38 +935,17 @@ int32_t main(void)
         if (_imgs[_idx_post].state == IMAGE_BUFF_READY)
         {
 #if (DISPALY == 1)
-
-#ifdef  DEMO_YUYV_FORMAT
-            //YUV422 to rgb565
-            yuv422_to_rgb565((uint8_t *)_imgs[_idx_post].buff, (uint16_t *)rgb_image_buff_pool, SELECT_RES_WIDTH, SELECT_RES_HEIGHT);
+#ifdef DEMO_YUYV_FORMAT
+            /* YUYV: true strip processing - no full-frame RGB buffer needed */
+            yuyv_strip_display(_imgs[_idx_post].buff, _imgs[_idx_post].len);
 #else
-
-            //Check it is JPEG File and MJPEG Decode -> rgb888
-            if (decode_jpeg_to_rgb888((uint8_t *)_imgs[_idx_post].buff, IMAGE_MAX_SIZE, rgb888_image_buff) == TRUE)
-            {
-                //rgb888 -> rgb565
-                rgb888_to_rgb565(rgb888_image_buff, rgb_image_buff_pool, RGB_IMAGE_MAX_SIZE);
-            }
-            else
-            {
-
-                goto Next_Image;
-            }
-
+            /* MJPEG: strip decode + display */
+            mjpeg_decode_strip_display(_imgs[_idx_post].buff, _imgs[_idx_post].len);
 #endif
-            //Display image on LCD
-            sDispRect.u32TopLeftX = 0;
-            sDispRect.u32TopLeftY = 0;
-            sDispRect.u32BottonRightX = ((SELECT_RES_WIDTH * IMAGE_DISP_UPSCALE_FACTOR) - 1);
-            sDispRect.u32BottonRightY = ((SELECT_RES_HEIGHT * IMAGE_DISP_UPSCALE_FACTOR) - 1);
-
-            Display_FillRect((uint16_t *)rgb_image_buff_pool, &sDispRect, IMAGE_DISP_UPSCALE_FACTOR);
-#endif
-#ifndef  DEMO_YUYV_FORMAT
-Next_Image:
 #endif
             _imgs[_idx_post].state = IMAGE_BUFF_POST;
             _imgs[_idx_post].state = IMAGE_BUFF_FREE;
+            _imgs[_idx_post].sti = 0;
             _idx_post = (_idx_post + 1) % IMAGE_BUFF_CNT;
         }
 
@@ -657,8 +958,5 @@ Next_Image:
             t_last = get_ticks();
             cnt_last = _total_frame_count;
         }
-
-
-
     }
 }

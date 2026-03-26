@@ -27,6 +27,31 @@
 
 typedef struct
 {
+    union
+    {
+        __I uint32_t CHAR1;             /*!< I3C Target Device Characteristic 1 Register */
+        __I uint32_t PIDMSB;            /*!< The MSB 32-bit Value of Provisional ID */
+    };
+    union
+    {
+        __I uint32_t CHAR2;             /*!< I3C Target Device Characteristic 2 Register */
+        __I uint32_t PIDLSB;            /*!< The LSB 16-bit Value of Provisional ID */
+    };
+    union
+    {
+        __I uint32_t CHAR3;             /*!< I3C Target Device Characteristic 3 Register */
+        __I uint32_t BCRDCR;            /*!< Bus Characteristic and Device Characteristic Value */
+    };
+    union
+    {
+        __I uint32_t CHAR4;             /*!< I3C Target Device Characteristic 4 Register */
+        __I uint32_t DADDR;             /*!< Dynamic Address */
+    };
+} TGTCHAR_T;
+
+
+typedef struct
+{
     __IO uint32_t DEVCTL;               /*!< [0x0000] I3C Device Control Register */
     __IO uint32_t DEVADDR;              /*!< [0x0004] I3C Device Address Register */
     /// @cond HIDDEN_SYMBOLS
@@ -98,23 +123,11 @@ typedef struct
     /// @cond HIDDEN_SYMBOLS
     __I  uint32_t RESERVE8[72];
     /// @endcond //HIDDEN_SYMBOLS
-    __I  uint32_t DEV1CH[4];            /*!< [0x0200 ~ 0x020c] Device Characteristic Table Location of Device1 Register */
-    __I  uint32_t DEV2CH[4];            /*!< [0x0210 ~ 0x021c] Device Characteristic Table Location of Device2 Register */
-    __I  uint32_t DEV3CH[4];            /*!< [0x0220 ~ 0x022c] Device Characteristic Table Location of Device3 Register */
-    __I  uint32_t DEV4CH[4];            /*!< [0x0230 ~ 0x023c] Device Characteristic Table Location of Device4 Register */
-    __I  uint32_t DEV5CH[4];            /*!< [0x0240 ~ 0x024c] Device Characteristic Table Location of Device5 Register */
-    __I  uint32_t DEV6CH[4];            /*!< [0x0250 ~ 0x025c] Device Characteristic Table Location of Device6 Register */
-    __I  uint32_t DEV7CH[4];            /*!< [0x0260 ~ 0x026c] Device Characteristic Table Location of Device7 Register */
+    TGTCHAR_T     TGTCHAR[7];           /*!< [0x0200] ~ [0x026c] I3C Target Device 1 ~ 7 Characteristic Register */
     /// @cond HIDDEN_SYMBOLS
     __I  uint32_t RESERVE9[4];
     /// @endcond //HIDDEN_SYMBOLS
-    __IO uint32_t DEV1ADR;              /*!< [0x0280] Device Address Table Location of Device1 Register */
-    __IO uint32_t DEV2ADR;              /*!< [0x0284] Device Address Table Location of Device2 Register */
-    __IO uint32_t DEV3ADR;              /*!< [0x0288] Device Address Table Location of Device3 Register */
-    __IO uint32_t DEV4ADR;              /*!< [0x028c] Device Address Table Location of Device4 Register */
-    __IO uint32_t DEV5ADR;              /*!< [0x0290] Device Address Table Location of Device5 Register */
-    __IO uint32_t DEV6ADR;              /*!< [0x0294] Device Address Table Location of Device6 Register */
-    __IO uint32_t DEV7ADR;              /*!< [0x0298] Device Address Table Location of Device7 Register */
+    __IO uint32_t DEVADR[7];            /*!< [0x0280] ~ [0x0298] I3C Device Address Table Location of Device1 ~ 7 */
 } I3C_T;
 
 /**
@@ -289,7 +302,7 @@ typedef struct
 #define I3C_RSTCTL_RXRST_Msk            (1UL << I3C_RSTCTL_RXRST_Pos)
 
 #define I3C_RSTCTL_IBIQRST_Pos          (5U)
-#define I3C_RSTCTL_IBIQRXRST_Msk        (1UL << I3C_RSTCTL_IBIQRST_Pos)
+#define I3C_RSTCTL_IBIQRST_Msk          (1UL << I3C_RSTCTL_IBIQRST_Pos)
 
 #define I3C_SLVEVNTS_SIREN_Pos          (0U)
 #define I3C_SLVEVNTS_SIREN_Msk          (1UL << I3C_SLVEVNTS_SIREN_Pos)
@@ -423,6 +436,10 @@ typedef struct
 #define I3C_INTEN_DEFSLV_Pos            (10U)
 #define I3C_INTEN_DEFSLV_Msk            (1UL << I3C_INTEN_DEFSLV_Pos)
 
+/* I3C 1.1.1 Basic Naming */
+#define I3C_INTEN_DEFTGTS_Pos           (I3C_INTEN_DEFSLV_Pos)
+#define I3C_INTEN_DEFTGTS_Msk           (I3C_INTEN_DEFSLV_Msk)
+
 #define I3C_INTEN_READREQ_Pos           (11U)
 #define I3C_INTEN_READREQ_Msk           (1UL << I3C_INTEN_READREQ_Pos)
 
@@ -531,8 +548,8 @@ typedef struct
 #define I3C_SLVPID_PARTID_Pos           (16U)
 #define I3C_SLVPID_PARTID_Msk           (0xFFFFUL << I3C_SLVPID_PARTID_Pos)
 
-#define I3C_SLVCHAR_MAXDSLIM_Pos        (0U)
-#define I3C_SLVCHAR_MAXDSLIM_Msk        (1UL << I3C_SLVCHAR_MAXDSLIM_Pos)
+#define I3C_SLVCHAR_MXDSLIM_Pos         (0U)
+#define I3C_SLVCHAR_MXDSLIM_Msk         (1UL << I3C_SLVCHAR_MXDSLIM_Pos)
 
 #define I3C_SLVCHAR_IBICAP_Pos          (1U)
 #define I3C_SLVCHAR_IBICAP_Msk          (1UL << I3C_SLVCHAR_IBICAP_Pos)
@@ -612,6 +629,9 @@ typedef struct
 #define I3C_DEVCTLE_OPERMODE_Pos        (0U)
 #define I3C_DEVCTLE_OPERMODE_Msk        (0x3UL << I3C_DEVCTLE_OPERMODE_Pos)
 
+#define I3C_DEVCTLE_MRACKCTL_Pos        (3U)
+#define I3C_DEVCTLE_MRACKCTL_Msk        (0x1UL << I3C_DEVCTLE_MRACKCTL_Pos)
+
 #define I3C_SCLOD_ODLCNT_Pos            (0U)
 #define I3C_SCLOD_ODLCNT_Msk            (0xFFUL << I3C_SCLOD_ODLCNT_Pos)
 
@@ -657,6 +677,9 @@ typedef struct
 #define I3C_SDAHOLD_TXHOLD_Pos          (16U)
 #define I3C_SDAHOLD_TXHOLD_Msk          (0x7UL << I3C_SDAHOLD_TXHOLD_Pos)
 
+#define I3C_BUSFAT_FREETC_Pos           (0U)
+#define I3C_BUSFAT_FREETC_Msk           (0xFFFFUL << I3C_BUSFAT_FREETC_Pos)
+
 #define I3C_BUSFAT_AVAILTC_Pos          (16U)
 #define I3C_BUSFAT_AVAILTC_Msk          (0xFFFFUL << I3C_BUSFAT_AVAILTC_Pos)
 
@@ -666,14 +689,14 @@ typedef struct
 #define I3C_SCLLOW_LOWTIMER_Pos         (0U)
 #define I3C_SCLLOW_LOWTIMER_Msk         (0xFFFFFFFFUL << I3C_SCLLOW_LOWTIMER_Pos)
 
-#define I3C_DEVADR_SADDR_Pos            (0U)
-#define I3C_DEVADR_SADDR_Msk            (0x7FUL << I3C_DEVADR_SADDR_Pos)
+#define I3C_DEVADR_STADR_Pos            (0U)
+#define I3C_DEVADR_STADR_Msk            (0x7FUL << I3C_DEVADR_STADR_Pos)
 
 #define I3C_DEVADR_IBIPECEN_Pos         (11U)
 #define I3C_DEVADR_IBIPECEN_Msk         (0x1UL << I3C_DEVADR_IBIPECEN_Pos)
 
-#define I3C_DEVADR_IBIWDAT_Pos          (12U)
-#define I3C_DEVADR_IBIWDAT_Msk          (0x1UL << I3C_DEVADR_IBIWDAT_Pos)
+#define I3C_DEVADR_IBIWDATA_Pos         (12U)
+#define I3C_DEVADR_IBIWDATA_Msk         (0x1UL << I3C_DEVADR_IBIWDATA_Pos)
 
 #define I3C_DEVADR_SIRREJECT_Pos        (13U)
 #define I3C_DEVADR_SIRREJECT_Msk        (0x1UL << I3C_DEVADR_SIRREJECT_Pos)
@@ -681,14 +704,29 @@ typedef struct
 #define I3C_DEVADR_MRREJECT_Pos         (14U)
 #define I3C_DEVADR_MRREJECT_Msk         (0x1UL << I3C_DEVADR_MRREJECT_Pos)
 
-#define I3C_DEVADR_DADDR_Pos            (16U)
-#define I3C_DEVADR_DADDR_Msk            (0xFFUL << I3C_DEVADR_DADDR_Pos)
+#define I3C_DEVADR_DADR_Pos             (16U)
+#define I3C_DEVADR_DADR_Msk             (0xFFUL << I3C_DEVADR_DADR_Pos)
 
 #define I3C_DEVADR_NAKRCNT_Pos          (29U)
 #define I3C_DEVADR_NAKRCNT_Msk          (0x3UL << I3C_DEVADR_NAKRCNT_Pos)
 
 #define I3C_DEVADR_DEVICE_Pos           (31U)
 #define I3C_DEVADR_DEVICE_Msk           (0x1UL << I3C_DEVADR_DEVICE_Pos)
+
+#define I3C_TGTCHAR1_PIDMSB_Pos         (0U)
+#define I3C_TGTCHAR1_PIDMSB_Msk         (0xFFFFFFFFUL << I3C_TGTCHAR1_PIDMSB_Pos)
+
+#define I3C_TGTCHAR2_PIDLSB_Pos         (0U)
+#define I3C_TGTCHAR2_PIDLSB_Msk         (0xFFFFUL << I3C_TGTCHAR2_PIDLSB_Pos)
+
+#define I3C_TGTCHAR3_DCR_Pos            (0U)
+#define I3C_TGTCHAR3_DCR_Msk            (0xFFUL << I3C_TGTCHAR3_DCR_Pos)
+
+#define I3C_TGTCHAR3_BCR_Pos            (8U)
+#define I3C_TGTCHAR3_BCR_Msk            (0xFFUL << I3C_TGTCHAR3_BCR_Pos)
+
+#define I3C_TGTCHAR4_DADDR_Pos          (0U)
+#define I3C_TGTCHAR4_DADDR_Msk          (0xFFUL << I3C_TGTCHAR4_DADDR_Pos)
 
 /** @} I3C_CONST */
 /** @} end of I3C register group */

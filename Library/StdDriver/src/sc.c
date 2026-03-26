@@ -38,7 +38,7 @@ static uint32_t g_u32CardStateIgnore[SC_INTERFACE_NUM] = {0UL, 0UL, 0UL};
   *
   * @details    This function is used to check if specified smartcard slot is presented.
   */
-uint32_t SC_IsCardInserted(SC_T *sc)
+uint32_t SC_IsCardInserted(const SC_T *sc)
 {
     uint32_t u32Ret;
 
@@ -84,7 +84,10 @@ void SC_ClearFIFO(SC_T *sc)
 
     while ((sc->ALTCTL & SC_ALTCTL_SYNC_Msk) == SC_ALTCTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0) break;
+        if (--u32TimeOutCount == 0)
+        {
+            break;
+        }
     }
 
     sc->ALTCTL |= (SC_ALTCTL_TXRST_Msk | SC_ALTCTL_RXRST_Msk);
@@ -108,7 +111,10 @@ void SC_Close(SC_T *sc)
 
     while ((sc->PINCTL & SC_PINCTL_SYNC_Msk) == SC_PINCTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0UL) break;
+        if (--u32TimeOutCount == 0UL)
+        {
+            break;
+        }
     }
 
     sc->PINCTL = 0UL;
@@ -118,7 +124,10 @@ void SC_Close(SC_T *sc)
 
     while ((sc->CTL & SC_CTL_SYNC_Msk) == SC_CTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0UL) break;
+        if (--u32TimeOutCount == 0UL)
+        {
+            break;
+        }
     }
 
     sc->CTL = 0UL;
@@ -141,7 +150,9 @@ void SC_Close(SC_T *sc)
   */
 void SC_Open(SC_T *sc, uint32_t u32CardDet, uint32_t u32PWR)
 {
-    uint32_t u32Reg = 0UL, u32Intf, u32TimeOutCount;
+    uint32_t u32Reg = 0UL;
+    uint32_t u32Intf;
+    uint32_t u32TimeOutCount;
 
     if (sc == SC0)
     {
@@ -171,7 +182,10 @@ void SC_Open(SC_T *sc, uint32_t u32CardDet, uint32_t u32PWR)
 
     while ((sc->CTL & SC_CTL_SYNC_Msk) == SC_CTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0UL) break;
+        if (--u32TimeOutCount == 0UL)
+        {
+            break;
+        }
     }
 
     sc->CTL = SC_CTL_SCEN_Msk | SC_CTL_TMRSEL_Msk | u32Reg;
@@ -187,7 +201,8 @@ void SC_Open(SC_T *sc, uint32_t u32CardDet, uint32_t u32PWR)
   */
 void SC_ResetReader(SC_T *sc)
 {
-    uint32_t u32Intf, u32TimeOutCount;
+    uint32_t u32Intf;
+    uint32_t u32TimeOutCount;
 
     if (sc == SC0)
     {
@@ -209,7 +224,10 @@ void SC_ResetReader(SC_T *sc)
 
     while ((sc->CTL & SC_CTL_SYNC_Msk) == SC_CTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0) break;
+        if (--u32TimeOutCount == 0)
+        {
+            break;
+        }
     }
 
     sc->CTL &= ~(SC_CTL_RXTRGLV_Msk |
@@ -222,7 +240,10 @@ void SC_ResetReader(SC_T *sc)
 
     while ((sc->CTL & SC_CTL_SYNC_Msk) == SC_CTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0) break;
+        if (--u32TimeOutCount == 0)
+        {
+            break;
+        }
     }
 
     /* Enable auto convention, and all three smartcard internal timers */
@@ -282,9 +303,10 @@ void SC_SetBlockGuardTime(SC_T *sc, uint32_t u32BGT)
   */
 void SC_SetCharGuardTime(SC_T *sc, uint32_t u32CGT)
 {
+    uint32_t u32CGT_tamp = u32CGT;
     /* CGT is "START bit" + "8-bits" + "Parity bit" + "STOP bit(s)" + "EGT counts" */
-    u32CGT -= ((sc->CTL & SC_CTL_NSB_Msk) == SC_CTL_NSB_Msk) ? 11UL : 12UL;
-    sc->EGT = u32CGT;
+    u32CGT_tamp -= ((sc->CTL & SC_CTL_NSB_Msk) == SC_CTL_NSB_Msk) ? 11UL : 12UL;
+    sc->EGT = u32CGT_tamp;
 }
 
 /**
@@ -301,7 +323,10 @@ void SC_StopAllTimer(SC_T *sc)
 
     while ((sc->ALTCTL & SC_ALTCTL_SYNC_Msk) == SC_ALTCTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0) break;
+        if (--u32TimeOutCount == 0)
+        {
+            break;
+        }
     }
 
     sc->ALTCTL &= ~(SC_ALTCTL_CNTEN0_Msk | SC_ALTCTL_CNTEN1_Msk | SC_ALTCTL_CNTEN2_Msk);
@@ -339,7 +364,10 @@ void SC_StartTimer(SC_T *sc, uint32_t u32TimerNum, uint32_t u32Mode, uint32_t u3
 
     while ((sc->ALTCTL & SC_ALTCTL_SYNC_Msk) == SC_ALTCTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0UL) break;
+        if (--u32TimeOutCount == 0UL)
+        {
+            break;
+        }
     }
 
     if (u32TimerNum == 0UL)
@@ -348,7 +376,10 @@ void SC_StartTimer(SC_T *sc, uint32_t u32TimerNum, uint32_t u32Mode, uint32_t u3
 
         while ((sc->TMRCTL0 & SC_TMRCTL0_SYNC_Msk) == SC_TMRCTL0_SYNC_Msk)
         {
-            if (--u32TimeOutCount == 0UL) break;
+            if (--u32TimeOutCount == 0UL)
+            {
+                break;
+            }
         }
 
         sc->TMRCTL0 = u32Reg;
@@ -360,7 +391,10 @@ void SC_StartTimer(SC_T *sc, uint32_t u32TimerNum, uint32_t u32Mode, uint32_t u3
 
         while ((sc->TMRCTL1 & SC_TMRCTL1_SYNC_Msk) == SC_TMRCTL1_SYNC_Msk)
         {
-            if (--u32TimeOutCount == 0UL) break;
+            if (--u32TimeOutCount == 0UL)
+            {
+                break;
+            }
         }
 
         sc->TMRCTL1 = u32Reg;
@@ -372,7 +406,10 @@ void SC_StartTimer(SC_T *sc, uint32_t u32TimerNum, uint32_t u32Mode, uint32_t u3
 
         while ((sc->TMRCTL2 & SC_TMRCTL2_SYNC_Msk) == SC_TMRCTL2_SYNC_Msk)
         {
-            if (--u32TimeOutCount == 0UL) break;
+            if (--u32TimeOutCount == 0UL)
+            {
+                break;
+            }
         }
 
         sc->TMRCTL2 = u32Reg;
@@ -395,7 +432,10 @@ void SC_StopTimer(SC_T *sc, uint32_t u32TimerNum)
 
     while (sc->ALTCTL & SC_ALTCTL_SYNC_Msk)
     {
-        if (--u32TimeOutCount == 0UL) break;
+        if (--u32TimeOutCount == 0UL)
+        {
+            break;
+        }
     }
 
     if (u32TimerNum == 0UL)     /* timer 0 */
@@ -421,9 +461,12 @@ void SC_StopTimer(SC_T *sc, uint32_t u32TimerNum)
   *
   * @details    This function is used to get specified smartcard module clock frequency in kHz.
   */
-uint32_t SC_GetInterfaceClock(SC_T *sc)
+uint32_t SC_GetInterfaceClock(const SC_T *sc)
 {
-    uint32_t u32ClkSrc = 0, u32Num = 0, u32ClkFreq = __HIRC, u32Div = 0;
+    uint32_t u32ClkSrc = 0;
+    uint32_t u32Num = 0;
+    uint32_t u32ClkFreq = __HIRC;
+    uint32_t u32Div = 0;
 
     /* Get smartcard module clock source and divider */
     if (sc == SC0)
@@ -459,7 +502,7 @@ uint32_t SC_GetInterfaceClock(SC_T *sc)
         else if (u32ClkSrc == 1UL)
         {
             u32ClkFreq = CLK_GetAPLL0ClockFreq();
-            u32ClkFreq = u32ClkFreq / (2);
+            u32ClkFreq = u32ClkFreq / (2UL);
         }
         else if (u32ClkSrc == 2UL)
         {
@@ -475,7 +518,7 @@ uint32_t SC_GetInterfaceClock(SC_T *sc)
         else if (u32ClkSrc == 4UL)
         {
             u32ClkFreq = __HIRC48M;
-            u32ClkFreq = u32ClkFreq / (4);
+            u32ClkFreq = u32ClkFreq / (4UL);
         }
         else
         {

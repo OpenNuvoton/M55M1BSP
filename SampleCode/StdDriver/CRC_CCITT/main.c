@@ -52,7 +52,7 @@ void SYS_Init(void)
     /* Enable CRC0 module clock */
     CLK_EnableModuleClock(CRC0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

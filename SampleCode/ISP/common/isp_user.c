@@ -59,7 +59,7 @@ int ParseCmd(uint8_t *pu8Buffer, uint8_t u8len)
     uint32_t u32PageAddress;
     uint8_t *pu8Response;
     uint16_t u16Lcksum;
-    uint32_t u32Lcmd, u32srclen, u32i, u32Lock;
+    uint32_t u32Lcmd, u32srclen, u32Lock;
     uint32_t *pu32Config;
     uint8_t *pu8Src;
     static uint32_t u32Gcmd;
@@ -100,26 +100,24 @@ int ParseCmd(uint8_t *pu8Buffer, uint8_t u8len)
         /* Clear POR and Reset Pin reset flag */
         SYS_ClearResetSrc(SYS_RSTSTS_PORF_Msk | SYS_RSTSTS_PINRF_Msk);
 
-        /* Set BS */
+        /* Set VECMAP */
         if (u32Lcmd == CMD_RUN_APROM)
         {
-            u32i = (FMC->ISPCTL & 0xFFFFFFFC);
-        }
-        else if (u32Lcmd == CMD_RUN_LDROM)
-        {
-            u32i = (FMC->ISPCTL & 0xFFFFFFFC);
-            u32i |= 0x00000002;
+            FMC_SetVectorPageAddr(FMC_APROM_BASE);
         }
         else
         {
-            u32i = (FMC->ISPCTL & 0xFFFFFFFE); /* ISP disable */
+            FMC_SetVectorPageAddr(FMC_LDROM_BASE);
         }
 
-        outpw(&FMC->ISPCTL, u32i);
-        outpw(&SCB->AIRCR, (V6M_AIRCR_VECTKEY_DATA | V6M_AIRCR_SYSRESETREQ));
-
-        /* Trap the CPU */
-        while (1);
+        if (u32Lcmd == CMD_RESET)
+        {
+            SYS_ResetChip();
+        }
+        else
+        {
+            NVIC_SystemReset();
+        }
     }
     else if (u32Lcmd == CMD_CONNECT)
     {

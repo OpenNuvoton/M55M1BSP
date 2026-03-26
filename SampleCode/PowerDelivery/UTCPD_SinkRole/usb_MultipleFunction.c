@@ -16,6 +16,7 @@ void vconn_disable_src_cc(void)
     /* Disable VCONN Source CC*/
     outp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL, inp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL) & ~TCPC_REG_POWER_CTRL_ENABLE_VCONN);
 }
+
 /*
     The CC ststus interupt won't be issued if Enable_VCONN_SRC_CCC with wrong VCONN source CC pin
 */
@@ -25,33 +26,39 @@ void vconn_enable_src_cc(void)
     /* Enable VCONN Source CC*/
     outp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL, inp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL) | TCPC_REG_POWER_CTRL_ENABLE_VCONN);
 }
+
 void vconn_from_cc2(void)
 {
     /* Enable VCONN Source CC2 */
     /* Communication through CC1 */
     outp32(UTCPD0_BASE + TCPC_REG_TCPC_CTRL, inp32(UTCPD0_BASE + TCPC_REG_TCPC_CTRL) & ~TCPC_REG_TCPC_CTRL_PLUG_ORIENTATION);
 }
+
 void vconn_from_cc1(void)
 {
     /* Enable VCONN Source CC1*/
     /* Communication through CC2 */
     outp32(UTCPD0_BASE + TCPC_REG_TCPC_CTRL, inp32(UTCPD0_BASE + TCPC_REG_TCPC_CTRL) | TCPC_REG_TCPC_CTRL_PLUG_ORIENTATION);
 }
-void vconn_polarity_active_low()
+
+void vconn_polarity_active_low(void)
 {
     /* Set VCONN Polarity Active Low due to CC1VCENS and CC2VCENS default low  */
     outp32(UTCPD0_BASE + TCPC_REG_PINPL, inp32(UTCPD0_BASE + TCPC_REG_PINPL) & ~TCPC_REG_PINPL_VCEN);
 }
-void vconn_polarity_active_high()
+
+void vconn_polarity_active_high(void)
 {
     /* Set VCONN Polarity Active Low due to CC1VCENS and CC2VCENS default high */
     outp32(UTCPD0_BASE + TCPC_REG_PINPL, inp32(UTCPD0_BASE + TCPC_REG_PINPL) | TCPC_REG_PINPL_VCEN);
 }
+
 /* VCONN ocp fault */
 void vconn_disable_oc_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) | TCPC_REG_FAULT_CTRL_VCONN_OCP_FAULT_DIS);
 }
+
 void vconn_enable_oc_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) & ~TCPC_REG_FAULT_CTRL_VCONN_OCP_FAULT_DIS);
@@ -70,31 +77,35 @@ void vconn_configure_oc_detection_soruce(uint32_t u32Src)
 }
 
 /* ============  VBUS ocp fault ==========*/
-void vbus_srcen_polarity_active_low()
+void vbus_srcen_polarity_active_low(void)
 {
     /* Set VBUS SRCEN Polarity active Low */
     outp32(UTCPD0_BASE + TCPC_REG_PINPL, inp32(UTCPD0_BASE + TCPC_REG_PINPL) & ~TCPC_REG_PINPL_SRCEN);
 }
-void vbus_srcen_polarity_active_high()
+
+void vbus_srcen_polarity_active_high(void)
 {
     /* Set VBUS SRCEN Polarity Active high */
     outp32(UTCPD0_BASE + TCPC_REG_PINPL, inp32(UTCPD0_BASE + TCPC_REG_PINPL) | TCPC_REG_PINPL_SRCEN);
 }
+
 void vbus_disable_oc_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) | TCPC_REG_FAULT_CTRL_VBUS_OCP_FAULT_DIS);
 }
+
 void vbus_enable_oc_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) & ~TCPC_REG_FAULT_CTRL_VBUS_OCP_FAULT_DIS);
 }
 
-void vbus_discharge_polarity_active_low()
+void vbus_discharge_polarity_active_low(void)
 {
     /* Set VBUS discharge Polarity Active low */
     outp32(UTCPD0_BASE + TCPC_REG_PINPL, inp32(UTCPD0_BASE + TCPC_REG_PINPL) & ~TCPC_REG_PINPL_VBDCHG);
 }
-void vbus_discharge_polarity_active_high()
+
+void vbus_discharge_polarity_active_high(void)
 {
     /* Set VBUS discharge Polarity Active high */
     outp32(UTCPD0_BASE + TCPC_REG_PINPL, inp32(UTCPD0_BASE + TCPC_REG_PINPL) | TCPC_REG_PINPL_VBDCHG);
@@ -112,6 +123,7 @@ void vbus_disable_ov_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) | TCPC_REG_FAULT_CTRL_VBUS_OVP_FAULT_DIS);
 }
+
 void vbus_enable_ov_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) & ~TCPC_REG_FAULT_CTRL_VBUS_OVP_FAULT_DIS);
@@ -122,6 +134,7 @@ void vbus_disable_forceoff_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) | TCPC_REG_FAULT_CTRL_VBUS_FORCE_OFF_DIS);
 }
+
 void vbus_enable_forceoff_fault(void)
 {
     outp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL, inp32(UTCPD0_BASE + TCPC_REG_FAULT_CTRL) & ~TCPC_REG_FAULT_CTRL_VBUS_FORCE_OFF_DIS);
@@ -160,16 +173,19 @@ void power_disable_auto_discharge(void)
     /* Disable Auto Discharge = 0 */
     outp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL, inp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL) & ~TCPC_REG_POWER_CTRL_AUTO_DISCHARGE_DISCONNECT);
 }
+
 void power_enable_auto_discharge(void)
 {
     /* Enable Auto Discharge = 0 */
     outp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL, inp32(UTCPD0_BASE + TCPC_REG_POWER_CTRL) | TCPC_REG_POWER_CTRL_AUTO_DISCHARGE_DISCONNECT);
 }
+
 void frs_tx_polarity_active_low()
 {
     /* Set VBUS discharge Polarity Active low */
     outp32(UTCPD0_BASE + TCPC_REG_PINPL, inp32(UTCPD0_BASE + TCPC_REG_PINPL) & ~TCPC_REG_PINPL_FRSTX);
 }
+
 void frs_tx_polarity_active_high()
 {
     /* Set VBUS discharge Polarity Active high */

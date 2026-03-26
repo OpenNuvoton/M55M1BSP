@@ -1066,6 +1066,7 @@ static void scan_asynchronous_list()
     UTR_T   *utr;
 
     qh =  QH_PTR(_H_qh->HLink);
+    q_pre = NULL;
 
     while (qh != _H_qh)
     {

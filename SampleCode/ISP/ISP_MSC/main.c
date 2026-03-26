@@ -1,16 +1,23 @@
-/******************************************************************************//**
+/******************************************************************************
  * @file     main.c
  * @version  V1.00
- * @brief    Use embedded data flash as storage to implement a USB Mass-Storage device.
+ * @brief    Use embedded flash as storage to implement a USB Mass-Storage device.
  *
- * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * @note     Windows may prompt "There's a problem with this drive" upon connection.
+ *           This is harmless. For code size constraints, this ISP implements a minimal
+ *           "Fake FAT" that ignores Windows' background metadata writes.
+ *           Please safely ignore the warning and drag-and-drop the .bin file directly.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
-#include "M55M1_User.h"
-#include "targetdev.h"
-#include "massstorage.h"
 
-#define CRYSTAL_LESS    0
+#include <stdio.h>
+#include "NuMicro.h"
+#include "targetdev.h"
+#include "MassStorage.h"
+
+#define CRYSTAL_LESS 1
 
 int32_t SYS_Init(void)
 {
@@ -37,7 +44,7 @@ int32_t SYS_Init(void)
 
     /* Enable APLL1 96MHz clock */
     CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, 96000000, CLK_APLL1_SELECT);
-    /* Select USB clock source as HIRC48M and USB clock divider as 1 */
+    /* Select USB clock source as APLL1/2 and USB clock divider as 1 */
     CLK_SetModuleClock(USBD0_MODULE, CLK_USBSEL_USBSEL_APLL1_DIV2, CLK_USBDIV_USBDIV(1));
 #else
     /* Select SCLK to HIRC before APLL setting*/
@@ -96,40 +103,29 @@ int32_t main(void)
     uint32_t u32TrimInit;
 #endif
 
-    /* Unlock protected registers */
+    /* Unlock write-protected registers */
     SYS_UnlockReg();
     /* Enable ISP */
     FMC_Open();
-    FMC_ENABLE_AP_UPDATE();
 
     /* Init System, peripheral clock and multi-function I/O */
     /* Check if DETECT_PIN is low to enter ISP flow */
     if ((SYS_Init() < 0) || (DETECT_PIN != 0))
         goto _APROM;
 
-    USBD_Open(&gsInfo);
+    /* Enable APROM update */
+    FMC_ENABLE_AP_UPDATE();
 
     /* Endpoint configuration */
     MSC_Init();
 
-    /* Start of USBD_Start() */
-    CLK_SysTickDelay(100000);
-
-    /* Disable software-disconnect function */
-    USBD_CLR_SE0();
-
-    /* Clear USB-related interrupts before enable interrupt */
-    USBD_CLR_INT_FLAG(USBD_INT_BUS | USBD_INT_USB | USBD_INT_FLDET | USBD_INT_WAKEUP);
-
-    /* Enable USB-related interrupts. */
-    USBD_ENABLE_INT(USBD_INT_BUS | USBD_INT_USB | USBD_INT_FLDET | USBD_INT_WAKEUP);
-    /* End of USBD_Start() */
+    USBD_Start();
 
     NVIC_EnableIRQ(USBD_IRQn);
 
 #if CRYSTAL_LESS
     /* Backup default trim value */
-    u32TrimInit = SYS->TISTS48M;
+    u32TrimInit = M32(TRIM_INIT);
 #endif
 
     /* Clear SOF */
@@ -137,6 +133,7 @@ int32_t main(void)
 
     while (1)
     {
+
 #if CRYSTAL_LESS
 
         /* Start USB trim function if it is not enabled. */
@@ -162,7 +159,7 @@ int32_t main(void)
         if (SYS->TISTS48M & (SYS_TISTS48M_CLKERRIF_Msk | SYS_TISTS48M_TFAILIF_Msk))
         {
             /* Init TRIM */
-            SYS->TISTS48M = u32TrimInit;
+            M32(TRIM_INIT) = u32TrimInit;
 
             /* Disable USB clock trim function */
             SYS->TCTL48M = 0;
@@ -187,4 +184,4 @@ _APROM:
     /* Code should not reach here ! */
 }
 
-/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

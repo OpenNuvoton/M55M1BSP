@@ -450,16 +450,17 @@ extern siTD_T *alloc_ehci_siTD(void);
 extern void free_ehci_siTD(siTD_T *sitd);
 
 extern void usbh_hub_init(void);
-extern int  connect_device(UDEV_T *);
-extern void disconnect_device(UDEV_T *);
-extern int  usbh_register_driver(UDEV_DRV_T *driver);
+extern int  connect_device(UDEV_T *udev);
+extern void disconnect_device(UDEV_T *udev);
+extern int  usbh_register_driver(UDEV_DRV_T *udrv);
 extern EP_INFO_T *usbh_iface_find_ep(IFACE_T *iface, uint8_t ep_addr, uint8_t dir_type);
-extern int  usbh_reset_device(UDEV_T *);
+extern int  usbh_reset_device(UDEV_T *udev);
 
 /*
  *  USB Standard Request functions
  */
 extern int usbh_get_device_descriptor(UDEV_T *udev, DESC_DEV_T *desc_buff);
+extern int usbh_get_config_descripotr_total_length(UDEV_T *udev, DESC_CONF_T *conf_header);
 extern int usbh_get_config_descriptor(UDEV_T *udev, uint8_t *desc_buff, int buff_len);
 extern int usbh_set_configuration(UDEV_T *udev, uint8_t conf_val);
 extern int usbh_set_interface(IFACE_T *iface, uint16_t alt_setting);

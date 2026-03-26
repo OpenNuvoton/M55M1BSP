@@ -3,11 +3,12 @@
  * @version  V1.00
  * @brief    USBD driver source file
  *
- * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
-#include "M55M1_User.h"
-#include "massstorage.h"
+
+#include "NuMicro.h"
+#include "MassStorage.h"
 
 /*----------------------------------------------------------------------------*/
 /*!<USB Device Descriptor */
@@ -99,10 +100,13 @@ const uint8_t *gpu8UsbString[2] =
 
 const S_USBD_INFO_T gsInfo =
 {
-    gu8DeviceDescriptor,
-    gu8ConfigDescriptor,
-    gpu8UsbString,
+    (uint8_t *)gu8DeviceDescriptor,
+    (uint8_t *)gu8ConfigDescriptor,
+    (uint8_t **)gpu8UsbString,
+    NULL,
+    NULL,
+    NULL,
+    NULL
 };
 
-/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
-
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

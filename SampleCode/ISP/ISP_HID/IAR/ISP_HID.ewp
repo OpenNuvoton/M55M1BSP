@@ -1103,10 +1103,10 @@
             <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\clk.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\retarget.c</name>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\sys.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\sys.c</name>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\usbd.c</name>
         </file>
     </group>
     <group>
@@ -1128,9 +1128,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\common\targetdev.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\usbd_user.c</name>
         </file>
     </group>
 </project>

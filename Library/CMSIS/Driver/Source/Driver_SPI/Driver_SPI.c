@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -47,6 +50,24 @@
     //#warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
 #else
     #define DRIVER_CONFIG_VALID     1
+#endif
+
+#if defined (RTE_Driver_SAI)
+    #if RTE_SAI2 && RTE_SPI0
+        #error "SPI0 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
+
+    #if RTE_SAI3 && RTE_SPI1
+        #error "SPI1 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
+
+    #if RTE_SAI4 && RTE_SPI2
+        #error "SPI2 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
+
+    #if RTE_SAI5 && RTE_SPI3
+        #error "SPI3 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
 #endif
 
 // *****************************************************************************
@@ -628,11 +649,6 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
     switch (state)
     {
         case ARM_POWER_OFF:
-            if ((pSPIn->sState.u8State & SPI_INITIALIZED) == 0U)
-            {
-                return ARM_DRIVER_ERROR;
-            }
-
             SPI_InterruptConfig(u32Inst, SPI_OP_DISABLE); // Disable SPI interrupts
 
             // Reset SPI Run-Time Resources
@@ -654,6 +670,7 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
             }
 
             pSPIn->sState.u8State &= ~SPI_POWERED; // SPI is not powered
+
             break;
 
         case ARM_POWER_FULL:

@@ -19,28 +19,26 @@ project:
           C:
             - -std=c11
           C-CPP:
-            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar
-              -ffunction-sections -fdata-sections -Wall
+            - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
           ASM:
             - -masm=auto
           Link:
-            - --library_type=microlib --map --load_addr_map_info --xref
-              --callgraph --symbols
+            - --library_type=microlib --map --load_addr_map_info --xref --callgraph --symbols
             - --info sizes --info totals --info unused --info veneers
             - --strict --summary_stderr --info summarysizes
         - for-compiler: GCC
           C:
             - -std=gnu11
           C-CPP:
-            - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char
-              -ffunction-sections -fdata-sections
+            - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
-            - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs
-              --specs=nosys.specs
+            - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
             - -Wl,--no-warn-rwx-segments
   linker:

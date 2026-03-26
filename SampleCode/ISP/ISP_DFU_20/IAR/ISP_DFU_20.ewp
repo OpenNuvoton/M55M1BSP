@@ -1103,7 +1103,7 @@
             <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\clk.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\retarget.c</name>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\hsusbd.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\sys.c</name>
@@ -1119,9 +1119,6 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\common\fmc_user.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\hsusbd_user.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\main.c</name>

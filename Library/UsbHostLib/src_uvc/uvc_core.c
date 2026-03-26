@@ -47,6 +47,18 @@ static void  dump_parameter_block(UVC_CTRL_PARAM_T *param)
 #endif
 }
 
+static void  dump_still_parameter_block(UVC_STILL_CTRL_PARAM_T *param)
+{
+#ifdef UVC_DEBUG
+    UVC_DBGMSG("\n\nbFormatIndex          = 0x%x\n", param->bFormatIndex);
+    UVC_DBGMSG("bFrameIndex       = %d\n", param->bFrameIndex);
+    UVC_DBGMSG("bCompressionIndex = %d\n", param->bCompressionIndex);
+    UVC_DBGMSG("dwMaxVideoFrameSize      = %d\n", param->dwMaxVideoFrameSize);
+    UVC_DBGMSG("dwMaxPayloadTransferSize = %d\n", param->dwMaxPayloadTransferSize);
+#else
+    NVT_UNUSED(param);
+#endif
+}
 
 /**
  *  @brief  Video Class Request - Get Video Probe Control
@@ -118,17 +130,116 @@ static int usbh_uvc_commit_control(UVC_DEV_T *vdev, UVC_CTRL_PARAM_T *param)
                           &xfer_len, UVC_REQ_TIMEOUT);
 }
 
+/**
+ *  @brief  Video Class Request - Get Video Still Probe Control
+ *  @param[in]  vdev   UVC device
+ *  @param[in]  req    Control request.
+ *                     UVC_SET_CUR
+ *                     UVC_GET_CUR
+ *                     UVC_GET_MIN
+ *                     UVC_GET_MAX
+ *                     UVC_GET_LEN
+ *                     UVC_GET_INFO
+ *                     UVC_GET_DEF
+ *  @param[out] param  A set of shadow parameters from the UVC device.
+ *  @return   Success or failed.
+ *  @retval   0        Success
+ *  @retval   Otheriwse  Error occurred
+ */
+int usbh_uvc_still_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_STILL_CTRL_PARAM_T *param)
+{
+    uint8_t     bmRequestType;
+    uint32_t    xfer_len;
+    int         ret;
+
+    if (req & 0x80)
+        bmRequestType = REQ_TYPE_IN | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+    else
+        bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+
+    ret = usbh_ctrl_xfer(vdev->udev, bmRequestType, req,
+                         (VS_STILL_PROBE_CONTROL << 8), /* wValue - Control Selector (CS)    */
+                         vdev->iface_stream->if_num,    /* wIndex - Zero and Interface       */
+                         sizeof(UVC_STILL_CTRL_PARAM_T),/* wLength - Length of parameter block */
+                         (uint8_t *)param,              /* parameter block                   */
+                         &xfer_len, UVC_REQ_TIMEOUT);
+
+    if (ret != 0)
+    {
+        UVC_DBGMSG("usbh_uvc_still_probe_control incorrect transfer length! %d %d\n", ret, xfer_len);
+    }
+    else if (req == UVC_GET_CUR)
+    {
+        dump_still_parameter_block(param);
+    }
+
+    return ret;
+}
+
+/**
+ *  @brief  Video Class Request - Set Video Still Commit Control
+ *  @param[in]  vdev   UVC device
+ *  @param[out] param  A set of shadow parameters from the UVC device.
+ *  @return   Success or failed.
+ *  @retval   0        Success
+ *  @retval   Otheriwse  Error occurred
+ */
+static int usbh_uvc_still_commit_control(struct uvc_dev_t *vdev, UVC_STILL_CTRL_PARAM_T *param)
+{
+    uint8_t     bmRequestType;
+    uint32_t    xfer_len;
+
+    bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+
+    return usbh_ctrl_xfer(vdev->udev, bmRequestType, UVC_SET_CUR,
+                          (VS_STILL_COMMIT_CONTROL << 8), /* wValue - Control Selector (CS)    */
+                          vdev->iface_stream->if_num,     /* wIndex - Zero and Interface       */
+                          sizeof(UVC_STILL_CTRL_PARAM_T), /* wLength - Length of parameter block */
+                          (uint8_t *)param,               /* parameter block                   */
+                          &xfer_len, UVC_REQ_TIMEOUT);
+}
+
+int usbh_uvc_still_image_trigger_control(struct uvc_dev_t *vdev, uint8_t capture)
+{
+    uint8_t     bmRequestType;
+    uint32_t    xfer_len;
+    uint8_t     bptr[2] = {0, 0};
+    int         ret;
+
+    bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+
+    if (vdev == NULL)
+        return UVC_RET_DEV_NOT_FOUND;
+
+    bptr[0] = capture;
+
+    ret = usbh_ctrl_xfer(vdev->udev, bmRequestType, UVC_SET_CUR,
+                         (VS_STILL_IMAGE_TRIGGER_CONTROL << 8),   /* wValue - Control Selector (CS)    */
+                         vdev->iface_stream->if_num,              /* wIndex - Zero and Interface       */
+                         1,                                       /* wLength - Length of the data phase*/
+                         bptr,                                    /* Trigger capture                   */
+                         &xfer_len, UVC_REQ_TIMEOUT);
+
+    return ret;
+}
 
 /*
  *  Based on the current parameter block information, select the best-fit alternative interface of
  *  UVC streaming interface.
  */
-static int  usbh_uvc_select_alt_interface(UVC_DEV_T *vdev)
+static int  usbh_uvc_select_alt_interface(struct uvc_dev_t *vdev)
 {
     IFACE_T      *iface;
     UVC_STRM_T   *vs = &vdev->vs;
     uint32_t     payload_size = vdev->param.dwMaxPayloadTransferSize;
     int          i, ret, best = -1;
+
+    if (vdev == NULL)
+    {
+        UVC_DBGMSG("UVC_RET_DEV_NOT_FOUND \n");
+        return UVC_RET_DEV_NOT_FOUND;
+    }
+
 
     /*------------------------------------------------------------------------------------*/
     /*  Find the streaming interface                                                      */
@@ -370,6 +481,176 @@ commit:
     return ret;
 }
 
+int  usbh_get_video_still_format(UVC_DEV_T *vdev, int index, IMAGE_FORMAT_E *format, int *width, int *height)
+{
+    UVC_CTRL_T  *vc;
+
+    if (vdev == NULL)
+        return UVC_RET_DEV_NOT_FOUND;
+
+    vc = &vdev->vc;
+
+    if (index >= vc->num_of_still_frames)
+        return -1;
+
+    *format = vc->still_image_format[index];
+    *width  = vc->still_image_width[index];
+    *height = vc->still_image_height[index];
+    return 0;
+}
+
+int usbh_get_still(UVC_DEV_T *vdev)
+{
+    int ret = 0;
+
+    UVC_STILL_CTRL_PARAM_T *still_param;
+
+    still_param = &vdev->still_param;
+
+    ret = usbh_uvc_still_probe_control(vdev, UVC_GET_CUR, still_param);
+
+    if (ret < 0)
+    {
+        UVC_DBGMSG("Get Video Still Probe Control failed! %d\n", ret);
+        return ret;
+    }
+
+    return ret;
+}
+
+/**
+ *  @brief  Set video still format
+ *  @param[in]  vdev    UVC device
+ *  @param[out] format  Image format
+ *
+ *  @param[out] width   Still image width
+ *  @param[out] height  Still image height
+ *  @return   Success or failed.
+ *  @retval   0          Success
+ *  @retval   Otheriwse  Error occurred
+ */
+int  usbh_set_video_still_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int width, int height)
+{
+    UVC_CTRL_T       *vc;
+    UVC_STILL_CTRL_PARAM_T *still_param;
+    int    format_index = -1, frame_index = -1;
+    int    i, ret;
+
+    if (vdev == NULL)
+        return UVC_RET_DEV_NOT_FOUND;
+
+    vc = &vdev->vc;
+    still_param = &vdev->still_param;
+
+    /*------------------------------------------------------------------------------------*/
+    /*  Find video format index                                                           */
+    /*------------------------------------------------------------------------------------*/
+    for (i = 0; i < vc->num_of_formats; i++)
+    {
+        if (vc->format[i] == format)
+        {
+            format_index = vc->format_idx[i];
+            break;
+        }
+    }
+
+    if (format_index == -1)
+    {
+        UVC_DBGMSG("Video still format 0x%x not supported!\n", format);
+        return UVC_RET_NOT_SUPPORT;
+    }
+
+    /*------------------------------------------------------------------------------------*/
+    /*  Find video frame index                                                            */
+    /*------------------------------------------------------------------------------------*/
+    for (i = 0; i < vc->num_of_frames; i++)
+    {
+        if (vc->still_image_format[i] != format)
+            continue;
+
+        if ((vc->still_image_width[i] == width) && (vc->still_image_height[i] == height))
+        {
+            int still_idx = 0;
+
+            for (int k = 0; k <= i; k++)
+            {
+                if (vc->still_image_format[k] == format)
+                    still_idx++;
+            }
+
+            frame_index = still_idx;
+            break;
+        }
+    }
+
+    if (frame_index == -1)
+    {
+        UVC_DBGMSG("Video size %d x %d not supported!\n", width, height);
+        return UVC_RET_NOT_SUPPORT;
+    }
+
+    UVC_DBGMSG("Video format found, bFormatIndex=%d, bFrameIndex=%d\n", format_index, frame_index);
+
+    /*------------------------------------------------------------------------------------*/
+    /*  Get Video Still Probe Control                                                           */
+    /*------------------------------------------------------------------------------------*/
+    ret = usbh_uvc_still_probe_control(vdev, UVC_GET_CUR, still_param);
+
+    if (ret < 0)
+    {
+        UVC_DBGMSG("Get Video Still Probe Control failed! %d\n", ret);
+        return ret;
+    }
+
+    if ((still_param->bFormatIndex == format_index) && (still_param->bFrameIndex == frame_index))
+    {
+        goto commit;
+    }
+
+    /*------------------------------------------------------------------------------------*/
+    /*  Set Video Still Probe Control                                                           */
+    /*------------------------------------------------------------------------------------*/
+
+    still_param->bFormatIndex = format_index;
+    still_param->bFrameIndex = frame_index;
+
+    ret = usbh_uvc_still_probe_control(vdev, UVC_SET_CUR, still_param);
+
+    if (ret < 0)
+    {
+        UVC_DBGMSG("Set Video Still Probe Control failed! %d\n", ret);
+        return ret;
+    }
+
+    ret = usbh_uvc_still_probe_control(vdev, UVC_GET_CUR, still_param);
+
+    if (ret < 0)
+    {
+        UVC_DBGMSG("Get Video Still Probe Control failed! %d\n", ret);
+        return ret;
+    }
+
+    if ((still_param->bFormatIndex != format_index) || (still_param->bFrameIndex != frame_index))
+    {
+        return UVC_RET_NOT_SUPPORT;
+    }
+
+commit:
+    /*------------------------------------------------------------------------------------*/
+    /*  Set Video Still Commit Control                                                          */
+    /*------------------------------------------------------------------------------------*/
+    ret = usbh_uvc_still_commit_control(vdev, still_param);
+
+    if (ret < 0)
+    {
+        UVC_DBGMSG("Set Video Still Commit Control failed! %d\n", ret);
+        return ret;
+    }
+
+    return ret;
+}
+
+
 
 /// @cond HIDDEN_SYMBOLS
 
@@ -401,12 +682,28 @@ void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t *buff, int pkt_len)
 
     if (vdev->img_size == 0)                /* Start of a new image                       */
     {
+        if (buff[1] & UVC_PL_STI)
+        {
+            vdev->img_sti = 1;
+            UVC_DBGMSG("[0x%x]STI bit detected!\n", buff[1]);
+        }
+
         vs->current_frame_toggle = buff[1] & UVC_PL_FID;
 
         if (data_len > 0)
         {
             memcpy(vdev->img_buff, buff + buff[0], data_len);
             vdev->img_size = data_len;
+
+            /* Single-packet video frame: EOF may be set in this same packet */
+            if (buff[1] & UVC_PL_EOF)
+            {
+                if (vdev->func_rx && (vdev->img_size > 0))
+                    vdev->func_rx(vdev, vdev->img_buff, vdev->img_size);
+
+                vdev->img_size = 0;
+            }
+
             return;
         }
     }
@@ -492,7 +789,10 @@ static void iso_in_irq(UTR_T *utr)
     {
         if (utr->iso_status[i] == 0)
         {
-            uvc_parse_streaming_data(vdev, utr->iso_buff[i], utr->iso_xlen[i]);
+            if (utr->iso_xlen[i] > 2)  /* valid data packet should be larger than 2 bytes (header length) */
+            {
+                uvc_parse_streaming_data(vdev, utr->iso_buff[i], utr->iso_xlen[i]);
+            }
         }
         else
         {
@@ -528,6 +828,7 @@ void usbh_uvc_set_video_buffer(UVC_DEV_T *vdev, uint8_t *image_buff, int img_buf
     vdev->img_buff = image_buff;
     vdev->img_buff_size = img_buff_size;
     vdev->img_size = 0;
+    vdev->img_sti = 0;
 }
 
 
@@ -659,6 +960,7 @@ int usbh_uvc_stop_streaming(UVC_DEV_T *vdev)
 {
     IFACE_T   *iface;
     int       ret;
+    int       i = 0;
 
     if (vdev == NULL)
         return UVC_RET_INVALID;
@@ -667,6 +969,23 @@ int usbh_uvc_stop_streaming(UVC_DEV_T *vdev)
         return UVC_RET_OK;                  /* UVC is currently not straming, do nothing  */
 
     vdev->is_streaming = 0;
+
+    //quit iso utr and free utr when stop streaming.
+    for (i = 0; i < UVC_UTR_PER_STREAM; i++)
+    {
+        usbh_quit_utr(vdev->utr_rx[i]);         /* quit all UTRs                          */
+    }
+
+    delay_us(200 * 1000); //wait 200ms, host need time to quit UTRs.
+
+    for (i = 0; i < UVC_UTR_PER_STREAM; i++)   /* free all UTRs                          */
+    {
+        if (vdev->utr_rx[i] != NULL)
+        {
+            free_utr(vdev->utr_rx[i]);
+            vdev->utr_rx[i] = NULL;
+        }
+    }
 
     /*------------------------------------------------------------------------------------*/
     /*  Find the streaming interface                                                      */

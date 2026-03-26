@@ -186,7 +186,7 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /* Enable OTG0_ module clock */
@@ -208,8 +208,8 @@ void SYS_Init(void)
     /* Init I/O Multi-function                                                                                 */
     /*---------------------------------------------------------------------------------------------------------*/
 
-    /* Debug UART clock setting*/
-    SetDebugUartCLK();
+    /* Set multi-function pins for UART RXD and TXD */
+    SetDebugUartMFP();
 
     /* USBD multi-function pins for VBUS, D+, D-, and ID pins */
     SET_USB_VBUS_PA12();
@@ -225,9 +225,6 @@ void SYS_Init(void)
     SET_SD0_CLK_PE6();
     SET_SD0_CMD_PE7();
     SET_SD0_nCD_PD13();
-
-    /* Set multi-function pins for UART RXD and TXD */
-    SetDebugUartMFP();
 }
 
 void PowerDown(void)

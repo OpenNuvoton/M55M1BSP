@@ -21,6 +21,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -35,6 +36,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -47,9 +49,13 @@ project:
         - for-compiler: AC6
           Link:
             - --pd="-DVECMAP_BASE=0x100000"
+          C-CPP:
+            - -Wconditional-uninitialized
         - for-compiler: GCC
           Link:
             - -Wl,--defsym="VECMAP_BASE=0x100000"
+          C-CPP:
+            - -Wmaybe-uninitialized
     - setup: Options for FMC_MultiBoot_0x160000
       for-context: .FMC_MultiBoot_0x160000
       output:
@@ -58,9 +64,13 @@ project:
         - for-compiler: AC6
           Link:
             - --pd="-DVECMAP_BASE=0x160000"
+          C-CPP:
+            - -Wconditional-uninitialized
         - for-compiler: GCC
           Link:
             - -Wl,--defsym="VECMAP_BASE=0x160000"
+          C-CPP:
+            - -Wmaybe-uninitialized
     - setup: Options for FMC_MultiBoot_0x1C0000
       for-context: .FMC_MultiBoot_0x1C0000
       output:
@@ -69,9 +79,13 @@ project:
         - for-compiler: AC6
           Link:
             - --pd="-DVECMAP_BASE=0x1C0000"
+          C-CPP:
+            - -Wconditional-uninitialized
         - for-compiler: GCC
           Link:
             - -Wl,--defsym="VECMAP_BASE=0x1C0000"
+          C-CPP:
+            - -Wmaybe-uninitialized
     - setup: Options for FMC_MultiBoot_0x220000
       for-context: .FMC_MultiBoot_0x220000
       output:
@@ -80,9 +94,13 @@ project:
         - for-compiler: AC6
           Link:
             - --pd="-DVECMAP_BASE=0x220000"
+          C-CPP:
+            - -Wconditional-uninitialized
         - for-compiler: GCC
           Link:
             - -Wl,--defsym="VECMAP_BASE=0x220000"
+          C-CPP:
+            - -Wmaybe-uninitialized
     - setup: Options for FMC_MultiBoot_0x280000
       for-context: .FMC_MultiBoot_0x280000
       output:
@@ -91,9 +109,13 @@ project:
         - for-compiler: AC6
           Link:
             - --pd="-DVECMAP_BASE=0x280000"
+          C-CPP:
+            - -Wconditional-uninitialized
         - for-compiler: GCC
           Link:
             - -Wl,--defsym="VECMAP_BASE=0x280000"
+          C-CPP:
+            - -Wmaybe-uninitialized
     - setup: Options for FMC_MultiBoot_LDROM
       for-context: .FMC_MultiBoot_LDROM
       output:

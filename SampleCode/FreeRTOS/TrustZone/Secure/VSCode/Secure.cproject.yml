@@ -26,6 +26,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -41,6 +42,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--cmse-implib
@@ -48,7 +50,7 @@ project:
             - -Wl,--gc-sections,-Map="$elf()$.map"
             - -Wl,--no-warn-rwx-segments
   linker:
-    - script: ../KEIL/Secure.scf
+    - script: ../Keil/Secure.scf
       for-compiler: AC6
     - script: ../GCC/M55M1_s.ld
       for-compiler: GCC

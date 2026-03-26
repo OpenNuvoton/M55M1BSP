@@ -25,7 +25,9 @@
     3. If the master's data transfer exceeds the specified size, I2Cn_SlaveReceive will discard any extra received data.
     4. If the master's data request exceeds the specified size, I2Cn_SlaveTransmit will send dummy data (all zeros).
 */
-
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER

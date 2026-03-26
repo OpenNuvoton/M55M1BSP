@@ -490,7 +490,7 @@ int32_t usbh_cdc_send_data(CDC_DEV_T *cdev, uint8_t *buff, int buff_len)
 int32_t usbh_dcache_cdc_send_data(CDC_DEV_T *cdev, uint8_t *buff, int buff_len)
 {
 
-    int ret;
+    int ret = 0;
     int temp_duff_len = buff_len;
 
     if (temp_duff_len == 0)

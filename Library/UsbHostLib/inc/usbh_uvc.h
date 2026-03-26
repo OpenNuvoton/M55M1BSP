@@ -36,6 +36,7 @@
 #define UVC_MAX_ALT_IF          32//12          /* Maximum number of alternative interface per UVC streaming interface supported */
 #define UVC_MAX_FORMAT          24           /* Maximum number of video stream format supported in an UVC device.    */
 #define UVC_MAX_FRAME           32          /* Maximum number of video stream frame supported in an UVC device.    */
+#define UVC_MAX_STILL_IMAGE     16          /* Maximum number of still image supported in an UVC device.    */
 
 #define UVC_UTR_PER_STREAM      2
 // #define IF_PER_UTR           8           /* defined in usb.h                        */
@@ -95,8 +96,8 @@
  */
 #define VS_UNDEFINED                0x00
 #define VS_INPUT_HEADER             0x01
-#define VC_INPUT_TERMINAL           0x02
-#define VS_OUTPUT_HEADER            0x03
+#define VS_OUTPUT_HEADER            0x02
+#define VS_STILL_IMAGE_FRAME        0x03
 #define VS_FORMAT_UNCOMPRESSED      0x04
 #define VS_FRAME_UNCOMPRESSED       0x05
 #define VS_FORMAT_MJPEG             0x06
@@ -467,6 +468,24 @@ typedef struct __attribute__((__packed__)) desc_vsi_hdr_t
 } DESC_VSI_HDR_T;
 
 
+/* VS_STILL_IMAGE_FRAME */
+typedef struct __attribute__((__packed__)) still_image_size_t
+{
+    uint16_t wWidth;                   /* Width of the still image size */
+    uint16_t wHeight;                  /* Height of the still image size */
+} STILL_IMAGE_SIZE_T;
+
+typedef struct __attribute__((__packed__)) desc_still_image_frame_t
+{
+    uint8_t  bLength;                  /* Size of this descriptor, in bytes              */
+    uint8_t  bDescriptorType;          /* 0x24: CS_INTERFACE                             */
+    uint8_t  bDescriptorSubType;       /* 0x03: VS_STILL_IMAGE_FRAME                     */
+    uint8_t  bEndpointAddress;         /* The address of the isochronous or bulk endpoint used for video data. */
+    uint8_t  bNumImageSizePatterns;    /* Number of Image Size patterns of this format: n */
+    STILL_IMAGE_SIZE_T wSize[UVC_MAX_STILL_IMAGE];               /* Width and height of the still image size (max is 16) */
+    uint8_t  bNumCompressionPatterns;  /* Number of Compression pattern of this format: m */
+} DESC_STILL_IMAGE_FRAME_T;
+
 /*-----------------------------------------------------------------------------------
  *  Video Class-specific format and frame descriptors
  */
@@ -569,9 +588,13 @@ typedef struct uvc_ctrl_t
     IMAGE_FORMAT_E    format[UVC_MAX_FORMAT];      /* video format                        */
     uint8_t           num_of_frames;        /* total number of video frame types          */
     uint8_t           frame_idx[UVC_MAX_FRAME];    /* frame index                         */
+    uint8_t           num_of_still_frames;         /*total number of still frame types*/
     IMAGE_FORMAT_E    frame_format[UVC_MAX_FRAME]; /* frame format                        */
+    IMAGE_FORMAT_E     still_image_format[UVC_MAX_FRAME]; /* still image format            */
     uint16_t          width[UVC_MAX_FRAME]; /* frame width                                */
     uint16_t          height[UVC_MAX_FRAME];/* frame height                               */
+    uint16_t          still_image_width[UVC_MAX_STILL_IMAGE]; /* still image width        */
+    uint16_t          still_image_height[UVC_MAX_STILL_IMAGE];/* still image height       */
 }   UVC_CTRL_T;
 
 typedef struct uvc_strm_t
@@ -611,6 +634,15 @@ typedef struct __attribute__((__packed__)) uvc_ctrl_param_t
     uint8_t           bmLayoutPerStream[8]; /* This field contains 4 subfields, each of which is a 2 byte number. */
 }   UVC_CTRL_PARAM_T;
 
+typedef struct __attribute__((__packed__)) uvc_still_ctrl_param_t
+{
+    uint8_t           bFormatIndex;         /* Video format index from a Format descriptor. */
+    uint8_t           bFrameIndex;          /* Video frame index from a Frame descriptor. */
+    uint8_t           bCompressionIndex;    /* Compression index from a Frame descriptor. */
+    uint32_t          dwMaxVideoFrameSize;  /* Maximum still image size in bytes. */
+    uint32_t          dwMaxPayloadTransferSize;  /* Specifies the maximum number of bytes that the device can transmit or receive in a single payload transfer. */
+}   UVC_STILL_CTRL_PARAM_T;
+
 /// @endcond HIDDEN_SYMBOLS
 
 /** @} end of group USBH_EXPORTED_CONSTANTS */
@@ -631,6 +663,7 @@ typedef struct uvc_dev_t
     IFACE_T           *iface_ctrl;    /*!< Video control interface                            */
     IFACE_T           *iface_stream;  /*!< Video streaming interface                          */
     UVC_CTRL_PARAM_T  param;          /*!< Video control parameter block                      */
+    UVC_STILL_CTRL_PARAM_T  still_param; /*!< Video still control parameter block             */
     uint8_t           is_streaming;   /*!< Video is currently streaming or not                */
     EP_INFO_T         *ep_iso_in;     /*!< Isochronous in endpoint                            */
     uint8_t           *in_buff;       /*!< Isochronous streaming in buffer                    */
@@ -638,6 +671,7 @@ typedef struct uvc_dev_t
     uint8_t           *img_buff;      /*!< Image buffer provided by user                      */
     int               img_buff_size;  /*!< Size of the image buffer provided by user          */
     int               img_size;       /*!< Size of the image data stored in img_buff          */
+    int               img_sti;        /*!< Still image trigger bit in the payload header       */
     UVC_CB_FUNC       *func_rx;       /*!< user callback function for receiving images        */
     struct uvc_dev_t  *next;          /*!< next UVC devide                                    */
 }   UVC_DEV_T;

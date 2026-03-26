@@ -35,7 +35,6 @@ extern "C"
 #define TRNG_CTL_KATSEL_RESEED_TESTING             0x1 /*!< TRNG CTR_DRBG Known Answer Test Selection: Reseed*/
 #define TRNG_CTL_KATSEL_GENERATION_TESTING         0x2 /*!< TRNG CTR_DRBG Known Answer Test Selection: Generation*/
 
-#define TRNG_CTL_MODE_OUTPUT_ENTROPY               0x00 /*!< TRNG Random Bit Generator Output Selection: entropy (32-bits)*/
 #define TRNG_CTL_MODE_OUTPUT_NRBG                  0x01 /*!< TRNG Random Bit Generator Output Selection: NRBG (128-bits)*/
 #define TRNG_CTL_MODE_OUTPUT_DRBG                  0x02 /*!< TRNG Random Bit Generator Output Selection: DRBG (128-bits)*/
 /** @} end of group TRNG_EXPORTED_CONSTANTS */

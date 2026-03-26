@@ -2345,7 +2345,7 @@ static inline int mbedtls_svc_key_id_is_null( mbedtls_svc_key_id_t key )
  *
  * This flag allows the key to be used for a MAC calculation operation or for
  * an asymmetric message signature operation, if otherwise permitted by the
- * key’s type and policy.
+ * key's type and policy.
  *
  * For a key pair, this concerns the private key.
  */
@@ -2355,7 +2355,7 @@ static inline int mbedtls_svc_key_id_is_null( mbedtls_svc_key_id_t key )
  *
  * This flag allows the key to be used for a MAC verification operation or for
  * an asymmetric message signature verification operation, if otherwise
- * permitted by the key’s type and policy.
+ * permitted by the key's type and policy.
  *
  * For a key pair, this concerns the public key.
  */

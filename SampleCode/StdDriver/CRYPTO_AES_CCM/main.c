@@ -143,7 +143,7 @@ void SYS_Init(void)
     /* Enable CRYPTO module clock */
     CLK_EnableModuleClock(CRYPTO0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/
@@ -635,4 +635,5 @@ int main(void)
 
 
 }
+
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

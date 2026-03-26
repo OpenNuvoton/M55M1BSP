@@ -1,7 +1,7 @@
 /****************************************************************************//**
  * @file     utcpd.h
  * @version  V1.00
- * @brief    M55M1 series UTCPD driver header file
+ * @brief    UTCPD driver header file
  *
  * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -350,7 +350,6 @@ void UTCPD_power_enable_auto_discharge(int port);
 void UTCPD_frs_tx_polarity_active_low(int port);
 void UTCPD_frs_tx_polarity_active_high(int port);
 void UTCPD_frs_mux_selection(int port, uint32_t cc1frssel, uint32_t cc2frssel);
-void UTCPD_GetVoltagInfo(int port, uint16_t *pu16VbusVol, uint16_t *pu16VconnVol);
 uint32_t UTCPD_Open(int port);
 
 
@@ -362,6 +361,7 @@ uint32_t UTCPD_Open(int port);
 
 #ifdef __cplusplus
 }
+
 #endif
 
 #endif  /* __UTCPD_H__ */

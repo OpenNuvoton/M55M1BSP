@@ -22,6 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -44,6 +47,12 @@
     //#warning  SPI driver requires at least one SPI peripheral configured in RTE_SPI.h
 #else
     #define DRIVER_CONFIG_VALID     1
+#endif
+
+#if defined (RTE_Driver_USART) || defined (RTE_Driver_I2C)
+    #if RTE_SPI7 && (RTE_USART14 || RTE_I2C5)
+        #error "USCI0 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
 #endif
 
 // *****************************************************************************
@@ -161,6 +170,8 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst);
 static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg);
 static ARM_SPI_STATUS SPIn_GetStatus(uint32_t u32Inst);
 
+static int32_t SPI_PrepareDefaultTxBuffer(SPI_RESOURCES *pSPIn, uint32_t u32Num);
+static void SPI_ReleaseDefaultTxBuffer(SPI_RESOURCES *pSPIn);
 static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn);
 static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn);
 
@@ -212,7 +223,9 @@ static void SPI_PDMA_CB_Handler(void *ptr_priv, uint32_t u32Event)
 
             pSPIn->sState.sDrvStatus.u8Busy = 0U;
 
-            // Call the event callback if it is registered
+            // <<< NEW: release prepared dummy tx buffer >>>
+            SPI_ReleaseDefaultTxBuffer(pSPIn);
+
             if (pSPIn->sState.cb_event)
             {
                 pSPIn->sState.cb_event(ARM_SPI_EVENT_TRANSFER_COMPLETE);
@@ -228,8 +241,7 @@ static void SPI_PDMA_CB_Handler(void *ptr_priv, uint32_t u32Event)
             }
             else
             {
-                // Partial transfer completed
-                pSPIn->sXfer.u32TxCnt = nu_pdma_transferred_byte_get(pSPIn->spdma.i32RxChnId,
+                pSPIn->sXfer.u32TxCnt = nu_pdma_transferred_byte_get(pSPIn->spdma.i32TxChnId,
                                                                      pSPIn->sXfer.u32Num);
             }
         }
@@ -354,9 +366,9 @@ static void SPI_IRQHandler(uint32_t u32Inst)
     uint32_t u32DataBits = ((phspi->LINECTL & USPI_LINECTL_DWIDTH_Msk) >> USPI_LINECTL_DWIDTH_Pos);
     uint32_t u32PatternMask = (u32DataBits == 0) ? 0xFFFF : (0xFFFF >> (16 - u32DataBits));
 
-    if (USPI_GetIntFlag(phspi, SPI_SSINACT_INT_MASK))
+    if (USPI_GetIntFlag(phspi, USPI_SSINACT_INT_MASK))
     {
-        USPI_ClearIntFlag(phspi, SPI_SSINACT_INT_MASK);
+        USPI_ClearIntFlag(phspi, USPI_SSINACT_INT_MASK);
     }
 
     if (USPI_GetIntFlag(phspi, USPI_RXEND_INT_MASK))
@@ -552,11 +564,6 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
     switch (state)
     {
         case ARM_POWER_OFF:
-            if ((pSPIn->sState.u8State & SPI_INITIALIZED) == 0U)
-            {
-                return ARM_DRIVER_ERROR;
-            }
-
             SPI_InterruptConfig(u32Inst, SPI_OP_DISABLE); // Disable SPI interrupts
 
             // Reset SPI Run-Time Resources
@@ -659,7 +666,6 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
 
             // Reset SPI Run-Time Resources
             phspi->PROTCTL |= USPI_PROTCTL_PROTEN_Msk;
-
             pSPIn->sState.u8State |= SPI_POWERED;  // SPI is powered
             break;
 
@@ -729,6 +735,7 @@ static int32_t SPIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
     if (pSPIn->spdma.i32TxChnId != -1)
     {
         SPI_PDMA_TXInit(pSPIn);
+
         /* Enable SPI master DMA function */
         USPI_TRIGGER_TX_PDMA(phspi);
     }
@@ -798,9 +805,29 @@ static int32_t SPIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 
     if (pSPIn->spdma.i32RxChnId != -1)
     {
-        SPI_PDMA_RXInit(pSPIn);
-        /* Enable SPI master DMA function */
-        USPI_TRIGGER_RX_PDMA(phspi);
+        // <<< NEW: prepare dummy tx buffer to generate clock >>>
+        if (SPI_PrepareDefaultTxBuffer(pSPIn, num) != ARM_DRIVER_OK)
+        {
+            pSPIn->sState.sDrvStatus.u8Busy = 0U;
+            return ARM_DRIVER_ERROR;
+        }
+
+        // Need both RX and TX PDMA for master receive
+        if (pSPIn->spdma.i32TxChnId == -1)
+        {
+            // No TX PDMA channel -> fallback to IRQ mode
+            USPI_ClearIntFlag(phspi, USPI_TXEND_INT_MASK | USPI_RXEND_INT_MASK);
+            USPI_EnableInt(phspi, USPI_TXEND_INT_MASK | USPI_RXEND_INT_MASK);
+
+            // Preload first dummy byte BEFORE interrupts start taking effect
+            SPI_KickFirstTx(pSPIn);
+        }
+        else
+        {
+            SPI_PDMA_RXInit(pSPIn);
+            SPI_PDMA_TXInit(pSPIn);
+            USPI_TRIGGER_TX_RX_PDMA(phspi);
+        }
     }
     else
     {
@@ -831,6 +858,7 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_USPI_INSTANCE(u32Inst)];
     USPI_T *phspi = (USPI_T *)pSPIn->phspi;
+    uint32_t u32DataBits = ((phspi->LINECTL & USPI_LINECTL_DWIDTH_Msk) >> USPI_LINECTL_DWIDTH_Pos);
 
     // Check for valid parameters
     if ((data_out == NULL) || (data_in == NULL) || (num == 0U))
@@ -897,6 +925,11 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
         }
         else  // **Full-Duplex Mode**
         {
+            uint32_t first = (pSPIn->sXfer.pu8TxBuf) ? pSPIn->sXfer.pu8TxBuf[0] : pSPIn->sXfer.u32DefVal;
+            memcpy(&first, pSPIn->sXfer.pu8TxBuf, ((u32DataBits <= 8) && (u32DataBits > 0)) ? sizeof(uint8_t) : sizeof(uint16_t));
+            phspi->TXDAT = first & (((u32DataBits <= 8) && (u32DataBits > 0)) ? 0xFF : 0xFFFF);
+            pSPIn->sXfer.u32TxCnt++;
+
             SPI_PDMA_RXInit(pSPIn);
             SPI_PDMA_TXInit(pSPIn);
             USPI_TRIGGER_TX_RX_PDMA(phspi);
@@ -967,6 +1000,16 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
     }
 }
 
+static inline void USPI_SS_Assert(USPI_T *uspi)   // active
+{
+    uspi->PROTCTL = (uspi->PROTCTL & ~USPI_PROTCTL_AUTOSS_Msk) | USPI_PROTCTL_SS_Msk;
+}
+
+static inline void USPI_SS_Deassert(USPI_T *uspi) // inactive
+{
+    uspi->PROTCTL = (uspi->PROTCTL & ~USPI_PROTCTL_AUTOSS_Msk) & ~USPI_PROTCTL_SS_Msk;
+}
+
 static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_USPI_INSTANCE(u32Inst)];
@@ -1028,7 +1071,7 @@ static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
             }
             else
             {
-                phspi->PROTCTL |= SPI_SLAVE;
+                phspi->PROTCTL |= USPI_SLAVE;
                 phspi->CTLIN0 |= USPI_CTLIN0_ININV_Msk;
                 phspi->BRGEN = ((phspi->BRGEN & ~(USPI_BRGEN_CLKDIV_Msk)) |
                                 (2 << USPI_BRGEN_CLKDIV_Pos));
@@ -1072,16 +1115,13 @@ set_speed:
             if ((pSPIn->sState.u32Mode & ARM_SPI_CONTROL_Msk) == ARM_SPI_MODE_MASTER &&
                     (pSPIn->sState.u32Mode & ARM_SPI_SS_MASTER_MODE_Msk) == ARM_SPI_SS_MASTER_SW)
             {
-
-                USPI_DisableAutoSS(phspi);
-
                 if (arg == ARM_SPI_SS_INACTIVE)
                 {
-                    USPI_SET_SS_HIGH(phspi);
+                    USPI_SS_Deassert(phspi);
                 }
                 else
                 {
-                    USPI_SET_SS_LOW(phspi);
+                    USPI_SS_Assert(phspi);
                 }
 
                 return ARM_DRIVER_OK;
@@ -1090,18 +1130,6 @@ set_speed:
             if ((pSPIn->sState.u32Mode & ARM_SPI_CONTROL_Msk) == ARM_SPI_MODE_SLAVE &&
                     (pSPIn->sState.u32Mode & ARM_SPI_SS_SLAVE_MODE_Msk) == ARM_SPI_SS_SLAVE_SW)
             {
-
-                USPI_DisableAutoSS(phspi);
-
-                if (arg == ARM_SPI_SS_INACTIVE)
-                {
-                    USPI_SET_SS_HIGH(phspi);
-                }
-                else
-                {
-                    USPI_SET_SS_LOW(phspi);
-                }
-
                 return ARM_DRIVER_OK;
             }
 
@@ -1118,7 +1146,7 @@ set_speed:
         {
             case ARM_SPI_SS_MASTER_UNUSED:
                 USPI_DisableAutoSS(phspi);
-                USPI_ENABLE_3WIRE_MODE(phspi);
+                USPI_SS_Deassert(phspi);
                 pSPIn->sState.u32Mode &= ~ARM_SPI_SS_MASTER_MODE_Msk;
                 pSPIn->sState.u32Mode |= ARM_SPI_SS_MASTER_UNUSED;
                 break;
@@ -1128,6 +1156,10 @@ set_speed:
 
             case ARM_SPI_SS_MASTER_SW:
                 USPI_DisableAutoSS(phspi);
+
+                phspi->LINECTL |= USPI_LINECTL_CTLOINV_Msk;   // active low (inverted)
+                phspi->PROTCTL &= ~USPI_PROTCTL_SS_Msk;
+
                 pSPIn->sState.u32Mode &= ~ARM_SPI_SS_MASTER_MODE_Msk;
                 pSPIn->sState.u32Mode |= ARM_SPI_SS_MASTER_SW;
                 break;
@@ -1149,7 +1181,6 @@ set_speed:
         switch (control & ARM_SPI_SS_SLAVE_MODE_Msk)
         {
             case ARM_SPI_SS_SLAVE_HW:
-                USPI_EnableAutoSS(phspi, USPI_SS, USPI_SS_ACTIVE_LOW);
                 pSPIn->sState.u32Mode &= ~ARM_SPI_SS_SLAVE_MODE_Msk;
                 pSPIn->sState.u32Mode |= ARM_SPI_SS_SLAVE_HW;
                 break;
@@ -1158,17 +1189,6 @@ set_speed:
                 if ((arg != ARM_SPI_SS_ACTIVE) && (arg != ARM_SPI_SS_INACTIVE))
                 {
                     return ARM_DRIVER_ERROR_PARAMETER;
-                }
-
-                USPI_DisableAutoSS(phspi);
-
-                if (arg == ARM_SPI_SS_INACTIVE)
-                {
-                    USPI_SET_SS_HIGH(phspi);
-                }
-                else
-                {
-                    USPI_SET_SS_LOW(phspi);
                 }
 
                 pSPIn->sState.u32Mode &= ~ARM_SPI_SS_SLAVE_MODE_Msk;
@@ -1253,10 +1273,62 @@ static ARM_SPI_STATUS SPIn_GetStatus(uint32_t u32Inst)
     return (status);
 }
 
+static int32_t SPI_PrepareDefaultTxBuffer(SPI_RESOURCES *pSPIn, uint32_t u32Num)
+{
+    USPI_T *phspi = (USPI_T *)pSPIn->phspi;
+    uint32_t item_bytes;
+    uint32_t u32DataBits = ((phspi->LINECTL & USPI_LINECTL_DWIDTH_Msk) >> USPI_LINECTL_DWIDTH_Pos);
+
+    // u32DataBits: 0 => 16-bit, otherwise 1~16
+    if (u32DataBits == 0) u32DataBits = 16;
+
+    item_bytes = (u32DataBits <= 8) ? 1u : 2u;
+
+    // Already have TX buffer or already prepared
+    if (pSPIn->sXfer.pu8TxBuf != NULL)
+        return ARM_DRIVER_OK;
+
+    if (u32Num == 0u)
+        return ARM_DRIVER_ERROR_PARAMETER;
+
+    // Allocate dummy TX buffer and fill with default value
+    pSPIn->sXfer.pu8TxBuf = (uint8_t *)malloc(u32Num * item_bytes);
+
+    if (pSPIn->sXfer.pu8TxBuf == NULL)
+        return ARM_DRIVER_ERROR;
+
+    pSPIn->sXfer.u32TxPrepared = 1u;
+
+    if (item_bytes == 1u)
+    {
+        uint8_t v = (uint8_t)(pSPIn->sXfer.u32DefVal & 0xFFu);
+        memset(pSPIn->sXfer.pu8TxBuf, v, u32Num);
+    }
+    else
+    {
+        uint16_t v = (uint16_t)(pSPIn->sXfer.u32DefVal & 0xFFFFu);
+        uint16_t *p16 = (uint16_t *)pSPIn->sXfer.pu8TxBuf;
+
+        for (uint32_t i = 0; i < u32Num; i++) p16[i] = v;
+    }
+
+    return ARM_DRIVER_OK;
+}
+
+static void SPI_ReleaseDefaultTxBuffer(SPI_RESOURCES *pSPIn)
+{
+    if (pSPIn->sXfer.u32TxPrepared && pSPIn->sXfer.pu8TxBuf)
+    {
+        free(pSPIn->sXfer.pu8TxBuf);
+        pSPIn->sXfer.pu8TxBuf = NULL;
+        pSPIn->sXfer.u32TxPrepared = 0u;
+    }
+}
+
 static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn)
 {
     USPI_T *phspi = (USPI_T *)pSPIn->phspi;
-    uint32_t u32DataBits = ((phspi->CTL & (SPI_CTL_DWIDTH_Msk)) >> SPI_CTL_DWIDTH_Pos);
+    uint32_t u32DataBits = (phspi->LINECTL & USPI_LINECTL_DWIDTH_Msk) >> USPI_LINECTL_DWIDTH_Pos;
 
     //Use PDMA transfer mode
     struct nu_pdma_chn_cb pdma_chn_cb;
@@ -1270,10 +1342,8 @@ static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn)
     nu_pdma_callback_register(pSPIn->spdma.i32TxChnId, &pdma_chn_cb);
     nu_pdma_transfer(
         pSPIn->spdma.i32TxChnId,
-        ((u32DataBits <= 8) && (u32DataBits > 0))                          ? 8
-        : ((u32DataBits > 8) && (u32DataBits <= 16))                       ? 16
-        : ((u32DataBits > 16) && ((u32DataBits < 32) || (u32DataBits == 0))) ? 32
-        : 8,
+        ((u32DataBits <= 8) && (u32DataBits > 0)) ? 8
+        : 16,
         (uint32_t)pSPIn->sXfer.pu8TxBuf,
         (uint32_t)&phspi->TXDAT,
         pSPIn->sXfer.u32Num,
@@ -1283,7 +1353,7 @@ static void SPI_PDMA_TXInit(SPI_RESOURCES *pSPIn)
 static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn)
 {
     USPI_T *phspi = (USPI_T *)pSPIn->phspi;
-    uint32_t u32DataBits = ((phspi->CTL & (SPI_CTL_DWIDTH_Msk)) >> SPI_CTL_DWIDTH_Pos);
+    uint32_t u32DataBits = (phspi->LINECTL & USPI_LINECTL_DWIDTH_Msk) >> USPI_LINECTL_DWIDTH_Pos;
     //Use PDMA transfer mode
     struct nu_pdma_chn_cb pdma_chn_cb;
 
@@ -1296,10 +1366,8 @@ static void SPI_PDMA_RXInit(SPI_RESOURCES *pSPIn)
     nu_pdma_callback_register(pSPIn->spdma.i32RxChnId, &pdma_chn_cb);
     nu_pdma_transfer(
         pSPIn->spdma.i32RxChnId,
-        ((u32DataBits <= 8) && (u32DataBits > 0))                          ? 8
-        : ((u32DataBits > 8) && (u32DataBits <= 16))                       ? 16
-        : ((u32DataBits > 16) && ((u32DataBits < 32) || (u32DataBits == 0))) ? 32
-        : 8,
+        ((u32DataBits <= 8) && (u32DataBits > 0)) ? 8
+        : 16,
         (uint32_t)&phspi->RXDAT,
         (uint32_t)pSPIn->sXfer.pu8RxBuf,
         pSPIn->sXfer.u32Num,

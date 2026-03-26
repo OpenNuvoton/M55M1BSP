@@ -169,14 +169,15 @@ static void tftp_thread(void *arg)
     (void)arg;
     err_t err;
     struct netbuf *nbuf;
-    uint8_t *data, *payload;
+    uint8_t *data = NULL;
+    uint8_t *payload = NULL;
     ip_addr_t *get_addr;
     unsigned short get_port;
     uint16_t payload_len;
 
     uint16_t state = TFTP_STATE_IDLE;
     uint16_t op, blk = 0;
-    int retry, remain;
+    int retry = 0, remain = 0;
     char c = 0;
     int done = 0;
     int first = 1;  // set 1 for resend first wrq/rrq request on timeout, otherwise resend ack/data

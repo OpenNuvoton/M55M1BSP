@@ -19,7 +19,7 @@ SPIM_PHASE_T gsWb02hWrCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                       //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,  //Data Phase
     0,
-    PHASE_DISABLE_CONT_READM, 0, 0, 0,
+    PHASE_DISABLE_CONT_READ, 0, 0, 0,
 };
 
 /* 0x12h : CMD_NORMAL_PAGE_PROGRAM_4B Command Phase Table */
@@ -30,7 +30,7 @@ SPIM_PHASE_T gsWb12hWrCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR,                       //Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0,  PHASE_DISABLE_DTR, SPIM_OP_DISABLE,  //Data Phase
     0,
-    PHASE_DISABLE_CONT_READM, 0, 0, 0,
+    PHASE_DISABLE_CONT_READ, 0, 0, 0,
 };
 
 /* 0x0B: CMD_DMA_FAST_READ Command Phase Table */
@@ -41,7 +41,7 @@ SPIM_PHASE_T gsWb0BhRdCMD =
     PHASE_NORMAL_MODE, PHASE_WIDTH_24, PHASE_DISABLE_DTR,                       // Address Phase
     PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE,   // Data Phase
     8,                                                                          // Dummy Cycle Phase
-    PHASE_DISABLE_CONT_READM, 0, 0, 0,
+    PHASE_DISABLE_CONT_READ, 0, 0, 0,
 };
 
 /* 0xBB: CMD_DMA_FAST_DUAL_READ Command Phase Table */

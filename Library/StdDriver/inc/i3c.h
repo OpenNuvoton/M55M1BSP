@@ -10,6 +10,8 @@
 #ifndef __I3C_H__
 #define __I3C_H__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -28,8 +30,17 @@ extern "C"
   @{
 */
 
-#define I3C_SLAVE         (0x1U << I3C_DEVCTLE_OPERMODE_Pos)                             /*!< Set as slave  */
-#define I3C_MASTER        (0x0U << I3C_DEVCTLE_OPERMODE_Pos)                             /*!< Set as master */
+#define I3C_SLAVE         (0x1U << I3C_DEVCTLE_OPERMODE_Pos)                    /*!< Set as Slave  */
+#define I3C_MASTER        (0x0U << I3C_DEVCTLE_OPERMODE_Pos)                    /*!< Set as Master */
+/*
+  As part of a terminology replacement effort across MIPI Alliance, starting with I3C v1.1.1 and I3C Basic
+  v1.1.1 the terms Master and Slave have been deprecated.
+    An I3C v1.0/v1.1 Master Device is now called a Controller.
+    An I3C v1.0/v1.1 Slave Device is now called a Target.
+*/
+#define I3C_TARGET        (I3C_SLAVE)                                           /*!< Set as Target  */
+#define I3C_CONTROLLER    (I3C_MASTER)                                          /*!< Set as Controller */
+
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* I3C CCC (Common Command Codes) related definitions                                                      */
@@ -45,20 +56,26 @@ extern "C"
 #define I3C_CCC_ENEC(broadcast)             I3C_CCC_ID(0x0, broadcast)           /*!< Enable Events Command */
 #define I3C_CCC_DISEC(broadcast)            I3C_CCC_ID(0x1, broadcast)           /*!< Disable Events Command */
 #define I3C_CCC_ENTAS(as, broadcast)        I3C_CCC_ID(0x2 + (as), broadcast)    /*!< Enter Activity State */
-#define I3C_CCC_RSTDAA(broadcast)           I3C_CCC_ID(0x6, broadcast)           /*!< Reset Dynamic Address Assignment */
 #define I3C_CCC_SETMWL(broadcast)           I3C_CCC_ID(0x9, broadcast)           /*!< Set Max Write Length */
 #define I3C_CCC_SETMRL(broadcast)           I3C_CCC_ID(0xa, broadcast)           /*!< Set Max Read Length */
 #define I3C_CCC_SETXTIME(broadcast)         ((broadcast) ? 0x28 : 0x98)          /*!< Exchange Timing Information */
+#define I3C_CCC_RSTACT(broadcast)           ((broadcast) ? 0x2a : 0x9a)          /*!< Target Reset Action */
+#define I3C_CCC_RSTGRPA(broadcast)          ((broadcast) ? 0x2c : 0x9c)          /*!< Reset Group Address */
 #define I3C_CCC_VENDOR(id, broadcast)       ((id) + ((broadcast) ? 0x61 : 0xe0)) /*!< Vendor / Standards Extension – Broadcast CCCs */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* I3C CCC (Common Command Codes) Broadcast-only commands                                                  */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_CCC_ENTDAA                      I3C_CCC_ID(0x7, TRUE)        /*!< Enter Dynamic Address Assignment */
-#define I3C_CCC_DEFSLVS                     I3C_CCC_ID(0x8, TRUE)        /*!< Define List of Targets */
-#define I3C_CCC_DEFTGTS                     I3C_CCC_DEFSLVS              /*!< DEFSLVS has been renamed to DEFTGTS */
-#define I3C_CCC_ENTTM                       I3C_CCC_ID(0xb, TRUE)        /*!< Enter Test Mode */
+#define I3C_CCC_RSTDAA                      I3C_CCC_ID(0x6, TRUE)       /*!< Reset Dynamic Address Assignment */
+#define I3C_CCC_ENTDAA                      I3C_CCC_ID(0x7, TRUE)       /*!< Enter Dynamic Address Assignment */
+#define I3C_CCC_SETAASA                     I3C_CCC_ID(0x29, TRUE)      /*!< Set All Addresses to Static Address */
+#define I3C_CCC_DEFTGTS                     I3C_CCC_ID(0x8, TRUE)       /*!< Define List of Targets */
+#define I3C_CCC_DEFSLVS                     I3C_CCC_DEFTGTS             /*!< DEFSLVS has been renamed to DEFTGTS */
+#define I3C_CCC_ENTTM                       I3C_CCC_ID(0xb, TRUE)       /*!< Enter Test Mode */ // ??????????
 #define I3C_CCC_ENTHDR(x)                   I3C_CCC_ID(0x20 + (x), TRUE) /*!< Enter HDR Mode */
+#define I3C_CCC_DEFGRPA                     I3C_CCC_ID(0x2b, TRUE)      /*!< Define List of  Group Addresses */
+#define I3C_CCC_HDRDDR                      I3C_CCC_ENTHDR((0))         /*!< Enter HDR-DDR Mode */
+#define I3C_CCC_HDRBT                       I3C_CCC_ENTHDR((3))         /*!< Enter HDR-BT Mode */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* I3C CCC (Common Command Codes) Unicast-only commands                                                    */
@@ -71,20 +88,21 @@ extern "C"
 #define I3C_CCC_GETBCR                      I3C_CCC_ID(0xe, FALSE)  /*!< Get Bus Characteristics Register */
 #define I3C_CCC_GETDCR                      I3C_CCC_ID(0xf, FALSE)  /*!< Get Device Characteristics Register */
 #define I3C_CCC_GETSTATUS                   I3C_CCC_ID(0x10, FALSE) /*!< Get Device Status */
-#define I3C_CCC_GETACCMST                   I3C_CCC_ID(0x11, FALSE) /*!< Get Accept Controller Role */
-#define I3C_CCC_GETACCCR                    I3C_CCC_GETACCMST       /*!< GETACCMST has been renamed to GETACCCR */
-#define I3C_CCC_SETBRGTGT                   I3C_CCC_ID(0x13, FALSE) /*!< Set Bridge Targets */
+#define I3C_CCC_GETACCCR                    I3C_CCC_ID(0x11, FALSE) /*!< Get Accept Controller Role */
+#define I3C_CCC_GETACCMST                   I3C_CCC_GETACCCR        /*!< GETACCMST has been renamed to GETACCCR */
 #define I3C_CCC_GETMXDS                     I3C_CCC_ID(0x14, FALSE) /*!< Get Max Data Speed */
 #define I3C_CCC_GETCAPS                     I3C_CCC_ID(0x15, FALSE) /*!< Get Optional Feature Capabilities */
 #define I3C_CCC_GETXTIME                    I3C_CCC_ID(0x19, FALSE) /*!< Get Exchange Timing Information */
+#define I3C_CCC_SETGRPA                     I3C_CCC_ID(0x1b, FALSE) /*!< Set Group Address */
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  COMMAND_QUEUE_PORT_ADDR_ASSGN_CMD - CMD_ATTR field values                                              */
+/*  I3C Controller COMMAND_QUEUE_PORT - CMD_ATTR field values                                              */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_CMDATTR_TRANSFER_CMD   0x0       /*!<  (TRANSFER_CMD): Transfer Command */
-#define I3C_CMDATTR_TRANSFER_ARG   0x1       /*!<  (TRANSFER_ARG): Transfer Argument */
-#define I3C_CMDATTR_SHORT_DATA_ARG 0x2       /*!<  (SHORT_DATA_ARG): Short Data Argument */
-#define I3C_CMDATTR_ADDR_ASSGN_CMD 0x3       /*!<  (ADDR_ASSGN_CMD): Address Assignment Command */
+#define I3C_CMDATTR_TRANSFER_CMD            (0x0UL) /*!<  (TRANSFER_CMD): Transfer Command */
+#define I3C_CMDATTR_TRANSFER_ARG            (0x1UL) /*!<  (TRANSFER_ARG): Transfer Argument */
+#define I3C_CMDATTR_SHORT_DATA_ARG          (0x2UL) /*!<  (SHORT_DATA_ARG): Short Data Argument */
+#define I3C_CMDATTR_ADDR_ASSGN_CMD          (0x3UL) /*!<  (ADDR_ASSGN_CMD): Address Assignment Command */
+#define I3C_SDAP_MAX_SIZE                   (3)     /*!<  (SDAP_SIZE): Maximum Short Data Size */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Maximum RX/TX FIFO and Response/Command Queue Constant Definitions                                 */
@@ -97,8 +115,29 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Device Type Constant Definitions                                                                   */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_DEVTYPE_I2C        (0x1U)               /*!< Target Device Type is I2C slave */
-#define I3C_DEVTYPE_I3C        (0x0U)               /*!< Target Device Type is I3C slave */
+#define I3C_DEVTYPE_I2C                     (0x1UL) /*!< Target Device Type is I2C Target */
+#define I3C_DEVTYPE_I3C                     (0x0UL) /*!< Target Device Type is I3C Target */
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*  I3C Transfer ID Constant Definitions                                                                   */
+/*---------------------------------------------------------------------------------------------------------*/
+#define I3C_TX_TID                          (0x05)  /*!< Magic numbers for identifying TX transfer responses */
+#define I3C_RX_TID                          (0x03)  /*!< Magic numbers for identifying RX transfer responses */
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*  I3C Support ENTDAA CCC or Hot-Join Generation Constant Definitions                                     */
+/*---------------------------------------------------------------------------------------------------------*/
+#define I3C_SUPPORT_ENTDAA                  (0UL)   /*!< Support to receive ENTDAA CCC */
+#define I3C_SUPPORT_ADAPTIVE_HJ             (1UL)   /*!< Support to initiate Hot-Join after receiving broadcast header 7'h7E */
+#define I3C_SUPPORT_IMMEDIATE_HJ            (2UL)   /*!< Support to initiate Hot-Join immediately after I3C controller enabled */
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*  I3C Target In-Band Interrupt Type Constant Definitions                                                 */
+/*---------------------------------------------------------------------------------------------------------*/
+#define I3C_IBI_TYPE_TIR                    (0)
+#define I3C_IBI_TYPE_CR                     (1)
+#define I3C_IBI_TYPE_TS                     (2)
+#define I3C_IBI_TYPE_HJ                     (3)
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Transfer Mode and Spped Constant Definitions                                                       */
@@ -114,20 +153,7 @@ extern "C"
 #define I3C_DEVI2C_SPEED_I2CFMPLUS                  (1UL << I3C_CMDQUE_SPEED_Pos)
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  I3C Transfer ID Constant Definitions                                                                   */
-/*---------------------------------------------------------------------------------------------------------*/
-#define I3C_TX_TID  0x05                            /*!< Magic numbers for identifying TX transfer responses */
-#define I3C_RX_TID  0x03                            /*!< Magic numbers for identifying RX transfer responses */
-
-/*---------------------------------------------------------------------------------------------------------*/
-/*  I3C Support ENTDAA CCC or Hot-Join Generation Constant Definitions                                     */
-/*---------------------------------------------------------------------------------------------------------*/
-#define I3C_SUPPORT_ENTDAA                  (0UL)   /*!< Support to receive ENTDAA CCC */
-#define I3C_SUPPORT_ADAPTIVE_HJ             (1UL)   /*!< Support to initiate Hot-Join after receiving broadcast header 7'h7E */
-#define I3C_SUPPORT_IMMEDIATE_HJ            (2UL)   /*!< Support to initiate Hot-Join immediately after I3C controller enabled */
-
-/*---------------------------------------------------------------------------------------------------------*/
-/*  I3C Error Status in Response Queue Constant Definitions                                                */
+/*  I3C Controller Status in Response Queue Constant Definitions                                           */
 /*---------------------------------------------------------------------------------------------------------*/
 #define I3C_RESP_NO_ERR                     (0UL << I3C_RESPQUE_ERRSTS_Pos)     /*!< No error in response queue */
 #define I3C_RESP_CRC_ERR                    (1UL << I3C_RESPQUE_ERRSTS_Pos)     /*!< CRC error in response queue */
@@ -140,6 +166,42 @@ extern "C"
 #define I3C_RESP_WRITE_DATA_NACK_ERR        (9UL << I3C_RESPQUE_ERRSTS_Pos)     /*!< Master write I2C data NACK in response queue */
 #define I3C_RESP_MASTER_TERMINATE_ERR       (10UL << I3C_RESPQUE_ERRSTS_Pos)    /*!< Master early termination error in response queue */
 #define I3C_RESP_PEC_ERR                    (12UL << I3C_RESPQUE_ERRSTS_Pos)    /*!< PEC byte validation error occurs in response queue */
+
+#define I3C_CTRRESP_DATLEN_Pos              (0U)
+#define I3C_CTRRESP_DATLEN_Msk              (0x00FFFFUL << I3C_CTRRESP_DATLEN_Pos)
+#define I3C_CTRRESP_TID_Pos                 (24U)
+#define I3C_CTRRESP_TID_Msk                 (0xFUL << I3C_CTRRESP_TID_Pos)
+#define I3C_CTRRESP_ERRSTS_Pos              (28U)
+#define I3C_CTRRESP_ERRSTS_Msk              (0xFUL << I3C_CTRRESP_ERRSTS_Pos)
+#define I3C_CTRRESP_NO_ERR                  (0UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< No Error */
+#define I3C_CTRRESP_CRC_ERR                 (1UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< CRC Error occurred in the HDR-DDR or HDR-BT Read Transfer */
+#define I3C_CTRRESP_PARITY_ERR              (2UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< Parity Error occurred in HDR Read Transfers */
+#define I3C_CTRRESP_FRAME_ERR               (3UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< Frame Error occurred in HDR Read Transfers */
+#define I3C_CTRRESP_BRD_ADDR_NACK_ERR       (4UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< I3C Broadcast Address NACK Error (Indicates no I3C Target is present in the system) */
+#define I3C_CTRRESP_ADDR_NACK_ERR           (5UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< Target Address NACK */
+#define I3C_CTRRESP_FLOW_ERR                (6UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< Receive Buffer Overflow/Transmit Buffer Underflow in HDR Transfers */
+#define I3C_CTRRESP_TRANS_ABORTED_ERR       (8UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< Transfer Aborted */
+#define I3C_CTRRESP_WRITE_NACK_ERR          (9UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< I2C Target Write Data NACK Error */
+#define I3C_CTRRESP_PEC_ERR                 (12UL << I3C_CTRRESP_ERRSTS_Pos)    /*!< PEC byte validation error occurs in read transfers when PEC function enabled */
+#define I3C_CTRRESP_INITIAL_VALUE           (0xFFFFFFFFUL)                      /*!< Initial value */
+#define I3C_IBIQSTS_NACK                    (0x8 << I3C_IBISTS_IBISTS_Pos)
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*  I3C Target Status in Response Queue Constant Definitions                                               */
+/*---------------------------------------------------------------------------------------------------------*/
+#define I3C_TGTRESP_DATLEN_Pos              (0U)
+#define I3C_TGTRESP_DATLEN_Msk              (0xFFFFUL << I3C_TGTRESP_DATLEN_Pos)
+#define I3C_TGTRESP_TID_Pos                 (24U)
+#define I3C_TGTRESP_TID_Msk                 (0x3UL << I3C_TGTRESP_TID_Pos)
+#define I3C_TGTRESP_ERRSTS_Pos              (28U)
+#define I3C_TGTRESP_ERRSTS_Msk              (0xFUL << I3C_TGTRESP_ERRSTS_Pos)
+#define I3C_TGTRESP_NO_ERR                  (0UL << I3C_TGTRESP_ERRSTS_Pos)     /*!< No Error */
+#define I3C_TGTRESP_CRC_ERR                 (1UL << I3C_TGTRESP_ERRSTS_Pos)     /*!< CRC Error (Controller write in DDR mode) */
+#define I3C_TGTRESP_PARITY_ERR              (2UL << I3C_TGTRESP_ERRSTS_Pos)     /*!< Parity Error (Controller write in both DDR and SDR mode) */
+#define I3C_TGTRESP_FRAME_ERR               (3UL << I3C_TGTRESP_ERRSTS_Pos)     /*!< Frame Error (Controller write in HDR mode) */
+#define I3C_TGTRESP_FLOW_ERR                (6UL << I3C_TGTRESP_ERRSTS_Pos)     /*!< Underflow/Overflow Error */
+#define I3C_TGTRESP_CONTROLLER_TERMINATE_ERR    (10UL << I3C_TGTRESP_ERRSTS_Pos)    /*!< Controller early terminal Error */
+#define I3C_TGTRESP_INITIAL_VALUE           (0xFFFFFFFFUL)                      /*!< Initial value */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Reset Operation Constant Definitions                                                               */
@@ -155,13 +217,18 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 #define I3C_INTSTS_TX_EMPTY_THLD            (I3C_INTSTS_TXTH_Msk)       /*!< TX FIFO empty count threshold status */
 #define I3C_INTSTS_RX_THLD                  (I3C_INTSTS_RXTH_Msk)       /*!< RX FIFO received count threshold status */
+#define I3C_INTSTS_IBI_RECEIVED             (I3C_INTSTS_IBITH_Msk)      /*!< IBI buffer received status for Controller */
 #define I3C_INTSTS_CMDQ_EMPTY_THLD          (I3C_INTSTS_CMDRDY_Msk)     /*!< Command Queue empty count threshold status */
 #define I3C_INTSTS_RESPQ_READY              (I3C_INTSTS_RESPRDY_Msk)    /*!< Response Queue received count threshold status */
-#define I3C_INTSTS_CCC_UPDATED              (I3C_INTSTS_CCCUPD_Msk)     /*!< CCC register value updated status */
-#define I3C_INTSTS_DA_ASSIGNED              (I3C_INTSTS_DAA_Msk)        /*!< Dynamic Address assigned status */
+#define I3C_INTSTS_TRANSFER_ABORT           (I3C_INTSTS_TFRABORT_Msk)   /*!< Transfer abort status for Controller */
+#define I3C_INTSTS_CCC_UPDATED              (I3C_INTSTS_CCCUPD_Msk)     /*!< CCC register value updated status for Target */
+#define I3C_INTSTS_DA_ASSIGNED              (I3C_INTSTS_DAA_Msk)        /*!< Dynamic Address assigned status for Target */
 #define I3C_INTSTS_TRANSFER_ERR             (I3C_INTSTS_TFRERR_Msk)     /*!< Transfer error status */
-#define I3C_INTSTS_READ_REQUEST             (I3C_INTSTS_READREQ_Msk)    /*!< Read request received status */
-#define I3C_INTSTS_IBI_UPDATED              (I3C_INTSTS_IBIUPD_Msk)     /*!< IBI request status */
+#define I3C_INTSTS_DEFSLV                   (I3C_INTSTS_DEFSLV_Msk)    /*!< Define Target CCC received status for Secondary Controller */
+#define I3C_INTSTS_READ_REQUEST             (I3C_INTSTS_READREQ_Msk)    /*!< Read request received status for Target */
+#define I3C_INTSTS_IBI_UPDATED              (I3C_INTSTS_IBIUPD_Msk)     /*!< IBI request status for Target */
+#define I3C_INTSTS_BUSOWNER_UPDATED         (I3C_INTSTS_BUSOWNER_Msk)   /*!< Bus owner updated status */
+#define I3C_INTSTS_BUSRST_DONE              (I3C_INTSTS_BUSRSTDN_Msk)   /*!< Bus Reset Pattern done status for Controller */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Interrupt Enable Constant Definitions                                                              */
@@ -199,22 +266,101 @@ extern "C"
 
 /** @} end of group I3C_EXPORTED_CONSTANTS */
 
+/** @addtogroup I3C_EXPORTED_TYPEDEF I3C Exported Type Defines
+  @{
+*/
+typedef struct
+{
+    uint32_t    RxBufAddr;
+    uint32_t    RxBufLen;
+    uint8_t     TargetID;
+    uint8_t     ErrSts;
+} TGTRESP_T;
+
+typedef struct
+{
+    I3C_T       *port;
+    uint32_t    engclk;
+
+    uint32_t    device_role;
+
+    uint8_t     main_controller_da;
+    uint8_t     main_target_sa;
+
+    uint8_t     target_daa_mode;
+    uint8_t     target_sa[7];
+    uint8_t     target_da[9];
+    uint8_t     target_index;       // 0:target, 1~4:virtual target 1~4, 5~8:group target 1~4
+    uint8_t     target_count;
+    uint8_t     target_extcmd;      // extented command 0~7
+
+    uint32_t    speed_mode;
+    uint32_t    i2c_fm_freq;
+    uint32_t    i2c_fm_plus_freq;
+    uint32_t    i3c_sdr_freq;
+
+    volatile uint32_t   cmd_response;   // Command response
+
+    uint32_t    ibi_status;
+    uint8_t     is_last_cmd;
+
+    uint8_t     ccc_code;           // CCC code
+    uint8_t     is_HDR_cmd;         // Is for HDR-DDR read transfer
+    uint8_t     HDR_cmd;            // HDR command code
+    uint8_t     is_HDRBT_cmd;       // Is for HDR-BT read transfer
+    uint32_t    HDRBT_cmd;          // HDR-BT command code
+
+    uint8_t     is_DB;              // Defining Byte Present
+    uint8_t     DB;                 // Defining Byte Value
+
+    uint8_t     tx_id;
+    uint8_t     *rx_buf;
+    uint32_t    rx_len;
+    uint8_t     *tx_buf;
+    uint32_t    tx_len;
+
+    uint8_t     irq_enable;
+    volatile uint32_t    intsts;
+
+    uint8_t     ibi_type;
+    uint8_t     ibi_id;
+    uint8_t     ibi_MDB;
+    uint8_t     ibi_len;
+    uint8_t     ibi_TS;
+    uint32_t    ibi_payload;
+    uint8_t     *ibi_buf;
+
+    TGTRESP_T   tgtRespQ[I3C_DEVICE_RESP_QUEUE_CNT];
+    uint32_t    extcmdsts;
+
+    PDMA_T      *DMAPort;   // PDMA port
+    uint8_t     is_DMA;     // Is PDMA function enabled
+    uint8_t     RxDMACh;    // Rx PDMA channel
+    uint8_t     TxDMACh;    // Tx PDMA channel
+
+} I3C_DEVICE_T;
+/** @} end of group I3C_EXPORTED_TYPEDEF */
+
+/** @cond HIDDEN_SYMBOLS */
+extern I3C_DEVICE_T g_I3CDev;
+/** @endcond HIDDEN_SYMBOLS */
+
 
 /** @addtogroup I3C_EXPORTED_FUNCTIONS I3C Exported Functions
   @{
 */
 
 /**
-  * @brief      Check I3C is operated as Master Mode
+  * @brief      Check I3C is operated as Controller Mode
   *
   * @param[in]  i3c     The pointer of the specified I3C module
   *
-  * @retval     0       Device Operation Mode is Slave
-  * @retval     1       Device Operation Mode is Master
+  * @retval     0       Device Operation Mode is Target
+  * @retval     1       Device Operation Mode is Controller
   *
-  * @details    This macro checks if the I3C Operation Mode is Master.
+  * @details    This macro checks if the I3C Operation Mode is Controller.
   */
-#define I3C_IS_MASTER(i3c)                  ((((i3c)->DEVCTLE&I3C_DEVCTLE_OPERMODE_Msk)==I3C_MASTER)? 1:0)
+#define I3C_IS_CONTROLLER(i3c)              ((((i3c)->DEVCTLE&I3C_DEVCTLE_OPERMODE_Msk)==I3C_CONTROLLER)? 1:0)
 
 /**
   * @brief      Check DMA is enabled
@@ -613,16 +759,16 @@ extern "C"
 #define I3C_IS_UNDERFLOW_ERR(i3c)           ((((i3c)->CCCDEVS&I3C_CCCDEVS_UDFERR_Msk)==0)? 0:1)
 
 /**
-  * @brief      Check Slave Busy Status Occurred
+  * @brief      Check Target Busy Status Occurred
   *
   * @param[in]  i3c     The pointer of the specified I3C module
   *
-  * @retval     0       Slave busy status error did not occur
-  * @retval     1       Slave busy status occurred
+  * @retval     0       Target busy status error did not occur
+  * @retval     1       Target busy status occurred
   *
-  * @details    This macro checks if Slave busy status occurred. This status can be cleared after the RESUME operation is complete.
+  * @details    This macro checks if Target busy status occurred. This status can be cleared after the RESUME operation is complete.
   */
-#define I3C_IS_SLAVE_BUSY(i3c)              ((((i3c)->CCCDEVS&I3C_CCCDEVS_SLVBUSY_Msk)==0)? 0:1)
+#define I3C_IS_TARGET_BUSY(i3c)              ((((i3c)->CCCDEVS&I3C_CCCDEVS_SLVBUSY_Msk)==0)? 0:1)
 
 /**
   * @brief      Check Overflow Error Occurred
@@ -645,7 +791,7 @@ extern "C"
   * @retval     1       Data not ready status occurred
   *
   * @details    This macro checks if data not ready status occurred.
-  *             This status can be cleared after receiving GETSTATUS CCC or successful the next Slave write transfer.
+  *             This status can be cleared after receiving GETSTATUS CCC or successful the next Target write transfer.
   */
 #define I3C_IS_DATA_NOT_READY(i3c)          ((((i3c)->CCCDEVS&I3C_CCCDEVS_DATNRDY_Msk)==0)? 0:1)
 
@@ -658,7 +804,7 @@ extern "C"
   * @retval     1       Buffer not available status occurred
   *
   * @details    This macro checks if buffer not available status occurred.
-  *             This status can be cleared after receiving GETSTATUS CCC or successful the next Slave read transfer.
+  *             This status can be cleared after receiving GETSTATUS CCC or successful the next Target read transfer.
   */
 #define I3C_IS_BUFFER_NOT_AVAIL(i3c)        ((((i3c)->CCCDEVS&I3C_CCCDEVS_BFNAVAIL_Msk)==0)? 0:1)
 
@@ -771,6 +917,7 @@ __STATIC_INLINE int32_t I3C_Enable(I3C_T *i3c);
 __STATIC_INLINE int32_t I3C_Disable(I3C_T *i3c);
 __STATIC_INLINE void    I3C_EnableDMA(I3C_T *i3c);
 __STATIC_INLINE void    I3C_DisableDMA(I3C_T *i3c);
+__STATIC_INLINE void    I3C_DelayLoop(uint32_t counts);
 
 /**
   * @brief      Enable I3C Controller
@@ -785,7 +932,6 @@ __STATIC_INLINE void    I3C_DisableDMA(I3C_T *i3c);
 __STATIC_INLINE int32_t I3C_Enable(I3C_T *i3c)
 {
     volatile uint32_t u32Timeout;
-
     i3c->DEVCTL |= I3C_DEVCTL_ENABLE_Msk;
     u32Timeout = (SystemCoreClock / 1000);
 
@@ -812,7 +958,6 @@ __STATIC_INLINE int32_t I3C_Enable(I3C_T *i3c)
 __STATIC_INLINE int32_t I3C_Disable(I3C_T *i3c)
 {
     volatile uint32_t u32Timeout;
-
     i3c->DEVCTL &= ~I3C_DEVCTL_ENABLE_Msk;
     u32Timeout = (SystemCoreClock / 1000);
 
@@ -851,25 +996,45 @@ __STATIC_INLINE void I3C_DisableDMA(I3C_T *i3c)
     i3c->DEVCTL &= ~I3C_DEVCTL_DMAEN_Msk;
 }
 
+__STATIC_INLINE void I3C_DelayLoop(uint32_t counts)
+{
+    volatile uint32_t i = counts;
+
+    if (i != 0)
+    {
+        while (i--) {}
+    }
+}
 
 
-void    I3C_Open(I3C_T *i3c, uint32_t u32MasterSlave, uint8_t u8StaticAddr, uint32_t u32ModeSel);
-int32_t I3C_ResetAndResume(I3C_T *i3c, uint32_t u32ResetMask, uint32_t u32EnableResume);
-int32_t I3C_ParseRespQueue(I3C_T *i3c, uint32_t *pu32RespQ);
-int32_t I3C_SetCmdQueueAndData(I3C_T *i3c, uint8_t u8TID, uint32_t *pu32TxBuf, uint16_t u16WriteBytes);
-int32_t I3C_SendIBIRequest(I3C_T *i3c, uint8_t u8MandatoryData, uint32_t u32PayloadData, uint8_t u8PayloadLen);
-int32_t I3C_SendMRRequest(I3C_T *i3c);
-int32_t I3C_EnableHJRequest(I3C_T *i3c, uint32_t u32ModeSel);
-int32_t I3C_DisableHJRequest(I3C_T *i3c);
-int32_t I3C_RespErrorRecovery(I3C_T *i3c, uint32_t u32RespStatus);
-int32_t I3C_SetDeviceAddr(I3C_T *i3c, uint8_t u8DevIndex, uint8_t u8DevType, uint8_t u8DAddr, int8_t u8SAddr);
-int32_t I3C_Write(I3C_T *i3c, uint8_t u8DevIndex, uint32_t u32Speed, uint32_t *pu32TxBuf, uint16_t u16WriteBytes);
-int32_t I3C_Read(I3C_T *i3c, uint8_t u8DevIndex, uint32_t u32Speed, uint32_t *pu32RxBuf, uint16_t u16ReadBytes);
-int32_t I3C_BroadcastRSTDAA(I3C_T *i3c);
-int32_t I3C_BroadcastENTDAA(I3C_T *i3c, uint8_t u8DevCount);
-int32_t I3C_UnicastSETDASA(I3C_T *i3c, uint8_t u8DevIndex);
-int32_t I3C_UnicastGETACCMST(I3C_T *i3c, uint8_t u8DevIndex, uint32_t *pu32RxBuf);
+/* Common APIs */
+int32_t I3C_DeviceInit(I3C_DEVICE_T *dev);
+int32_t I3C_SetDeviceAddr(I3C_T *i3c, uint8_t u8DevIndex, uint8_t u8DevType, uint8_t u8DAddr, uint8_t u8SAddr);
+void    I3C_BusClkConfig(I3C_DEVICE_T *dev);
+void    I3C_PresentStateInfo(I3C_DEVICE_T *dev);
+int32_t I3C_ConfigRxDMA(I3C_DEVICE_T *dev, uint32_t u32Src, uint32_t u32Dest, uint32_t u32ByteCnts);
+int32_t I3C_ConfigTxDMA(I3C_DEVICE_T *dev, uint32_t u32Src, uint32_t u32Dest, uint32_t u32ByteCnts);
 
+/* Controller APIs */
+int32_t I3C_CtrDAA(I3C_DEVICE_T *dev);
+int32_t I3C_CtrCCCSet(I3C_DEVICE_T *dev);
+int32_t I3C_CtrCCCGet(I3C_DEVICE_T *dev);
+int32_t I3C_CtrWrite(I3C_DEVICE_T *dev);
+int32_t I3C_CtrRead(I3C_DEVICE_T *dev);
+int32_t I3C_CtrBTWrite(I3C_DEVICE_T *dev);
+int32_t I3C_CtrBTRead(I3C_DEVICE_T *dev);
+int32_t I3C_CtrDEFTGTS(I3C_DEVICE_T *dev);
+int32_t I3C_CtrGETACCCR(I3C_DEVICE_T *dev);
+int32_t I3C_CtrGetIBI(I3C_DEVICE_T *dev);
+void I3C_CtrHandleTransErr(I3C_DEVICE_T *dev);
+
+/* Target APIs */
+int32_t I3C_TgtRecv(I3C_DEVICE_T *dev);
+int32_t I3C_TgtSend(I3C_DEVICE_T *dev);
+int32_t I3C_TgtGetSendResult(I3C_DEVICE_T *dev);
+int32_t I3C_TgtIssueIBI(I3C_DEVICE_T *dev);
+void I3C_TgtHandleIntSts(I3C_DEVICE_T *dev);
+void I3C_TgtHandleTransErr(I3C_DEVICE_T *dev);
 
 /** @} end of group I3C_EXPORTED_FUNCTIONS */
 /** @} end of group I3C_Driver */

@@ -51,7 +51,7 @@ extern "C"
 #define USBH_ERR_DISCONNECTED       -259   /*!< USB device was disconnected                     */
 
 #define USBH_ERR_TRANSACTION        -271   /*!< USB transaction timeout, CRC, Bad PID, etc.     */
-#define USBH_ERR_BABBLE_DETECTED    -272   /*!< A “babble” is detected during the transaction   */
+#define USBH_ERR_BABBLE_DETECTED    -272   /*!< A "babble" is detected during the transaction   */
 #define USBH_ERR_DATA_BUFF          -274   /*!< Data buffer overrun or underrun                 */
 
 #define USBH_ERR_CC_NO_ERR          -280   /*!< OHCI CC code - no error                         */
@@ -163,6 +163,7 @@ typedef enum image_format_e
 /*                                                                  */
 /*------------------------------------------------------------------*/
 extern void usbh_core_init(void);
+extern void usbh_core_init_ex(int ovc_alv);
 extern void usbh_core_deinit(void);
 extern int  usbh_pooling_hubs(void);
 extern void usbh_install_conn_callback(CONN_FUNC *conn_func, CONN_FUNC *disconn_func);
@@ -245,20 +246,19 @@ extern int  usbh_umas_reset_disk(int drv_no);
 /*                                                                  */
 /*------------------------------------------------------------------*/
 extern void usbh_uac_init(void);
-extern void usbh_core_init_ex(int ovc_alv);
-extern int usbh_uac_open(struct uac_dev_t *audev);
+extern int usbh_uac_open(struct uac_dev_t *uac);
 extern struct uac_dev_t *usbh_uac_get_device_list(void);
-extern int usbh_uac_get_channel_number(struct uac_dev_t *audev, uint8_t target);
-extern int usbh_uac_get_bit_resolution(struct uac_dev_t *audev, uint8_t target, uint8_t *byte_cnt);
-extern int usbh_uac_get_sampling_rate(struct uac_dev_t *audev, uint8_t target, uint32_t *srate_list, int max_cnt, uint8_t *type);
-extern int usbh_uac_sampling_rate_control(struct uac_dev_t *audev, uint8_t target, uint8_t req, uint32_t *srate);
-extern int usbh_uac_mute_control(struct uac_dev_t *audev, uint8_t target, uint8_t req, uint16_t chn, uint8_t *mute);
-extern int usbh_uac_vol_control(struct uac_dev_t *audev, uint8_t target, uint8_t req, uint16_t chn, uint16_t *volume);
-extern int usbh_uac_auto_gain_control(struct uac_dev_t *audev, uint8_t target, uint8_t req, uint16_t chn, uint8_t *bAGC);
+extern int usbh_uac_get_channel_number(struct uac_dev_t *uac, uint8_t target);
+extern int usbh_uac_get_bit_resolution(struct uac_dev_t *uac, uint8_t target, uint8_t *byte_cnt);
+extern int usbh_uac_get_sampling_rate(struct uac_dev_t *uac, uint8_t target, uint32_t *srate_list, int max_cnt, uint8_t *type);
+extern int usbh_uac_sampling_rate_control(struct uac_dev_t *uac, uint8_t target, uint8_t req, uint32_t *srate);
+extern int usbh_uac_mute_control(struct uac_dev_t *uac, uint8_t target, uint8_t req, uint16_t chn, uint8_t *mute);
+extern int usbh_uac_vol_control(struct uac_dev_t *uac, uint8_t target, uint8_t req, uint16_t chn, uint16_t *volume);
+extern int usbh_uac_auto_gain_control(struct uac_dev_t *uac, uint8_t target, uint8_t req, uint16_t chn, uint8_t *bAGC);
 extern int usbh_uac_start_audio_in(struct uac_dev_t *uac, UAC_CB_FUNC *func);
-extern int usbh_uac_stop_audio_in(struct uac_dev_t *audev);
+extern int usbh_uac_stop_audio_in(struct uac_dev_t *uac);
 extern int usbh_uac_start_audio_out(struct uac_dev_t *uac, UAC_CB_FUNC *func);
-extern int usbh_uac_stop_audio_out(struct uac_dev_t *audev);
+extern int usbh_uac_stop_audio_out(struct uac_dev_t *uac);
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
@@ -269,9 +269,12 @@ extern void usbh_uvc_init(void);
 extern struct uvc_dev_t *usbh_uvc_get_device_list(void);
 extern int usbh_get_video_format(struct uvc_dev_t *vdev, int index, IMAGE_FORMAT_E *format, int *width, int *height);
 extern int usbh_set_video_format(struct uvc_dev_t *vdev, IMAGE_FORMAT_E format, int width, int height);
+extern int usbh_get_video_still_format(struct uvc_dev_t *vdev, int index, IMAGE_FORMAT_E *format, int *width, int *height);
+extern int usbh_set_video_still_format(struct uvc_dev_t *vdev, IMAGE_FORMAT_E format, int width, int height);
 extern void usbh_uvc_set_video_buffer(struct uvc_dev_t *vdev, uint8_t *image_buff, int img_buff_size);
 extern int usbh_uvc_start_streaming(struct uvc_dev_t *vdev, UVC_CB_FUNC *func);
 extern int usbh_uvc_stop_streaming(struct uvc_dev_t *vdev);
+extern int usbh_uvc_still_image_trigger_control(struct uvc_dev_t *vdev, uint8_t capture);
 
 /// @cond HIDDEN_SYMBOLS
 

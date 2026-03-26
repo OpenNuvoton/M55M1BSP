@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -49,6 +52,24 @@
     #warning  I2S driver requires at least one I2S peripheral configured in RTE_SAI.h
 #else
     #define DRIVER_CONFIG_VALID     1
+#endif
+
+#if defined (RTE_Driver_SPI)
+    #if RTE_SAI2 && RTE_SPI0
+        #error "SPI0 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
+
+    #if RTE_SAI3 && RTE_SPI1
+        #error "SPI1 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
+
+    #if RTE_SAI4 && RTE_SPI2
+        #error "SPI2 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
+
+    #if RTE_SAI5 && RTE_SPI3
+        #error "SPI3 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
 #endif
 
 // *****************************************************************************

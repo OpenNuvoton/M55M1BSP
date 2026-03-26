@@ -338,8 +338,8 @@ union passive_cable_vdo_rev30
  *           0 = SBU is passive
  *           1 = SBU is active
  * <6:5>   : VBUS Current Handling Capability
- *           When VBUS Through Cable is “No”, this field Shall be Ignored.
- *           When VBUS Though Cable is “Yes”:
+ *           When VBUS Through Cable is "No", this field Shall be Ignored.
+ *           When VBUS Though Cable is "Yes":
  *           00b = USB Type-C Default Current
  *           01b = 3A
  *           10b = 5A
@@ -347,9 +347,9 @@ union passive_cable_vdo_rev30
  * <4>     : VBUS Through Cable
  *           0 = No
  *           1 = Yes
- * <3>     : SOP” Controller Present
- *           0 = No SOP” controller present
- *           1 = SOP” controller present
+ * <3>     : SOP" Controller Present
+ *           0 = No SOP" controller present
+ *           1 = SOP" controller present
  * <2:0>   : USB Highest Speed
  *           000b = [USB 2.0] only, no SuperSpeed support
  *           001b = [USB 3.2]/[USB4] Gen1
@@ -391,7 +391,7 @@ union active_cable_vdo1_rev30
  * -------------------------------------------------------------
  * <31:24> : Maximum Operating Temperature
  *           The maximum internal operating temperature.
- *           It may or may not reflect the plug’s skin temperature.
+ *           It may or may not reflect the plug's skin temperature.
  * <23:16> : Shutdown Temperature
  *           The temperature at which the cable will go into thermal shutdown
  *           so as not to exceed the allowable plug skin temperature.
@@ -417,7 +417,7 @@ union active_cable_vdo1_rev30
  *           0b = [USB4] supported
  *           1b = [USB4] not supported
  * <7:6>   : USB 2.0 Hub Hops Consumed
- *           Number of [USB 2.0] ‘hub hops’ cable consumes.
+ *           Number of [USB 2.0] 'hub hops' cable consumes.
  *           Shall be set to 0 if USB 2.0 not supported.
  * <5>     : USB 2.0 Supported
  *           0b = [USB 2.0] supported
@@ -492,7 +492,7 @@ union active_cable_vdo2_rev30
  *           Values 001b..111b are Reserved and Shall Not be used
  * <20:8>  : Reserved. Shall be set to zero.
  * <7:5>   : VCONN power
- *           When the VCONN required field is set to “Yes” VCONN power
+ *           When the VCONN required field is set to "Yes" VCONN power
  *           needed by adapter for full functionality
  *           000b = 1W
  *           001b = 1.5W
@@ -502,7 +502,7 @@ union active_cable_vdo2_rev30
  *           101b = 5W
  *           110b = 6W
  *           111b = Reserved, Shall Not be used
- *           When the VCONN required field is set to “No” Reserved,
+ *           When the VCONN required field is set to "No" Reserved,
  *           Shall be set to zero.
  * <4>     : VCONN required
  *           0 = No
@@ -811,9 +811,9 @@ union passive_cable_vdo_rev20
  * <4>     : VBUS through cable
  *           0 = No
  *           1 = Yes
- * <3>     : SOP” controller present?
- *           1 = SOP” controller present
- *           0 = No SOP” controller present
+ * <3>     : SOP" controller present?
+ *           1 = SOP" controller present
+ *           0 = No SOP" controller present
  * <2:0>   : USB SuperSpeed Signaling Support
  *           000b = USB 2.0 only, no SuperSpeed support
  *           001b = [USB 3.1] Gen1
@@ -867,7 +867,7 @@ union active_cable_vdo_rev20
  *           0 = Fixed
  *           1 = Configurable
  * <7:5>   : VCONN power
- *           When the VCONN required field is set to “Yes” VCONN power
+ *           When the VCONN required field is set to "Yes" VCONN power
  *           needed by adapter for full functionality
  *           000b = 1W
  *           001b = 1.5W
@@ -877,7 +877,7 @@ union active_cable_vdo_rev20
  *           101b = 5W
  *           110b = 6W
  *           111b = Reserved, Shall Not be used
- *           When the VCONN required field is set to “No” Reserved,
+ *           When the VCONN required field is set to "No" Reserved,
  *           Shall be set to zero.
  * <4>     : VCONN required
  *           0 = No

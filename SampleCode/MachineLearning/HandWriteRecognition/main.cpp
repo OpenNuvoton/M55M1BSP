@@ -457,7 +457,7 @@ static void ResetTouchPositions(void)
 int main(void)
 {
 
-    uint16_t cc_index;
+    uint16_t cc_index = 0;
     float cc[340];
     float cc_max = -1;
     g_u32Ticks = 0;

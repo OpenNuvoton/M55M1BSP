@@ -8,7 +8,7 @@
 *****************************************************************************/
 
 #include <string.h>
-#include "M55M1_User.h"
+#include "NuMicro.h"
 
 #if 0
     #define DBG_PRINTF      printf
@@ -79,7 +79,7 @@ void USBD_MemReset(uint8_t *src, uint32_t size)
   *
   * @details    This function will enable USB controller, USB PHY transceiver and pull-up resistor of USB_D+ pin. USB PHY will drive SE0 to bus.
   */
-void USBD_Open(const S_USBD_INFO_T *param)
+void USBD_Open(const S_USBD_INFO_T *param, CLASS_REQ pfnClassReq, SET_INTERFACE_REQ pfnSetInterface)
 {
     g_usbd_sInfo = param;
 
@@ -99,7 +99,6 @@ void USBD_Open(const S_USBD_INFO_T *param)
   *
   * @details  Enable WAKEUP, FLDET, USB and BUS interrupts. Disable software-disconnect function after 100ms delay with SysTick timer.
   */
-#if 0   // Move to main function
 void USBD_Start(void)
 {
     CLK_SysTickDelay(100000);
@@ -112,7 +111,6 @@ void USBD_Start(void)
     /* Enable USB-related interrupts. */
     USBD_ENABLE_INT(USBD_INT_BUS | USBD_INT_USB | USBD_INT_FLDET | USBD_INT_WAKEUP);
 }
-#endif
 
 /**
   * @brief      Get the received SETUP packet
@@ -477,8 +475,6 @@ void USBD_CtrlIn(void)
     }
 }
 
-
-
 /**
   * @brief    Reset software flags
   *
@@ -500,7 +496,6 @@ void USBD_SwReset(void)
     // Reset USB device address
     USBD->FADDR = 0;
 }
-
 
 /*@}*/ /* end of group USBD_EXPORTED_FUNCTIONS */
 

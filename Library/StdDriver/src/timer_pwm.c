@@ -56,7 +56,10 @@ void TPWM_SetCounterClockSource(TIMER_T *timer, uint32_t u32CntClkSrc)
 uint32_t TPWM_ConfigOutputFreqAndDuty(TIMER_T *timer, uint32_t u32Frequency, uint32_t u32DutyCycle)
 {
     uint32_t u32PWMClockFreq, u32TargetFreq;
-    uint32_t u32Prescaler = 0x1000UL, u32Period;
+    uint32_t u32Prescaler = 0x1000UL, u32Period = 1UL;
+
+    if (u32Frequency == 0)
+        return u32Frequency;
 
     if ((timer == TIMER0) || (timer == TIMER1))
     {
@@ -67,7 +70,10 @@ uint32_t TPWM_ConfigOutputFreqAndDuty(TIMER_T *timer, uint32_t u32Frequency, uin
         u32PWMClockFreq = CLK_GetPCLK3Freq();
     }
 
-    /* Calculate u16PERIOD and u16PSC */
+    if (u32Frequency > u32PWMClockFreq)
+        return 0;
+
+    /* Calculate u32Period and u32Prescaler */
     for (u32Prescaler = 1UL; u32Prescaler <= 0x1000UL; u32Prescaler++)
     {
         u32Period = (u32PWMClockFreq / u32Prescaler) / u32Frequency;
@@ -77,6 +83,12 @@ uint32_t TPWM_ConfigOutputFreqAndDuty(TIMER_T *timer, uint32_t u32Frequency, uin
         {
             break;
         }
+    }
+
+    if (u32Prescaler > 0x1000UL)
+    {
+        u32Prescaler = 0x1000UL;
+        u32Period = 0x10000UL;
     }
 
     /* Store return value here 'cos we're gonna change u32Prescaler & u32Period to the real value to fill into register */
@@ -110,7 +122,7 @@ uint32_t TPWM_ConfigOutputFreqAndDuty(TIMER_T *timer, uint32_t u32Frequency, uin
   */
 void TPWM_EnableDeadTime(TIMER_T *timer, uint32_t u32DTCount)
 {
-    timer->PWMDTCTL = TIMER_PWMDTCTL_DTEN_Msk | u32DTCount;
+    timer->PWMDTCTL = TIMER_PWMDTCTL_DTEN_Msk | (u32DTCount & TIMER_PWMDTCTL_DTCNT_Msk);
 }
 
 /**
@@ -126,7 +138,7 @@ void TPWM_EnableDeadTime(TIMER_T *timer, uint32_t u32DTCount)
   */
 void TPWM_EnableDeadTimeWithPrescale(TIMER_T *timer, uint32_t u32DTCount)
 {
-    timer->PWMDTCTL = TIMER_PWMDTCTL_DTCKSEL_Msk | TIMER_PWMDTCTL_DTEN_Msk | u32DTCount;
+    timer->PWMDTCTL = TIMER_PWMDTCTL_DTCKSEL_Msk | TIMER_PWMDTCTL_DTEN_Msk | (u32DTCount & TIMER_PWMDTCTL_DTCNT_Msk);
 }
 
 /**

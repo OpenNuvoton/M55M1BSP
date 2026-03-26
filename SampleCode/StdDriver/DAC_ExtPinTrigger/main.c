@@ -73,7 +73,7 @@ void SYS_Init(void)
     /* Enable GPC peripheral clock */
     CLK_EnableModuleClock(GPIOC_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

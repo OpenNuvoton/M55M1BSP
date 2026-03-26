@@ -6,7 +6,7 @@
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
-#include <stdio.h>
+
 #include "fmc_user.h"
 
 int32_t g_FMC_i32ErrCode = 0;

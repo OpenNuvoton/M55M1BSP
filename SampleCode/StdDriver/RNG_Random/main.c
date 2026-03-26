@@ -51,7 +51,7 @@ void SYS_Init(void)
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
     SystemCoreClockUpdate();
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /* Enable CRYPTO0 module clock */
@@ -108,7 +108,6 @@ int main(void)
             printf("\n");
         }
 
-        CLK_SysTickDelay(100000);
     } while (1);
 
 }

@@ -274,7 +274,7 @@ typedef enum IRQn
 #pragma anon_unions
 #elif defined (__ICCARM__)
 #pragma language=extended
-#elif defined(__AFMCC_VERSION) && (__AFMCC_VERSION >= 6010050)
+#elif defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc11-extensions"
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
@@ -1404,7 +1404,7 @@ typedef enum IRQn
 #pragma pop
 #elif defined (__ICCARM__)
 /* leave anonymous unions enabled */
-#elif (__AFMCC_VERSION >= 6010050)
+#elif (__ARMCC_VERSION >= 6010050)
 #pragma clang diagnostic pop
 #elif defined (__GNUC__)
 /* anonymous unions are enabled by default */

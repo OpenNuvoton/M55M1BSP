@@ -57,14 +57,16 @@
 #define FLASH_SIZE      0x00002000
 
 /*--------------------- Cacheable SRAM Configuration ---------------------------
-; <h> SRAM Configuration
+; <h> Cacheable SRAM Configuration
 ;   <o0> SRAM Size (in Bytes)    <0x0-0x00150000:8>
-;   <o0> SRAM Base Address    <0x20100000-0x2024FFFF:8>
-;   <o1> SRAM Size (in Bytes) <0x0-0x00150000:8>
 ; </h>
  *----------------------------------------------------------------------------*/
+#define SRAM_CACHEABLE_SIZE	0x00130000
+
 #define SRAM_START      0x20100000
-#define SRAM_SIZE       0x00080000
+#define SRAM_SIZE       0x00150000
+#define SRAM_NONCACHEABLE_START	(SRAM_START + SRAM_CACHEABLE_SIZE)
+#define SRAM_NONCACHEABLE_SIZE	(SRAM_SIZE - SRAM_CACHEABLE_SIZE)
 #define LPSRAM_START    0x20310000
 #define LPSRAM_SIZE     0x00002000
 
@@ -74,8 +76,13 @@
 ;   <o1> Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
  *----------------------------------------------------------------------------*/
+#ifndef STACK_SIZE
 #define STACK_SIZE      0x00000800
+#endif
+
+#ifndef HEAP_SIZE
 #define HEAP_SIZE       0x00000800
+#endif
 
 /*--------------------- CMSE Veneer Configuration ---------------------------
 ; <h> CMSE Veneer Configuration
@@ -124,7 +131,7 @@
 #define __RO_SIZE           ( FLASH_SIZE - TZ_NSC_SIZE )
 
 #define __RW_BASE           ( SRAM_START )
-#define __RW_SIZE           ( SRAM_SIZE - HEAP_SIZE )
+#define __RW_SIZE           ( SRAM_CACHEABLE_SIZE - HEAP_SIZE )
 
 /*----------------------------------------------------------------------------
   Scatter Region definition
@@ -169,7 +176,7 @@ LR_ROM __RO_BASE __RO_SIZE  {           ; load region size_region
     }
 
     ; Check SRAM size overflow here and ImageLength is uncompressed size
-    ScatterAssert((ImageLength(RW_NOINIT) + ImageLength(RW_RAM)) < (__RW_SIZE - HEAP_SIZE))
+    ScatterAssert((ImageLength(RW_NOINIT) + ImageLength(RW_RAM)) < (__RW_SIZE))
 
 #if HEAP_SIZE > 0
     ARM_LIB_HEAP  __HEAP_BASE EMPTY  HEAP_SIZE {}       ; Reserve empty region for heap
@@ -187,6 +194,18 @@ LR_ROM __RO_BASE __RO_SIZE  {           ; load region size_region
     }
 
     ScatterAssert((ImageLength(DTCM_VTOR) + ImageLength(DTCM)) < (DTCM_SIZE - STACK_SIZE - __STACKSEAL_SIZE))	; ImageLength is uncompressed size
+
+    SRAM_NONCACHEABLE SRAM_NONCACHEABLE_START SRAM_NONCACHEABLE_SIZE
+    {
+        .ANY (NonCacheable.Init)
+        .ANY (.bss.NonCacheable.ZeroInit)
+    }
+
+    ; Empty section to get maximum size of NonCacheable region with Image$$SRAM_NONCACHEABLE_END$$Base
+    SRAM_NONCACHEABLE_END (SRAM_NONCACHEABLE_START + SRAM_NONCACHEABLE_SIZE)
+    {
+        .ANY (SRAM_NONCACHEABLE_END)
+    }
 
     LPSRAM LPSRAM_START LPSRAM_SIZE
     {

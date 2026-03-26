@@ -33,6 +33,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -47,6 +48,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -96,9 +98,9 @@ project:
         - file: ../../../../Library/StdDriver/src/gpio.c
     - group: LwIP
       misc:
-      - for-compiler: AC6
-        C-CPP:
-        - -w
+        - for-compiler: AC6
+          C-CPP:
+            - -w
       files:
         - file: ../../lwIP/sys_arch.c
         - file: ../../lwIP/time_stamp.c
@@ -139,9 +141,9 @@ project:
         - file: ../../../../ThirdParty/lwIP/src/netif/ethernet.c
     - group: mbedtls
       misc:
-      - for-compiler: AC6
-        C-CPP:
-        - -w
+        - for-compiler: AC6
+          C-CPP:
+            - -w
       files:
         - file: ../../../../ThirdParty/mbedtls/library/aes.c
         - file: ../../../../ThirdParty/mbedtls/library/aesni.c
@@ -232,5 +234,5 @@ project:
         - file: ../../../../ThirdParty/mbedtls/library/x509write_csr.c
         - file: ../../../../ThirdParty/mbedtls/tests/src/certs.c
   define:
-      - SYSTEM_CORE_CLOCK: 220000000
-      - MBEDTLS_CONFIG_FILE
+    - SYSTEM_CORE_CLOCK: 220000000
+    - MBEDTLS_CONFIG_FILE

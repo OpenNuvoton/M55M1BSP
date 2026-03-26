@@ -4,13 +4,22 @@
  * @brief    Secure ISP - Process commands
  *
  * SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
+
 #include <arm_cmse.h>
 #include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
 #include "CommandHandler.h"
+
+//#define DBG             printf
+//#define DUMP_PACKET     1
+#define CMD_DBG         printf
+
+#ifndef DBG
+    #define DBG(...)
+#endif
 
 #define LIB_VERSION     (0x23551171UL) // 2355 + 'M' + 'DD' + IDX ... 1st released
 
@@ -84,7 +93,7 @@ void BytesSwap(char *buf, int32_t len)
 int32_t CalculateSHA256(uint32_t start, uint32_t end, uint32_t digest[], E_SHA_OP_MODE mode, E_SHA_SRC src)
 {
     volatile int32_t    i, bytes;
-    uint32_t            *ptr, u32Addr, data, Hash[8];
+    uint32_t            *ptr, u32Addr, data = 0, Hash[8];
 
     bytes   = end - start;
     ptr     = (uint32_t *)start;
@@ -202,19 +211,18 @@ static uint16_t PACKET_ExecCCITT(uint32_t *pu32buf, uint16_t u32ByteCnt, uint8_t
 #if (0)
         DBG("idx-%d: 0x%04x (CCITT)\n", i, pu16buf[i]);
 #endif
-        CRC->DAT = *(pu16buf + i);
+        CRC_WRITE_DATA(pu16buf[i]);
     }
 
     u16OrgSum = pu16buf[0];
-    u16CalSum = (CRC->CHECKSUM & 0xFFFFul);
+    u16CalSum = CRC_GetChecksum();
 
-    /* Clear CRC checksum */
-    CRC->SEED = 0xFFFFul;
-    CRC->CTL |= CRC_CTL_CHKSINIT_Msk;
+    /* Clear CRC checksum and reset seed */
+    CRC_SET_SEED(0xFFFF);
 
     if (u8Mode == 0)
     {
-        *(pu16buf + 0) = u16CalSum;
+        pu16buf[0] = u16CalSum;
         return u16CalSum;
     }
     else if (u8Mode == 1)
@@ -252,21 +260,20 @@ static uint32_t PACKET_ExecCRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
     for (i = 0; i < (len / 4) - 1; i++)
     {
 #if (0)
-        DBG("idx-%d: 0x%08x. (CRC32)\n", i, *(pu32buf + i));
+        DBG("idx-%d: 0x%08x. (CRC32)\n", i, pu32buf[i]);
 #endif
-        CRC->DAT = *(pu32buf + i);
+        CRC_WRITE_DATA(pu32buf[i]);
     }
 
-    u32OrgSum = *(pu32buf + i);
-    u32CalSum = (CRC->CHECKSUM & 0xFFFFFFFFul);
+    u32OrgSum = pu32buf[i];
+    u32CalSum = CRC_GetChecksum();
 
-    /* Clear CRC checksum */
-    CRC->SEED = 0xFFFFFFFFul;
-    CRC->CTL |= CRC_CTL_CHKSINIT_Msk;
+    /* Clear CRC checksum and reset seed */
+    CRC_SET_SEED(0xFFFFFFFF);
 
     if (mode == 0)
     {
-        *(pu32buf + i) = u32CalSum;
+        pu32buf[i] = u32CalSum;
         return u32CalSum;
     }
     else if (mode == 1)
@@ -288,18 +295,51 @@ static uint32_t PACKET_ExecCRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
   */
 static int32_t PACKET_AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    /* KEY and IV are byte order (32 bit) reversed, Swap32(x) and stored in ISP_INFO_T */
-    memcpy((void *)&CRYPTO->AES_KEY[0], KEY, (4 * 8));
-    memcpy((void *)&CRYPTO->AES_IV[0], IV, (4 * 4));
+    int32_t i32TimeOutCnt;
 
-    CRYPTO->AES_SADDR = (uint32_t)in;
-    CRYPTO->AES_DADDR = (uint32_t)out;
-    CRYPTO->AES_CNT   = len;
-    CRYPTO->AES_CTL = ((AES_KEY_SIZE_256 << CRYPTO_AES_CTL_KEYSZ_Pos) | (AES_IN_OUT_SWAP << CRYPTO_AES_CTL_OUTSWAP_Pos));
-    CRYPTO->AES_CTL |= (CRYPTO_AES_CTL_ENCRYPTO_Msk);
-    CRYPTO->AES_CTL |= ((AES_MODE_CFB << CRYPTO_AES_CTL_OPMODE_Pos) | CRYPTO_AES_CTL_START_Msk | CRYPTO_AES_CTL_DMAEN_Msk);
+#if (NVT_DCACHE_ON == 1)
+    /*
+     * Note: Cache coherence handling
+     * If 'in' or 'out' buffers are located in cacheable memory (e.g. AXI SRAM) and D-Cache is enabled,
+     * you MUST ensure cache coherency before DMA starts:
+     *   SCB_CleanDCache_by_Addr((void *)in, len);
+     *   SCB_CleanDCache_by_Addr((void *)out, len);
+     * In this example, the buffers are allocated on the stack (DTCM), which is
+     * non-cacheable by default in this BSP. Therefore, cache maintenance is not required here.
+     */
+#endif
 
-    while (CRYPTO->AES_STS & CRYPTO_AES_STS_BUSY_Msk) {}
+    AES_CLR_INT_FLAG(CRYPTO);
+    AES_Open(CRYPTO, 0, 1, AES_MODE_CFB, AES_KEY_SIZE_256, AES_IN_OUT_SWAP);
+    AES_SetKey(CRYPTO, 0, KEY, 4 * 8);
+    AES_SetInitVect(CRYPTO, 0, IV);
+    AES_SetDMATransfer(CRYPTO, 0, (uint32_t)in, (uint32_t)out, len);
+    AES_Start(CRYPTO, 0, CRYPTO_DMA_ONE_SHOT);
+
+    i32TimeOutCnt = SystemCoreClock; /* > 1 second time-out */
+
+    while (AES_GET_INT_FLAG(CRYPTO) == 0)
+    {
+        if (i32TimeOutCnt-- < 0)
+            return -1;
+    }
+
+    if (AES_GET_INT_FLAG(CRYPTO) & CRYPTO_INTSTS_AESEIF_Msk)
+    {
+        AES_CLR_INT_FLAG(CRYPTO);
+        return -2;
+    }
+
+    AES_CLR_INT_FLAG(CRYPTO);
+
+#if (NVT_DCACHE_ON == 1)
+    /*
+     * Note: Cache coherence handling
+     * If 'out' buffer is located in cacheable memory, you MUST invalidate the cache after DMA completes:
+     *   SCB_InvalidateDCache_by_Addr((void *)out, len);
+     * Since this example uses stack (DTCM) buffers, this state invalidation is skipped.
+     */
+#endif
 
     return 0;
 }
@@ -309,20 +349,51 @@ static int32_t PACKET_AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, u
   */
 static int32_t PACKET_AES256Decrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    /* KEY and IV are byte order (32 bit) reversed, Swap32(x) and stored in ISP_INFO_T */
-    memcpy((void *)&CRYPTO->AES_KEY[0], KEY, (4 * 8));
-    memcpy((void *)&CRYPTO->AES_IV[0],  IV, (4 * 4));
+    int32_t i32TimeOutCnt;
 
-    CRYPTO->AES_SADDR = (uint32_t)in;
-    CRYPTO->AES_DADDR = (uint32_t)out;
-    CRYPTO->AES_CNT   = len;
-    CRYPTO->AES_CTL = ((AES_KEY_SIZE_256 << CRYPTO_AES_CTL_KEYSZ_Pos) | (AES_IN_OUT_SWAP << CRYPTO_AES_CTL_OUTSWAP_Pos));
-    CRYPTO->AES_CTL |= ((AES_MODE_CFB << CRYPTO_AES_CTL_OPMODE_Pos) | CRYPTO_AES_CTL_START_Msk | CRYPTO_AES_CTL_DMAEN_Msk | CRYPTO_AES_CTL_DMALAST_Msk);
+#if (NVT_DCACHE_ON == 1)
+    /*
+     * Note: Cache coherence handling
+     * If 'in' or 'out' buffers are located in cacheable memory (e.g. AXI SRAM) and D-Cache is enabled,
+     * you MUST ensure cache coherency before DMA starts:
+     *   SCB_CleanDCache_by_Addr((void *)in, len);
+     *   SCB_CleanDCache_by_Addr((void *)out, len);
+     * In this example, the buffers are allocated on the stack (DTCM), which is
+     * non-cacheable by default in this BSP. Therefore, cache maintenance is not required here.
+     */
+#endif
 
-    while (CRYPTO->AES_STS & CRYPTO_AES_STS_BUSY_Msk) {}
+    AES_CLR_INT_FLAG(CRYPTO);
+    AES_Open(CRYPTO, 0, 0, AES_MODE_CFB, AES_KEY_SIZE_256, AES_IN_OUT_SWAP);
+    AES_SetKey(CRYPTO, 0, KEY, 4 * 8);
+    AES_SetInitVect(CRYPTO, 0, IV);
+    AES_SetDMATransfer(CRYPTO, 0, (uint32_t)in, (uint32_t)out, len);
+    AES_Start(CRYPTO, 0, CRYPTO_DMA_ONE_SHOT);
 
-    /* [KL@2024.01.25] [Todo] Remove below delay to wait data ready. */
-    CLK_SysTickLongDelay(100000);
+    i32TimeOutCnt = SystemCoreClock; /* > 1 second time-out */
+
+    while (AES_GET_INT_FLAG(CRYPTO) == 0)
+    {
+        if (i32TimeOutCnt-- < 0)
+            return -1;
+    }
+
+    if (AES_GET_INT_FLAG(CRYPTO) & CRYPTO_INTSTS_AESEIF_Msk)
+    {
+        AES_CLR_INT_FLAG(CRYPTO);
+        return -2;
+    }
+
+    AES_CLR_INT_FLAG(CRYPTO);
+
+#if (NVT_DCACHE_ON == 1)
+    /*
+     * Note: Cache coherence handling
+     * If 'out' buffer is located in cacheable memory, you MUST invalidate the cache after DMA completes:
+     *   SCB_InvalidateDCache_by_Addr((void *)out, len);
+     * Since this example uses stack (DTCM) buffers, this state invalidation is skipped.
+     */
+#endif
 
     return 0;
 }
@@ -342,9 +413,15 @@ int32_t CMD_GenRspPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 
     /* if i == 8, NO AES key, do not encrypt the cmd data */
     if (i != 8)
-        PACKET_AES256Encrypt(pCMD->au32Data, pCMD->au32Data, sizeof(pCMD->au32Data), pISPInfo->au32AESKey, pISPInfo->au32AESIV);
+    {
+        if (PACKET_AES256Encrypt(pCMD->au32Data, pCMD->au32Data, sizeof(pCMD->au32Data), pISPInfo->au32AESKey, pISPInfo->au32AESIV) != 0)
+        {
+            printf("PACKET_AES256Encrypt failed !\n");
+            return -1;
+        }
+    }
 
-#if (0)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32;
         pu32 = (uint32_t *)pCMD;
@@ -378,7 +455,7 @@ int32_t CMD_GenRspPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
     /* Generate CRC32 */
     PACKET_ExecCRC32((uint32_t *)pCMD, sizeof(CMD_PACKET_T) - 4, 0);
 
-#if (1)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32 = (uint32_t *)pCMD;
 
@@ -423,7 +500,7 @@ int32_t CMD_ParseReqPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 {
     uint32_t i;
 
-#if (0)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32 = (uint32_t *)pCMD;
         printf("Get REQ data:\n");
@@ -458,9 +535,15 @@ int32_t CMD_ParseReqPacket(CMD_PACKET_T *pCMD, ISP_INFO_T *pISPInfo)
 
     /* if i == 8, NO AES key, do not decrypt the cmd data */
     if (i != 8)
-        PACKET_AES256Decrypt(pCMD->au32Data, pCMD->au32Data, sizeof(pCMD->au32Data), pISPInfo->au32AESKey, pISPInfo->au32AESIV);
+    {
+        if (PACKET_AES256Decrypt(pCMD->au32Data, pCMD->au32Data, sizeof(pCMD->au32Data), pISPInfo->au32AESKey, pISPInfo->au32AESIV) != 0)
+        {
+            printf("PACKET_AES256Decrypt failed !\n");
+            return -2;
+        }
+    }
 
-#if (1)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32 = (uint32_t *)pCMD;
 
@@ -549,8 +632,10 @@ static int32_t GenRandomIV(ISP_INFO_T *pISPInfo)
 */
 int32_t ParseCONNECT(ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    i, ret = 0, cmd_case;
+    /* The CMD_PACKET_T is allocated on the Stack. Since the Stack is default mapped to DTCM in BSP,
+       any memory accesses bypass the D-Cache, naturally avoiding cache coherence issues. */
     CMD_PACKET_T        cmd;
+    volatile int32_t    i, ret = 0, cmd_case;
     uint32_t            u32Data;
 
     memset(&cmd,             0x0, sizeof(CMD_PACKET_T));
@@ -572,7 +657,7 @@ int32_t ParseCONNECT(ISP_INFO_T *pISPInfo)
 
         if (CMD_ParseReqPacket(&cmd, pISPInfo) != 0)
         {
-            DBG("*** [Pasre error: 0x%x] ***\n", cmd.u16CmdID);
+            CMD_DBG("*** [Parse error: 0x%x] ***\n", cmd.u16CmdID);
             memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
             cmd.au32Data[0] = ERR_CMD_CHECKSUM;
@@ -587,7 +672,7 @@ int32_t ParseCONNECT(ISP_INFO_T *pISPInfo)
             switch (cmd_case)
             {
                 case CMD_DISCONNECT:
-                    DBG("[CMD_DISCONNECT] (stage 1)\n");
+                    CMD_DBG("[CMD_DISCONNECT] (stage 1)\n");
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
                     cmd.au32Data[0] = STS_OK;
@@ -597,7 +682,7 @@ int32_t ParseCONNECT(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_CONNECT:
-                    DBG("[CMD_CONNECT] (stage 1)\n");
+                    CMD_DBG("[CMD_CONNECT] (stage 1)\n");
 
                     for (i = 0; i < 4; i++)
                     {
@@ -642,7 +727,7 @@ int32_t ParseCONNECT(ISP_INFO_T *pISPInfo)
                     break;
 
                 default:
-                    DBG("*** [Cmd error: 0x%x] ***\n", cmd.u16CmdID);
+                    CMD_DBG("*** [Cmd error: 0x%x] ***\n", cmd.u16CmdID);
                     cmd.au32Data[0] = ERR_CMD_INVALID;
                     cmd.u16Len      = (4 * 1);
                     ret = -1;
@@ -656,10 +741,10 @@ int32_t ParseCONNECT(ISP_INFO_T *pISPInfo)
 
     CMD_GenRspPacket(&cmd, pISPInfo);
 
-    /* Prepare respone data done */
+    /* Prepare response data done */
     memcpy(pISPInfo->rspbuf, (uint8_t *)&cmd, sizeof(CMD_PACKET_T));
 
-    DBG("Repone.\n\n");
+    DBG("Response.\n\n");
     return  ret;
 }
 
@@ -694,6 +779,7 @@ static int32_t GenECDHKey(uint32_t *PrivKey, ECC_PUBKEY_T *PubKey, uint32_t *Key
     DBG("d:  %s\n", d);
     DBG("Qx: %s\n", Qx);
     DBG("Qy: %s\n", Qy);
+
     ret = ECC_GenerateSecretZ(CRYPTO, CURVE_P_SIZE, d, Qx, Qy, z);
 
     if (ret < 0)
@@ -809,8 +895,10 @@ static int32_t GenRandomECCKeyPair(uint32_t *priv, ECC_PUBKEY_T *pubkey)
 */
 int32_t ParseECDH(ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    i, ret = 0, cmd_case;
+    /* The CMD_PACKET_T is allocated on the Stack. Since the Stack is default mapped to DTCM in BSP,
+       any memory accesses bypass the D-Cache, naturally avoiding cache coherence issues. */
     CMD_PACKET_T        cmd;
+    volatile int32_t    i, ret = 0, cmd_case;
     uint32_t            AESKey[8], u32Data;
     ECC_PUBKEY_T        randpub;
     uint32_t            priv[8];
@@ -849,7 +937,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
             switch (cmd_case)
             {
                 case CMD_DISCONNECT:
-                    DBG("[CMD_DISCONNECT] (stage 2)\n");
+                    CMD_DBG("[CMD_DISCONNECT] (stage 2)\n");
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
                     cmd.au32Data[0] = STS_OK;
@@ -859,6 +947,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_PUB0:
+                    CMD_DBG("[CMD_ECDH_PUB0]\n");
                     /* Get Server public key 0 */
                     memcpy(pISPInfo->ServerPubKey.au32Key0, cmd.au32Data, cmd.u16Len);
 
@@ -872,6 +961,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_PUB1:
+                    CMD_DBG("[CMD_ECDH_PUB1]\n");
                     /* Get Server public key 1 and generate ist ECDH AES key */
                     memcpy(pISPInfo->ServerPubKey.au32Key1, cmd.au32Data, cmd.u16Len);
 
@@ -919,6 +1009,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_GET_PUB0: // MUST be encrypted
+                    CMD_DBG("[CMD_ECDH_GET_PUB0]\n");
                     /* Response encrypted Client public key 0 */
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
                     cmd.au32Data[0] = STS_OK;
@@ -932,6 +1023,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_GET_PUB1: // MUST be encrypted
+                    CMD_DBG("[CMD_ECDH_GET_PUB1]\n");
                     /* Response encrypted Client public key 1 */
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
                     cmd.au32Data[0] = STS_OK;
@@ -945,6 +1037,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_RAND_PUB0: // MUST be encrypted
+                    CMD_DBG("[CMD_ECDH_RAND_PUB0]\n");
                     /* Get Server random public key 0 */
                     memcpy(pISPInfo->ServerPubKey.au32Key0, cmd.au32Data, cmd.u16Len);
 
@@ -958,6 +1051,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_RAND_PUB1: // MUST be encrypted
+                    CMD_DBG("[CMD_ECDH_RAND_PUB1]\n");
                     /* Get Server random public key 1 */
                     memcpy(pISPInfo->ServerPubKey.au32Key1, cmd.au32Data, cmd.u16Len);
 
@@ -971,6 +1065,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_GET_RAND_PUB0: // MUST be encrypted
+                    CMD_DBG("[CMD_ECDH_GET_RAND_PUB0]\n");
 
                     /* Generate Client random ECC key pair */
                     if (GenRandomECCKeyPair(priv, &randpub) != 0)
@@ -1018,6 +1113,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ECDH_GET_RAND_PUB1: // MUST be encrypted
+                    CMD_DBG("[CMD_ECDH_GET_RAND_PUB1]\n");
                     /* Response encrypted Client random public key 1 */
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
                     cmd.au32Data[0] = STS_OK;
@@ -1031,7 +1127,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
                     break;
 
                 default:
-                    DBG("*** [Cmd error: 0x%x] ***\n", cmd.u16CmdID);
+                    CMD_DBG("*** [Cmd error: 0x%x] ***\n", cmd.u16CmdID);
                     cmd.au32Data[0] = ERR_CMD_INVALID;
                     cmd.u16Len      = (4 * 1);
                     ret = -1;
@@ -1071,7 +1167,7 @@ int32_t ParseECDH(ISP_INFO_T *pISPInfo)
 
     memset(AESKey, 0x0, sizeof(AESKey));
 
-    DBG("Repone.\n\n");
+    DBG("Response.\n\n");
     return ret;
 }
 
@@ -1199,19 +1295,14 @@ static int32_t _IsValidFlashRegion(uint32_t u32Addr, uint32_t size, uint32_t u32
     return 0;
 }
 
-static int32_t _ISPWrite(uint32_t u32Addr, uint32_t data)
+static int32_t _ISPWrite(uint32_t u32Addr, uint32_t u32Data)
 {
-    FMC->ISPCMD  = FMC_ISPCMD_PROGRAM;
-    FMC->ISPADDR = u32Addr;
-    FMC->ISPDAT  = data;
-    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+    FMC_Write(u32Addr, u32Data);
 
-    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) ;
-
-    /* Clear ISPFF if cmd FAIL */
-    if (FMC->ISPCTL & FMC_ISPCTL_ISPFF_Msk)
+    if (FMC_GET_FAIL_FLAG())
     {
-        FMC->ISPCTL |= FMC_ISPCTL_ISPFF_Msk;
+        /* Clear ISPFF if cmd FAIL */
+        FMC_CLR_FAIL_FLAG();
         return -1;
     }
 
@@ -1220,35 +1311,31 @@ static int32_t _ISPWrite(uint32_t u32Addr, uint32_t data)
 
 static uint32_t _ISPRead(uint32_t u32Addr)
 {
-    FMC->ISPCMD  = FMC_ISPCMD_READ;
-    FMC->ISPADDR = u32Addr;
-    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+    uint32_t u32Data = FMC_Read(u32Addr);
 
-    while (FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) { }
-
-    /* Clear ISPFF if cmd FAIL */
-    if (FMC->ISPSTS & FMC_ISPSTS_ISPFF_Msk)
+    if (FMC_GET_FAIL_FLAG())
     {
-        FMC->ISPSTS |= FMC_ISPSTS_ISPFF_Msk;
+        /* Clear ISPFF if cmd FAIL */
+        FMC_CLR_FAIL_FLAG();
         return -1;
     }
 
-    return FMC->ISPDAT;
+    return u32Data;
 }
 
-static int32_t _WriteFlash(uint32_t u32Addr, uint32_t size, uint32_t *pu32Data, uint32_t u32CmdMask)
+static int32_t _WriteFlash(uint32_t u32Addr, uint32_t u32Size, uint32_t *pu32Data, uint32_t u32CmdMask)
 {
     uint32_t i;
     int32_t ret = -1;
 
-    DBG("[Write flash] u32Addr: 0x%x, size: %d.\n", u32Addr, size);
+    DBG("[Write flash] u32Addr: 0x%x, u32Size: %d.\n", u32Addr, u32Size);
 
-    if ((ret = _IsValidFlashRegion(u32Addr, size, u32CmdMask)) != 0)
+    if ((ret = _IsValidFlashRegion(u32Addr, u32Size, u32CmdMask)) != 0)
         return ret;
 
     u32Addr &= ~NS_OFFSET;
 
-    for (i = 0; i < (size / 4); i++)
+    for (i = 0; i < (u32Size / 4); i++)
     {
         /* write */
         if (_ISPWrite(u32Addr, pu32Data[i]) != 0)
@@ -1292,8 +1379,10 @@ static int32_t _WriteFlash(uint32_t u32Addr, uint32_t size, uint32_t *pu32Data, 
 */
 int32_t ParseCommands(ISP_INFO_T *pISPInfo)
 {
-    volatile int32_t    ret = 0, cmd_case;
+    /* The CMD_PACKET_T is allocated on the Stack. Since the Stack is default mapped to DTCM in BSP,
+       any memory accesses bypass the D-Cache, naturally avoiding cache coherence issues. */
     CMD_PACKET_T        cmd;
+    volatile int32_t    ret = 0, cmd_case;
     uint32_t            u32Addr, size;
     uint32_t            msg[8], R[8], S[8];
     ECC_PUBKEY_T        PubKey;
@@ -1336,7 +1425,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
             switch (cmd_case)
             {
                 case CMD_DISCONNECT:
-                    DBG("[CMD_DISCONNECT] (stage 3)\n");
+                    CMD_DBG("[CMD_DISCONNECT] (stage 3)\n");
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
                     cmd.au32Data[0] = STS_OK;
@@ -1346,7 +1435,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_GET_VERSION:
-                    DBG("[CMD_GET_VERSION]\n");
+                    CMD_DBG("[CMD_GET_VERSION]\n");
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
                     cmd.au32Data[0] = STS_OK;
@@ -1356,7 +1445,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_ERASE:
-                    DBG("[CMD_ERASE]\n");
+                    CMD_DBG("[CMD_ERASE]\n");
                     ret = _PageErase(cmd.au32Data[0], cmd.au32Data[1], pISPInfo->u32CmdMask);
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
                     cmd.au32Data[0] = (ret == 0) ? STS_OK : ret;
@@ -1365,7 +1454,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_WRITE:
-                    DBG("[CMD_WRITE] (0x%x, 0x%x, 0x%x)\n", cmd.au32Data[0], cmd.au32Data[1], cmd.au32Data[2]);
+                    CMD_DBG("[CMD_WRITE] (0x%x, 0x%x, 0x%x)\n", cmd.au32Data[0], cmd.au32Data[1], cmd.au32Data[2]);
                     u32Addr = cmd.au32Data[0];
                     size = cmd.au32Data[1];
                     ret = _WriteFlash(u32Addr, size, &cmd.au32Data[2], pISPInfo->u32CmdMask);
@@ -1376,7 +1465,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_SET_MASS_WRITE:
-                    DBG("[CMD_SET_MASS_WRITE] (0x%x, 0x%x)\n", cmd.au32Data[0], cmd.au32Data[1]);
+                    CMD_DBG("[CMD_SET_MASS_WRITE] (0x%x, 0x%x)\n", cmd.au32Data[0], cmd.au32Data[1]);
                     ret = _IsValidFlashRegion(cmd.au32Data[0], cmd.au32Data[1], pISPInfo->u32CmdMask);
 
                     if (ret == 0)
@@ -1394,7 +1483,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_MASS_WRITE:
-                    DBG("[CMD_MASS_WRITE]\n");
+                    CMD_DBG("[CMD_MASS_WRITE]\n");
                     u32Addr = pISPInfo->tmp0[0] + (cmd.u16PacketID * 48); // maximum data length is 48
                     size = cmd.u16Len;
                     ret = _WriteFlash(u32Addr, size, cmd.au32Data, pISPInfo->u32CmdMask);
@@ -1405,7 +1494,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_GET_ID:
-                    DBG("[CMD_GET_ID]\n");
+                    CMD_DBG("[CMD_GET_ID]\n");
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
                     cmd.au32Data[0] = STS_OK;
@@ -1424,7 +1513,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_READ_CONFIG:
-                    DBG("[CMD_READ_CONFIG]\n");
+                    CMD_DBG("[CMD_READ_CONFIG]\n");
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
                     cmd.au32Data[0] = STS_OK;
@@ -1444,7 +1533,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_RESET:
-                    DBG("[CMD_RESET] (0x%x)\n", cmd.au32Data[0]);
+                    CMD_DBG("[CMD_RESET] (0x%x)\n", cmd.au32Data[0]);
 
                     if (cmd.au32Data[0] > 2)
                     {
@@ -1474,7 +1563,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_EXEC_VENDOR_FUNC:
-                    DBG("[CMD_EXEC_VENDOR_FUNC] (Org ID: 0x%x; Vendor ID: 0x%x)\n", cmd_case, cmd.au32Data[1]);
+                    CMD_DBG("[CMD_EXEC_VENDOR_FUNC] (Org ID: 0x%x; Vendor ID: 0x%x)\n", cmd_case, cmd.au32Data[1]);
 
                     if (cmd.u16Len < 4)
                     {
@@ -1499,7 +1588,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 case CMD_IS_MASKED:
-                    DBG("[CMD_IS_MASKED] (0x%x)\n", cmd.u16CmdID);
+                    CMD_DBG("[CMD_IS_MASKED] (0x%x)\n", cmd.u16CmdID);
                     memset(cmd.au32Data, 0x0, sizeof(cmd.au32Data));
 
                     cmd.au32Data[0] = CMD_IS_MASKED;
@@ -1508,7 +1597,7 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
                     break;
 
                 default:
-                    DBG("*** [Cmd error: 0x%x] ***\n", cmd.u16CmdID);
+                    CMD_DBG("*** [Cmd error: 0x%x] ***\n", cmd.u16CmdID);
                     cmd.au32Data[0] = ERR_CMD_INVALID;
                     cmd.u16Len      = (4 * 1);
                     ret = -1;
@@ -1535,8 +1624,8 @@ int32_t ParseCommands(ISP_INFO_T *pISPInfo)
         memcpy(pISPInfo->au32AESIV, pISPInfo->tmp0, (128 / 8)); // 128-bits
     }
 
-    DBG("Repone.\n\n");
+    DBG("Response.\n\n");
     return ret;
 }
 
-/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

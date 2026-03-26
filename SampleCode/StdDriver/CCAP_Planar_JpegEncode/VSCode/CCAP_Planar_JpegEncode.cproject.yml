@@ -27,6 +27,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -41,6 +42,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -77,9 +79,9 @@ project:
           for-compiler: GCC
     - group: libjpeg
       misc:
-      - for-compiler: AC6
-        C-CPP:
-        - -w
+        - for-compiler: AC6
+          C-CPP:
+            - -w
       files:
         - file: ../../../../ThirdParty/libjpeg/jdapimin.c
         - file: ../../../../ThirdParty/libjpeg/jaricom.c

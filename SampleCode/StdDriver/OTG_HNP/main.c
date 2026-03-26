@@ -488,7 +488,7 @@ NVT_ITCM void USBOTG_IRQHandler(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
-    HID_DEV_T    *hdev, *hdev_list;
+    HID_DEV_T    *hdev, *hdev_list = NULL;
 
     /* Unlock protected registers */
     SYS_UnlockReg();

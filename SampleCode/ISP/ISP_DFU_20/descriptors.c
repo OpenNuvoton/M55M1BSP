@@ -104,5 +104,27 @@ uint8_t gu8StringSerial[] =
     '1', 0
 };
 
+uint8_t *gu8StringDesc[] =
+{
+    gu8StringLang,
+    gu8VendorStringDesc,
+    gu8ProductStringDesc,
+    gu8StringSerial
+};
+
+S_HSUSBD_INFO_T gsHSInfo = {
+    gu8DeviceDescriptor,
+    gu8ConfigDescriptor,
+    gu8StringDesc,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
 

@@ -215,7 +215,7 @@ typedef enum
 
 
 /*-------------------------------------------------------------*/
-extern volatile uint32_t u32BuffLen, u32RxBuffLen;
+extern volatile uint32_t g_u32BuffLen, g_u32RxBuffLen;
 extern volatile uint32_t g_usbd_UsbAudioState;
 extern volatile uint8_t u8AudioPlaying;
 extern volatile uint8_t u8TxDataCntInBuffer;

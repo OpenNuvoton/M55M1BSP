@@ -162,27 +162,25 @@ int16_t i16simdbuf[DCTSIZE2+8]; /*Global data buffer for SIMD fdct and successiv
 GLOBAL(void)
 jpeg_fdct_islow (DCTELEM * data, JSAMPARRAY sample_data, JDIMENSION start_col)
 {
-    INT32 tmp0, tmp1, tmp2, tmp3;
-    INT32 tmp10, tmp11, tmp12, tmp13;
-    INT32 z1;
- 
-#ifndef WITH_JPEGACC    
-    DCTELEM *dataptr;
-#endif    
+    
+    
     JSAMPROW elemptr;
     int ctr;
 
     SHIFT_TEMPS
-
+      
     /* Pass 1: process rows.
      * Note results are scaled up by sqrt(8) compared to a true DCT;
      * furthermore, we scale the results by 2**PASS1_BITS.
      * cK represents sqrt(2) * cos(K*pi/16).
      */
-#ifndef WITH_JPEGACC      
+#ifndef WITH_JPEGACC   
+    DCTELEM *dataptr;
     dataptr = data;
-#endif
-    
+#else
+    (void)(data);	
+#endif    
+
 #ifdef WITH_JPEGACC
     for (ctr = 0; ctr < DCTSIZE; ctr++)
     {
@@ -201,13 +199,19 @@ jpeg_fdct_islow (DCTELEM * data, JSAMPARRAY sample_data, JDIMENSION start_col)
 #endif//DBG_NVT_JPEG	
 
     jsimd_fdct_islow_helium((int16_t*)(i16simdbuf));
-
+//		for (ctr = 0; ctr < DCTSIZE2; ctr++)
+//    {
+//        dataptr[ctr] = (int)(i16simdbuf[ctr]);
+//    }
 #ifdef DBG_NVT_JPEG
     for (ctr = 0; ctr < DCTSIZE2; ctr++)
         printf("simd fdct[%d] = %d\r\n", ctr, (int16_t)(i16simdbuf[ctr]));
 #endif//DBG_NVT_JPEG	
 		
 #else
+		INT32 tmp0, tmp1, tmp2, tmp3;
+    INT32 tmp10, tmp11, tmp12, tmp13;
+    INT32 z1;
 		//uint64_t start = GetSysTickCycleCount();
     for (ctr = 0; ctr < DCTSIZE; ctr++) {
         elemptr = sample_data[ctr] + start_col;

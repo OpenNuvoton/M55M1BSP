@@ -192,7 +192,7 @@ int hid_parse_report_descriptor(HID_DEV_T *hdev, IFACE_T *iface)
 {
     UDEV_T         *udev = iface->udev;
     DESC_CONF_T    *config;
-    DESC_IF_T      *ifd;
+    DESC_IF_T      *ifd = NULL;
     DESC_HID_T     *hidd;
     uint8_t        *bptr;
     uint8_t        *desc_buff;
@@ -639,7 +639,7 @@ int hid_parse_keyboard_reports(HID_DEV_T *hdev, uint8_t *data, int data_len)
     int         i, bit;
     int         byte_idx = 0, bit_idx = 0;
     int         has_kbd_event = 0;
-    int         report_id;
+    int         report_id = 0;
     static KEYBOARD_EVENT_T  _keyboard_event;
 
     memset(&_keyboard_event, 0, sizeof(_keyboard_event));
@@ -771,6 +771,7 @@ int hid_parse_keyboard_reports(HID_DEV_T *hdev, uint8_t *data, int data_len)
 
                 default:
                     _keyboard_event.keycode[_keyboard_event.key_cnt++] = _keyboard_event.keycode[i];
+                    break;
             }
         }
 
@@ -810,7 +811,7 @@ int hid_parse_mouse_reports(HID_DEV_T *hdev, uint8_t *data, int data_len)
     RP_INFO_T   *report;
     int         i, bit;
     int         has_mouse_event = 0;
-    int         report_id;
+    int         report_id = 0;
     static MOUSE_EVENT_T  _mouse_event;
 
     memset(&_mouse_event, 0, sizeof(_mouse_event));
@@ -870,7 +871,7 @@ int hid_parse_mouse_reports(HID_DEV_T *hdev, uint8_t *data, int data_len)
                   (report->data_usage == USAGE_ID_WHEEL)))
         {
             uint32_t   usage_val = 0;
-            signed     s_val;
+            signed     s_val = 0;
 
             for (i = 0; i < report->report_size; i++)
             {

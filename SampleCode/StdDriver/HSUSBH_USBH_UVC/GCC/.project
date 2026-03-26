@@ -180,11 +180,6 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_uvc/uvc_parser.c</locationURI>
 		</link>
 		<link>
-			<name>User/jpeg.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/jpeg.c</locationURI>
-		</link>
-		<link>
 			<name>User/main.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/main.c</locationURI>

@@ -16,34 +16,9 @@
  * limitations under the License.
  */
 
-/**************************************************************************//**
- * @file     Driver_USART_UUART.c
- * @version  V1.00
- * @brief    USART driver for Nuvoton M55M1
- *
- * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright Copyright (C) 2024 Nuvoton Technology Corp. All rights reserved.
- ******************************************************************************/
-
-/*! \page Dirver_USART UUART
-
-# Revision History
-
-- Version 1.0
-  - Initial release
-
-# Requirements
-
-This driver requires the M55M1 BSP.
-The driver instance is mapped to hardware as shown in the table below:
-
-  CMSIS Driver Instance | Hardware Resource
-  :---------------------|:-----------------------
-  Driver_USART14        | UUART0
-
-*/
-
-
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -61,30 +36,19 @@ The driver instance is mapped to hardware as shown in the table below:
 #include "drv_pdma.h"
 #include "misc.h"
 
-#define ARM_USART_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0)  /* driver version */
-
-/* Driver Version */
-static const ARM_DRIVER_VERSION DriverVersion =
-{
-    ARM_USART_API_VERSION,
-    ARM_USART_DRV_VERSION
-};
-
-
-// Compile-time configuration **************************************************
-
 // Configuration depending on RTE_USART.h
 // Check if at least one peripheral instance is configured in RTE_Device_USART.h
-#if    (!(RTE_USART14))
-#else
-    #define DRIVER_CONFIG_VALID     1
+#if (RTE_USART14 == 1)
+#if defined (RTE_Driver_I2C) || defined (RTE_Driver_SPI)
+    #if RTE_USART14 && (RTE_I2C5 || RTE_SPI7)
+        #error "USCI0 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
 #endif
 
-// *****************************************************************************
-
-#ifdef  DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
-
 // Macros
+#define ARM_USART_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0)  /* driver version */
+// Macro for porting compatibility
+#define USART_HandleTypeDef  UUART_T
 // Macro for section for RW info
 #ifdef  USART_SECTION_NAME
     #define USARTn_SECTION_(name,n) __attribute__((section(name #n)))
@@ -209,7 +173,6 @@ typedef struct
 
 // Instance compile-time information (RO)
 // also contains pointer to run-time information
-#define USART_HandleTypeDef  UUART_T
 typedef struct
 {
     USART_HandleTypeDef           *ptr_USART;
@@ -262,6 +225,13 @@ static const USART_Info_t *const usart_info_list[] =
     &usart14_info,
 #endif
     NULL
+};
+
+/* Driver Version */
+static const ARM_DRIVER_VERSION DriverVersion =
+{
+    ARM_USART_API_VERSION,
+    ARM_USART_DRV_VERSION
 };
 
 // Auxiliary functions

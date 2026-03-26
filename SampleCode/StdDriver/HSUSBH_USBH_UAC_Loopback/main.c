@@ -634,7 +634,7 @@ int32_t main(void)
         {
             i8Ch = getchar();
 
-            if ((i8Ch == '+') && (s_u16VolCur + s_u16VolRes <= s_u16VolMax))
+            if ((i8Ch == '+') && ((int16_t)(s_u16VolCur + s_u16VolRes) <= (int16_t)s_u16VolMax))
             {
                 printf("+");
                 u16Val = s_u16VolCur + s_u16VolRes;
@@ -647,7 +647,7 @@ int32_t main(void)
                 else
                     printf("    Failed to set microphone volume 0x%x!\n", u16Val);
             }
-            else if ((i8Ch == '-') && (s_u16VolCur - s_u16VolRes >= s_u16VolMin))
+            else if ((i8Ch == '-') && ((int16_t)(s_u16VolCur - s_u16VolRes) >= (int16_t)s_u16VolMin))
             {
                 printf("-");
                 u16Val = s_u16VolCur - s_u16VolRes;
@@ -660,7 +660,7 @@ int32_t main(void)
                 else
                     printf("    Failed to set microphone volume 0x%x!\n", u16Val);
             }
-            else if ((i8Ch == '0') && (s_u16VolCur - s_u16VolRes >= s_u16VolMin))
+            else if ((i8Ch == '0') && ((int16_t)(s_u16VolCur - s_u16VolRes) >= (int16_t)s_u16VolMin))
             {
                 if (usbh_uac_vol_control(uac_dev, UAC_MICROPHONE, UAC_GET_CUR, UAC_CH_MASTER, &s_u16VolCur) == UAC_RET_OK)
                     printf("    Microphone current volume is 0x%x.\n", s_u16VolCur);

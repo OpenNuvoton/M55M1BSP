@@ -16,8 +16,6 @@
 #include "isp_user.h"
 #include "hid_transfer.h"
 
-#define TRIM_INIT       (SYS_BASE + 0x10C)
-
 // Empty function to reduce code size
 uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 {

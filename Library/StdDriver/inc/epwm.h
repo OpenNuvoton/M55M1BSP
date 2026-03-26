@@ -605,7 +605,7 @@ void EPWM_EnableDACTrigger(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Con
 void EPWM_DisableDACTrigger(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Condition);
 uint32_t EPWM_GetDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
-void EPWM_EnableFaultBrake(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32LevelMask, uint32_t u32BrakeSource);
+void EPWM_EnableFaultBrake(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32LevelMask, uint32_t u32BrakeSourceMask);
 void EPWM_EnableCapture(EPWM_T *epwm, uint32_t u32ChannelMask);
 void EPWM_DisableCapture(EPWM_T *epwm, uint32_t u32ChannelMask);
 void EPWM_EnableOutput(EPWM_T *epwm, uint32_t u32ChannelMask);

@@ -22,7 +22,9 @@
  */
 
 #include "NuMicro.h"
-
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -147,12 +149,16 @@ static int32_t GPIO_SetOutputMode(ARM_GPIO_Pin_t pin, ARM_GPIO_OUTPUT_MODE mode)
 // Set GPIO Pull Resistor
 static int32_t GPIO_SetPullResistor(ARM_GPIO_Pin_t pin, ARM_GPIO_PULL_RESISTOR resistor)
 {
+    (void) pin;
+    (void) resistor;
     return ARM_DRIVER_ERROR_UNSUPPORTED;
 }
 
 // Set GPIO Event Trigger
 static int32_t GPIO_SetEventTrigger(ARM_GPIO_Pin_t pin, ARM_GPIO_EVENT_TRIGGER trigger)
 {
+    (void) pin;
+    (void) trigger;
     return ARM_DRIVER_ERROR_UNSUPPORTED;
 }
 

@@ -108,8 +108,6 @@ typedef struct
 
 typedef struct
 {
-
-
     /**
      * @var USBD_T::INTEN
      * Offset: 0x00  USB Device Interrupt Enable Register
@@ -617,7 +615,6 @@ typedef struct
      * |        |          |0 = Normal operation.
      * |        |          |1 = Force USB PHY transceiver to drive SE0.
      */
-
     __IO uint32_t INTEN;                 /*!< [0x0000] USB Device Interrupt Enable Register                             */
     __IO uint32_t INTSTS;                /*!< [0x0004] USB Device Interrupt Event Status Register                       */
     __IO uint32_t FADDR;                 /*!< [0x0008] USB Device Function Address Register                             */

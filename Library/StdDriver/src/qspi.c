@@ -22,20 +22,20 @@
 */
 
 /* Set PCLK as the clock source of QSPI */
-static void QSPI_SetPCLKSrc(QSPI_T *qspi)
+static void QSPI_SetPCLKSrc(const QSPI_T *qspi)
 {
     if (qspi == QSPI0)
     {
         CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI0SEL_Msk)) | (CLK_QSPISEL_QSPI0SEL_PCLK0);
     }
-    else if (qspi == QSPI1)
+    else
     {
         CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI1SEL_Msk)) | (CLK_QSPISEL_QSPI1SEL_PCLK2);
     }
 }
 
 /* Get the PCLK clock frequency of QSPI */
-static uint32_t QSPI_GetPCLKSrcFreq(QSPI_T *qspi)
+static uint32_t QSPI_GetPCLKSrcFreq(const QSPI_T *qspi)
 {
     uint32_t u32RetValue = 0;
 
@@ -43,7 +43,7 @@ static uint32_t QSPI_GetPCLKSrcFreq(QSPI_T *qspi)
     {
         u32RetValue = CLK_GetPCLK0Freq();
     }
-    else if (qspi == QSPI1)
+    else
     {
         u32RetValue = CLK_GetPCLK2Freq();
     }
@@ -57,18 +57,24 @@ static uint32_t QSPI_GetPCLKSrcFreq(QSPI_T *qspi)
  * @param qspi      The pointer of the specified QSPI module.
  * @return uint32_t Clock Frequency
  */
-static uint32_t QSPI_GetModuleClkSrcFrq(QSPI_T *qspi)
+static uint32_t QSPI_GetModuleClkSrcFrq(const QSPI_T *qspi)
 {
-    uint32_t u32QSPIClkSrcSel = 0ul;
-    uint32_t u32RetValue = 0ul;
+    uint32_t u32QSPIClkSrcSel = 0UL;
+    uint32_t u32RetValue = 0UL;
 
     /* Get QSPI clock source selection */
     if (qspi == QSPI0)
+    {
         u32QSPIClkSrcSel = ((CLK->QSPISEL & CLK_QSPISEL_QSPI0SEL_Msk) >> CLK_QSPISEL_QSPI0SEL_Pos);
+    }
     else if (qspi == QSPI1)
+    {
         u32QSPIClkSrcSel = ((CLK->QSPISEL & CLK_QSPISEL_QSPI1SEL_Msk) >> CLK_QSPISEL_QSPI1SEL_Pos);
+    }
     else
+    {
         u32QSPIClkSrcSel = QSPI_CLKSEL_HXT;
+    }
 
     switch (u32QSPIClkSrcSel)
     {
@@ -89,7 +95,7 @@ static uint32_t QSPI_GetModuleClkSrcFrq(QSPI_T *qspi)
             break;
 
         case QSPI_CLKSEL_HIRC48M_DIV4:
-            u32RetValue = (__HIRC48M / 4);                  /* Clock source is HIRC 48Mhz / 4 */
+            u32RetValue = ((uint32_t)__HIRC48M / 4U);                  /* Clock source is HIRC 48Mhz / 4 */
             break;
 
         default:
@@ -121,15 +127,20 @@ static uint32_t QSPI_GetModuleClkSrcFrq(QSPI_T *qspi)
   */
 uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, uint32_t u32DataWidth, uint32_t u32BusClock)
 {
-    uint32_t u32RetValue = 0U;
+    uint32_t u32RetValue = 0UL;
+    uint32_t u32DataWidthTmp = 0UL;
 
-    if ((u32DataWidth < 8) && (u32DataWidth > 0U))
+    if ((u32DataWidth < 8UL) && (u32DataWidth > 0UL))
     {
-        u32DataWidth = 8U;
+        u32DataWidthTmp = 8UL;
     }
-    else if (u32DataWidth >= 32U)
+    else if (u32DataWidth >= 32UL)
     {
-        u32DataWidth = 0U;
+        u32DataWidthTmp = 0UL;
+    }
+    else
+    {
+        u32DataWidthTmp = u32DataWidth;
     }
 
     if (u32MasterSlave == QSPI_MASTER)
@@ -138,10 +149,10 @@ uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, 
         qspi->SSCTL = QSPI_SS_ACTIVE_LOW;
 
         /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        qspi->CTL = (u32MasterSlave |
-                     (u32DataWidth << QSPI_CTL_DWIDTH_Pos) |
-                     (u32QSPIMode) |
-                     QSPI_CTL_QSPIEN_Msk);
+        qspi->CTL = (u32MasterSlave);
+        qspi->CTL |= ((u32DataWidthTmp << QSPI_CTL_DWIDTH_Pos) |
+                      (u32QSPIMode) |
+                      QSPI_CTL_QSPIEN_Msk);
 
         // Set the bus clock for the QSPI module and store the actual frequency in u32RetValue
         u32RetValue = QSPI_SetBusClock(qspi, u32BusClock);
@@ -152,13 +163,13 @@ uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, 
         qspi->SSCTL = QSPI_SS_ACTIVE_LOW;
 
         /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        qspi->CTL = (u32MasterSlave |
-                     (u32DataWidth << QSPI_CTL_DWIDTH_Pos) |
-                     (u32QSPIMode) |
-                     QSPI_CTL_QSPIEN_Msk);
+        qspi->CTL = (u32MasterSlave);
+        qspi->CTL |= ((u32DataWidthTmp << QSPI_CTL_DWIDTH_Pos) |
+                      (u32QSPIMode) |
+                      QSPI_CTL_QSPIEN_Msk);
 
         /* Set DIVIDER = 0 */
-        qspi->CLKDIV = 0U;
+        qspi->CLKDIV = 0UL;
 
         /* Get the PCLK clock frequency of QSPI */
         u32RetValue = QSPI_GetPCLKSrcFreq(qspi);
@@ -172,7 +183,7 @@ uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, 
   * @param[in]  qspi The pointer of the specified QSPI module.
   * @details This function will reset QSPI controller.
   */
-void QSPI_Close(QSPI_T *qspi)
+void QSPI_Close(const QSPI_T *qspi)
 {
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
@@ -187,7 +198,7 @@ void QSPI_Close(QSPI_T *qspi)
     {
         SYS_ResetModule(SYS_QSPI0RST);
     }
-    else if (qspi == QSPI1)
+    else
     {
         SYS_ResetModule(SYS_QSPI1RST);
     }
@@ -258,8 +269,9 @@ void QSPI_EnableAutoSS(QSPI_T *qspi, uint32_t u32SSPinMask, uint32_t u32ActiveLe
   */
 uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
 {
-    uint32_t u32ClkSrc, u32HCLKFreq;
-    uint32_t u32Div, u32RetValue;
+    uint32_t u32ClkSrc = 0UL;
+    uint32_t u32HCLKFreq = 0UL;
+    uint32_t u32RetValue = 0UL;
 
     /* Get system clock frequency */
     u32HCLKFreq = CLK_GetSCLKFreq();
@@ -276,14 +288,14 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
     if (u32BusClock >= u32HCLKFreq)
     {
         /* Set DIVIDER = 0 */
-        qspi->CLKDIV = 0U;
+        qspi->CLKDIV = 0UL;
         /* Return master peripheral clock rate */
         u32RetValue = u32ClkSrc;
     }
     else if (u32BusClock >= u32ClkSrc)
     {
         /* Set DIVIDER = 0 */
-        qspi->CLKDIV = 0U;
+        qspi->CLKDIV = 0UL;
         /* Return master peripheral clock rate */
         u32RetValue = u32ClkSrc;
     }
@@ -296,7 +308,9 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
     }
     else
     {
-        u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
+        uint32_t u32Div = 0UL;
+
+        u32Div = ((((u32ClkSrc * 10U) / (u32BusClock + 5U)) / 10U) - 1UL); /* Round to the nearest integer */
 
         // Ensure the divider does not exceed the maximum allowed value
         u32Div = ((u32Div > (QSPI_CLKDIV_DIVIDER_Msk >> QSPI_CLKDIV_DIVIDER_Pos)) ?
@@ -332,7 +346,7 @@ void QSPI_SetFIFO(QSPI_T *qspi, uint32_t u32TxThreshold, uint32_t u32RxThreshold
   * @return Actual QSPI bus clock frequency in Hz.
   * @details This function will calculate the actual QSPI bus clock rate according to the QSPInSEL and DIVIDER settings. Only available in Master mode.
   */
-uint32_t QSPI_GetBusClock(QSPI_T *qspi)
+uint32_t QSPI_GetBusClock(const QSPI_T *qspi)
 {
     uint32_t u32Div = 0;
     uint32_t u32ClkSrc = 0;
@@ -545,9 +559,10 @@ void QSPI_DisableInt(QSPI_T *qspi, uint32_t u32Mask)
   * @return Interrupt flags of selected sources.
   * @details Get QSPI related interrupt flags specified by u32Mask parameter.
   */
-uint32_t QSPI_GetIntFlag(QSPI_T *qspi, uint32_t u32Mask)
+uint32_t QSPI_GetIntFlag(const QSPI_T *qspi, uint32_t u32Mask)
 {
-    uint32_t u32IntFlag = 0U, u32TmpVal;
+    uint32_t u32IntFlag = 0UL;
+    uint32_t u32TmpVal = 0UL;
 
     u32TmpVal = (qspi->STATUS & QSPI_STATUS_UNITIF_Msk);
 
@@ -710,9 +725,10 @@ void QSPI_ClearIntFlag(QSPI_T *qspi, uint32_t u32Mask)
   * @return Flags of selected sources.
   * @details Get QSPI related status specified by u32Mask parameter.
   */
-uint32_t QSPI_GetStatus(QSPI_T *qspi, uint32_t u32Mask)
+uint32_t QSPI_GetStatus(const QSPI_T *qspi, uint32_t u32Mask)
 {
-    uint32_t u32Flag = 0U, u32TmpValue;
+    uint32_t u32Flag = 0UL;
+    uint32_t u32TmpValue = 0UL;
 
     u32TmpValue = (qspi->STATUS & QSPI_STATUS_BUSY_Msk);
 

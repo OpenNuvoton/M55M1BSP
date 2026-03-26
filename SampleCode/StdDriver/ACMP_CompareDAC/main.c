@@ -102,7 +102,7 @@ void SYS_Init(void)
     /* Enable DAC01 module clock */
     CLK_EnableModuleClock(DAC01_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /* Set PA.10 and PC.0 to input mode */

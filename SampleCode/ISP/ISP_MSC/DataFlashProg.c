@@ -3,25 +3,24 @@
  * @version  V1.00
  * @brief    Flash Access API
  *
- * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Includes of system headers                                                                              */
 /*---------------------------------------------------------------------------------------------------------*/
 #include <string.h>
-#include "M55M1_User.h"
-#include "usbd_User.h"
-#include "massstorage.h"
+#include "NuMicro.h"
+#include "MassStorage.h"
 #include "DataFlashProg.h"
+
+extern uint32_t g_u32StorageSize;
 
 #define SECTOR_PER_FLASH_PAGE     (FMC_FLASH_PAGE_SIZE / BYTE_PER_SEC)
 
 static uint8_t g_u8Lock = 0;
 int32_t g_FMC_i32ErrCode = 0;
-
-extern uint32_t g_u32StorageSize;
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Macro, type and constant definitions                                                                    */
@@ -154,4 +153,4 @@ void DataFlashWrite(uint32_t u32Addr, uint32_t *u32Buf)
     }
 }
 
-/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

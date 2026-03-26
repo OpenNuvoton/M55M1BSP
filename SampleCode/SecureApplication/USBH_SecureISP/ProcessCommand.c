@@ -1,21 +1,21 @@
 /**************************************************************************//**
  * @file     ProcessCommand.c
  * @version  V1.00
- * $Revision: 1 $
  * @brief    Transmit command to SecureISP USB command mode.
  *
  * SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 #include "stdlib.h"
 #include "NuMicro.h"
-
 #include "usbh_lib.h"
 #include "usbh_hid.h"
 
-//#define DBG     printf
+//#define DBG             printf
+//#define DUMP_PACKET     1
 
 #ifndef DBG
     #define DBG(...)
@@ -260,8 +260,8 @@ static uint32_t sysGetNum(void)
 */
 static uint16_t _Perform_CCITT(uint32_t *pu32buf, uint16_t len, uint8_t mode)
 {
-    volatile uint16_t   i;
-    uint16_t            *pu16buf, u32OrgSum, u32CalSum;
+    uint32_t i;
+    uint16_t *pu16buf, u16OrgSum, u16CalSum;
 
     if (len > 56) // valid data byte count
         return -1;
@@ -272,27 +272,28 @@ static uint16_t _Perform_CCITT(uint32_t *pu32buf, uint16_t len, uint8_t mode)
     CRC_Open(CRC_CCITT, 0, 0xFFFFul, CRC_CPU_WDATA_16);
 
     for (i = 1; i < (len / 2); i++)
-        CRC->DAT = *(pu16buf + i);
+        CRC_WRITE_DATA(pu16buf[i]);
 
-    u32OrgSum = *(pu16buf + 0);
-    u32CalSum = (CRC->CHECKSUM & 0xFFFFul);
+    u16OrgSum = pu16buf[0];
+    u16CalSum = CRC_GetChecksum();
 
-    /* Clear CRC checksum */
-    CRC->SEED = 0xFFFFul;
-    CRC->CTL |= CRC_CTL_CHKSINIT_Msk;
+    /* Clear CRC checksum and reset seed */
+    CRC_SET_SEED(0xFFFF);
 
     if (mode == 0)
     {
-        *(pu16buf + 0) = u32CalSum;
-        return u32CalSum;
+        pu16buf[0] = u16CalSum;
+        return u16CalSum;
     }
     else if (mode == 1)
     {
         /* Verify CCITT checksum */
-        if (u32OrgSum == u32CalSum)
+        if (u16OrgSum == u16CalSum)
             return 0;   /* Verify CCITT Pass */
         else
+        {
             return -1;  /* Verify CCITT Fail */
+        }
     }
     else
     {
@@ -309,6 +310,8 @@ static uint32_t _Perform_CRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
     uint16_t i;
     uint32_t u32OrgSum, u32CalSum;
 
+    DBG("len: %d\n", len);
+
     if (len > 60) // valid data byte count
         return -1;
 
@@ -316,18 +319,24 @@ static uint32_t _Perform_CRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
     CRC_Open(CRC_32, (CRC_WDATA_RVS | CRC_CHECKSUM_COM | CRC_CHECKSUM_RVS), 0xFFFFFFFFul, CRC_CPU_WDATA_32);
 
     for (i = 0; i < (len / 4) - 1; i++)
-        CRC->DAT = *(pu32buf + i);
+    {
+#if (0)
+        DBG("idx-%d: 0x%08x. (CRC32)\n", i, pu32buf[i]);
+#endif
+        CRC_WRITE_DATA(pu32buf[i]);
+    }
 
-    u32OrgSum = *(pu32buf + i);
-    u32CalSum = (CRC->CHECKSUM & 0xFFFFFFFFul);
+    u32OrgSum = pu32buf[i];
+    u32CalSum = CRC_GetChecksum();
 
-    /* Clear CRC checksum */
-    CRC->SEED = 0xFFFFFFFFul;
-    CRC->CTL |= CRC_CTL_CHKSINIT_Msk;
+    /* Clear CRC checksum and reset seed */
+    CRC_SET_SEED(0xFFFFFFFF);
+
+    DBG("mode: %d\n", mode);
 
     if (mode == 0)
     {
-        *(pu32buf + i) = u32CalSum;
+        pu32buf[i] = u32CalSum;
         return u32CalSum;
     }
     else if (mode == 1)
@@ -336,7 +345,10 @@ static uint32_t _Perform_CRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
         if (u32OrgSum == u32CalSum)
             return 0;   /* Verify CRC32 Pass */
         else
+        {
+            DBG("u32OrgSum: 0x%08X, u32CalSum: 0x%08X\n", u32OrgSum, u32CalSum);
             return -1;  /* Verify CRC32 Fail */
+        }
     }
     else
     {
@@ -364,26 +376,30 @@ static uint32_t _Perform_CRC32(uint32_t *pu32buf, uint16_t len, uint8_t mode)
   */
 static int32_t _AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    uint32_t u32TimeOutCnt;
+    int32_t i32TimeOutCnt;
 
-    /* KEY and IV are byte order (32 bit) reversed, Swap32(x)) and stored in ISP_INFO_T */
-    memcpy((void *)&CRYPTO->AES_KEY[0], KEY, (4 * 8));
-    memcpy((void *)&CRYPTO->AES_IV[0], IV, (4 * 4));
+    AES_CLR_INT_FLAG(CRYPTO);
+    AES_Open(CRYPTO, 0, 1, AES_MODE_CFB, AES_KEY_SIZE_256, AES_IN_OUT_SWAP);
+    AES_SetKey(CRYPTO, 0, KEY, 4 * 8);
+    AES_SetInitVect(CRYPTO, 0, IV);
+    AES_SetDMATransfer(CRYPTO, 0, (uint32_t)in, (uint32_t)out, len);
+    AES_Start(CRYPTO, 0, CRYPTO_DMA_ONE_SHOT);
 
-    CRYPTO->AES_SADDR = (uint32_t)in;
-    CRYPTO->AES_DADDR = (uint32_t)out;
-    CRYPTO->AES_CNT   = len;
-    CRYPTO->AES_CTL = ((AES_KEY_SIZE_256 << CRYPTO_AES_CTL_KEYSZ_Pos) | (AES_IN_OUT_SWAP << CRYPTO_AES_CTL_OUTSWAP_Pos));
-    CRYPTO->AES_CTL |= (CRYPTO_AES_CTL_ENCRYPTO_Msk);
-    CRYPTO->AES_CTL |= ((AES_MODE_CFB << CRYPTO_AES_CTL_OPMODE_Pos) | CRYPTO_AES_CTL_START_Msk | CRYPTO_AES_CTL_DMAEN_Msk);
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    i32TimeOutCnt = SystemCoreClock; /* > 1 second time-out */
 
-    while (CRYPTO->AES_STS & CRYPTO_AES_STS_BUSY_Msk)
+    while (AES_GET_INT_FLAG(CRYPTO) == 0)
     {
-        if (--u32TimeOutCnt == 0)
+        if (i32TimeOutCnt-- < 0)
             return -1;
     }
 
+    if (AES_GET_INT_FLAG(CRYPTO) & CRYPTO_INTSTS_AESEIF_Msk)
+    {
+        AES_CLR_INT_FLAG(CRYPTO);
+        return -2;
+    }
+
+    AES_CLR_INT_FLAG(CRYPTO);
     return 0;
 }
 
@@ -392,25 +408,30 @@ static int32_t _AES256Encrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_
   */
 static int32_t _AES256Decrypt(uint32_t *in, uint32_t *out, uint32_t len, uint32_t *KEY, uint32_t *IV)
 {
-    uint32_t u32TimeOutCnt;
+    int32_t i32TimeOutCnt;
 
-    /* KEY and IV are byte order (32 bit) reversed, Swap32(x)) and stored in ISP_INFO_T */
-    memcpy((void *)&CRYPTO->AES_KEY[0], KEY, (4 * 8));
-    memcpy((void *)&CRYPTO->AES_IV[0], IV, (4 * 4));
+    AES_CLR_INT_FLAG(CRYPTO);
+    AES_Open(CRYPTO, 0, 0, AES_MODE_CFB, AES_KEY_SIZE_256, AES_IN_OUT_SWAP);
+    AES_SetKey(CRYPTO, 0, KEY, 4 * 8);
+    AES_SetInitVect(CRYPTO, 0, IV);
+    AES_SetDMATransfer(CRYPTO, 0, (uint32_t)in, (uint32_t)out, len);
+    AES_Start(CRYPTO, 0, CRYPTO_DMA_ONE_SHOT);
 
-    CRYPTO->AES_SADDR = (uint32_t)in;
-    CRYPTO->AES_DADDR = (uint32_t)out;
-    CRYPTO->AES_CNT   = len;
-    CRYPTO->AES_CTL = ((AES_KEY_SIZE_256 << CRYPTO_AES_CTL_KEYSZ_Pos) | (AES_IN_OUT_SWAP << CRYPTO_AES_CTL_OUTSWAP_Pos));
-    CRYPTO->AES_CTL |= ((AES_MODE_CFB << CRYPTO_AES_CTL_OPMODE_Pos) | CRYPTO_AES_CTL_START_Msk | CRYPTO_AES_CTL_DMAEN_Msk);
-    u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+    i32TimeOutCnt = SystemCoreClock; /* > 1 second time-out */
 
-    while (CRYPTO->AES_STS & CRYPTO_AES_STS_BUSY_Msk)
+    while (AES_GET_INT_FLAG(CRYPTO) == 0)
     {
-        if (--u32TimeOutCnt == 0)
+        if (i32TimeOutCnt-- < 0)
             return -1;
     }
 
+    if (AES_GET_INT_FLAG(CRYPTO) & CRYPTO_INTSTS_AESEIF_Msk)
+    {
+        AES_CLR_INT_FLAG(CRYPTO);
+        return -2;
+    }
+
+    AES_CLR_INT_FLAG(CRYPTO);
     return 0;
 }
 
@@ -418,7 +439,7 @@ static int32_t _Perform_GenPacket(CMD_PACKET_T *pCMD)
 {
     uint32_t    i;
 
-#if (0)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32;
         pu32 = (uint32_t *)pCMD;
@@ -460,7 +481,7 @@ static int32_t _Perform_GenPacket(CMD_PACKET_T *pCMD)
         }
     }
 
-#if (0)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32;
         pu32 = (uint32_t *)pCMD;
@@ -501,7 +522,7 @@ static int32_t _Perform_ParsePacket(CMD_PACKET_T *pCMD)
 {
     uint32_t i;
 
-#if (0)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32;
         pu32 = (uint32_t *)pCMD;
@@ -548,7 +569,7 @@ static int32_t _Perform_ParsePacket(CMD_PACKET_T *pCMD)
         }
     }
 
-#if (0)
+#if (DUMP_PACKET == 1)
     {
         uint32_t *pu32;
         pu32 = (uint32_t *)pCMD;
@@ -1782,4 +1803,4 @@ int32_t Process_USBHCommand(HID_DEV_T *hdev)
     return 0;
 }
 
-/*** (C) COPYRIGHT 2020 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

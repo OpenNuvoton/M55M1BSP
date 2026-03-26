@@ -22,6 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -570,11 +573,6 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
     switch (state)
     {
         case ARM_POWER_OFF:
-            if ((pSPIn->sState.u8State & SPI_INITIALIZED) == 0U)
-            {
-                return ARM_DRIVER_ERROR;
-            }
-
             LPSPI_InterruptConfig(u32Inst, SPI_OP_DISABLE); // Disable SPI interrupts
 
             // Reset SPI Run-Time Resources
@@ -596,6 +594,7 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
             }
 
             pSPIn->sState.u8State &= ~SPI_POWERED; // SPI is not powered
+
             break;
 
         case ARM_POWER_FULL:

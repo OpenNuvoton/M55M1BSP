@@ -477,6 +477,7 @@ union disc_ident_ack
 
     uint32_t raw_value[PDO_MAX_OBJECTS - 1];
 };
+
 #ifdef SW_3
 BUILD_ASSERT(sizeof(union disc_ident_ack) ==
              sizeof(uint32_t) * (PDO_MAX_OBJECTS - 1));
@@ -565,9 +566,9 @@ struct partner_active_modes
      ((custom) & 0x7FFF))
 
 #define VDO_SVDM_TYPE     BIT(15)
-#define VDO_SVDM_VERS(x)  (x << 13)
-#define VDO_OPOS(x)       (x << 8)
-#define VDO_CMDT(x)       (x << 6)
+#define VDO_SVDM_VERS(x)  ((x) << 13)
+#define VDO_OPOS(x)       ((x) << 8)
+#define VDO_CMDT(x)       ((x) << 6)
 #define VDO_OPOS_MASK     VDO_OPOS(0x7)
 #define VDO_CMDT_MASK     VDO_CMDT(0x3)
 
@@ -745,7 +746,7 @@ struct pd_cable
  * <31:8> : reserved
  * <7:0>  : mode
  */
-#define VDO_MODE_GOOGLE(mode) (mode & 0xff)
+#define VDO_MODE_GOOGLE(mode) ((mode) & 0xff)
 
 #define MODE_GOOGLE_FU 1 /* Firmware Update mode */
 
@@ -854,7 +855,7 @@ struct pd_cable
 #define VDO_DP_CFG(pin, sig, cfg) \
     (((pin) & 0xff) << 8 | ((sig) & 0xf) << 2 | ((cfg) & 0x3))
 
-#define PD_DP_CFG_DPON(x) (((x & 0x3) == 1) || ((x & 0x3) == 2))
+#define PD_DP_CFG_DPON(x) ((((x) & 0x3) == 1) || (((x) & 0x3) == 2))
 /*
  * Get the pin assignment mask
  * for backward compatibility, if it is null,
@@ -889,7 +890,7 @@ struct pd_cable
 #define VDO_INFO_SW_DBG_VER(x)   (((x) >> 1) & 0x7fff)
 #define VDO_INFO_IS_RW(x)        ((x) & 1)
 
-#define HW_DEV_ID_MAJ(x) (x & 0x3ff)
+#define HW_DEV_ID_MAJ(x) ((x) & 0x3ff)
 #define HW_DEV_ID_MIN(x) ((x) >> 10)
 
 /* USB-IF SIDs */
@@ -1307,8 +1308,8 @@ enum pd_ext_msg_type
 #define ADO_OTP_EVENT                   BIT(27)
 #define ADO_OCP_EVENT                   BIT(26)
 #define ADO_BATTERY_STATUS_CHANGE       BIT(25)
-#define ADO_FIXED_BATTERIES(n)          ((n & 0xf) << 20)
-#define ADO_HOT_SWAPPABLE_BATTERIES(n)  ((n & 0xf) << 16)
+#define ADO_FIXED_BATTERIES(n)          (((n) & 0xf) << 20)
+#define ADO_HOT_SWAPPABLE_BATTERIES(n)  (((n) & 0xf) << 16)
 
 /* Data message type */
 enum pd_data_msg_type
@@ -1414,7 +1415,7 @@ enum cable_outlet
 #define PD_EXT_HEADER_DATA_SIZE(header) ((header) & 0x1ff)
 
 /* Used to get extended header from the first 32-bit word of the message */
-#define GET_EXT_HEADER(msg) (msg & 0xffff)
+#define GET_EXT_HEADER(msg) ((msg) & 0xffff)
 
 /* Extended message constants (PD 3.0, Rev. 2.0, section 6.13) */
 #define PD_MAX_EXTENDED_MSG_LEN       260
@@ -2600,10 +2601,13 @@ extern const uint32_t pd_snk_pdo[];
  * @param mask host event mask.
  */
 #if defined(HAS_TASK_HOSTCMD) && !defined(TEST_BUILD)
-    void pd_send_host_event(int mask) __attribute__((unused));
+    void pd_send_host_event(int mask)
 #else
-    static inline void pd_send_host_event(int mask) __attribute__((unused));
+    static inline void pd_send_host_event(int mask)
 #endif
+{
+    (void) mask;
+}
 
 /**
  * Determine if in alternate mode or not.
@@ -3268,10 +3272,12 @@ int pd_vdm_get_log_entry(uint32_t *payload);
 #else  /* CONFIG_USB_PD_LOGGING */
 static inline void pd_log_event(uint8_t type, uint8_t size_port,
                                 uint16_t data, void *payload) {}
+
 static inline int pd_vdm_get_log_entry(uint32_t *payload)
 {
     return 0;
 }
+
 #endif /* CONFIG_USB_PD_LOGGING */
 
 /**

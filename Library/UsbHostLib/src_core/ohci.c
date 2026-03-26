@@ -648,7 +648,7 @@ static int ohci_int_xfer(UTR_T *utr)
     if (utr->data_len > 64)             /* USB 1.1 interrupt transfer maximum packet size is 64 */
         return USBH_ERR_INVALID_PARAM;
 
-    td_new = alloc_ohci_TD(utr);        /* allocate a TD for dummy TD                     */
+    td_new = alloc_ohci_TD((void *)0);        /* allocate a TD for dummy TD                     */
 
     if (td_new == NULL)
         return USBH_ERR_MEMORY_OUT;
@@ -1234,19 +1234,27 @@ static void remove_ed()
                 {
                     utr = td->utr;
                     td_next = (TD_T *)td->NextTD;
+
                     free_ohci_TD(td);
-                    td = td_next;
 
-                    utr->td_cnt--;
-
-                    if (utr->td_cnt == 0)
+                    if (utr && utr->udev)
                     {
-                        utr->status = USBH_ERR_ABORT;
-                        utr->bIsTransferDone = 1;
+                        if (utr->td_cnt > 0)
+                        {
+                            utr->td_cnt--;
 
-                        if (utr->func)
-                            utr->func(utr);
+                            if (utr->td_cnt == 0)
+                            {
+                                utr->status = USBH_ERR_ABORT;
+                                utr->bIsTransferDone = 1;
+
+                                if (utr->func)
+                                    utr->func(utr);
+                            }
+                        }
                     }
+
+                    td = td_next;
                 }
             }
         }
@@ -1255,6 +1263,7 @@ static void remove_ed()
          *  Done. Remove this ED from [ed_remove_list] and free it.
          */
         ed_remove_list = ed_p->next;
+
         free_ohci_ED(ed_p);
     }
 }

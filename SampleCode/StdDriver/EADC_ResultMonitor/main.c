@@ -48,8 +48,8 @@ void SYS_Init(void)
     /* Switch SCLK clock source to APLL0 and Enable APLL0 220MHz clock */
     CLK_SetBusClock(CLK_SCLKSEL_SCLKSEL_APLL0, CLK_APLLCTL_APLLSRC_HXT, FREQ_220MHZ);
 
-    /* Enable APLL1 200MHz clock for maximum EADC clock frequency */
-    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_200MHZ, CLK_APLL1_SELECT);
+    /* Enable APLL1 180MHz clock for maximum EADC clock frequency */
+    CLK_EnableAPLL(CLK_APLLCTL_APLLSRC_HXT, FREQ_180MHZ, CLK_APLL1_SELECT);
 
     /* Update System Core Clock */
     /* User can use SystemCoreClockUpdate() to calculate SystemCoreClock. */
@@ -64,8 +64,15 @@ void SYS_Init(void)
     /* Enable GPIOB module clock */
     CLK_EnableModuleClock(GPIOB_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
+
+    /* To run the CPU at 220 MHz, the power level must be set to PL0. */
+    PMC_SetPowerLevel(PMC_PLCTL_PLSEL_PL0);
+
+    /*---------------------------------------------------------------------------------------------------------*/
+    /* Init I/O Multi-function                                                                                 */
+    /*---------------------------------------------------------------------------------------------------------*/
 
     /* Set PB multi-function pins for Debug UART RXD and TXD */
     SetDebugUartMFP();
@@ -76,7 +83,6 @@ void SYS_Init(void)
     SET_EADC0_CH1_PB1();
     /* Disable the PB.1 digital input path to avoid the leakage current. */
     GPIO_DISABLE_DIGITAL_PATH(PB, BIT1);
-
 }
 
 void EADC_FunctionTest()

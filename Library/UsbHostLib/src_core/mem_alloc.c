@@ -29,36 +29,36 @@
 #ifdef __ICCARM__
     #if (NVT_DCACHE_ON == 1)
         /* QH/QTD/iTD/siTD are placed in a non-cacheable region */
-        #pragma data_alignment = 32
-        NVT_NONCACHEABLE static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE];                                 /* Periodic frame list        */
+        #pragma data_alignment = 64
+        NVT_NONCACHEABLE static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE];
     #else
-        #pragma data_alignment = 32
+        #pragma data_alignment = 64
         static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE];
     #endif
 #else
     #if (NVT_DCACHE_ON == 1)
         /* QH/QTD/iTD/siTD are placed in a non-cacheable region */
-        NVT_NONCACHEABLE static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+        NVT_NONCACHEABLE static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE] __attribute__((aligned(64)));
     #else
-        static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+        static uint8_t _hw_mem_pool[HW_MEM_UNIT_NUM][HW_MEM_UNIT_SIZE] __attribute__((aligned(64)));
     #endif
 #endif
 
 #ifdef __ICCARM__
     #if (NVT_DCACHE_ON == 1)
         /* Device descriptor / UTR and data buffer are placed in a non-cacheable region */
-        #pragma data_alignment = 32
-        NVT_NONCACHEABLE static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE];                                 /* Periodic frame list        */
+        #pragma data_alignment = 64
+        NVT_NONCACHEABLE static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE];
     #else
-        #pragma data_alignment = 32
+        #pragma data_alignment = 64
         static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE];
     #endif
 #else
     #if (NVT_DCACHE_ON == 1)
         /* Device descriptor / UTR and data buffer are placed in a non-cacheable region */
-        NVT_NONCACHEABLE static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+        NVT_NONCACHEABLE static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE] __attribute__((aligned(64)));
     #else
-        static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE] __attribute__((aligned(4096)));  /* Periodic frame list        */
+        static uint8_t _dma_mem_pool[DMA_MEM_UNIT_NUM][DMA_MEM_UNIT_SIZE] __attribute__((aligned(64)));
     #endif
 #endif
 

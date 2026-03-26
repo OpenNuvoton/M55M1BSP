@@ -58,7 +58,7 @@ void SYS_Init(void)
     /* Enable LPUART0 peripheral clock */
     CLK_EnableModuleClock(LPUART0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

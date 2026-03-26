@@ -54,6 +54,7 @@ NVT_ITCM void ACMP01_IRQHandler(void)
 
     UART_WAIT_TX_EMPTY(DEBUG_PORT);
 }
+
 /*---------------------------------------------------------------------------------------------------------*/
 /*                                         PWRWU  Handle                                                   */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -70,6 +71,7 @@ NVT_ITCM void PMC_IRQHandler(void)
     UART_WAIT_TX_EMPTY(DEBUG_PORT);
 
 }
+
 /**
   * @brief      Enter To Power Down
   * @param[in]   u32PDMode    The specified Power down module.
@@ -128,7 +130,7 @@ void SYS_Init(void)
     /* Enable GPC peripheral clock */
     CLK_EnableModuleClock(GPIOC_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /* Set PB.4 and PC.0 to input mode */

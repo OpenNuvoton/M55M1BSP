@@ -54,7 +54,7 @@ void SYS_Init(void)
     /* Enable GPIOB module clock */
     CLK_EnableModuleClock(GPIOB_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*----------------------------------------------------------------------*/

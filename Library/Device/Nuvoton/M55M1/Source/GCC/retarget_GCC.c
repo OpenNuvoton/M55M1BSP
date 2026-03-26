@@ -36,9 +36,9 @@ extern FILEHANDLE _open(const char * /*name*/, int /*openmode*/);
 
 
 /* Standard IO device name defines. */
-const __ALIGNED(4) char __stdin_name [] = "STDIN";
-const __ALIGNED(4) char __stdout_name[] = "STDOUT";
-const __ALIGNED(4) char __stderr_name[] = "STDERR";
+const __WEAK __ALIGNED(4) char __stdin_name [] = "STDIN";
+const __WEAK __ALIGNED(4) char __stdout_name[] = "STDOUT";
+const __WEAK __ALIGNED(4) char __stderr_name[] = "STDERR";
 
 #if defined (OS_USE_SEMIHOSTING)
 

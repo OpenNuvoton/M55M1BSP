@@ -108,7 +108,7 @@ int32_t main(void)
     g_u32ApromSize = GetApromSize();
 
     /* Open HSUSBD controller */
-    HSUSBD_Open(NULL, NULL, NULL);
+    HSUSBD_Open(&gsHSInfo, HID_ClassRequest, NULL);
 
     /* Endpoint configuration */
     HID_Init();

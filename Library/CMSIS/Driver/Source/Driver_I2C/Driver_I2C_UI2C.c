@@ -26,6 +26,9 @@
     4. If the master's data request exceeds the specified size, UI2C_SlaveTransmit will send dummy data (all zeros).
 */
 
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -33,8 +36,13 @@
     #include "RTE_Device/RTE_Device.h"
 #endif
 
-
 #if (RTE_I2C5 == 1)
+
+#if defined (RTE_Driver_USART) || defined (RTE_Driver_SPI)
+    #if (RTE_USART14 || RTE_SPI7)
+        #error "USCI0 is used by multiple CMSIS Drivers! Please check RTE device configuration to fix it."
+    #endif
+#endif
 
 #define ARM_I2C_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0) /* driver version */
 

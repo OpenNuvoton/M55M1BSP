@@ -93,6 +93,7 @@ void CANFD_ShowMsg(CANFD_FD_MSG_T *sRxMsg)
 
     printf("\n\n");
 }
+
 /*---------------------------------------------------------------------------*/
 /*  Get the CANFD interface Nominal bit rate Function                        */
 /*---------------------------------------------------------------------------*/
@@ -126,6 +127,7 @@ uint32_t Get_CANFD_NominalBitRate(CANFD_T *psCanfd)
 
     return u32BitRate;
 }
+
 /*---------------------------------------------------------------------------*/
 /*  Get the CANFD interface Data bit rate Function                           */
 /*---------------------------------------------------------------------------*/
@@ -192,7 +194,7 @@ void SYS_Init(void)
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

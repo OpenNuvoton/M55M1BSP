@@ -102,7 +102,7 @@ int32_t main(void)
     g_u32ApromSize = GetApromSize();
 
     /* Open HSUSBD controller */
-    HSUSBD_Open(NULL, DFU_ClassRequest, NULL);
+    HSUSBD_Open(&gsHSInfo, DFU_ClassRequest, NULL);
 
     /*Init Endpoint configuration for DFU */
     DFU_Init();

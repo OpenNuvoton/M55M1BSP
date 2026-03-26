@@ -1,9 +1,9 @@
 /******************************************************************************
- * @file     hid_transder.c
- * @brief    M55M1 series USBD driver sample file
+ * @file     hid_transfer.c
+ * @brief    USBD HID driver sample file
  *
  * SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 
 /*!<Includes */
@@ -11,8 +11,6 @@
 #include <string.h>
 #include "NuMicro.h"
 #include "hid_transfer.h"
-
-//static uint8_t volatile g_u8EP2Ready = 0;
 
 void USBD_IRQHandler(void);
 void HID_Init(void);
@@ -288,3 +286,5 @@ void HID_ClassRequest(void)
         }
     }
 }
+
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

@@ -583,7 +583,7 @@ int32_t usbh_hid_start_int_read(HID_DEV_T *hdev, uint8_t ep_addr, HID_IR_FUNC *f
 int32_t usbh_hid_stop_int_read(HID_DEV_T *hdev, uint8_t ep_addr)
 {
     IFACE_T    *iface = (IFACE_T *)hdev->iface;
-    UTR_T      *utr;
+    UTR_T      *utr = NULL;
     int        i, ret;
 
     if ((!iface) || (!iface->udev))
@@ -731,7 +731,7 @@ int32_t usbh_hid_start_int_write(HID_DEV_T *hdev, uint8_t ep_addr, HID_IW_FUNC *
 int32_t usbh_hid_stop_int_write(HID_DEV_T *hdev, uint8_t ep_addr)
 {
     IFACE_T    *iface = (IFACE_T *)hdev->iface;
-    UTR_T      *utr;
+    UTR_T      *utr = NULL;
     int        i, ret = 0;
 
     if ((!iface) || (!iface->udev))

@@ -20,7 +20,7 @@
 /** @addtogroup LPSPI_EXPORTED_FUNCTIONS LPSPI Exported Functions
   @{
 */
-static void LPSPI_SetPCLKSrc(LPSPI_T *lpspi)
+static void LPSPI_SetPCLKSrc(const LPSPI_T *lpspi)
 {
     /* Select PCLK as the clock source of LPSPI */
     if (lpspi == LPSPI0)
@@ -34,7 +34,7 @@ static void LPSPI_SetPCLKSrc(LPSPI_T *lpspi)
  *
  * @return Actual frequency of LPSPI peripheral clock source.
  */
-static uint32_t LPSPI_GetPCLKSrcFreq(LPSPI_T *lpspi)
+static uint32_t LPSPI_GetPCLKSrcFreq(const LPSPI_T *lpspi)
 {
     uint32_t u32RetValue = 0;
 
@@ -54,16 +54,20 @@ static uint32_t LPSPI_GetPCLKSrcFreq(LPSPI_T *lpspi)
  * @param lpspi     The pointer of the specified LPSPI module.
  * @return uint32_t Clock Frequency
  */
-static uint32_t LPSPI_GetModuleClkSrcFreq(LPSPI_T *lpspi)
+static uint32_t LPSPI_GetModuleClkSrcFreq(const LPSPI_T *lpspi)
 {
-    uint32_t u32LPSPIClkSrcSel = 0ul;
-    uint32_t u32RetValue = 0ul;
+    uint32_t u32LPSPIClkSrcSel = 0UL;
+    uint32_t u32RetValue = 0UL;
 
     /* Get LPSPI clock source selection */
     if (lpspi == LPSPI0)
+    {
         u32LPSPIClkSrcSel = ((CLK->LPSPISEL & CLK_LPSPISEL_LPSPI0SEL_Msk) >> CLK_LPSPISEL_LPSPI0SEL_Pos);
+    }
     else
+    {
         u32LPSPIClkSrcSel = LPSPI_CLKSEL_PCLK;
+    }
 
     switch (u32LPSPIClkSrcSel)
     {
@@ -108,15 +112,20 @@ static uint32_t LPSPI_GetModuleClkSrcFreq(LPSPI_T *lpspi)
   */
 uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMode, uint32_t u32DataWidth, uint32_t u32BusClock)
 {
-    uint32_t u32RetValue = 0U;
+    uint32_t u32RetValue = 0UL;
+    uint32_t u32DataWidthTmp = 0UL;
 
     if ((u32DataWidth < 4U) && (u32DataWidth > 0U))
     {
-        u32DataWidth = 4U;
+        u32DataWidthTmp = 4U;
     }
     else if (u32DataWidth >= 32U)
     {
-        u32DataWidth = 0U;
+        u32DataWidthTmp = 0U;
+    }
+    else
+    {
+        u32DataWidthTmp = u32DataWidth;
     }
 
     if (u32MasterSlave == LPSPI_MASTER)
@@ -125,7 +134,10 @@ uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMo
         lpspi->SSCTL = LPSPI_SS_ACTIVE_LOW;
 
         /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        lpspi->CTL = u32MasterSlave | (u32DataWidth << LPSPI_CTL_DWIDTH_Pos) | (u32LPSPIMode) | LPSPI_CTL_SPIEN_Msk;
+        lpspi->CTL = (u32MasterSlave);
+        lpspi->CTL |= ((u32DataWidthTmp << LPSPI_CTL_DWIDTH_Pos) |
+                       (u32LPSPIMode) |
+                       LPSPI_CTL_SPIEN_Msk);
 
         // Set the bus clock for the LPSPI module and store the actual frequency in u32RetValue
         u32RetValue = LPSPI_SetBusClock(lpspi, u32BusClock);
@@ -136,7 +148,10 @@ uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMo
         lpspi->SSCTL = LPSPI_SS_ACTIVE_LOW;
 
         /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        lpspi->CTL = u32MasterSlave | (u32DataWidth << LPSPI_CTL_DWIDTH_Pos) | (u32LPSPIMode) | LPSPI_CTL_SPIEN_Msk;
+        lpspi->CTL = (u32MasterSlave);
+        lpspi->CTL |= ((u32DataWidthTmp << LPSPI_CTL_DWIDTH_Pos) |
+                       (u32LPSPIMode) |
+                       LPSPI_CTL_SPIEN_Msk);
 
         /* Set DIVIDER = 0 */
         lpspi->CLKDIV = 0U;
@@ -153,7 +168,7 @@ uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMo
   * @param[in]  lpspi The pointer of the specified LPSPI module.
   * @details This function will reset LPSPI controller.
   */
-void LPSPI_Close(LPSPI_T *lpspi)
+void LPSPI_Close(const LPSPI_T *lpspi)
 {
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
@@ -234,8 +249,9 @@ void LPSPI_EnableAutoSS(LPSPI_T *lpspi, uint32_t u32SSPinMask, uint32_t u32Activ
   */
 uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
 {
-    uint32_t u32ClkSrc, u32HCLKFreq;
-    uint32_t u32RetValue;
+    uint32_t u32ClkSrc = 0UL;
+    uint32_t u32HCLKFreq = 0UL;
+    uint32_t u32RetValue = 0UL;
 
     /* Get system clock frequency */
     u32HCLKFreq = CLK_GetSCLKFreq();
@@ -275,7 +291,7 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
     {
         uint32_t u32Div = 0;
 
-        u32Div = (((u32ClkSrc * 10U) / u32BusClock + 5U) / 10U) - 1U; /* Round to the nearest integer */
+        u32Div = (((((u32ClkSrc * 10U) / u32BusClock) + 5U) / 10U) - 1U); /* Round to the nearest integer */
 
         // Ensure the calculated divider does not exceed the maximum allowed value
         u32Div = ((u32Div > (LPSPI_CLKDIV_DIVIDER_Msk >> LPSPI_CLKDIV_DIVIDER_Pos)) ?
@@ -510,9 +526,10 @@ void LPSPI_DisableInt(LPSPI_T *lpspi, uint32_t u32Mask)
   * @return Interrupt flags of selected sources.
   * @details Get LPSPI related interrupt flags specified by u32Mask parameter.
   */
-uint32_t LPSPI_GetIntFlag(LPSPI_T *lpspi, uint32_t u32Mask)
+uint32_t LPSPI_GetIntFlag(const LPSPI_T *lpspi, uint32_t u32Mask)
 {
-    uint32_t u32IntFlag = 0U, u32TmpVal = 0;
+    uint32_t u32IntFlag = 0UL;
+    uint32_t u32TmpVal = 0UL;
 
     u32TmpVal = lpspi->STATUS & LPSPI_STATUS_UNITIF_Msk;
 
@@ -675,9 +692,10 @@ void LPSPI_ClearIntFlag(LPSPI_T *lpspi, uint32_t u32Mask)
   * @return Flags of selected sources.
   * @details Get LPSPI related status specified by u32Mask parameter.
   */
-uint32_t LPSPI_GetStatus(LPSPI_T *lpspi, uint32_t u32Mask)
+uint32_t LPSPI_GetStatus(const LPSPI_T *lpspi, uint32_t u32Mask)
 {
-    uint32_t u32Flag = 0U, u32TmpValue;
+    uint32_t u32Flag = 0UL;
+    uint32_t u32TmpValue = 0UL;
 
     /* Check busy status */
     u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_BUSY_Msk);

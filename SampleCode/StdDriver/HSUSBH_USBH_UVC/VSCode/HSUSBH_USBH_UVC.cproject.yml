@@ -23,6 +23,8 @@ project:
         - ../
       define:
         - STDIN_ECHO: "0"
+        - MAX_ALT_PER_IFACE: "12"
+        - MAX_EP_PER_IFACE: "24"
       misc:
         - for-compiler: AC6
           C:
@@ -30,6 +32,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -44,6 +47,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -73,13 +77,12 @@ project:
     - group: User
       files:
         - file: ../main.c
-        - file: ../jpeg.c
     - group: Display
       files:
         - file: ../Display/Display.c
         - file: ../Display/drv_pdma.c
         - file: ../Display/Font8_16.c
-        - file: ../Display/LCD/LCD_LT7381.c  
+        - file: ../Display/LCD/LCD_LT7381.c
     - group: UsbHostLib
       files:
         - file: ../../../../Library/UsbHostLib/src_core/ehci.c
@@ -96,9 +99,9 @@ project:
         - file: ../../../../Library/UsbHostLib/src_uvc/uvc_parser.c
     - group: jpeg_lib
       misc:
-      - for-compiler: AC6
-        C-CPP:
-        - -w
+        - for-compiler: AC6
+          C-CPP:
+            - -w
       files:
         - file: ../../../../ThirdParty/libjpeg/jdapimin.c
         - file: ../../../../ThirdParty/libjpeg/jaricom.c

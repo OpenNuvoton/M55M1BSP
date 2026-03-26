@@ -139,5 +139,31 @@ uint8_t gu8ProductStringDesc[] =
 
 };
 
+uint8_t *gu8StringDesc[] =
+{
+    gu8StringLang,
+    gu8VendorStringDesc,
+    gu8ProductStringDesc,
+    NULL
+};
+
+uint8_t *gu8HidReportDesc[] = { HID_DeviceReportDescriptor };
+uint32_t gu32HidReportSize[] = { sizeof(HID_DeviceReportDescriptor) };
+uint32_t gu32ConfigHidDescIdx[] = { LEN_CONFIG + LEN_INTERFACE };
+
+S_HSUSBD_INFO_T gsHSInfo = {
+    gu8DeviceDescriptor,
+    gu8ConfigDescriptor,
+    gu8StringDesc,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    gu8HidReportDesc,
+    gu32HidReportSize,
+    gu32ConfigHidDescIdx
+};
+
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
 

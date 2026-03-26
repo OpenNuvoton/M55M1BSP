@@ -30,53 +30,53 @@ extern "C"
   @{
 */
 
-#define SDH_ERR_ID            (0xFFFF0100ul)        /*!< SDH error ID  \hideinitializer */
+#define SDH_ERR_ID            (0xFFFF0100U)        /*!< SDH error ID    \hideinitializer */
 
-#define SDH_TIMEOUT           (SDH_ERR_ID | 0x01ul) /*!< Timeout  \hideinitializer */
-#define SDH_NO_MEMORY         (SDH_ERR_ID | 0x02ul) /*!< OOM  \hideinitializer */
+#define SDH_TIMEOUT           (SDH_ERR_ID | 0x01U) /*!< Timeout \hideinitializer */
+#define SDH_NO_MEMORY         (SDH_ERR_ID | 0x02U) /*!< OOM     \hideinitializer */
 
 /*-- function return value */
-#define Successful            (0ul) /*!< Success  \hideinitializer */
-#define Fail                  (1ul) /*!< Failed  \hideinitializer */
+#define Successful            (0U)  /*!< Success  \hideinitializer */
+#define Fail                  (1U)  /*!< Failed   \hideinitializer */
 
 /*--- define type of SD card or MMC */
-#define SDH_TYPE_UNKNOWN      (0ul) /*!< Unknown card type  \hideinitializer */
-#define SDH_TYPE_SD_HIGH      (1ul) /*!< SDHC card  \hideinitializer */
-#define SDH_TYPE_SD_LOW       (2ul) /*!< SD card  \hideinitializer */
-#define SDH_TYPE_MMC          (3ul) /*!< MMC card  \hideinitializer */
-#define SDH_TYPE_EMMC         (4ul) /*!< eMMC card  \hideinitializer */
+#define SDH_TYPE_UNKNOWN      (0U)  /*!< Unknown card type  \hideinitializer */
+#define SDH_TYPE_SD_HIGH      (1U)  /*!< SDHC card          \hideinitializer */
+#define SDH_TYPE_SD_LOW       (2U)  /*!< SD card            \hideinitializer */
+#define SDH_TYPE_MMC          (3U)  /*!< MMC card           \hideinitializer */
+#define SDH_TYPE_EMMC         (4U)  /*!< eMMC card          \hideinitializer */
 
 /* SD error */
-#define SDH_NO_SD_CARD        (SDH_ERR_ID | 0x10ul) /*!< Card removed  \hideinitializer */
-#define SDH_ERR_DEVICE        (SDH_ERR_ID | 0x11ul) /*!< Device error  \hideinitializer */
-#define SDH_INIT_TIMEOUT      (SDH_ERR_ID | 0x12ul) /*!< Card init timeout  \hideinitializer */
-#define SDH_SELECT_ERROR      (SDH_ERR_ID | 0x13ul) /*!< Card select error  \hideinitializer */
-#define SDH_WRITE_PROTECT     (SDH_ERR_ID | 0x14ul) /*!< Card write protect  \hideinitializer */
-#define SDH_INIT_ERROR        (SDH_ERR_ID | 0x15ul) /*!< Card init error  \hideinitializer */
-#define SDH_CRC7_ERROR        (SDH_ERR_ID | 0x16ul) /*!< CRC 7 error  \hideinitializer */
-#define SDH_CRC16_ERROR       (SDH_ERR_ID | 0x17ul) /*!< CRC 16 error  \hideinitializer */
-#define SDH_CRC_ERROR         (SDH_ERR_ID | 0x18ul) /*!< CRC error  \hideinitializer */
-#define SDH_CMD8_ERROR        (SDH_ERR_ID | 0x19ul) /*!< Command 8 error  \hideinitializer */
+#define SDH_NO_SD_CARD        (SDH_ERR_ID | 0x10U)  /*!< Card removed       \hideinitializer */
+#define SDH_ERR_DEVICE        (SDH_ERR_ID | 0x11U)  /*!< Device error       \hideinitializer */
+#define SDH_INIT_TIMEOUT      (SDH_ERR_ID | 0x12U)  /*!< Card init timeout  \hideinitializer */
+#define SDH_SELECT_ERROR      (SDH_ERR_ID | 0x13U)  /*!< Card select error  \hideinitializer */
+#define SDH_WRITE_PROTECT     (SDH_ERR_ID | 0x14U)  /*!< Card write protect \hideinitializer */
+#define SDH_INIT_ERROR        (SDH_ERR_ID | 0x15U)  /*!< Card init error    \hideinitializer */
+#define SDH_CRC7_ERROR        (SDH_ERR_ID | 0x16U)  /*!< CRC 7 error        \hideinitializer */
+#define SDH_CRC16_ERROR       (SDH_ERR_ID | 0x17U)  /*!< CRC 16 error       \hideinitializer */
+#define SDH_CRC_ERROR         (SDH_ERR_ID | 0x18U)  /*!< CRC error          \hideinitializer */
+#define SDH_CMD8_ERROR        (SDH_ERR_ID | 0x19U)  /*!< Command 8 error    \hideinitializer */
 
-#define MMC_FREQ              (20000ul) /*!< output 20MHz to MMC  \hideinitializer */
-#define SD_FREQ               (25000ul) /*!< output 25MHz to SD  \hideinitializer */
-#define SDHC_FREQ             (50000ul) /*!< output 50MHz to SDH \hideinitializer */
+#define MMC_FREQ              (20000U)  /*!< output 20MHz to MMC    \hideinitializer */
+#define SD_FREQ               (25000U)  /*!< output 25MHz to SD     \hideinitializer */
+#define SDHC_FREQ             (50000U)  /*!< output 50MHz to SDH    \hideinitializer */
 
-#define SD_PORT0              (1UL << 0)    /*!< Card select SD0 \hideinitializer */
-#define SD_PORT1              (1UL << 2)    /*!< Card select SD1 \hideinitializer */
-#define CardDetect_From_GPIO  (1ul << 8)    /*!< Card detection pin is GPIO \hideinitializer */
-#define CardDetect_From_DAT3  (1ul << 9)    /*!< Card detection pin is DAT3 \hideinitializer */
+#define SD_PORT0              ((uint32_t)1U << 0U)   /*!< Card select SD0            \hideinitializer */
+#define SD_PORT1              ((uint32_t)1U << 2U)   /*!< Card select SD1            \hideinitializer */
+#define CardDetect_From_GPIO  (0x00000100UL)   /*!< Card detection pin is GPIO \hideinitializer */
+#define CardDetect_From_DAT3  (0x00000200UL)   /*!< Card detection pin is DAT3 \hideinitializer */
 
 /* SDH Wait Status Timeout Count */
-#define SDH_TIMEOUT_CNT       2000000      /*!< SDH time-out counter (1 second time-out) \hideinitializer */
+#define SDH_TIMEOUT_CNT       2000000U          /*!< SDH time-out counter (1 second time-out) \hideinitializer */
 
 /* SDH Define Error Code */
-#define SDH_OK              ( 0L)             /*!< SDH operation OK \hideinitializer */
-#define SDH_ERR_FAIL        (SDH_ERR_DEVICE)  /*!< SDH operation failed \hideinitializer */
-#define SDH_ERR_TIMEOUT     (SDH_TIMEOUT)     /*!< SDH operation abort due to timeout error \hideinitializer */
+#define SDH_OK              (0U)                /*!< SDH operation OK \hideinitializer */
+#define SDH_ERR_FAIL        (SDH_ERR_DEVICE)    /*!< SDH operation failed \hideinitializer */
+#define SDH_ERR_TIMEOUT     (SDH_TIMEOUT)       /*!< SDH operation abort due to timeout error \hideinitializer */
 
 /* SDH Define Block Size */
-#define SDH_BLOCK_SIZE        (512ul)
+#define SDH_BLOCK_SIZE        (512U)
 
 /** @} end of group SDH_EXPORTED_CONSTANTS */
 
@@ -101,7 +101,8 @@ typedef struct SDH_info_t
 /** @} end of group SDH_EXPORTED_TYPEDEF */
 
 /** @cond HIDDEN_SYMBOLS */
-extern SDH_INFO_T SD0, SD1;
+extern SDH_INFO_T SD0;
+extern SDH_INFO_T SD1;
 extern int32_t g_SDH_i32ErrCode;
 /** @endcond HIDDEN_SYMBOLS */
 
@@ -223,7 +224,7 @@ extern int32_t g_SDH_i32ErrCode;
 //------------------------------------------------------------------------------
 void *SDH_GetSDH0Buffer(void);
 void *SDH_GetSDH1Buffer(void);
-void *SDH_GetSDInfoMsg(SDH_T *sdh);
+void *SDH_GetSDInfoMsg(const SDH_T *sdh);
 
 void SDH_Open(SDH_T *sdh, uint32_t u32CardDetSrc);
 void SDH_Close(SDH_T *sdh);
@@ -233,7 +234,7 @@ uint32_t SDH_Write(SDH_T *sdh, uint8_t *pu8BufAddr, uint32_t u32StartSec, uint32
 
 uint32_t SDH_CardDetection(SDH_T *sdh);
 void SDH_Get_SD_info(SDH_T *sdh);
-void SDH_Set_clock(SDH_T *sdh, uint32_t u32SD_clk_khz);
+void SDH_Set_clock(const SDH_T *sdh, uint32_t u32SD_clk_khz);
 uint32_t SDH_SwitchToHighSpeed(SDH_T *sdh, SDH_INFO_T *pSD);
 
 int32_t SDH_CheckRB(SDH_T *sdh);

@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     eadc.c
  * @version  V1.00
- * @brief    M55M1 series EADC driver source file
+ * @brief    EADC driver source file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -16,8 +16,6 @@
 /** @addtogroup EADC_Driver EADC Driver
   @{
 */
-
-int32_t g_EADC_i32ErrCode = 0;   /*!< EADC global error code */
 
 /** @addtogroup EADC_EXPORTED_FUNCTIONS EADC Exported Functions
   @{
@@ -37,15 +35,11 @@ int32_t g_EADC_i32ErrCode = 0;   /*!< EADC global error code */
 void EADC_Open(EADC_T *eadc, uint32_t u32InputMode)
 {
     /* Add one cycle in the decode trigger event is used to improve EADC accuracy.*/
-    outpw((uint32_t)eadc + 0xFF0, inpw((uint32_t)eadc + 0xFF0) | BIT8);
+    outpw((uint32_t)eadc + 0xFF0UL, inpw((uint32_t)eadc + 0xFF0UL) | BIT8);
 
     eadc->CTL &= (~EADC_CTL_DIFFEN_Msk);
 
     eadc->CTL |= (u32InputMode | EADC_CTL_ADCEN_Msk);
-
-    /*Start the EADC calibration function*/
-    EADC_Calibration(eadc);
-
 }
 
 /**
@@ -53,7 +47,9 @@ void EADC_Open(EADC_T *eadc, uint32_t u32InputMode)
   *
   * @param[in]  eadc The pointer of the specified EADC module
   *
-  * @return     None
+  * @retval 0                EADC calibration OK.
+  * @retval EADC_TIMEOUT_ERR EADC operation abort due to timeout error.
+  * @retval EADC_CAL_ERR     EADC has calibration error.
   *
   * @details    To decrease the effect of electrical random noise, the calibration mode performs an offset and mismatch measurement cycles.
   *             Afterwards, in normal operation mode, the calibration engine applies to the capacitor array, so that the offset and mismatch are removed.
@@ -63,12 +59,11 @@ void EADC_Open(EADC_T *eadc, uint32_t u32InputMode)
   * @note       If you use the calibration function again, you must write 1 to clear CALIF (EADC_CALSR[[16]).
   */
 
-void EADC_Calibration(EADC_T *eadc)
+int32_t EADC_Calibration(EADC_T *eadc)
 {
-    uint32_t u32Delay = SystemCoreClock;    /* 1 second */
-    uint32_t u32EADCClkSel, u32EADCClkDiv, u32RegLockBackup = 0;
-
-    g_EADC_i32ErrCode = 0;
+    uint32_t u32EADCClkSel;
+    uint32_t u32EADCClkDiv;
+    uint32_t u32RegLockBackup;
 
     /* Unlock protected registers */
     u32RegLockBackup = SYS_IsRegLocked();
@@ -78,7 +73,7 @@ void EADC_Calibration(EADC_T *eadc)
     u32EADCClkSel = CLK->EADCSEL;
     u32EADCClkDiv = CLK->EADCDIV;
 
-    /* Set ECLK equal to PCLK according to calibration requirements */
+    /* Set EADCCLK equal to PCLK according to calibration requirements */
     CLK->EADCSEL = (CLK->EADCSEL & CLK_EADCSEL_EADC0SEL_Msk) | CLK_EADCSEL_EADC0SEL_PCLK0;
     CLK->EADCDIV &= CLK_EADCDIV_EADC0DIV_Msk;
 
@@ -86,31 +81,31 @@ void EADC_Calibration(EADC_T *eadc)
     eadc->CTL |= EADC_CTL_ADCEN_Msk;
 
     /* Do calibration for EADC to decrease the effect of electrical random noise. */
-    if ((eadc->CALSR & EADC_CALSR_CALIF_Msk) == 0)
+    if ((eadc->CALSR & EADC_CALSR_CALIF_Msk) == 0UL)
     {
         /* Must reset EADC before EADC calibration */
         EADC_CONV_RESET(eadc);
+
+        volatile uint32_t u32Delay = SystemCoreClock >> 4;
 
         while ((eadc->CTL & EADC_CTL_ADCRST_Msk) == EADC_CTL_ADCRST_Msk)
         {
             if (--u32Delay == 0)
             {
-                g_EADC_i32ErrCode = EADC_TIMEOUT_ERR;
-                break;
+                return EADC_TIMEOUT_ERR;
             }
         }
 
         eadc->CALSR |= EADC_CALSR_CALIF_Msk;        /* Clear Calibration Finish Interrupt Flag */
         eadc->CALCTL |= EADC_CALCTL_CAL_Msk;        /* Enable Calibration function */
 
-        u32Delay = SystemCoreClock / 20;
+        u32Delay = SystemCoreClock >> 4UL;
 
         while ((eadc->CALSR & EADC_CALSR_CALIF_Msk) != EADC_CALSR_CALIF_Msk) /* Wait calibration finish */
         {
             if (--u32Delay == 0)
             {
-                g_EADC_i32ErrCode = EADC_TIMEOUT_ERR;
-                break;
+                return EADC_CAL_ERR;
             }
         }
     }
@@ -124,6 +119,8 @@ void EADC_Calibration(EADC_T *eadc)
         /* Lock protected registers */
         SYS_LockReg();
     }
+
+    return 0;
 }
 
 /**
@@ -178,15 +175,15 @@ void EADC_Close(EADC_T *eadc)
   */
 void EADC_ConfigSampleModule(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32TriggerSrc, uint32_t u32Channel)
 {
-    if (u32ModuleNum < 19)
+    if (u32ModuleNum < 19UL)
     {
         eadc->SCTL[u32ModuleNum] &= ~(EADC_SCTL_EXTFEN_Msk | EADC_SCTL_EXTREN_Msk | EADC_SCTL_TRGSEL_Msk | EADC_SCTL_CHSEL_Msk);
         eadc->SCTL[u32ModuleNum] |= (u32TriggerSrc | u32Channel);
     }
     else
     {
-        eadc->SCTL19[u32ModuleNum - 19] &= ~(EADC_SCTL_EXTFEN_Msk | EADC_SCTL_EXTREN_Msk | EADC_SCTL_TRGSEL_Msk | EADC_SCTL_CHSEL_Msk);
-        eadc->SCTL19[u32ModuleNum - 19] |= (u32TriggerSrc | u32Channel);
+        eadc->SCTL19[u32ModuleNum - 19UL] &= ~(EADC_SCTL_EXTFEN_Msk | EADC_SCTL_EXTREN_Msk | EADC_SCTL_TRGSEL_Msk | EADC_SCTL_CHSEL_Msk);
+        eadc->SCTL19[u32ModuleNum - 19UL] |= (u32TriggerSrc | u32Channel);
     }
 }
 
@@ -207,15 +204,15 @@ void EADC_ConfigSampleModule(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32Tr
   */
 void EADC_SetTriggerDelayTime(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32TriggerDelayTime, uint32_t u32DelayClockDivider)
 {
-    if (u32ModuleNum < 19)
+    if (u32ModuleNum < 19UL)
     {
         eadc->SCTL[u32ModuleNum] &= ~(EADC_SCTL_TRGDLDIV_Msk | EADC_SCTL_TRGDLCNT_Msk);
         eadc->SCTL[u32ModuleNum] |= ((u32TriggerDelayTime << EADC_SCTL_TRGDLCNT_Pos) | u32DelayClockDivider);
     }
     else
     {
-        eadc->SCTL19[u32ModuleNum - 19] &= ~(EADC_SCTL_TRGDLDIV_Msk | EADC_SCTL_TRGDLCNT_Msk);
-        eadc->SCTL19[u32ModuleNum - 19] |= ((u32TriggerDelayTime << EADC_SCTL_TRGDLCNT_Pos) | u32DelayClockDivider);
+        eadc->SCTL19[u32ModuleNum - 19UL] &= ~(EADC_SCTL_TRGDLDIV_Msk | EADC_SCTL_TRGDLCNT_Msk);
+        eadc->SCTL19[u32ModuleNum - 19UL] |= ((u32TriggerDelayTime << EADC_SCTL_TRGDLCNT_Pos) | u32DelayClockDivider);
     }
 }
 
@@ -230,15 +227,15 @@ void EADC_SetTriggerDelayTime(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32T
   */
 void EADC_SetExtendSampleTime(EADC_T *eadc, uint32_t u32ModuleNum, uint32_t u32ExtendSampleTime)
 {
-    if (u32ModuleNum < 19)
+    if (u32ModuleNum < 19UL)
     {
         eadc->SCTL[u32ModuleNum] &= ~EADC_SCTL_EXTSMPT_Msk;
         eadc->SCTL[u32ModuleNum] |= (u32ExtendSampleTime << EADC_SCTL_EXTSMPT_Pos);
     }
     else
     {
-        eadc->SCTL19[u32ModuleNum - 19] &= ~EADC_SCTL_EXTSMPT_Msk;
-        eadc->SCTL19[u32ModuleNum - 19] |= (u32ExtendSampleTime << EADC_SCTL_EXTSMPT_Pos);
+        eadc->SCTL19[u32ModuleNum - 19UL] &= ~EADC_SCTL_EXTSMPT_Msk;
+        eadc->SCTL19[u32ModuleNum - 19UL] |= (u32ExtendSampleTime << EADC_SCTL_EXTSMPT_Pos);
     }
 }
 

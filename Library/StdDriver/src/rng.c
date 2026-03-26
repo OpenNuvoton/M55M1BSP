@@ -74,6 +74,7 @@ int32_t RNG_Open()
 
     /* Waiting for PRNG busy */
     i = 0;
+    __DSB();
 
     while ((CRYPTO->PRNG_CTL & CRYPTO_PRNG_CTL_BUSY_Msk) == CRYPTO_PRNG_CTL_BUSY_Msk)
     {
@@ -88,6 +89,7 @@ int32_t RNG_Open()
     CRYPTO->PRNG_CTL = (PRNG_KEY_SIZE_256 << CRYPTO_PRNG_CTL_KEYSZ_Pos) | CRYPTO_PRNG_CTL_START_Msk | CRYPTO_PRNG_CTL_SEEDRLD_Msk | (0 << CRYPTO_PRNG_CTL_SEEDSRC_Pos);
 
     i = 0;
+    __DSB();
 
     while (CRYPTO->PRNG_CTL & CRYPTO_PRNG_CTL_BUSY_Msk)
     {
@@ -132,6 +134,7 @@ int32_t RNG_Random(uint32_t *pu32Buf, int32_t nWords)
     CRYPTO->PRNG_CTL = (PRNG_KEY_SIZE_256 << CRYPTO_PRNG_CTL_KEYSZ_Pos) | CRYPTO_PRNG_CTL_START_Msk | CRYPTO_PRNG_CTL_SEEDRLD_Msk | (0 << CRYPTO_PRNG_CTL_SEEDSRC_Pos);
 
     timeout = 0x10000;
+    __DSB();
 
     while (CRYPTO->PRNG_CTL & CRYPTO_PRNG_CTL_BUSY_Msk)
     {
@@ -298,7 +301,7 @@ int32_t RNG_ECDH(uint32_t u32KeySize)
 
 
 /**
- *  @brief      To generate entropy from hardware entropy source (TRNG)
+ *  @brief      To generate entropy(TRNG)
  *
  *  @param[in]  pu32Out  Buffer pointer to store the random number in word
  *
@@ -321,7 +324,7 @@ int32_t RNG_EntropyPoll(uint32_t *pu32Out, int32_t i32Len)
     }
 
     /* Trigger entropy generate */
-    TRNG->CTL |= (TRNG_CTL_TRNGEN_Msk | TRNG_CTL_DVIEN_Msk);
+    TRNG->CTL |= (TRNG_CTL_TRNGEN_Msk | TRNG_CTL_MODE_OUTPUT_NRBG);
 
     for (i = 0; i < i32Len; i += 4)
     {
@@ -329,8 +332,9 @@ int32_t RNG_EntropyPoll(uint32_t *pu32Out, int32_t i32Len)
         TRNG->CTL |=  TRNG_CTL_START_Msk ;
 
         timeout = SystemCoreClock;
+        __DSB();
 
-        while ((TRNG->CTL & TRNG_STS_DVIF_Msk) == 0)
+        while ((TRNG->STS & TRNG_STS_DVIF_Msk) == 0)
         {
             if (timeout-- <= 0)
             {
@@ -341,7 +345,7 @@ int32_t RNG_EntropyPoll(uint32_t *pu32Out, int32_t i32Len)
 
         /* Get one word entroy */
         *pu32Out++ = (uint32_t)(TRNG->DATA_OUT[0]);
-        CLK_SysTickDelay(100000);//Do NOT remove this line
+
     }
 
     return i32Len;

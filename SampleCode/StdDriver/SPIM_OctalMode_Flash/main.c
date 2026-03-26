@@ -148,350 +148,341 @@ void SYS_Init(void)
 }
 
 /**
- * @brief Check if the given array of values is consecutive.
+ * @brief Selects the most stable delay value from a pass mask by finding the optimal position
+ *        within the longest consecutive valid delay window.
  *
- * @param psDlyNumRange Pointer to the structure to store the range of consecutive values.
- * @param au8Src Array of values to be checked.
- * @param size Size of the array.
+ * @param u32PassMask A 32-bit mask where each bit represents whether a delay value passed
+ *                    timing validation. A '1' indicates a valid/passing delay, '0' indicates failure.
+ *
+ * @return The index of the selected stable delay value within the valid window.
+ *         - Returns 0 if no valid delay window is found (all bits are 0).
+ *         - For wide windows (size > 2): Returns the center position, offset inward by 1 step
+ *           from each boundary to maintain safety margin.
+ *         - For narrow windows (size <= 2): Returns a position biased toward the higher index
+ *           to prioritize hold time stability.
+ *
+ * @note This function assumes SPIM_MAX_RX_DLY_NUM is defined and represents the maximum
+ *       number of possible RX delay positions to scan.
  */
-static uint8_t isConsecutive(uint8_t au8Src[], uint32_t size)
+static uint8_t selectStableDelay(uint32_t u32PassMask)
 {
-    uint8_t u8Find = 0, u8StartIdx = 0, u8MaxRang = 0;
-    uint32_t u32i = 0, u32j = 1;
+    uint8_t u8MaxWindow = 0, u8CurrentWindow = 0, u8StartIdx = 0;
 
-    // Check if the sequence is increasing or decreasing
-    bool increasing = au8Src[1] > au8Src[0];
-
-    // Iterate over the array
-    for (u32i = 1; u32i < size; ++u32i)
+    /* Scan for the longest consecutive '1's sequence */
+    for (uint8_t i = 0; i < SPIM_MAX_RX_DLY_NUM; i++)
     {
-        // Check if the current element is consecutive to the previous one
-        if ((increasing && au8Src[u32i] != au8Src[u32i - 1] + 1) ||
-                (!increasing && au8Src[u32i] != au8Src[u32i - 1] - 1))
+        if (u32PassMask & (1 << i))
         {
-            // Update the start and end indices of the consecutive range
-            u8Find = u32i;
-            u32j = 0;
-        }
-
-        // Increment the number of consecutive elements
-        u32j++;
-
-        // Update the range if the current range is longer than the previous one
-        if (u32j >= u8MaxRang)
-        {
-            u8StartIdx = u8Find;
-            u8MaxRang = u32j;
-        }
-    }
-
-    return (u8MaxRang > 2) ?
-           au8Src[((u8StartIdx + u8MaxRang / 2) + (((u8MaxRang % 2) != 0) ? 1 : 0)) - 1] :
-           au8Src[u8StartIdx];
-}
-
-void SPIM_TrimDLLDelayNum(SPIM_T *spim, SPIM_PHASE_T *pMTWrCMD, SPIM_PHASE_T *pMTRdCMD)
-{
-    uint8_t u8RdDelay = 0;
-    uint8_t u8RdDelayRes[SPIM_MAX_DLL_LATENCY] = {0};
-    uint32_t u32PatternSize = TRIM_PAT_SIZE;
-    uint32_t u32ReTrimMaxCnt = 6;
-    uint32_t u32LoopAddr = 0;
-    uint32_t u32Val = 0;
-    uint32_t u32i = 0;
-    uint32_t u32j = 0;
-    uint32_t u32k = 0;
-    uint32_t u32ReTrimCnt = 0;
-    uint32_t u32SrcAddr = OCFLH_TRIM_ADDR;
-    /*
-        SPIM DMA requires memory buffers to be 8-byte aligned.
-        TRIM_PAT_SIZE is in bytes and must be divisible by 8.
-    */
-    uint64_t au64TrimPattern[(TRIM_PAT_SIZE * 2) / 8] = {0};
-    uint64_t au64VerifyBuf[TRIM_PAT_SIZE / 8] = {0};
-    uint8_t *pu8TrimPattern = (uint8_t *)au64TrimPattern;
-    uint8_t *pu8VerifyBuf = (uint8_t *)au64VerifyBuf;
-    uint32_t u32DMMAddr = SPIM_GET_DMMADDR(spim);
-    SPIM_PHASE_T sMTRdCMDTmp = {0};
-
-    /* Create Trim Pattern */
-    for (u32k = 0; u32k < sizeof(au64TrimPattern); u32k++)
-    {
-        u32Val = (u32k & 0x0F) ^ (u32k >> 4) ^ (u32k >> 3);
-
-        if (u32k & 0x01)
-        {
-            u32Val = ~u32Val;
-        }
-
-        pu8TrimPattern[u32k] = ~(uint8_t)(u32Val ^ (u32k << 3) ^ (u32k >> 2));
-    }
-
-    SPIM_EnterOPIMode_MICRON(spim);
-
-    SPIM_EraseBlock(spim,
-                    u32SrcAddr,
-                    (pMTWrCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
-                    OPCODE_SE_4K,
-                    SPIM_PhaseModeToNBit(pMTWrCMD->u32CMDPhase),
-                    SPIM_OP_ENABLE);
-
-    SPIM_DMA_Write(spim,
-                   u32SrcAddr,
-                   ((pMTWrCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE),
-                   sizeof(au64TrimPattern),
-                   pu8TrimPattern,
-                   pMTWrCMD->u32CMDCode);
-
-    memcpy((uint8_t *)&sMTRdCMDTmp, (uint8_t *)pMTRdCMD, sizeof(SPIM_PHASE_T));
-
-    if ((pMTRdCMD->u32RDQS == SPIM_OP_ENABLE) && (pMTRdCMD->u32CMDPhase != PHASE_OCTAL_MODE))
-    {
-        pMTRdCMD->u32CMDPhase = PHASE_OCTAL_MODE;
-        pMTRdCMD->u32CMDWidth = PHASE_WIDTH_16;
-        pMTRdCMD->u32CMDDTR = PHASE_ENABLE_DTR;
-
-        pMTRdCMD->u32AddrPhase = PHASE_OCTAL_MODE;
-        pMTRdCMD->u32AddrWidth = PHASE_WIDTH_32;
-        pMTRdCMD->u32AddrDTR = PHASE_ENABLE_DTR;
-
-        pMTRdCMD->u32DataPhase = PHASE_OCTAL_MODE;
-        pMTRdCMD->u32DataDTR = PHASE_ENABLE_DTR;
-        pMTRdCMD->u32RDQS = SPIM_OP_ENABLE;
-        pMTRdCMD->u32DcNum = 16;
-    }
-
-    SPIM_DMADMM_InitPhase(spim, pMTRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
-    SPIM_DMADMM_InitPhase(spim, pMTRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
-
-    for (u32ReTrimCnt = 0; u32ReTrimCnt < u32ReTrimMaxCnt; u32ReTrimCnt++)
-    {
-        u32LoopAddr = 0;
-
-        for (u8RdDelay = 0; u8RdDelay < SPIM_MAX_DLL_LATENCY; u8RdDelay++)
-        {
-            /* Set DLL calibration to select the valid delay step number */
-            SPIM_SetDLLDelayNum(spim, u8RdDelay);
-
-            memset(pu8VerifyBuf, 0, TRIM_PAT_SIZE);
-
-            /* Calculate the pattern size based on the trim count */
-            u32PatternSize =
-                (((u32ReTrimCnt == 2) || (u32ReTrimCnt >= 3)) && (u8RdDelay == 0)) ?
-                (TRIM_PAT_SIZE - 0x08) :
-                TRIM_PAT_SIZE;
-
-            /* Read data from the HyperRAM */
-            u32LoopAddr = 0;
-
-            for (u32k = 0; u32k < u32PatternSize; u32k += 0x08)
+            if (++u8CurrentWindow > u8MaxWindow)
             {
-#if (NVT_DCACHE_ON == 1)
-                // Invalidate the data cache for the source or DMM address
-                SCB_InvalidateDCache_by_Addr(
-                    (volatile uint32_t *)((u32ReTrimCnt == 1) ? u32SrcAddr : (u32DMMAddr + u32SrcAddr)),
-                    (int32_t)TRIM_PAT_SIZE * 2);
-#endif
-
-                if (u32ReTrimCnt == 1)
-                {
-                    SPIM_DMA_Read(SPIM_PORT,
-                                  (u32SrcAddr + u32LoopAddr),
-                                  (pMTRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
-                                  0x08,
-                                  &pu8VerifyBuf[u32k],
-                                  pMTRdCMD->u32CMDCode,
-                                  SPIM_OP_ENABLE);
-                }
-                else
-                {
-                    SPIM_EnterDirectMapMode(spim,
-                                            (pMTRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
-                                            pMTRdCMD->u32CMDCode,
-                                            1);
-
-                    /* Read 8 bytes of data from the HyperRAM */
-                    *(volatile uint64_t *)&pu8VerifyBuf[u32k] = *(volatile uint64_t *)(u32DMMAddr + u32SrcAddr + u32LoopAddr);
-                    //*(volatile uint32_t *)&pu8VerifyBuf[u32k + 4] = *(volatile uint32_t *)(u32DMMAddr + u32SrcAddr + u32LoopAddr + 4);
-                }
-
-                if ((u32i = memcmp(&pu8TrimPattern[u32LoopAddr], &pu8VerifyBuf[u32k], 0x08)) != 0)
-                {
-                    break;
-                }
-
-                u32LoopAddr += (u32ReTrimCnt >= 3) ? 0x10 : 0x08;
+                u8MaxWindow = u8CurrentWindow;
+                u8StartIdx = i - u8CurrentWindow + 1;
             }
-
-            u8RdDelayRes[u8RdDelay] += ((u32i == 0) ? 1 : 0);
         }
-    }
-
-    /* Set Octal Flash Write Enable*/
-    memcpy((uint8_t *)pMTRdCMD, (uint8_t *)&sMTRdCMDTmp, sizeof(SPIM_PHASE_T));
-
-    SPIM_DMADMM_InitPhase(spim, pMTRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
-    SPIM_DMADMM_InitPhase(spim, pMTRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
-
-    SPIM_ExitOPIMode_MICRON(spim);
-
-    u32j = 0;
-
-    for (u32i = 0; u32i < SPIM_MAX_RX_DLY_NUM; u32i++)
-    {
-        if (u8RdDelayRes[u32i] >= u32ReTrimMaxCnt)
+        else
         {
-            u8RdDelayRes[u32j++] = u32i;
+            u8CurrentWindow = 0;
         }
     }
 
-    u8RdDelay = (u32j < 2) ? u8RdDelayRes[0] : isConsecutive(u8RdDelayRes, u32j);
+    if (u8MaxWindow == 0) return 0;
 
-    printf("Set DLL Num : %d\r\n", u8RdDelay);
-    /* Set the number of intermediate delay steps */
-    SPIM_SetDLLDelayNum(spim, u8RdDelay);
+    /* If window is narrow (like your 0x18), the center is the only safe bet.
+       If window is wide, we shrink boundaries by 1 step to stay safe. */
+    if (u8MaxWindow > 2)
+    {
+        return (u8StartIdx + 1) + ((u8MaxWindow - 2) / 2);
+    }
+
+    /* For narrow windows (size 2), return the higher index to favor hold time */
+    return u8StartIdx + (u8MaxWindow / 2);
 }
 
 /**
- * @brief Trim DLL component delay number
+ * @brief Trim RX clock delay to find optimal sampling point for SPI flash reads
  *
- * @details This function is used to trim the delay number of DLL component,
- *          it can improve the SPIM clock performance.
+ * @details This function calibrates the RX clock delay by:
+ *          1. Using the last 4KB sector of flash to store a known trim pattern
+ *          2. Testing all possible RX delay values in both DMA and DMM modes
+ *          3. Selecting the most stable delay value that works in both modes
  *
- * @param[in] spim The pointer of the specified SPIM module
+ * @param[in] spim        Pointer to SPIM module
+ * @param[in] psWbWrCMD   Write command phase configuration
+ * @param[in] psWbRdCMD   Read command phase configuration
  *
+ * @note The last 4KB sector (calculated by SPIM_GetLastSectorAddr) is used to avoid
+ *       interfering with application code storage. This sector is safe to use for
+ *       temporary trim pattern storage.
  */
-void SPIM_TrimRxClkDlyNum(SPIM_T *spim, SPIM_PHASE_T *pMTWrCMD, SPIM_PHASE_T *pMTRdCMD)
+void SPIM_TrimRxClkDlyNum(SPIM_T *spim, SPIM_PHASE_T *psMTWrCMD, SPIM_PHASE_T *psMTRdCMD)
 {
-    uint8_t u8RdDelay = 0;
-    uint8_t u8RdDelayRes[SPIM_MAX_DLL_LATENCY] = {0};
-    uint32_t u32PatternSize = TRIM_PAT_SIZE;
-    uint32_t u32ReTrimMaxCnt = 6;
-    uint32_t u32LoopAddr = 0;
-    uint32_t u32Val = 0;
-    uint32_t u32i = 0;
-    uint32_t u32j = 0;
-    uint32_t u32k = 0;
-    uint32_t u32ReTrimCnt = 0;
     uint32_t u32SrcAddr = OCFLH_TRIM_ADDR;
-    /*
-        SPIM DMA requires memory buffers to be 8-byte aligned.
-        TRIM_PAT_SIZE is in bytes and must be divisible by 8.
-    */
+    uint32_t u32DMMAddr = SPIM_GET_DMMADDR(spim);
+    uint32_t u32Div = SPIM_GET_CLOCK_DIVIDER(spim);
+    uint32_t u32DMAMask = 0;
+    uint32_t u32DMMMask = 0;
+    uint32_t u32LoopAddr = 0;
+
     uint64_t au64TrimPattern[(TRIM_PAT_SIZE * 2) / 8] = {0};
-    uint64_t au64VerifyBuf[TRIM_PAT_SIZE / 8] = {0};
+    uint64_t au64VerifyBuf[(TRIM_PAT_SIZE / 8)] = {0};
     uint8_t *pu8TrimPattern = (uint8_t *)au64TrimPattern;
     uint8_t *pu8VerifyBuf = (uint8_t *)au64VerifyBuf;
-    uint32_t u32DMMAddr = SPIM_GET_DMMADDR(spim);
+    uint8_t u8Pass = 0;
+    uint8_t u8DlyNum = 0;
 
-    /* Create Trim Pattern */
-    for (u32k = 0; u32k < sizeof(au64TrimPattern); u32k++)
+    /* 1. Generate Pattern & Ensure Flash Content (Safe Clock) */
+    for (uint32_t k = 0; k < sizeof(au64TrimPattern); k++)
     {
-        u32Val = (u32k & 0x0F) ^ (u32k >> 4) ^ (u32k >> 3);
+        uint32_t val = (k & 0x0F) ^ (k >> 4) ^ (k >> 3);
 
-        if (u32k & 0x01)
-        {
-            u32Val = ~u32Val;
-        }
+        if (k & 0x01) val = ~val;
 
-        pu8TrimPattern[u32k] = ~(uint8_t)(u32Val ^ (u32k << 3) ^ (u32k >> 2));
+        pu8TrimPattern[k] = ~(uint8_t)(val ^ (k << 3) ^ (k >> 2));
     }
 
-    SPIM_EraseBlock(spim,
-                    u32SrcAddr,
-                    (pMTWrCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
-                    OPCODE_SE_4K,
-                    SPIM_PhaseModeToNBit(pMTWrCMD->u32CMDPhase),
-                    SPIM_OP_ENABLE);
+    SPIM_SET_CLOCK_DIVIDER(spim, 16);
 
-    SPIM_DMA_Write(spim,
-                   u32SrcAddr,
-                   ((pMTWrCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE),
-                   sizeof(au64TrimPattern),
-                   pu8TrimPattern,
-                   pMTWrCMD->u32CMDCode);
+    SPIM_DMADMM_InitPhase(spim, &gsMt0BhRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
+    SPIM_DMA_Read(spim, u32SrcAddr, (gsMt0BhRdCMD.u32AddrWidth == PHASE_WIDTH_32),
+                  sizeof(au64VerifyBuf), pu8VerifyBuf, gsMt0BhRdCMD.u32CMDCode, SPIM_OP_ENABLE);
 
-    SPIM_DMADMM_InitPhase(spim, pMTRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
-    SPIM_DMADMM_InitPhase(spim, pMTRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
-
-    for (u32ReTrimCnt = 0; u32ReTrimCnt < u32ReTrimMaxCnt; u32ReTrimCnt++)
+    if (memcmp(pu8TrimPattern, pu8VerifyBuf, sizeof(au64VerifyBuf)) != 0)
     {
-        u32LoopAddr = 0;
+        SPIM_EraseBlock(spim, u32SrcAddr, (psMTWrCMD->u32AddrWidth == PHASE_WIDTH_32),
+                        OPCODE_SE_4K, SPIM_PhaseModeToNBit(psMTWrCMD->u32CMDPhase), SPIM_OP_ENABLE);
+        SPIM_DMA_Write(spim, u32SrcAddr, (psMTWrCMD->u32AddrWidth == PHASE_WIDTH_32),
+                       sizeof(au64TrimPattern), pu8TrimPattern, psMTWrCMD->u32CMDCode);
+    }
 
-        for (u8RdDelay = 0; u8RdDelay < SPIM_MAX_RX_DLY_NUM; u8RdDelay++)
+    /* Restore High-Speed Clock */
+    SPIM_SET_CLOCK_DIVIDER(spim, u32Div);
+
+    /* --- STAGE 1: EVALUATE DMA MODE --- */
+    SPIM_DMADMM_InitPhase(spim, psMTRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
+
+    for (u8DlyNum = 0; u8DlyNum < SPIM_MAX_RX_DLY_NUM; u8DlyNum++)
+    {
+        SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8DlyNum);
+        u8Pass = 1;
+
+        for (uint32_t loop = 0; loop < 4; loop++)   // Increase stress
         {
-            /* Set DLL calibration to select the valid delay step number */
-            SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8RdDelay);
-
             memset(pu8VerifyBuf, 0, TRIM_PAT_SIZE);
-
-            /* Calculate the pattern size based on the trim count */
-            u32PatternSize =
-                (((u32ReTrimCnt == 2) || (u32ReTrimCnt >= 3)) && (u8RdDelay == 0)) ?
-                (TRIM_PAT_SIZE - 0x08) :
-                TRIM_PAT_SIZE;
-
-            /* Read data from the HyperRAM */
-            u32LoopAddr = 0;
-
-            for (u32k = 0; u32k < u32PatternSize; u32k += 0x08)
-            {
 #if (NVT_DCACHE_ON == 1)
-                // Invalidate the data cache for the source or DMM address based on the retrim count
-                SCB_InvalidateDCache_by_Addr(
-                    (volatile uint32_t *)((u32ReTrimCnt == 1) ? u32SrcAddr : (u32DMMAddr + u32SrcAddr)),
-                    (int32_t)TRIM_PAT_SIZE * 2);
+            SCB_InvalidateDCache_by_Addr((uint32_t *)pu8VerifyBuf, TRIM_PAT_SIZE);
+#endif
+            SPIM_DMA_Read(spim, u32SrcAddr, (psMTRdCMD->u32AddrWidth == PHASE_WIDTH_32),
+                          TRIM_PAT_SIZE, pu8VerifyBuf, psMTRdCMD->u32CMDCode, SPIM_OP_ENABLE);
+
+            if (memcmp(pu8TrimPattern, pu8VerifyBuf, TRIM_PAT_SIZE) != 0)
+            {
+                u8Pass = 0;
+                break;
+            }
+        }
+
+        if (u8Pass) u32DMAMask |= (1 << u8DlyNum);
+    }
+
+    /* --- STAGE 2: EVALUATE DMM MODE --- */
+    SPIM_DMADMM_InitPhase(spim, psMTRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
+    SPIM_EnterDirectMapMode(spim, (psMTRdCMD->u32AddrWidth == PHASE_WIDTH_32), psMTRdCMD->u32CMDCode, 1);
+
+    for (u8DlyNum = 0; u8DlyNum < SPIM_MAX_RX_DLY_NUM; u8DlyNum++)
+    {
+        SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8DlyNum);
+        u8Pass = 1;
+
+        for (uint32_t loop = 0; loop < 4; loop++)
+        {
+#if (NVT_DCACHE_ON == 1)
+            SCB_InvalidateDCache_by_Addr((uint32_t *)(u32DMMAddr + u32SrcAddr), TRIM_PAT_SIZE);
 #endif
 
-                if (u32ReTrimCnt == 1)
+            for (u32LoopAddr = 0; u32LoopAddr < TRIM_PAT_SIZE; u32LoopAddr += 8)
+            {
+                /* Read 8 bytes of data from the device */
+                if (*(volatile uint64_t *)(u32DMMAddr + u32SrcAddr + u32LoopAddr) != *(uint64_t *)&pu8TrimPattern[u32LoopAddr])
                 {
-                    SPIM_DMA_Read(SPIM_PORT,
-                                  (u32SrcAddr + u32LoopAddr),
-                                  (pMTRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
-                                  0x08,
-                                  &pu8VerifyBuf[u32k],
-                                  pMTRdCMD->u32CMDCode,
-                                  SPIM_OP_ENABLE);
-                }
-                else
-                {
-                    SPIM_EnterDirectMapMode(spim,
-                                            (pMTRdCMD->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
-                                            pMTRdCMD->u32CMDCode,
-                                            1);
-
-                    /* Read 8 bytes of data from the HyperRAM */
-                    *(volatile uint64_t *)&pu8VerifyBuf[u32k] = *(volatile uint64_t *)(u32DMMAddr + u32SrcAddr + u32LoopAddr);
-                }
-
-                if ((u32i = memcmp(&pu8TrimPattern[u32LoopAddr], &pu8VerifyBuf[u32k], 0x08)) != 0)
-                {
+                    u8Pass = 0;
                     break;
                 }
-
-                u32LoopAddr += (u32ReTrimCnt >= 3) ? 0x10 : 0x08;
             }
 
-            u8RdDelayRes[u8RdDelay] += ((u32i == 0) ? 1 : 0);
+            if (u8Pass == 0) break;
         }
+
+        if (u8Pass) u32DMMMask |= (1 << u8DlyNum);
     }
 
-    u32j = 0;
+    /* --- STAGE 3: FINAL SELECTION --- */
+    uint32_t u32FinalMask = u32DMAMask & u32DMMMask;
+    uint8_t u8FinalDelay = selectStableDelay(u32FinalMask);
 
-    for (u32i = 0; u32i < SPIM_MAX_RX_DLY_NUM; u32i++)
+    SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8FinalDelay);
+
+    //printf("\n[SPIM TRIM REPORT]\nDMA Pass Mask: 0x%08X\nDMM Pass Mask: 0x%08X\n", u32DMAMask, u32DMMMask);
+    printf("Final Selected Optimal Delay: %d\n", u8FinalDelay);
+}
+
+/**
+ * @brief Trim DLL (Delay Locked Loop) delay for Octal DDR mode flash reads
+ *
+ * @details This function calibrates the DLL delay for Octal DDR mode by:
+ *          1. Entering OPI (Octal Peripheral Interface) mode
+ *          2. Using the last 4KB sector to store a known trim pattern
+ *          3. Testing all possible DLL delay values in both DMA and DMM modes
+ *          4. Selecting the most stable delay value that works in both modes
+ *          5. Exiting OPI mode after calibration
+ *
+ * @param[in] spim        Pointer to SPIM module
+ * @param[in] psMTWrCMD   Octal mode write command phase configuration
+ * @param[in] psMTRdCMD   Octal mode read command phase configuration
+ *
+ * @note This function is specifically for Octal DDR mode operation.
+ *       It requires Octal mode command configurations (8-bit data phase).
+ *       The function temporarily enters OPI mode, performs calibration,
+ *       then exits OPI mode to return to normal operation.
+ */
+void SPIM_TrimDLLDelayNum(SPIM_T *spim, SPIM_PHASE_T *psMTWrCMD, SPIM_PHASE_T *psMTRdCMD)
+{
+    uint32_t u32SrcAddr = OCFLH_TRIM_ADDR;
+    uint32_t u32DMMAddr = SPIM_GET_DMMADDR(spim);
+    uint32_t u32Div = SPIM_GET_CLOCK_DIVIDER(spim);
+    uint32_t u32DMAMask = 0;              /* Bitmask for DMA mode passing delays */
+    uint32_t u32DMMMask = 0;              /* Bitmask for DMM mode passing delays */
+    uint32_t u32LoopAddr = 0;
+
+    uint64_t au64TrimPattern[(TRIM_PAT_SIZE * 2) / 8] = {0};
+    uint64_t au64VerifyBuf[(TRIM_PAT_SIZE / 8)] = {0};
+    uint8_t *pu8TrimPattern = (uint8_t *)au64TrimPattern;
+    uint8_t *pu8VerifyBuf = (uint8_t *)au64VerifyBuf;
+    uint8_t u8Pass = 0;
+    uint8_t u8DlyNum = 0;
+
+    /* 1. Generate trim pattern with alternating bit pattern for robustness */
+    for (uint32_t k = 0; k < sizeof(au64TrimPattern); k++)
     {
-        if (u8RdDelayRes[u32i] >= u32ReTrimMaxCnt)
-        {
-            u8RdDelayRes[u32j++] = u32i;
-        }
+        uint32_t val = (k & 0x0F) ^ (k >> 4) ^ (k >> 3);
+
+        if (k & 0x01) val = ~val;
+
+        pu8TrimPattern[k] = ~(uint8_t)(val ^ (k << 3) ^ (k >> 2));
     }
 
-    u8RdDelay = (u32j < 2) ? u8RdDelayRes[0] : isConsecutive(u8RdDelayRes, u32j);
+    /* 2. Use safe clock divider to ensure flash access stability during pattern programming */
+    SPIM_SET_CLOCK_DIVIDER(spim, 16);
 
-    printf("RX Delay Num : %d\r\n", u8RdDelay);
+    /* 3. Enter Octal Peripheral Interface mode for DDR operation */
+    SPIM_EnterOPIMode_MICRON(spim);
 
-    /* Set the number of intermediate delay steps */
-    SPIM_SET_RXCLKDLY_RDDLYSEL(spim, u8RdDelay);
+    /* 4. Read existing flash content to verify if trim pattern is already present */
+    SPIM_DMADMM_InitPhase(spim, psMTRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
+    SPIM_DMA_Read(spim, u32SrcAddr, (psMTRdCMD->u32AddrWidth == PHASE_WIDTH_32),
+                  sizeof(au64VerifyBuf), pu8VerifyBuf, psMTRdCMD->u32CMDCode, SPIM_OP_ENABLE);
+
+    /* 5. If flash content doesn't match trim pattern, erase and reprogram it */
+    if (memcmp(pu8TrimPattern, pu8VerifyBuf, sizeof(au64VerifyBuf)) != 0)
+    {
+        SPIM_EraseBlock(spim, u32SrcAddr, (psMTWrCMD->u32AddrWidth == PHASE_WIDTH_32),
+                        OPCODE_SE_4K, SPIM_PhaseModeToNBit(psMTWrCMD->u32CMDPhase), SPIM_OP_ENABLE);
+        SPIM_DMA_Write(spim, u32SrcAddr, (psMTWrCMD->u32AddrWidth == PHASE_WIDTH_32),
+                       sizeof(au64TrimPattern), pu8TrimPattern, psMTWrCMD->u32CMDCode);
+    }
+
+    /* 6. Restore original high-speed clock divider */
+    SPIM_SET_CLOCK_DIVIDER(spim, u32Div);
+
+    /* --- STAGE 1: EVALUATE DMA MODE --- */
+    /* Test all DLL delay values in DMA page read mode */
+    SPIM_DMADMM_InitPhase(spim, psMTRdCMD, SPIM_CTL0_OPMODE_PAGEREAD);
+
+    for (u8DlyNum = 0; u8DlyNum < SPIM_MAX_DLL_LATENCY; u8DlyNum++)
+    {
+        /* Set current DLL delay value */
+        SPIM_SetDLLDelayNum(spim, u8DlyNum);
+        u8Pass = 1;
+
+        /* Perform multiple stress test iterations */
+        for (uint32_t loop = 0; loop < 4; loop++)
+        {
+            memset(pu8VerifyBuf, 0, TRIM_PAT_SIZE);
+#if (NVT_DCACHE_ON == 1)
+            /* Invalidate cache to ensure fresh data from flash */
+            SCB_InvalidateDCache_by_Addr((uint32_t *)pu8VerifyBuf, TRIM_PAT_SIZE);
+#endif
+            /* Read trim pattern from flash using DMA */
+            SPIM_DMA_Read(spim, u32SrcAddr, (psMTRdCMD->u32AddrWidth == PHASE_WIDTH_32),
+                          TRIM_PAT_SIZE, pu8VerifyBuf, psMTRdCMD->u32CMDCode, SPIM_OP_ENABLE);
+
+            /* Verify read data matches expected pattern */
+            if (memcmp(pu8TrimPattern, pu8VerifyBuf, TRIM_PAT_SIZE) != 0)
+            {
+                u8Pass = 0;
+                break;
+            }
+        }
+
+        /* Mark this delay value as passing in DMA mode */
+        if (u8Pass) u32DMAMask |= (1 << u8DlyNum);
+    }
+
+    /* --- STAGE 2: EVALUATE DMM MODE --- */
+    /* Test all DLL delay values in DMM (Direct Memory Mapped) mode */
+    SPIM_DMADMM_InitPhase(spim, psMTRdCMD, SPIM_CTL0_OPMODE_DIRECTMAP);
+    SPIM_EnterDirectMapMode(spim, (psMTRdCMD->u32AddrWidth == PHASE_WIDTH_32), psMTRdCMD->u32CMDCode, 1);
+
+    for (u8DlyNum = 0; u8DlyNum < SPIM_MAX_DLL_LATENCY; u8DlyNum++)
+    {
+        /* Set current DLL delay value */
+        SPIM_SetDLLDelayNum(spim, u8DlyNum);
+        u8Pass = 1;
+
+        /* Perform multiple stress test iterations */
+        for (uint32_t loop = 0; loop < 4; loop++)
+        {
+#if (NVT_DCACHE_ON == 1)
+            /* Invalidate cache for DMM address space */
+            SCB_InvalidateDCache_by_Addr((uint32_t *)(u32DMMAddr + u32SrcAddr), TRIM_PAT_SIZE);
+#endif
+
+            /* Read and verify trim pattern via DMM address space (8 bytes at a time) */
+            for (u32LoopAddr = 0; u32LoopAddr < TRIM_PAT_SIZE; u32LoopAddr += 8)
+            {
+                /* Read 8 bytes of data from the device via DMM */
+                if (*(volatile uint64_t *)(u32DMMAddr + u32SrcAddr + u32LoopAddr) != *(uint64_t *)&pu8TrimPattern[u32LoopAddr])
+                {
+                    u8Pass = 0;
+                    break;
+                }
+            }
+
+            if (u8Pass == 0) break;
+        }
+
+        /* Mark this delay value as passing in DMM mode */
+        if (u8Pass) u32DMMMask |= (1 << u8DlyNum);
+    }
+
+    /* 7. Exit OPI mode if Octal mode command is detected */
+    if (psMTRdCMD->u32CMDPhase == PHASE_OCTAL_MODE)
+    {
+        SPIM_ExitOPIMode_MICRON(spim);
+    }
+
+    /* --- STAGE 3: FINAL SELECTION --- */
+    /* Find delay values that pass both DMA and DMM tests */
+    uint32_t u32FinalMask = u32DMAMask & u32DMMMask;
+
+    /* Select the most stable delay from valid window */
+    uint8_t u8FinalDelay = selectStableDelay(u32FinalMask);
+
+    /* 8. Apply final selected DLL delay value */
+    SPIM_SetDLLDelayNum(spim, u8FinalDelay);
+
+    /* Output trimming results */
+    //printf("\n[SPIM TRIM REPORT]\nDMA Pass Mask: 0x%08X\nDMM Pass Mask: 0x%08X\n", u32DMAMask, u32DMMMask);
+    printf("Final Selected Optimal Delay: %d\n", u8FinalDelay);
 }
 
 int dma_read_write(uint32_t u32Is4ByteAddr, uint32_t u32RdCmd, uint32_t WrCmd, uint32_t u32DDREn)

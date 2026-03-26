@@ -1207,7 +1207,7 @@ void CLK_DisableModuleClock(uint64_t u64ModuleIdx)
 uint32_t CLK_EnableAPLL(uint32_t u32PllClkSrc, uint32_t u32PllFreq, uint32_t u32PllSelect)
 {
     uint32_t u32PllSrcClk, u32NR, u32NF, u32NO, u32FRDIV, u32PllClk, u32StableSel;
-    uint32_t u32Tmp, u32Tmp2, u32Tmp3, u32Tmp4, u32Min, u32MinNF, u32MinNR, u32MinFRDIV, u32BestFreq;
+    uint32_t u32Tmp, u32Tmp2, u32Tmp3, u32Tmp4, u32Min, u32MinNF, u32MinNR, u32MinFRDIV, u32BestFreq = 0UL;
     uint8_t au8NoTbl[4] = {1U, 2U, 2U, 4U};
 
     /* Disable PLL first to avoid unstable when setting PLL */

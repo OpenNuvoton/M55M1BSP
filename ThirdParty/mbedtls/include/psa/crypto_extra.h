@@ -1666,7 +1666,7 @@ psa_status_t psa_pake_input(psa_pake_operation_t *operation,
  *         step is out of order or the application has done this step already
  *         and it may not be repeated.
  * \retval #PSA_ERROR_INVALID_ARGUMENT
- *         #PSA_KEY_DERIVATION_INPUT_SECRET is not compatible with the output’s
+ *         #PSA_KEY_DERIVATION_INPUT_SECRET is not compatible with the output's
  *         algorithm.
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY
  * \retval #PSA_ERROR_COMMUNICATION_FAILURE

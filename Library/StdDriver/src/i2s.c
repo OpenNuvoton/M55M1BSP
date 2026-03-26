@@ -27,9 +27,10 @@
   * @param[in]  i2s is the base address of I2S module.
   * @return I2S source clock frequency (Hz).
   */
-uint32_t I2S_GetSourceClockFreq(I2S_T *i2s)
+uint32_t I2S_GetSourceClockFreq(const I2S_T *i2s)
 {
-    uint32_t u32Freq = 0UL, u32ClkSrcSel;
+    uint32_t u32Freq = 0UL;
+    uint32_t u32ClkSrcSel = 0UL;
 
     if (i2s == I2S0)
     {
@@ -66,7 +67,7 @@ uint32_t I2S_GetSourceClockFreq(I2S_T *i2s)
 
         u32Freq /= (CLK_GetModuleClockDivider(I2S0_MODULE) + 1UL);
     }
-    else if (i2s == I2S1)
+    else
     {
         /* get I2S selection clock source */
         u32ClkSrcSel = (CLK_GetModuleClockSource(I2S1_MODULE) << CLK_I2SSEL_I2S1SEL_Pos);
@@ -134,7 +135,9 @@ uint32_t I2S_GetSourceClockFreq(I2S_T *i2s)
 uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, uint32_t u32WordWidth, uint32_t u32MonoData, uint32_t u32DataFormat)
 {
     uint16_t u16Divider;
-    uint32_t u32BitRate, u32SrcClk;
+    uint32_t u32BitRate;
+    uint32_t u32SrcClk;
+    uint32_t u32SampleRateTmp = 0UL;
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
     if (u32RegLockLevel)
@@ -147,7 +150,7 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
     {
         SYS_ResetModule(SYS_I2S0RST);
     }
-    else if (i2s == I2S1)
+    else
     {
         SYS_ResetModule(SYS_I2S1RST);
     }
@@ -163,17 +166,17 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
 
     u32SrcClk = I2S_GetSourceClockFreq(i2s);
 
-    u32BitRate = u32SampleRate * (((u32WordWidth >> 4U) & 0x3U) + 1U) * 16U;
+    u32BitRate = (u32SampleRate * (((u32WordWidth >> 4U) & 0x3U) + 1U) * 16U);
     u16Divider = (uint16_t)((((u32SrcClk * 10UL / u32BitRate) >> 1U) + 5UL) / 10UL) - 1U; /* Round to the nearest integer */
     i2s->CLKDIV = (i2s->CLKDIV & ~I2S_CLKDIV_BCLKDIV_Msk) | ((uint32_t)u16Divider << 8U);
 
     /* Calculate real sample rate */
     u32BitRate = u32SrcClk / (2U * ((uint32_t)u16Divider + 1U));
-    u32SampleRate = u32BitRate / ((((u32WordWidth >> 4U) & 0x3U) + 1U) * 16U);
+    u32SampleRateTmp = (u32BitRate / ((((u32WordWidth >> 4U) & 0x3U) + 1U) * 16U));
 
     i2s->CTL0 |= I2S_CTL0_I2SEN_Msk;
 
-    return u32SampleRate;
+    return u32SampleRateTmp;
 }
 
 /**
@@ -219,7 +222,9 @@ void I2S_DisableInt(I2S_T *i2s, uint32_t u32Mask)
 uint32_t I2S_EnableMCLK(I2S_T *i2s, uint32_t u32BusClock)
 {
     uint8_t u8Divider;
-    uint32_t u32SrcClk, u32Reg, u32Clock;
+    uint32_t u32SrcClk;
+    uint32_t u32Reg;
+    uint32_t u32Clock;
 
     u32SrcClk = I2S_GetSourceClockFreq(i2s);
 

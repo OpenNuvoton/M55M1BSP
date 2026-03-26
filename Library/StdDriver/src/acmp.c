@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     acmp.c
  * @version  V1.00
- * @brief    M55M1 series ACMP driver source file
+ * @brief    ACMP driver source file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.

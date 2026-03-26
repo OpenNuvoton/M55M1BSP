@@ -13,7 +13,9 @@
 #include "jinclude.h"
 #include "jpeglib.h"
 
-
+extern void jsimd_ycc_rgb_convert_helium(j_decompress_ptr cinfo, JSAMPIMAGE input_buf,
+                                JDIMENSION input_row, JSAMPARRAY output_buf,
+                                int num_rows);
 /* Private subobject */
 
 typedef struct {
@@ -237,9 +239,14 @@ ycc_rgb_convert (j_decompress_ptr cinfo,
 			      ((int) RIGHT_SHIFT(Cbgtab[cb] + Crgtab[cr],
 						 SCALEBITS))];
       outptr[RGB_BLUE]  = range_limit[y + Cbbtab[cb]];
-      outptr += RGB_PIXELSIZE;
-    }
+      
+//		printf("get (y,cb,cr) = (%d, %d, %d) \r\n", y,cb,cr);
+//		printf("gen (r, g ,b) = (%d, %d, %d) \r\n", outptr[RGB_RED], outptr[RGB_GREEN], outptr[RGB_BLUE]);	
+    outptr += RGB_PIXELSIZE;
+		}
+		
   }
+	
 }
 
 
@@ -652,7 +659,12 @@ jinit_color_deconverter (j_decompress_ptr cinfo)
       cconvert->pub.color_convert = gray_rgb_convert;
       break;
     case JCS_YCbCr:
-      cconvert->pub.color_convert = ycc_rgb_convert;
+#ifdef WITH_JPEGACC
+		  cconvert->pub.color_convert = jsimd_ycc_rgb_convert_helium;
+#else
+		  cconvert->pub.color_convert = ycc_rgb_convert;
+#endif	
+      
       build_ycc_rgb_table(cinfo);
       break;
     case JCS_BG_YCC:

@@ -97,10 +97,10 @@ static void Configure_SPI_Pins(void)
     SET_SPI2_MISO_PA9();
     SET_SPI2_CLK_PA10();
 
-    /* Enable SPI2 clock pin (PA10) schmitt trigger */   //因為高速訊號要讓GPIO這樣設定schmitt trigger，影響GPIO input
+    /* Enable SPI2 clock pin (PA10) schmitt trigger */   //因為高速訊號要讓GPIO這樣設定schmitt trigger,影響GPIO input
     PA->SMTEN |= GPIO_SMTEN_SMTEN10_Msk;
 
-    /* Enable SPI2 I/O high slew rate */                //因為高速訊號要讓GPIO這樣設定high slew rate，影響GPIO output
+    /* Enable SPI2 I/O high slew rate */                //因為高速訊號要讓GPIO這樣設定high slew rate,影響GPIO output
     GPIO_SetSlewCtl(PA, (BIT8 | BIT9 | BIT10), GPIO_SLEWCTL_HIGH);
 }
 

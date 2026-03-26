@@ -15,7 +15,7 @@ project:
         - ../../../../Library/CMSIS/Core/Include
         - ../../../../Library/Device/Nuvoton/M55M1/Include
         - ../../../../Library/StdDriver/inc
-        - ../../../../Library/StdDriver/inc/emac        
+        - ../../../../Library/StdDriver/inc/emac
       misc:
         - for-compiler: AC6
           C:
@@ -23,6 +23,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -37,6 +38,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -61,7 +63,7 @@ project:
         - file: ../../../../Library/StdDriver/src/gpio.c
         - file: ../../../../Library/StdDriver/src/emac/synopGMAC_Dev.c
         - file: ../../../../Library/StdDriver/src/emac/synopGMAC_network_interface.c
-        - file: ../../../../Library/StdDriver/src/emac/synopGMAC_plat.c        
+        - file: ../../../../Library/StdDriver/src/emac/synopGMAC_plat.c
     - group: User
       files:
         - file: ../main.c

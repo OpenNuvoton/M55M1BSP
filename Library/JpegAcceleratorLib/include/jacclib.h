@@ -118,7 +118,6 @@ int compute_reciprocal(UINT16 divisor, DCTELEM *dtbl);
 void jpeg_fdct_islow(DCTELEM *data);
 void quantize(JCOEFPTR coef_block, DCTELEM *divisors, DCTELEM *workspace);
 boolean encode_one_block_simd(working_state_simd *state, JCOEFPTR block, int last_dc_val, c_derived_tbl *dctbl, c_derived_tbl *actbl);
-void jsimd_rgb_ycc_convert_helium(j_compress_ptr cinfo, JSAMPARRAY input_buf, JSAMPIMAGE output_buf, JDIMENSION output_row, int num_rows);
 #ifdef  __cplusplus
 }
 #endif

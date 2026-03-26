@@ -762,7 +762,7 @@ typedef struct
      * | :----: | :----:   | :---- |
      * |[7:0]   |NDP       |Number Downstream Ports
      * |        |          |USB host control supports two downstream ports and only one port is available in this series of chip.
-     * |        |          |Note: NDP = 6 in this series of chip.
+     * |        |          |Note: NDP = 1 in this series of chip.
      * |[8]     |PSM       |Power Switching Mode
      * |        |          |This bit is used to specify how the power switching of the Root Hub ports is controlled.
      * |        |          |0 = Global switching.

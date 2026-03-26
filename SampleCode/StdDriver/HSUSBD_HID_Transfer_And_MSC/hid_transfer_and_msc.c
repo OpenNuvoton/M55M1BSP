@@ -1515,7 +1515,6 @@ int32_t ProcessCommand(uint8_t *pu8Buffer, uint32_t u32BufferLen)
 {
     uint32_t u32sum;
 
-
     HSUSBD_MemCopy((uint8_t *)&gCmd, pu8Buffer, u32BufferLen);
 
     /* Check size */
@@ -1614,7 +1613,7 @@ void HID_GetOutReport(uint8_t *pu8EpBuf, uint32_t u32Size)
     else
     {
         /* Check and process the command packet */
-        if (ProcessCommand(pu8EpBuf, u32Size))
+        if (ProcessCommand(pu8EpBuf, sizeof(gCmd)))
         {
             printf("Unknown HID command!\n");
         }

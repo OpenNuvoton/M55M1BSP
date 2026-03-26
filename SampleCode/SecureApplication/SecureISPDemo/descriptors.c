@@ -1,9 +1,9 @@
 /******************************************************************************
  * @file     descriptors.c
- * @brief    M55M1 series USBD driver source file
+ * @brief    USB descriptor file
  *
  * SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 /*!<Includes */
 #include "NuMicro.h"
@@ -137,7 +137,7 @@ static uint8_t gu8ProductStringDesc[] =
 {
     32,             /* bLength          */
     DESC_STRING,    /* bDescriptorType  */
-    'M', 0, '2', 0, '3', 0, '5', 0, '4', 0, ' ', 0, 'S', 0, 'e', 0, 'c', 0, 'u', 0, 'r', 0, 'e', 0, 'I', 0, 'S', 0, 'P', 0
+    'M', 0, '5', 0, '5', 0, 'M', 0, '1', 0, ' ', 0, 'S', 0, 'e', 0, 'c', 0, 'u', 0, 'r', 0, 'e', 0, 'I', 0, 'S', 0, 'P', 0
 };
 
 /*!<USB BOS Descriptor */
@@ -161,7 +161,7 @@ static uint8_t gu8StringSerial[26] =
 {
     26,             // bLength
     DESC_STRING,    // bDescriptorType
-    'M', 0, '2', 0, '3', 0, '5', 0, '5', 0, '-', 0, '0', 0, '0', 0, '2', 0, '0', 0, '1', 0, '8', 0
+    'M', 0, '5', 0, '5', 0, 'M', 0, '1', 0, '-', 0, '0', 0, '0', 0, '2', 0, '0', 0, '2', 0, '6', 0
 };
 
 static uint8_t *gpu8UsbString[4] =

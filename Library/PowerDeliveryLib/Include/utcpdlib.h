@@ -91,7 +91,6 @@ extern void EADC_ConfigPins(void);
 extern void EADC_Init(void);
 extern void pd_task_reinit(int port);
 extern bool pd_task_loop(int port);
-extern void vconn_polarity_active_low();
 extern void UART_Commandshell(int port);
 extern void cpu_dump(uint32_t start_addr, uint32_t end_addr);
 extern void VBUS_Source_Level(int port, char i8Level);
@@ -107,6 +106,7 @@ extern void VBUS_Sink_Enable(int32_t port, bool bIsEnable);
 
 #ifdef __cplusplus
 }
+
 #endif
 
 #endif /* __UTCPDLIB_H__ */

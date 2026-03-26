@@ -123,7 +123,7 @@
   */
 void SYS_ResetModule(uint32_t u32ModuleIndex)
 {
-    uint32_t u32SPIM0CKEN;
+    uint32_t u32SPIM0CKEN = 0UL;
 
     /* SPIM reset limitation */
     if (u32ModuleIndex == SYS_SPIM0RST)

@@ -54,7 +54,7 @@ uint8_t volatile u8RecEn = 0;
 uint8_t volatile u8RxDataCntInBuffer = 0;
 uint8_t volatile u8PDMARxIdx = 0;
 
-uint32_t volatile u32BuffLen = 0, u32RxBuffLen = 0;
+uint32_t volatile g_u32BuffLen = 0, g_u32RxBuffLen = 0;
 
 /* Player Buffer and its pointer */
 #if (NVT_DCACHE_ON == 1)
@@ -360,13 +360,13 @@ void UAC_Init(void)
 
     if ((g_usbd_SampleRate % 8000) == 0)
     {
-        u32BuffLen = 768;
-        u32RxBuffLen = (g_usbd_SampleRate / 1000) * 4;
+        g_u32BuffLen = 768;
+        g_u32RxBuffLen = (g_usbd_SampleRate / 1000) * 4;
     }
     else
     {
-        u32BuffLen = 441;
-        u32RxBuffLen = 444;
+        g_u32BuffLen = 441;
+        g_u32RxBuffLen = 444;
     }
 
     /* Init setup packet buffer */
@@ -949,7 +949,7 @@ void UAC_GetPlayData(uint8_t *psrc, uint32_t u32Samples)
     u32len = u32Samples / 4;
 
     /* Ring buffer check */
-    if ((u32PlayBufPos + u32len) > u32BuffLen)
+    if ((u32PlayBufPos + u32len) > g_u32BuffLen)
     {
         PcmPlayBuffLen[u32BufPlayIdx] = u32PlayBufPos;
         u32PlayBufPos = 0;

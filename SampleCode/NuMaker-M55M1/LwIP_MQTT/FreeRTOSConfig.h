@@ -44,7 +44,7 @@
 /* Stack and heap */
 #define configMINIMAL_STACK_SIZE                        (uint16_t)128
 #define configMINIMAL_SECURE_STACK_SIZE                 1024
-#define configTOTAL_HEAP_SIZE                           (size_t)(50 * 1024)
+#define configTOTAL_HEAP_SIZE                           (size_t)(256 * 1024)
 #define configMAX_TASK_NAME_LEN                         12
 /* OS features */
 #define configUSE_MUTEXES                               1

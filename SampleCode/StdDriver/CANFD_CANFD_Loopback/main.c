@@ -36,6 +36,7 @@ NVT_ITCM void CANFD00_IRQHandler(void)
 {
     CANFD0_TEST_HANDLE();
 }
+
 /*---------------------------------------------------------------------------------------------------------*/
 /* CAN FD0 Callback function                                                                                */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -81,7 +82,7 @@ void SYS_Init(void)
     /* Enable CAN FD0 peripheral clock */
     CLK_EnableModuleClock(CANFD0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

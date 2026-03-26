@@ -226,7 +226,7 @@ uint32_t CLK_GetUSBFreq(void)
     /* Get USB Peripheral Clock                                                                                */
     /*---------------------------------------------------------------------------------------------------------*/
     /* USB Peripheral clock = HIRC48M / (USBDIV + 1) */
-    return __HIRC48M / (CLK_GetModuleClockDivider(USBD0_MODULE) + 1);
+    return __HIRC48M / (CLK_GetModuleClockDivider(USBH0_MODULE) + 1);
 }
 
 /*---------------------------------------------------------------------------------------------------------*/
@@ -250,11 +250,9 @@ int main()
     printf("\n\n");
     printf("System clock:   %d Hz.\n", SystemCoreClock);
     printf("USB Host clock: %d Hz.\n", CLK_GetUSBFreq());
-    printf("+-----------------------------------------------+\n");
-    printf("|                                               |\n");
-    printf("|        USB Host Secure ISP Sample Code        |\n");
-    printf("|                                               |\n");
-    printf("+-----------------------------------------------+\n");
+    printf("+-------------------------------------------+\n");
+    printf("|      USB Host Secure ISP Sample Code      |\n");
+    printf("+-------------------------------------------+\n");
     printf("Wait until any HID devices connected...\n\n");
 
     usbh_core_init();

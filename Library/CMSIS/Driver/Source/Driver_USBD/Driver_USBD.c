@@ -16,33 +16,9 @@
  * limitations under the License.
  */
 
-/**************************************************************************//**
-* @file     Driver_USBD.c
-* @version  V1.00
-* @brief    USBD driver for Nuvoton M55M1
-*
-* @copyright SPDX-License-Identifier: Apache-2.0
-* @copyright Copyright (C) 2024 Nuvoton Technology Corp. All rights reserved.
-******************************************************************************/
-
-/*! \page Dirver_USBD USBD
-
-# Revision History
-
-  - Initial release
-
-# Requirements
-
-This driver requires the M55M1 BSP.
-The driver instance is mapped to hardware as shown in the table below:
-
-  CMSIS Driver Instance | Hardware Resource
-  :---------------------|:-----------------------
-  Driver_USBD0          | USBD0
-
-*/
-
-
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -54,27 +30,12 @@ The driver instance is mapped to hardware as shown in the table below:
 #include <string.h>
 #include "NuMicro.h"
 
-#define ARM_USBD_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0) /* driver version */
-
-/* Driver Version */
-static const ARM_DRIVER_VERSION usbd_driver_version =
-{
-    ARM_USBD_API_VERSION,
-    ARM_USBD_DRV_VERSION
-};
-// Compile-time configuration **************************************************
-
 // Configuration depending on RTE_Device_USBD.h
 // Check if at least one peripheral instance is configured in RTE_Device_USBD.h
-#if    (!(RTE_USBD0))
-    #warning  USB Device driver requires at least one USB (Device) peripheral configured in RTE_Device_USBD.h
-#else
-    #define DRIVER_CONFIG_VALID             1
-#endif
-
-// Configuration depending on the local macros
-
+#if (RTE_USBD0 == 1)
+// *****************************************************************************
 // Compile-time configuration (that can be externally overridden if necessary)
+
 // Maximum number of endpoints
 #ifndef USBD_MAX_ENDPOINT_NUM
     #define USBD_MAX_ENDPOINT_NUM           (USBD_MAX_EP)
@@ -91,9 +52,8 @@ static const ARM_DRIVER_VERSION usbd_driver_version =
 #endif
 // *****************************************************************************
 
-#ifdef  DRIVER_CONFIG_VALID     // Driver code is available only if configuration is valid
-
 // Macros
+#define ARM_USBD_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(1, 0) /* driver version */
 // Macro for porting compatibility
 #define USBD_t          USBD_T
 #define USBD_EP_t       USBD_EP_T
@@ -323,6 +283,14 @@ static const USBD_Info_t *const usbd_info_list[] =
 #endif
     NULL
 };
+
+/* Driver Version */
+static const ARM_DRIVER_VERSION usbd_driver_version =
+{
+    ARM_USBD_API_VERSION,
+    ARM_USBD_DRV_VERSION
+};
+
 // Auxiliary functions
 
 /**
@@ -775,9 +743,16 @@ static int32_t USBDn_EndpointConfigure(const USBD_Info_t *const ptr_usbd_info, u
 
     // Open endpoint
     ep = USBD_EndpointEntry(ptr_usbd_info, ep_addr, true);
+
+    // Error if all periph endpoints used
+    if (ep == NULL)
+    {
+        return ARM_DRIVER_ERROR_PARAMETER;
+    }
+
     EP_Info_t *ptr_ep = &ptr_usbd_info->ptr_rw_info->ep_info[ep - ptr_usbd_info->ptr_ro_info->ptr_USBD->EP];
 
-    // Check buffer limit when opening a new endpoint
+    // Error if USB buffer is insufficient
     if (ptr_usbd_info->ptr_rw_info->bufseg_addr + ep_max_packet_size > USBD_BUF_SIZE)
     {
         return ARM_DRIVER_ERROR;
@@ -851,6 +826,9 @@ static int32_t USBDn_EndpointUnconfigure(const USBD_Info_t *const ptr_usbd_info,
         // Clear Endpoint configure
         ep->CFG = 0U;
     }
+
+    // Deallocate USB RAM and update bufseg_addr
+    USBD_EndpointConfigureBuffer(ptr_usbd_info);
 
     return ARM_DRIVER_OK;
 }
@@ -1104,7 +1082,7 @@ static void USBD_SetupStage(const USBD_Info_t *const ptr_usbd_info)
 }
 
 /**
-  \fn          void USBD_BusReset (const USBD_t *husbd)
+  \fn          void USBD_BusReset (const USBD_Info_t *const ptr_usbd_info)
   \brief       USBD Bus Reset.
   \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   */
@@ -1112,7 +1090,7 @@ static void USBD_BusReset(const USBD_Info_t *const ptr_usbd_info)
 {
     USBD_t *husbd = ptr_usbd_info->ptr_ro_info->ptr_USBD;
     // Clear Endpoints information
-    memset((void *)ptr_usbd_info->ptr_rw_info->ep_info, 0U, USBD_MAX_ENDPOINT_NUM * sizeof(EP_Info_t));
+    memset((void *)ptr_usbd_info->ptr_rw_info->ep_info, 0U, PERIPH_MAX_EP * sizeof(EP_Info_t));
 
     for (EP_Num_t ep_index = PERIPH_EP0; ep_index < PERIPH_MAX_EP; ep_index++)
     {

@@ -11,7 +11,7 @@
 #include "NuMicro.h"
 #include "hid_transfer.h"
 
-extern int32_t ExecuteSecureISP(void);
+int32_t ExecuteSecureISP(void);
 
 void SYS_Init(void)
 {
@@ -55,12 +55,15 @@ int32_t main(void)
     /* Init Debug UART to 115200-8N1 for print message */
     InitDebugUart();
 
-    printf("\nCPU @ %d Hz\n\n", SystemCoreClock);
-    printf("[ SecureISP Demo (VECMAP: 0x%x) ]\n\n", FMC_GetVECMAP());
+    printf("System clock:   %d Hz.\n", SystemCoreClock);
+    printf("+---------------------------------------+\n");
+    printf("|  SecureISP Demo (VECMAP: 0x%08X)  |\n", FMC_GetVECMAP());
+    printf("+---------------------------------------+\n");
 
-    ExecuteSecureISP();
-
-    while (1) {}
+    while (1)
+    {
+        ExecuteSecureISP();
+    }
 }
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

@@ -45,9 +45,12 @@ void SCUART_Close(SC_T *sc)
   *
   * @return     Module clock of specified SC interface.
   */
-static uint32_t SCUART_GetClock(SC_T *sc)
+static uint32_t SCUART_GetClock(const SC_T *sc)
 {
-    uint32_t u32ClkSrc = 0, u32Num = 0, u32ClkFreq = __HIRC, u32Div = 0;
+    uint32_t u32ClkSrc = 0;
+    uint32_t u32Num = 0;
+    uint32_t u32ClkFreq = __HIRC;
+    uint32_t u32Div = 0;
 
     /* Get smartcard module clock source and divider */
     if (sc == SC0)
@@ -99,7 +102,7 @@ static uint32_t SCUART_GetClock(SC_T *sc)
         else if (u32ClkSrc == 4UL)
         {
             u32ClkFreq = __HIRC48M;
-            u32ClkFreq = u32ClkFreq / (4);
+            u32ClkFreq = u32ClkFreq / (4UL);
         }
         else
         {
@@ -133,10 +136,11 @@ static uint32_t SCUART_GetClock(SC_T *sc)
   */
 uint32_t SCUART_Open(SC_T *sc, uint32_t u32Baudrate)
 {
-    uint32_t u32ClkFreq = SCUART_GetClock(sc), u32Div;
+    uint32_t u32ClkFreq = SCUART_GetClock(sc);
+    uint32_t u32Div;
 
     /* Calculate divider for target baudrate */
-    u32Div = (u32ClkFreq + (u32Baudrate >> 1) - 1UL) / u32Baudrate - 1UL;
+    u32Div = ((u32ClkFreq + (u32Baudrate >> 1) - 1UL) / u32Baudrate) - 1UL;
 
     sc->CTL = SC_CTL_SCEN_Msk | SC_CTL_NSB_Msk;  /* Enable smartcard interface and stop bit = 1 */
     sc->UARTCTL = SCUART_CHAR_LEN_8 | SCUART_PARITY_NONE | SC_UARTCTL_UARTEN_Msk; /* Enable UART mode, disable parity and 8 bit per character */
@@ -158,7 +162,7 @@ uint32_t SCUART_Open(SC_T *sc, uint32_t u32Baudrate)
   *
   * @note       This function does not block and return immediately if there's no data available.
   */
-uint32_t SCUART_Read(SC_T *sc, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
+uint32_t SCUART_Read(const SC_T *sc, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
 {
     uint32_t u32Count;
 
@@ -205,7 +209,8 @@ uint32_t SCUART_Read(SC_T *sc, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
   */
 uint32_t SCUART_SetLineConfig(SC_T *sc, uint32_t u32Baudrate, uint32_t u32DataWidth, uint32_t u32Parity, uint32_t u32StopBits)
 {
-    uint32_t u32ClkFreq = SCUART_GetClock(sc), u32Div;
+    uint32_t u32ClkFreq = SCUART_GetClock(sc);
+    uint32_t u32Div;
 
     if (u32Baudrate == 0UL)
     {
@@ -254,21 +259,25 @@ void SCUART_SetTimeoutCnt(SC_T *sc, uint32_t u32TOC)
   *
   * @details    This function is used to write data into Tx FIFO to send data out.
   */
-uint32_t SCUART_Write(SC_T *sc, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
+uint32_t SCUART_Write(SC_T *sc, const uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
 {
     uint32_t u32Count;
     /* Baudrate * (start bit + 8-bit data + 1-bit parity + 2-bit stop) */
-    uint32_t u32Delay = (SystemCoreClock / SCUART_GetClock(sc)) * sc->ETUCTL * 12, i;
+    uint32_t u32Delay = (SystemCoreClock / SCUART_GetClock(sc)) * sc->ETUCTL * (12UL);
+
 
     for (u32Count = 0UL; u32Count != u32WriteBytes; u32Count++)
     {
-        i = 0;
+        uint32_t i = 0;
 
         /* Wait 'til FIFO not full */
         while (SCUART_GET_TX_FULL(sc))
         {
             /* Block longer than expected. Maybe some interrupt disable SCUART clock. */
-            if (i++ > u32Delay) return u32Count;
+            if (i++ > u32Delay)
+            {
+                return u32Count;
+            }
         }
 
         /* Write 1 byte to FIFO */

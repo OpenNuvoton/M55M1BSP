@@ -166,7 +166,7 @@ static int  reset_device(UDEV_T *udev)
   * @brief    Suspend USB Host Controller and devices
   * @return   None
   */
-void usbh_suspend()
+void usbh_suspend(void)
 {
 #ifdef ENABLE_EHCI
     int   time_out = 10;   /* ms */
@@ -792,7 +792,7 @@ int usbh_set_interface(IFACE_T *iface, uint16_t alt_setting)
 int usbh_get_device_descriptor(UDEV_T *udev, DESC_DEV_T *desc_buff)
 {
     uint32_t  read_len;
-    int       ret, retry;
+    int       ret = 0, retry;
     int       timeout = 10;
 
     for (retry = 0; retry < 3; retry++)
@@ -809,6 +809,39 @@ int usbh_get_device_descriptor(UDEV_T *udev, DESC_DEV_T *desc_buff)
     }
 
     return ret;
+}
+
+/**
+ *  @brief Get configuration descriptor total length from the USB device.
+ *
+ *  @param[in] udev The target USB device.
+ *  @param[in] conf_header Data buffer to receive configuration descriptor header.
+ *  @return   Success or not.
+ *  @retval   0  Success
+ *  @retval   Otherwise  Failed
+ */
+
+int usbh_get_config_descripotr_total_length(UDEV_T *udev, DESC_CONF_T *conf_header)
+{
+    uint32_t  read_len;
+    int       ret;
+
+    /*------------------------------------------------------------------------------------*/
+    /* Get Configuration Descriptor Header (9 bytes)                                      */
+    /*------------------------------------------------------------------------------------*/
+    ret = usbh_ctrl_xfer(udev, REQ_TYPE_IN | REQ_TYPE_STD_DEV | REQ_TYPE_TO_DEV,
+                         USB_REQ_GET_DESCRIPTOR,
+                         ((USB_DT_STANDARD | USB_DT_CONFIGURATION) << 8), 0,
+                         sizeof(DESC_CONF_T), // read 9 bytes only.
+                         (uint8_t *)conf_header, &read_len, 200);
+
+    if (ret < 0)
+    {
+        USB_error("Get config descriptor header failed!\n");
+        return ret;
+    }
+
+    return 0;
 }
 
 /**
@@ -899,7 +932,7 @@ int usbh_clear_halt(UDEV_T *udev, uint16_t ep_addr)
 
 static int  usbh_parse_endpoint(ALT_IFACE_T *alt, int ep_idx, uint8_t *desc_buff, int len)
 {
-    DESC_EP_T    *ep_desc;
+    DESC_EP_T    *ep_desc = NULL;
     int          parsed_len = 0;
     int          pksz;
 
@@ -948,7 +981,7 @@ static int  usbh_parse_endpoint(ALT_IFACE_T *alt, int ep_idx, uint8_t *desc_buff
 static int  usbh_parse_interface(UDEV_T *udev, uint8_t *desc_buff, int len)
 {
     int         i, matched, parsed_len = 0;
-    DESC_HDR_T  *hdr;
+    DESC_HDR_T  *hdr  = NULL;
     DESC_IF_T   *if_desc;
     IFACE_T     *iface = NULL;
     int         ret;
@@ -1176,8 +1209,10 @@ void print_usb_string(char *lead, uint8_t *str)
 int  connect_device(UDEV_T *udev)
 {
     DESC_CONF_T  *conf;
+    DESC_CONF_T  conf_header; // configer Header
     uint32_t     read_len;
     int          ret;
+    uint16_t     conf_total_len;
 
     USB_debug("Connect device =>\n");
 
@@ -1221,7 +1256,22 @@ int  connect_device(UDEV_T *udev)
         USB_debug("Warning! This device has multiple configurations [%d]. \n", udev->descriptor.bNumConfigurations);
     }
 
-    conf = (DESC_CONF_T *)usbh_alloc_mem(MAX_DESC_BUFF_SIZE);
+    /*------------------------------------------------------------------------------------*/
+    /*  Step 1: Get Configuration Descriptor Header (9 bytes) first                       */
+    /*------------------------------------------------------------------------------------*/
+    ret = usbh_get_config_descripotr_total_length(udev, &conf_header);
+
+    if (ret < 0)
+    {
+        USB_debug("Get config descriptor header failed!\n");
+        free_dev_address(udev->dev_num);
+        return ret;
+    }
+
+    conf_total_len = conf_header.wTotalLength;
+    USB_debug("Config Descriptor Total Length: %d\n", conf_total_len);
+
+    conf = (DESC_CONF_T *)usbh_alloc_mem(conf_total_len);
 
     if (conf == NULL)
     {
@@ -1232,7 +1282,7 @@ int  connect_device(UDEV_T *udev)
     udev->cfd_buff = (uint8_t *)conf;
 
     /* Get configuration descriptor again with new device address */
-    ret = usbh_get_config_descriptor(udev, (uint8_t *)conf, MAX_DESC_BUFF_SIZE);
+    ret = usbh_get_config_descriptor(udev, (uint8_t *)conf, conf_total_len);
 
     if (ret < 0)
     {
@@ -1310,6 +1360,7 @@ int  usbh_reset_device(UDEV_T *udev)
     IFACE_T      *iface;
     DESC_CONF_T  *conf;
     uint32_t     read_len;
+    uint16_t     conf_total_len;
     int          dev_num, ret;
 
     USB_debug("Reset device =>\n");
@@ -1378,9 +1429,10 @@ int  usbh_reset_device(UDEV_T *udev)
     /*------------------------------------------------------------------------------------*/
 
     conf = (DESC_CONF_T *)udev->cfd_buff;   /* using the previously allocated buffer      */
+    conf_total_len = conf->wTotalLength;
 
     /* Get configuration descriptor again with new device address */
-    ret = usbh_get_config_descriptor(udev, (uint8_t *)conf, MAX_DESC_BUFF_SIZE);
+    ret = usbh_get_config_descriptor(udev, (uint8_t *)conf, conf_total_len);
 
     if (ret < 0)
         return ret;
@@ -1428,15 +1480,41 @@ void disconnect_device(UDEV_T *udev)
 
     usbh_quit_xfer(udev, &(udev->ep0));    /* Quit control transfer if hw_pipe is not NULL.  */
 
-    /* Notified all actived interface device driver  */
+    /*------------------------------------------------------------------------------------*/
+    /* FCall driver's disconnect first to stop application layer transfer requests        */
+    /*------------------------------------------------------------------------------------*/
     iface = udev->iface_list;
 
-    while (iface != NULL)
+    while (iface != (void *)0)
+    {
+        IFACE_T *iface_next = iface->next;
+
+        if (iface->driver && iface->driver->disconnect)
+        {
+            iface->driver->disconnect(iface);  // stop application layer first (set flag_streaming = 0)
+        }
+
+        iface = iface_next;
+    }
+
+    /*------------------------------------------------------------------------------------*/
+    /* release Interface source                                                             */
+    /*------------------------------------------------------------------------------------*/
+    iface = udev->iface_list;
+
+    while (iface != (void *)0)
     {
         udev->iface_list = iface->next;
-        iface->driver->disconnect(iface);
         usbh_free_mem(iface, sizeof(*iface));
         iface = udev->iface_list;
+    }
+
+    if (udev->cfd_buff != NULL)
+    {
+        DESC_CONF_T *conf = (DESC_CONF_T *)udev->cfd_buff;
+        uint16_t total_len = conf->wTotalLength;
+        usbh_free_mem(udev->cfd_buff, total_len);
+        udev->cfd_buff = NULL;
     }
 
     /* remove device from global device list */

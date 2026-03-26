@@ -29,6 +29,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -44,6 +45,7 @@ project:
             - -Wno-stringop-overflow
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -77,9 +79,12 @@ project:
         - file: ../../../../ThirdParty/FatFs/source/ff.c
     - group: MP3Lib
       misc:
-      - for-compiler: AC6
-        C-CPP:
-        - -w
+        - for-compiler: AC6
+          C-CPP:
+            - -w
+        - for-compiler: GCC
+          C-CPP:
+            - -Wno-maybe-uninitialized
       files:
         - file: ../../../../ThirdParty/libmad/src/version.c
         - file: ../../../../ThirdParty/libmad/src/bit.c

@@ -90,7 +90,7 @@ void SYS_Init(void)
     CLK_EnableModuleClock(GPIOI_MODULE);
     CLK_EnableModuleClock(GPIOJ_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /* Enable OTG0_ module clock */
@@ -144,7 +144,6 @@ void PowerDown(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
-    uint8_t au8Str[9];
 #if CRYSTAL_LESS
     uint32_t u32TrimInit;
 #endif
@@ -227,9 +226,6 @@ int32_t main(void)
             PowerDown();
 
         CLK_SysTickDelay(2000);   // delay
-
-        if (++au8Str[1] > 0x39)
-            au8Str[1] = 0x30;      // increase 1 to 10 than reset to 0
 
         PE->DOUT ^= 0x40;
     }

@@ -128,31 +128,46 @@ static _S_MQTT_CLIENT_INFO *__client_init(const _S_MQTT_COMMON *s, _S_MQTT_CLIEN
 
     if (c == 0)
     {
+        TRACE("Initializing new MQTT client...");
         c = mqtt_client_init(1024, 30000, 30000, fail_upcall);
 
         if (c)
         {
-            options = mqtt_client_connect_options("agnishant_test", 60, 1, s->username, s->password);
+            TRACE("Creating connection options...");
+            char unique_client_id[32];
+            sprintf(unique_client_id, "NuMaker_%lu", (unsigned long)xTaskGetTickCount());
+            TRACE("Using Client ID: %s", unique_client_id);
+            options = mqtt_client_connect_options(unique_client_id, 60, 1, s->username, s->password);
         }
     }
     else
     {
+        TRACE("Reusing existing MQTT client...");
         options = c->options;
     }
 
+    TRACE("Checking connection status...");
+
     while (mqtt_client_is_connected(c) == 0)
     {
+        TRACE("Attempting MQTT connection to %s:%d...", s->server, s->port);
         _E_MQTT_ERRORS err = mqtt_client_connect(c, s->server, s->port, options, conf);
 
+        TRACE("Connection attempt result: %d", err);
         TRACE("mqtt client connect, err:%d", err);
 
         if (err == MQTT_ERROR_NONE)
         {
+            TRACE("MQTT connection successful!");
             break;
         }
 
+        TRACE("Connection failed, retrying in 50 seconds...");
         vTaskDelay(50000);
     }
+
+    TRACE("Client initialization completed, connection status: %s",
+          mqtt_client_is_connected(c) ? "Connected" : "Disconnected");
 
     return c;
 }
@@ -164,8 +179,6 @@ void dump(char *buf, int t, int len)
     for (i = 0; i < len; i++)
     {
         printf("%c ", buf[i]);
-        //if((i%16==0) &&(i!=0))
-        //  printf("\n");
     }
 
     printf("\n");
@@ -234,34 +247,62 @@ static void __mqtt_test(void *pv)
     } while (1);
 }
 #elif 1//SSL without CA
-//static const _S_MQTT_COMMON mc = {1883, "mqtt.flespi.io", 0, "FlespiToken QILc0P0LwrdSmJvZl2SXBaWXlzFrczlS8XSWAGyWVzE780WhQD4gDO3Mby1dVdTR", 0};
-static const _S_MQTT_COMMON mc = {8883, "mqtt.flespi.io", 1, "FlespiToken goP6bYxBYy7oMJUo2wd5jJcDzWVyYJN3WqXXdim1GjejQYxIkyCt8CUvmFUbdv2Z", 0};
+//FlespiToken is for testing only; users must obtain a unique token. https://flespi.com/
+static const _S_MQTT_COMMON mc = {8883, "mqtt.flespi.io", 1, "FlespiToken pJad9nrl7PtYbprccjrDbldYmEzPia4thANDYPB8JLtPDv1e3p0GtvhqPWYz6t4P", 0};
 static void __mqtt_test(void *pv)
 {
     tls_configuration_t *conf = lwip_tls_new_conf(TLS_AUTH_SSL_VERIFY_NONE, ENDNODE_CLIENT);
     tls_context_t *ssl; //clyu
 
     TRACE("Current Heap in LAN:%d", xPortGetFreeHeapSize());
+    TRACE("Starting MQTT client initialization...");
+
     subs_cinfo = __client_init(&mc, subs_cinfo, __connect_subscribe_failupcall, conf);
 
     if (subs_cinfo)
     {
+        TRACE("MQTT client connected successfully!");
         mbedtls_ssl_set_hostname((mbedtls_ssl_context *)subs_cinfo->ti->ssl, "mqtt.flespi.io");
         //mqtt_client_subscribe(subs_cinfo, "nishant/subs/test", 2, __subscribe_upcall);
+        TRACE("Subscribing to office/light1...");
         mqtt_client_subscribe(subs_cinfo, "office/light1", 2, __subscribe_upcall);
+        TRACE("Subscription completed, starting publish loop...");
+    }
+    else
+    {
+        TRACE("MQTT client initialization failed!");
+        vTaskSuspend(NULL);
+        return;
     }
 
     do
     {
-
         if (subs_cinfo)
         {
-            mqtt_client_publish(subs_cinfo, "my/data", "this is a test", 14, 2);
+            // Check connection status
+            if (mqtt_client_is_connected(subs_cinfo))
+            {
+                TRACE("MQTT Client is connected. Publishing messages...");
+                static uint32_t test_counter = 0;
+                test_counter++;
+
+                char simple_msg[64];
+                sprintf(simple_msg, "Test message #%lu from device", (unsigned long)test_counter);
+                TRACE("Publishing: '%s' to topic 'test/message'", simple_msg);
+                _E_MQTT_ERRORS result1 = mqtt_client_publish(subs_cinfo, "test/message", simple_msg, strlen(simple_msg), 0);
+                TRACE("Result: %d", result1);
+            }
+            else
+            {
+                TRACE("MQTT client disconnected! Attempting reconnection...");
+                subs_cinfo = __client_init(&mc, subs_cinfo, __connect_subscribe_failupcall, conf);
+            }
         }
 
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        // Wait 10 seconds or receive notification
+        TRACE("Waiting for next publish cycle...");
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
     } while (1);
-
 }
 #elif 0
 //static const _S_MQTT_COMMON mc = {1883, "mqtt.flespi.io", 0, "FlespiToken QILc0P0LwrdSmJvZl2SXBaWXlzFrczlS8XSWAGyWVzE780WhQD4gDO3Mby1dVdTR", 0};

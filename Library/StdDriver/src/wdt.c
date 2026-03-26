@@ -66,7 +66,10 @@ int32_t WDT_Open(WDT_T   *wdt,
 
     while ((wdt->CTL & WDT_CTL_SYNC_Msk) == WDT_CTL_SYNC_Msk) /* Wait enable WDTEN bit completed, it needs 4 * WDT_CLK. */
     {
-        if (--u32TimeOutCnt == 0) return WDT_ERR_TIMEOUT;
+        if (--u32TimeOutCnt == 0)
+        {
+            return WDT_ERR_TIMEOUT;
+        }
     }
 
     return WDT_OK;

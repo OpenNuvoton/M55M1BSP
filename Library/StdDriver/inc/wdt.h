@@ -76,7 +76,7 @@ extern "C"
   * @details    This macro clears WDT time-out reset system flag.
   * \hideinitializer
   */
-#define WDT_CLEAR_RESET_FLAG(wdt)          (wdt->STATUS = (wdt->STATUS & ~(WDT_STATUS_IF_Msk | WDT_STATUS_WKF_Msk)) | WDT_STATUS_RSTF_Msk)
+#define WDT_CLEAR_RESET_FLAG(wdt)          ((wdt)->STATUS = ((wdt)->STATUS & ~(WDT_STATUS_IF_Msk | WDT_STATUS_WKF_Msk)) | WDT_STATUS_RSTF_Msk)
 
 /**
   * @brief      Clear WDT Time-out Interrupt Flag
@@ -87,7 +87,7 @@ extern "C"
   * @details    This macro clears WDT time-out interrupt flag.
   * \hideinitializer
   */
-#define WDT_CLEAR_TIMEOUT_INT_FLAG(wdt)    (wdt->STATUS = (wdt->STATUS & ~(WDT_STATUS_RSTF_Msk | WDT_STATUS_WKF_Msk)) | WDT_STATUS_IF_Msk)
+#define WDT_CLEAR_TIMEOUT_INT_FLAG(wdt)    ((wdt)->STATUS = ((wdt)->STATUS & ~(WDT_STATUS_RSTF_Msk | WDT_STATUS_WKF_Msk)) | WDT_STATUS_IF_Msk)
 
 /**
   * @brief      Clear WDT Wake-up Flag
@@ -98,7 +98,7 @@ extern "C"
   * @details    This macro clears WDT time-out wake-up system flag.
   * \hideinitializer
   */
-#define WDT_CLEAR_TIMEOUT_WAKEUP_FLAG(wdt) (wdt->STATUS= (wdt->STATUS & ~(WDT_STATUS_RSTF_Msk | WDT_STATUS_IF_Msk)) | WDT_STATUS_WKF_Msk)
+#define WDT_CLEAR_TIMEOUT_WAKEUP_FLAG(wdt) ((wdt)->STATUS= ((wdt)->STATUS & ~(WDT_STATUS_RSTF_Msk | WDT_STATUS_IF_Msk)) | WDT_STATUS_WKF_Msk)
 
 /**
   * @brief      Get WDT Time-out Reset Flag
@@ -111,7 +111,7 @@ extern "C"
   * @details    This macro indicates system has been reset by WDT time-out reset or not.
   * \hideinitializer
   */
-#define WDT_GET_RESET_FLAG(wdt)            ((wdt->STATUS & WDT_STATUS_RSTF_Msk)? 1UL : 0UL)
+#define WDT_GET_RESET_FLAG(wdt)            (((wdt)->STATUS & WDT_STATUS_RSTF_Msk)? 1UL : 0UL)
 
 /**
   * @brief      Get WDT Time-out Interrupt Flag
@@ -124,7 +124,7 @@ extern "C"
   * @details    This macro indicates WDT time-out interrupt occurred or not.
   * \hideinitializer
   */
-#define WDT_GET_TIMEOUT_INT_FLAG(wdt)      ((wdt->STATUS & WDT_STATUS_IF_Msk)? 1UL : 0UL)
+#define WDT_GET_TIMEOUT_INT_FLAG(wdt)      (((wdt)->STATUS & WDT_STATUS_IF_Msk)? 1UL : 0UL)
 
 /**
   * @brief      Get WDT Time-out Wake-up Flag
@@ -137,7 +137,7 @@ extern "C"
   * @details    This macro indicates WDT time-out interrupt event has waked up system or not.
   * \hideinitializer
   */
-#define WDT_GET_TIMEOUT_WAKEUP_FLAG(wdt)   ((wdt->STATUS & WDT_STATUS_WKF_Msk)? 1UL : 0UL)
+#define WDT_GET_TIMEOUT_WAKEUP_FLAG(wdt)   (((wdt)->STATUS & WDT_STATUS_WKF_Msk)? 1UL : 0UL)
 
 /**
   * @brief      Reset WDT Counter
@@ -151,7 +151,7 @@ extern "C"
   *             reset system before the WDT time-out reset delay period expires.
   * \hideinitializer
   */
-#define WDT_RESET_COUNTER(wdt)             (wdt->RSTCNT = WDT_RESET_COUNTER_KEYWORD)
+#define WDT_RESET_COUNTER(wdt)             ((wdt)->RSTCNT = WDT_RESET_COUNTER_KEYWORD)
 
 /* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
 __STATIC_INLINE void WDT_Close(WDT_T *wdt);

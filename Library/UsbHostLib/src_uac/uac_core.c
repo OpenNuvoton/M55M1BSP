@@ -501,8 +501,15 @@ int  usbh_uac_find_best_alt(IFACE_T *iface, uint8_t dir, uint8_t attr, int pkt_s
 
 static void iso_in_irq(UTR_T *utr)
 {
-    UAC_DEV_T   *uac = (UAC_DEV_T *)utr->context;
+    UAC_DEV_T   *uac;
     int         i, ret;
+
+    if (!utr || !utr->udev)
+    {
+        return;
+    }
+
+    uac = (UAC_DEV_T *)utr->context;
 
     /* We don't want to do anything if we are about to be removed! */
     if (!uac || !uac->udev)
@@ -513,10 +520,17 @@ static void iso_in_irq(UTR_T *utr)
 
     //UAC_DBGMSG("SF=%d, 0x%x\n", utr->iso_sf, (int)utr);
 
+    __DMB();// Data Memory Barrier
+
     utr->bIsoNewSched = 0;
 
     for (i = 0; i < IF_PER_UTR; i++)
     {
+        if (uac->asif_in.flag_streaming == 0)
+        {
+            return;
+        }
+
         if (utr->iso_status[i] == 0)
         {
             if ((uac->func_au_in != NULL) && (utr->iso_xlen[i] > 0))
@@ -532,6 +546,18 @@ static void iso_in_irq(UTR_T *utr)
 
         utr->iso_xlen[i] = utr->ep->wMaxPacketSize;
     }
+
+    /**
+     * @brief Re-check the udev to prevent it from being set to NULL during execution
+     * @note This is a safety check to ensure the USB device pointer remains valid
+     *       throughout the operation lifecycle
+     */
+    if (!utr->udev || uac->asif_in.flag_streaming == 0)
+    {
+        return;
+    }
+
+    __DMB();
 
     /* schedule the following isochronous transfers */
     ret = usbh_iso_xfer(utr);
@@ -716,9 +742,29 @@ err_out:
 int usbh_uac_stop_audio_in(UAC_DEV_T *uac)
 {
     AS_IF_T      *asif = &uac->asif_in;
+    UDEV_T       *udev;
     int          i, ret;
 
+    udev = uac->udev;
+
+    if (!udev)
+        return UAC_RET_DEV_NOT_FOUND;
+
+
     asif->flag_streaming = 0;
+
+    for (i = 0; i < NUM_UTR; i++)
+    {
+        if (asif->utr[i])
+        {
+            asif->utr[i]->udev = NULL;  // Prevent td_done from calling callback
+        }
+    }
+
+    if (asif->ep && asif->ep->hw_pipe)
+    {
+        usbh_quit_xfer(uac->udev, asif->ep);  // Pass EP pointer to ensure ED is added to remove list
+    }
 
     /* Set interface alternative settings */
     if (uac->state != UAC_STATE_DISCONNECTING)
@@ -731,15 +777,12 @@ int usbh_uac_stop_audio_in(UAC_DEV_T *uac)
         }
     }
 
-    for (i = 0; i < NUM_UTR; i++)           /* stop all UTRs                              */
-    {
-        if (asif->utr[i])
-            usbh_quit_utr(asif->utr[i]);
-    }
 
-    if ((asif->utr[0] != NULL) &&
-            (asif->utr[0]->buff != NULL))   /* free audio buffer                          */
-        usbh_free_mem(asif->utr[0]->buff, asif->utr[0]->data_len * NUM_UTR);
+    if ((asif->utr[0] != (void *)0) &&
+            (asif->utr[0]->buff != (void *)0))   /* free audio buffer                          */
+    {
+        (void)usbh_free_mem(asif->utr[0]->buff, asif->utr[0]->data_len * NUM_UTR);
+    }
 
     for (i = 0; i < NUM_UTR; i++)           /* free all UTRs                              */
     {
@@ -764,16 +807,27 @@ int usbh_uac_stop_audio_in(UAC_DEV_T *uac)
 
 static void iso_out_irq(UTR_T *utr)
 {
-    UAC_DEV_T   *uac = (UAC_DEV_T *)utr->context;
+    UAC_DEV_T   *uac;
 
     int         i, ret;
+
+    if (!utr || !utr->udev)
+    {
+        return;
+    }
+
+    uac = (UAC_DEV_T *)utr->context;
 
     /* We don't want to do anything if we are about to be removed! */
     if (!uac || !uac->udev)
         return;
 
     if (uac->asif_out.flag_streaming == 0)
+    {
         return;
+    }
+
+    __DMB();
 
     //UAC_DBGMSG("SF=%d, 0x%x\n", utr->iso_sf, (int)utr);
 
@@ -781,6 +835,11 @@ static void iso_out_irq(UTR_T *utr)
 
     for (i = 0; i < IF_PER_UTR; i++)
     {
+        if (uac->asif_out.flag_streaming == 0)
+        {
+            return;
+        }
+
         if (utr->iso_status[i] != 0)
         {
             // UAC_DBGMSG("Iso %d err - %d\n", i, utr->iso_status[i]);
@@ -790,6 +849,13 @@ static void iso_out_irq(UTR_T *utr)
 
         utr->iso_xlen[i] = uac->func_au_out(uac, utr->iso_buff[i], utr->ep->wMaxPacketSize);
     }
+
+    if (!utr->udev || uac->asif_out.flag_streaming == 0)
+    {
+        return;
+    }
+
+    __DMB();
 
     /* schedule the following isochronous transfers */
     ret = usbh_iso_xfer(utr);
@@ -974,7 +1040,21 @@ err_out:
 int usbh_uac_stop_audio_out(UAC_DEV_T *uac)
 {
     AS_IF_T      *asif = &uac->asif_out;
-    int          i, ret;
+    int          i;
+    int          ret;
+
+    for (i = 0; i < NUM_UTR; i++)
+    {
+        if (asif->utr[i])
+        {
+            asif->utr[i]->udev = NULL;  // Prevent td_done from calling callback
+        }
+    }
+
+    if (asif->ep && asif->ep->hw_pipe)
+    {
+        usbh_quit_xfer(uac->udev, asif->ep);
+    }
 
     /* Set interface alternative settings */
     if (uac->state != UAC_STATE_DISCONNECTING)
@@ -987,15 +1067,11 @@ int usbh_uac_stop_audio_out(UAC_DEV_T *uac)
         }
     }
 
-    for (i = 0; i < NUM_UTR; i++)           /* stop all UTRs                              */
+    if ((asif->utr[0] != (void *)0) &&
+            (asif->utr[0]->buff != (void *)0))   /* free audio buffer                          */
     {
-        if (asif->utr[i])
-            usbh_quit_utr(asif->utr[i]);
+        (void)usbh_free_mem(asif->utr[0]->buff, asif->utr[0]->data_len * NUM_UTR);
     }
-
-    if ((asif->utr[0] != NULL) &&
-            (asif->utr[0]->buff != NULL))   /* free audio buffer                          */
-        usbh_free_mem(asif->utr[0]->buff, asif->utr[0]->data_len * NUM_UTR);
 
     for (i = 0; i < NUM_UTR; i++)           /* free all UTRs                              */
     {

@@ -1,10 +1,11 @@
 /******************************************************************************
  * @file     usbd_hid.h
- * @brief    M55M1 series USB driver header file
+ * @brief    USB HID driver header file
  *
- * @copyright SPDX-License-Identifier: Apache-2.0
- * @copyright Copyright (C) 2020 Nuvoton Technology Corp. All rights reserved.
- ******************************************************************************/
+ * SPDX-License-Identifier: Apache-2.0
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
+ *****************************************************************************/
+
 #ifndef __USBD_HID_H__
 #define __USBD_HID_H__
 
@@ -74,4 +75,4 @@ void HID_GetOutReport(uint8_t *pu8EpBuf, uint32_t u32Size);
 
 #endif  /* __USBD_HID_H_ */
 
-/*** (C) COPYRIGHT 2020 Nuvoton Technology Corp. ***/
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

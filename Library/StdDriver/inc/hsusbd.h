@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     hsusbd.h
  * @version  V1.00
- * @brief    M55M1 series HSUSBD driver header file
+ * @brief    HSUSBD driver header file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -122,8 +122,6 @@ typedef struct HSUSBD_CMD_STRUCT
 } S_HSUSBD_CMD_T; /*!<USB Setup Packet Structure */
 
 
-
-
 typedef struct s_hsusbd_info
 {
     uint8_t *gu8DevDesc;            /*!< Device descriptor */
@@ -144,6 +142,12 @@ typedef struct s_hsusbd_info
 /** @} end of group HSUSBD_EXPORTED_STRUCT */
 
 /** @cond HIDDEN_SYMBOLS */
+typedef void (*HSUSBD_VENDOR_REQ)(void); /*!<USB Vendor request callback function */
+typedef void (*HSUSBD_CLASS_REQ)(void); /*!<USB Class request callback function */
+typedef void (*HSUSBD_SET_INTERFACE_REQ)(uint32_t u32AltInterface); /*!<USB Standard request "Set Interface" callback function */
+extern HSUSBD_VENDOR_REQ g_hsusbd_pfnVendorRequest;
+extern HSUSBD_CLASS_REQ g_hsusbd_pfnClassRequest;
+extern HSUSBD_SET_INTERFACE_REQ g_hsusbd_pfnSetInterface;
 extern uint32_t g_u32HsEpStallLock;
 extern uint8_t volatile g_hsusbd_Configured;
 extern uint8_t g_hsusbd_ShortPacket;
@@ -204,11 +208,11 @@ extern volatile uint8_t g_hsusbd_RemoteWakeupEn;
   * @param[in]  u32Size Copy size.
   * @retval None.
   */
-__STATIC_INLINE void HSUSBD_MemCopy(uint8_t u8Dst[], uint8_t u8Src[], uint32_t u32Size)
+__STATIC_INLINE void HSUSBD_MemCopy(uint8_t u8Dst[], const uint8_t u8Src[], uint32_t u32Size)
 {
     uint32_t i = 0ul;
 
-    while (u32Size--)
+    while (i < u32Size)
     {
         u8Dst[i] = u8Src[i];
         i++;
@@ -226,6 +230,7 @@ __STATIC_INLINE void HSUSBD_ResetDMA(void)
     HSUSBD->DMACTL = 0x80ul;
     HSUSBD->DMACTL = 0x00ul;
 }
+
 /**
   * @brief  HSUSBD_SetEpBufAddr, Set Endpoint buffer address
   * @param[in]  u32Ep      Endpoint Number
@@ -269,6 +274,10 @@ __STATIC_INLINE void HSUSBD_ConfigEp(uint32_t u32Ep, uint32_t u32EpNum, uint32_t
     {
         HSUSBD->EP[u32Ep].EPRSPCTL = (HSUSBD_EP_RSPCTL_FLUSH | HSUSBD_EP_RSPCTL_MODE_FLY);
     }
+    else
+    {
+        /* Not Supported */
+    }
 
     HSUSBD->EP[u32Ep].EPCFG = (u32EpType | u32EpDir | HSUSBD_EP_CFG_VALID | (u32EpNum << 4));
 }
@@ -301,15 +310,13 @@ __STATIC_INLINE void HSUSBD_SetEpStall(uint32_t u32Ep)
  */
 __STATIC_INLINE void HSUSBD_SetStall(uint32_t u32EpNum)
 {
-    uint32_t i;
-
     if (u32EpNum == 0ul)
     {
         HSUSBD_SET_CEP_STATE(HSUSBD_CEPCTL_STALL);
     }
     else
     {
-        for (i = 0ul; i < HSUSBD_MAX_EP; i++)
+        for (uint32_t i = 0ul; i < HSUSBD_MAX_EP; i++)
         {
             if (((HSUSBD->EP[i].EPCFG & 0xf0ul) >> 4) == u32EpNum)
             {
@@ -407,7 +414,7 @@ __STATIC_INLINE void SYS_Enable_HSUSB_PHY(void)
     SYS->USBPHY = (SYS->USBPHY & ~SYS_USBPHY_HSUSBACT_Msk) | SYS_USBPHY_HSOTGPHYEN_Msk;
 
     /* HSOTG PHY at reset mode at least 10us before changing to active mode */
-    for (i = 0; i < 0x1000; i++)
+    for (i = 0; i < 0x1000UL; i++)
     {
         __NOP();
     }
@@ -444,10 +451,6 @@ __STATIC_INLINE int32_t HSUSBD_Enable_PHY(void)
 }
 
 /*-------------------------------------------------------------------------------------------*/
-typedef void (*HSUSBD_VENDOR_REQ)(void); /*!<USB Vendor request callback function */
-typedef void (*HSUSBD_CLASS_REQ)(void); /*!<USB Class request callback function */
-typedef void (*HSUSBD_SET_INTERFACE_REQ)(uint32_t u32AltInterface); /*!<USB Standard request "Set Interface" callback function */
-
 int32_t HSUSBD_Open(S_HSUSBD_INFO_T *param, HSUSBD_CLASS_REQ pfnClassReq, HSUSBD_SET_INTERFACE_REQ pfnSetInterface);
 void HSUSBD_Start(void);
 void HSUSBD_ProcessSetupPacket(void);
@@ -467,6 +470,7 @@ void HSUSBD_SetVendorRequest(HSUSBD_VENDOR_REQ pfnVendorReq);
 
 #ifdef __cplusplus
 }
+
 #endif
 
 #endif /*__HSUSBD_H__ */

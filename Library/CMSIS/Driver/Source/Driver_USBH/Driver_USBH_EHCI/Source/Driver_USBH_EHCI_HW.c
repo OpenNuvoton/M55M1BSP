@@ -24,14 +24,15 @@
  *
  * -----------------------------------------------------------------------------
  */
-
-#ifdef    RTE_device_header
-    #include  RTE_device_header
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
+#ifdef    PRJ_RTE_DEVICE_HEADER
+    #include  PRJ_RTE_DEVICE_HEADER
 #else
     #include "RTE_Device/RTE_Device.h"
 #endif
 
-#include "cmsis_os2.h"
 
 #include "NuMicro.h"
 #include "Driver_USBH_EHCI_Config.h"

@@ -482,7 +482,7 @@ void UART_Commandshell(int port)
                 {
                     static uint32_t u32ReqIndex = 0, i;
                     static uint32_t u32ReqVol = 0;
-                    uint32_t u32Req_mv;
+                    uint32_t u32Req_mv = 0;
                     uint32_t u32minmv = 0, u32maxmv = 0, u32curr = 0;
                     int32_t i32SrcCnt, i32SrcArray[7];
 
@@ -517,8 +517,6 @@ void UART_Commandshell(int port)
                         break;
                     }
 
-
-
                     if ((i32SrcArray[u32ReqIndex - 1] & PDO_TYPE_AUGMENTED) == PDO_TYPE_AUGMENTED)
                     {
                         /* Reqest Fixed PDO */
@@ -544,20 +542,6 @@ void UART_Commandshell(int port)
                 }
                 break;
 
-                case VBUS_VOL:
-                {
-                    float vbus_vol;
-                    uint16_t u16VbusVol, u16VconnVol;
-                    UTCPD_GetVoltagInfo(port, &u16VbusVol, &u16VconnVol);
-                    printf("Get %d\n", u16VbusVol);
-                    vbus_vol = u16VbusVol / 1024.*3.5 * E_VBUS_DIVIDER;
-                    printf("VBUS = %fV\n", vbus_vol);
-                }
-                break;
-
-                case VBUS_CUR:
-                    break;
-
                 default:
                     printf("Unknown command\n");
             }
@@ -566,4 +550,5 @@ void UART_Commandshell(int port)
         }
     } while (0);
 }
+
 #endif

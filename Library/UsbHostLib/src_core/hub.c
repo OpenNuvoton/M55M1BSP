@@ -344,6 +344,20 @@ void hub_disconnect(IFACE_T *iface)
     /*
      *  disconnect all device under this hub
      */
+
+    if (hub->utr)
+    {
+        HUB_DBGMSG("[HUB] quit utr\n");
+        EP_INFO_T *ep = hub->utr->ep;
+
+        if (ep && ep->hw_pipe)
+        {
+            usbh_quit_xfer(hub->iface->udev, ep);
+        }
+
+        free_utr(hub->utr);
+    }
+
     for (port = 1; port <= hub->bNbrPorts; port++)
     {
         udev = usbh_find_device(hub->pos_id, port);
@@ -353,12 +367,6 @@ void hub_disconnect(IFACE_T *iface)
             HUB_DBGMSG("Disconnect HUB [%s] port %d device 0x%x:0x%x\n", hub->pos_id, port, udev->descriptor.idVendor, udev->descriptor.idProduct);
             disconnect_device(udev);
         }
-    }
-
-    if (hub->utr)
-    {
-        usbh_quit_utr(hub->utr);
-        free_utr(hub->utr);
     }
 
     HUB_DBGMSG("Disconnect HUB [%s].\n", hub->pos_id);
@@ -604,7 +612,7 @@ static int  hub_polling(void)
 {
     HUB_DEV_T   *hub;
     UTR_T       *utr;
-    int         i, ret, port, change = 0;
+    int         i, ret = 0, port, change = 0;
 
     if (_hub_polling_mutex)                 /* do nothing                                 */
         return 0;

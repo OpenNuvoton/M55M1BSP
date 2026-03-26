@@ -14,6 +14,8 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
+volatile uint8_t   g_u8BusOffFlag = 0;
+volatile uint32_t  g_u32BusOffRecoveryCounter = 0;
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Define functions prototype                                                                              */
@@ -22,6 +24,8 @@ int32_t main(void);
 void SYS_Init(void);
 void CANFD_Init(void);
 void CANFD_TxRxTest(void);
+uint8_t CANFD_BusOffRecovery(void);
+uint8_t CANFD_CheckBusOffStatus(void);
 
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
     extern void initialise_monitor_handles(void);
@@ -121,6 +125,92 @@ void CANFD_Init(void)
 
 
 /*---------------------------------------------------------------------------------------------------------*/
+/*                                 CAN FD Bus-Off Status Check Function                                   */
+/*---------------------------------------------------------------------------------------------------------*/
+uint8_t CANFD_CheckBusOffStatus(void)
+{
+    uint32_t u32IntStatus;
+
+    /* Read interrupt status register */
+    u32IntStatus = CANFD0->IR;
+
+    /* Check Bus-Off status */
+    if (u32IntStatus & CANFD_IR_BO_Msk)
+    {
+        if (CANFD0->PSR & CANFD_PSR_BO_Msk)
+        {
+            printf("Bus-Off detected!\n");
+            g_u8BusOffFlag = 1;
+        }
+
+        /* Clear Bus-Off interrupt flag */
+        CANFD_ClearStatusFlag(CANFD0, CANFD_IR_BO_Msk);
+        /* Bus-Off detected */
+        return 1;
+    }
+
+    /* Check Error Warning status */
+    if (u32IntStatus & CANFD_IR_EW_Msk)
+    {
+        printf("Error warning flag is set.\n");
+        CANFD_ClearStatusFlag(CANFD0, CANFD_IR_EW_Msk);
+    }
+
+    /* Check Error Passive status */
+    if (u32IntStatus & CANFD_IR_EP_Msk)
+    {
+        printf("Error passive flag is set.\n");
+        CANFD_ClearStatusFlag(CANFD0, CANFD_IR_EP_Msk);
+    }
+
+    /* No Bus-Off detected */
+    return 0;
+}
+
+
+/*---------------------------------------------------------------------------------------------------------*/
+/*                                 CAN FD Bus-Off Recovery Function                                        */
+/*---------------------------------------------------------------------------------------------------------*/
+uint8_t CANFD_BusOffRecovery(void)
+{
+    printf("Starting CAN FD Bus-Off recovery sequence...\n");
+
+    /* CAN FD0 run to initial mode */
+    CANFD_RunToNormal(CANFD0, FALSE);
+
+    /* Cancel all transmit requests */
+    CANFD0->TXBCR = 0xFFFFFFFF;
+
+    /* Clear all interrupt flag */
+    CANFD_ClearStatusFlag(CANFD0, 0xFFFFFFFF);
+
+    /* CAN FD0 run to normal mode */
+    CANFD_RunToNormal(CANFD0, TRUE);
+
+    /* 50ms delay after recovery process */
+    CLK_SysTickDelay(50000);
+
+    /* Check if recovery was successful by verifying Bus-Off status */
+    if (CANFD0->PSR & CANFD_PSR_BO_Msk)
+    {
+        /* Still in Bus-Off state, recovery failed */
+        printf("CAN FD Bus-Off recovery failed. Still in Bus-Off state.\n");
+        /* Recovery failed */
+        return 0;
+    }
+    else
+    {
+        /* Recovery successful, clear Bus-Off flag */
+        g_u8BusOffFlag = 0;
+        g_u32BusOffRecoveryCounter++;
+        printf("CAN FD Bus-Off recovery completed. Recovery count: %u\n", g_u32BusOffRecoveryCounter);
+        /* Recovery successful */
+        return 1;
+    }
+}
+
+
+/*---------------------------------------------------------------------------------------------------------*/
 /*  CAN FD Function Test                                                                                    */
 /*---------------------------------------------------------------------------------------------------------*/
 void CANFD_TxRxTest(void)
@@ -141,6 +231,7 @@ void CANFD_TxRxTest(void)
     printf("|    and the other is slave(CAN FD receiver). Master will send 6 messages  |\n");
     printf("|    with different sizes of data and ID to the slave. Slave will check if |\n");
     printf("|    received data is correct after getting 6 messages data.               |\n");
+    printf("|    Bus-Off recovery feature is enabled for error handling.               |\n");
     printf("|  Please select Master or Slave test                                      |\n");
     printf("|  [0] Master(CAN FD transmitter)    [1] Slave(CAN FD receiver)            |\n");
     printf("+--------------------------------------------------------------------------+\n\n");
@@ -154,6 +245,25 @@ void CANFD_TxRxTest(void)
         /* Send 6 messages with different ID and data size */
         for (u8TxTestNum = 0; u8TxTestNum < 6 ; u8TxTestNum++)
         {
+            /* Check for Bus-Off status before transmission */
+            CANFD_CheckBusOffStatus();
+
+            /* Check if CAN FD is in Bus-Off state before transmitting */
+            if (g_u8BusOffFlag)
+            {
+                printf("CAN FD is in Bus-Off state. Starting recovery process...\n");
+
+                if (CANFD_BusOffRecovery())
+                {
+                    printf("Bus-Off recovery successful. Proceeding with transmission.\n");
+                }
+                else
+                {
+                    printf("Bus-Off recovery failed. Skipping transmission.\n");
+                    continue; /* Skip this transmission and try next */
+                }
+            }
+
             printf("Start to CAN FD Bus Transmitter :\n");
 
             /* Set the ID Number */
@@ -201,11 +311,28 @@ void CANFD_TxRxTest(void)
             if (CANFD_TransmitTxMsg(CANFD0, 0, &sTxMsgFrame) != eCANFD_TRANSMIT_SUCCESS)
             {
                 printf("Failed to transmit message\n");
+
+                /* Check if failure was due to bus-off condition */
+                if (CANFD_CheckBusOffStatus())
+                {
+                    printf("Transmission failed due to Bus-Off condition.\n");
+                }
+            }
+            else
+            {
+                /* Check for any error conditions after successful transmission */
+                CANFD_CheckBusOffStatus();
+                printf("Message transmitted successfully.\n");
             }
 
         }
 
         printf("\n Transmit Done\n");
+
+        if (g_u32BusOffRecoveryCounter > 0)
+        {
+            printf("Total Bus-Off recovery cycles: %u\n", g_u32BusOffRecoveryCounter);
+        }
     }
     else
     {

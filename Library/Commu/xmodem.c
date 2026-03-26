@@ -360,11 +360,11 @@ START_TRANS:
 
             if (c > bufsz) c = bufsz;
 
-            if (c > 0)
+            if (c >= 0)
             {
                 memset(&s_au8XmdBuf[3], 0, (uint32_t)bufsz);
 
-                if ((c % bufsz) != 0)   /* Pad XMD_CTRLZ if left data is not align with bufsz */
+                if (c == 0)
                 {
                     s_au8XmdBuf[3] = XMD_CTRLZ;
                 }
@@ -374,7 +374,7 @@ START_TRANS:
                     memcpy(&s_au8XmdBuf[3], pu8Src, (uint32_t)c);
                     pu8Src += c;
 
-                    if (c < bufsz) s_au8XmdBuf[3 + c] = XMD_CTRLZ;
+                    if (c < bufsz) s_au8XmdBuf[3 + c] = XMD_CTRLZ;  /* Pad XMD_CTRLZ if left data is not align with bufsz */
                 }
 
                 if (crc)

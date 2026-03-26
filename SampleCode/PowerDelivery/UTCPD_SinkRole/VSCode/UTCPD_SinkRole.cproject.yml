@@ -29,6 +29,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -43,6 +44,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -80,6 +82,6 @@ project:
     - group: Library
       files:
         - file: ../../../../Library/PowerDeliveryLib/PD_SNK.lib
-          for-compiler: AC6    
+          for-compiler: AC6
         - file: ../../../../Library/PowerDeliveryLib/libPD_SNK.a
           for-compiler: GCC

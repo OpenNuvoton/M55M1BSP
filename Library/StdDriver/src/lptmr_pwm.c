@@ -27,7 +27,7 @@
   * @param[in]  u32Frequency    Target generator frequency.
   * @param[in]  u32DutyCycle    Target generator duty cycle percentage. Valid range are between 0~100. 10 means 10%, 20 means 20%...
   *
-  * @return     Nearest frequency clock in nano second
+  * @return     Nearest frequency clock
   *
   * @details    This API is used to configure LPTPWM output frequency and duty cycle in up count type and auto-reload operation mode.
   * @note       This API is only available if LPTMR PWM counter clock source is from LPTMRx_CLK.
@@ -35,8 +35,11 @@
 uint32_t LPTPWM_ConfigOutputFreqAndDuty(LPTMR_T *lptmr, uint32_t u32Frequency, uint32_t u32DutyCycle)
 {
     uint32_t u32PWMClockFreq, u32TargetFreq = 0UL, u32Src = 0UL;
-    uint32_t u32Prescaler = 0x100UL, u32Period;
+    uint32_t u32Prescaler = 0x100UL, u32Period = 1UL;
     const uint32_t au32Clk[] = {0UL, __LXT, __LIRC, __MIRC, __HIRC, 0UL};
+
+    if (u32Frequency == 0)
+        return u32Frequency;
 
     if (lptmr == LPTMR0)
     {
@@ -62,7 +65,10 @@ uint32_t LPTPWM_ConfigOutputFreqAndDuty(LPTMR_T *lptmr, uint32_t u32Frequency, u
         u32PWMClockFreq = au32Clk[u32Src];
     }
 
-    /* Calculate u8PERIOD and u8PSC */
+    if (u32Frequency > u32PWMClockFreq)
+        return 0;
+
+    /* Calculate u32Period and u32Prescaler */
     for (u32Prescaler = 1; u32Prescaler <= 0x100UL; u32Prescaler++)
     {
         u32Period = (u32PWMClockFreq / u32Prescaler) / u32Frequency;

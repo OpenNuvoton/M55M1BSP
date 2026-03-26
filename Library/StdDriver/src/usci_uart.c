@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     usci_uart.c
  * @version  V1.00
- * @brief    M55M1 series USCI_UART driver source file
+ * @brief    USCI_UART driver source file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -102,10 +102,11 @@ void UUART_ClearIntFlag(UUART_T *uuart, uint32_t u32Mask)
  *    @details      The function is used to get USCI_UART related interrupt flags specified by u32Mask parameter.
  */
 
-uint32_t UUART_GetIntFlag(UUART_T *uuart, uint32_t u32Mask)
+uint32_t UUART_GetIntFlag(const UUART_T *uuart, uint32_t u32Mask)
 {
-    uint32_t u32IntFlag = 0ul;
-    uint32_t u32Tmp1, u32Tmp2;
+    uint32_t u32IntFlag = 0UL;
+    uint32_t u32Tmp1;
+    uint32_t u32Tmp2;
 
     /* Check Auto-baud Rate Interrupt Flag */
     u32Tmp1 = (u32Mask & UUART_ABR_INT_MASK);
@@ -186,7 +187,7 @@ uint32_t UUART_GetIntFlag(UUART_T *uuart, uint32_t u32Mask)
  */
 void UUART_Close(UUART_T *uuart)
 {
-    uuart->CTL = 0ul;
+    uuart->CTL = 0UL;
 }
 
 
@@ -275,7 +276,7 @@ void UUART_DisableInt(UUART_T *uuart, uint32_t u32Mask)
  *
  *    @details      The function is used to enable USCI_UART related interrupts specified by u32Mask parameter.
  */
-void UUART_EnableInt(UUART_T  *uuart, uint32_t u32Mask)
+void UUART_EnableInt(UUART_T *uuart, uint32_t u32Mask)
 {
     /* Enable Auto-baud rate interrupt flag */
     if ((u32Mask & UUART_ABR_INT_MASK) == UUART_ABR_INT_MASK)
@@ -333,8 +334,12 @@ void UUART_EnableInt(UUART_T  *uuart, uint32_t u32Mask)
  */
 uint32_t UUART_Open(UUART_T *uuart, uint32_t u32baudrate)
 {
-    uint32_t u32PCLKFreq, u32PDSCnt, u32DSCnt, u32ClkDiv;
-    uint32_t u32Tmp, u32Tmp2, u32Min, u32MinClkDiv, u32MinDSCnt;
+    uint32_t u32PCLKFreq;
+    uint32_t u32PDSCnt;
+    uint32_t u32Tmp;
+    uint32_t u32Tmp2;
+    uint32_t u32MinClkDiv = 0UL;
+    uint32_t u32MinDSCnt = 0UL;
     uint32_t u32Div;
 
     /* Get PCLK frequency */
@@ -342,61 +347,67 @@ uint32_t UUART_Open(UUART_T *uuart, uint32_t u32baudrate)
 
     u32Div = u32PCLKFreq / u32baudrate;
     u32Tmp = (u32PCLKFreq / u32Div) - u32baudrate;
-    u32Tmp2 = u32baudrate - (u32PCLKFreq / (u32Div + 1ul));
+    u32Tmp2 = u32baudrate - (u32PCLKFreq / (u32Div + 1UL));
 
-    if (u32Tmp >= u32Tmp2) u32Div = u32Div + 1ul;
+    if (u32Tmp >= u32Tmp2)
+    {
+        u32Div = u32Div + 1UL;
+    }
 
-    if (u32Div >= 65536ul)
+    if (u32Div >= 65536UL)
     {
 
         /* Set the smallest baud rate that USCI_UART can generate */
-        u32PDSCnt = 0x4ul;
-        u32MinDSCnt = 0x10ul;
-        u32MinClkDiv = 0x400ul;
-
+        u32PDSCnt = 0x4UL;
+        u32MinDSCnt = 0x10UL;
+        u32MinClkDiv = 0x400UL;
     }
     else
     {
+        u32Tmp = 0x400UL * 0x10UL;
 
-        u32Tmp = 0x400ul * 0x10ul;
-
-        for (u32PDSCnt = 1ul; u32PDSCnt <= 0x04ul; u32PDSCnt++)
+        for (u32PDSCnt = 1UL; u32PDSCnt <= 0x04UL; u32PDSCnt++)
         {
-            if (u32Div <= (u32Tmp * u32PDSCnt)) break;
+            if (u32Div <= (u32Tmp * u32PDSCnt))
+            {
+                break;
+            }
         }
 
-        if (u32PDSCnt > 0x4ul) u32PDSCnt = 0x4ul;
+        if (u32PDSCnt > 0x4UL)
+        {
+            u32PDSCnt = 0x4UL;
+        }
 
         u32Div = u32Div / u32PDSCnt;
 
         /* Find best solution */
-        u32Min = (uint32_t) - 1;
-        u32MinDSCnt = 0ul;
-        u32MinClkDiv = 0ul;
-        u32Tmp = 0ul;
+        uint32_t u32Min = (uint32_t) - 1UL;
 
-        for (u32DSCnt = 6ul; u32DSCnt <= 0x10ul; u32DSCnt++)  /* DSCNT could be 0x5~0xF */
+        for (uint32_t u32DSCnt = 6UL; u32DSCnt <= 0x10UL; u32DSCnt++)  /* DSCNT could be 0x5~0xF */
         {
+            uint32_t u32ClkDiv = u32Div / u32DSCnt;
 
-            u32ClkDiv = u32Div / u32DSCnt;
-
-            if (u32ClkDiv > 0x400ul)
+            if (u32ClkDiv > 0x400UL)
             {
-                u32ClkDiv = 0x400ul;
+                u32ClkDiv = 0x400UL;
                 u32Tmp = u32Div - (u32ClkDiv * u32DSCnt);
-                u32Tmp2 = u32Tmp + 1ul;
+                u32Tmp2 = u32Tmp + 1UL;
             }
             else
             {
                 u32Tmp = u32Div - (u32ClkDiv * u32DSCnt);
-                u32Tmp2 = ((u32ClkDiv + 1ul) * u32DSCnt) - u32Div;
+                u32Tmp2 = ((u32ClkDiv + 1UL) * u32DSCnt) - u32Div;
             }
 
             if (u32Tmp >= u32Tmp2)
             {
-                u32ClkDiv = u32ClkDiv + 1ul;
+                u32ClkDiv = u32ClkDiv + 1UL;
             }
-            else u32Tmp2 = u32Tmp;
+            else
+            {
+                u32Tmp2 = u32Tmp;
+            }
 
             if (u32Tmp2 < u32Min)
             {
@@ -405,27 +416,26 @@ uint32_t UUART_Open(UUART_T *uuart, uint32_t u32baudrate)
                 u32MinClkDiv = u32ClkDiv;
 
                 /* Break when get good results */
-                if (u32Min == 0ul)
+                if (u32Min == 0UL)
                 {
                     break;
                 }
             }
         }
-
     }
 
     /* Enable USCI_UART protocol */
     uuart->CTL = (uuart->CTL & (~UUART_CTL_FUNMODE_Msk))
-                 | (2ul << UUART_CTL_FUNMODE_Pos);
+                 | (2UL << UUART_CTL_FUNMODE_Pos);
 
     /* Set USCI_UART line configuration */
     uuart->LINECTL = UUART_WORD_LEN_8 | UUART_LINECTL_LSB_Msk;
-    uuart->DATIN0 = (2ul << UUART_DATIN0_EDGEDET_Pos);  /* Set falling edge detection */
+    uuart->DATIN0 = (2UL << UUART_DATIN0_EDGEDET_Pos);  /* Set falling edge detection */
 
     /* Set USCI_UART baud rate */
-    uuart->BRGEN = ((u32MinClkDiv - 1ul) << UUART_BRGEN_CLKDIV_Pos) |
-                   ((u32MinDSCnt - 1ul) << UUART_BRGEN_DSCNT_Pos) |
-                   ((u32PDSCnt - 1ul) << UUART_BRGEN_PDSCNT_Pos);
+    uuart->BRGEN = ((u32MinClkDiv - 1UL) << UUART_BRGEN_CLKDIV_Pos) |
+                   ((u32MinDSCnt - 1UL) << UUART_BRGEN_DSCNT_Pos) |
+                   ((u32PDSCnt - 1UL) << UUART_BRGEN_PDSCNT_Pos);
 
     uuart->PROTCTL |= UUART_PROTCTL_PROTEN_Msk;
 
@@ -444,25 +454,25 @@ uint32_t UUART_Open(UUART_T *uuart, uint32_t u32baudrate)
  *
  *    @details      The function is used to read Rx data from RX buffer and the data will be stored in pu8RxBuf.
  */
-uint32_t UUART_Read(UUART_T *uuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
+uint32_t UUART_Read(const UUART_T *uuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
 {
-    uint32_t  u32Count, u32delayno;
+    uint32_t u32Count;
 
-    for (u32Count = 0ul; u32Count < u32ReadBytes; u32Count++)
+    for (u32Count = 0UL; u32Count < u32ReadBytes; u32Count++)
     {
-        u32delayno = 0ul;
+        uint32_t u32delayno = 0UL;
 
         while (uuart->BUFSTS & UUART_BUFSTS_RXEMPTY_Msk)  /* Check RX empty => failed */
         {
             u32delayno++;
 
-            if (u32delayno >= 0x40000000ul)
+            if (u32delayno >= 0x40000000UL)
             {
                 break;
             }
         }
 
-        if (u32delayno >= 0x40000000ul)
+        if (u32delayno >= 0x40000000UL)
         {
             break;
         }
@@ -500,70 +510,79 @@ uint32_t UUART_Read(UUART_T *uuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
  */
 uint32_t UUART_SetLine_Config(UUART_T *uuart, uint32_t u32baudrate, uint32_t u32data_width, uint32_t u32parity, uint32_t u32stop_bits)
 {
-    uint32_t u32PCLKFreq, u32PDSCnt, u32DSCnt, u32ClkDiv;
-    uint32_t u32Tmp, u32Tmp2, u32Min, u32MinClkDiv, u32MinDSCnt;
-    uint32_t u32Div;
+    uint32_t u32PCLKFreq;
+    uint32_t u32PDSCnt;
+    uint32_t u32MinClkDiv = 0UL;
+    uint32_t u32MinDSCnt = 0UL;
 
     /* Get PCLK1 frequency */
     u32PCLKFreq = CLK_GetPCLK1Freq();
 
-    if (u32baudrate != 0ul)
+    if (u32baudrate != 0UL)
     {
-        u32Div = u32PCLKFreq / u32baudrate;
-        u32Tmp = (u32PCLKFreq / u32Div) - u32baudrate;
-        u32Tmp2 = u32baudrate - (u32PCLKFreq / (u32Div + 1ul));
+        uint32_t u32Div = u32PCLKFreq / u32baudrate;
+        uint32_t u32Tmp = (u32PCLKFreq / u32Div) - u32baudrate;
+        uint32_t u32Tmp2 = u32baudrate - (u32PCLKFreq / (u32Div + 1UL));
 
-        if (u32Tmp >= u32Tmp2) u32Div = u32Div + 1ul;
-
-        if (u32Div >= 65536ul)
+        if (u32Tmp >= u32Tmp2)
         {
+            u32Div = u32Div + 1UL;
+        }
 
+        if (u32Div >= 65536UL)
+        {
             /* Set the smallest baud rate that USCI_UART can generate */
-            u32PDSCnt = 0x4ul;
-            u32MinDSCnt = 0x10ul;
-            u32MinClkDiv = 0x400ul;
-
+            u32PDSCnt = 0x4UL;
+            u32MinDSCnt = 0x10UL;
+            u32MinClkDiv = 0x400UL;
         }
         else
         {
+            u32Tmp = 0x400UL * 0x10UL;
 
-            u32Tmp = 0x400ul * 0x10ul;
-
-            for (u32PDSCnt = 1ul; u32PDSCnt <= 0x04ul; u32PDSCnt++)
+            for (u32PDSCnt = 1UL; u32PDSCnt <= 0x04UL; u32PDSCnt++)
             {
-                if (u32Div <= (u32Tmp * u32PDSCnt)) break;
+                if (u32Div <= (u32Tmp * u32PDSCnt))
+                {
+                    break;
+
+                }
             }
 
-            if (u32PDSCnt > 0x4ul) u32PDSCnt = 0x4ul;
+            if (u32PDSCnt > 0x4UL)
+            {
+                u32PDSCnt = 0x4UL;
+            }
 
             u32Div = u32Div / u32PDSCnt;
 
             /* Find best solution */
-            u32Min = (uint32_t) - 1;
-            u32MinDSCnt = 0ul;
-            u32MinClkDiv = 0ul;
+            uint32_t u32Min = (uint32_t) - 1;
 
-            for (u32DSCnt = 6ul; u32DSCnt <= 0x10ul; u32DSCnt++)  /* DSCNT could be 0x5~0xF */
+            for (uint32_t u32DSCnt = 6UL; u32DSCnt <= 0x10UL; u32DSCnt++)  /* DSCNT could be 0x5~0xF */
             {
-                u32ClkDiv = u32Div / u32DSCnt;
+                uint32_t u32ClkDiv = u32Div / u32DSCnt;
 
-                if (u32ClkDiv > 0x400ul)
+                if (u32ClkDiv > 0x400UL)
                 {
-                    u32ClkDiv = 0x400ul;
+                    u32ClkDiv = 0x400UL;
                     u32Tmp = u32Div - (u32ClkDiv * u32DSCnt);
-                    u32Tmp2 = u32Tmp + 1ul;
+                    u32Tmp2 = u32Tmp + 1UL;
                 }
                 else
                 {
                     u32Tmp = u32Div - (u32ClkDiv * u32DSCnt);
-                    u32Tmp2 = ((u32ClkDiv + 1ul) * u32DSCnt) - u32Div;
+                    u32Tmp2 = ((u32ClkDiv + 1UL) * u32DSCnt) - u32Div;
                 }
 
                 if (u32Tmp >= u32Tmp2)
                 {
-                    u32ClkDiv = u32ClkDiv + 1ul;
+                    u32ClkDiv = u32ClkDiv + 1UL;
                 }
-                else u32Tmp2 = u32Tmp;
+                else
+                {
+                    u32Tmp2 = u32Tmp;
+                }
 
                 if (u32Tmp2 < u32Min)
                 {
@@ -572,25 +591,24 @@ uint32_t UUART_SetLine_Config(UUART_T *uuart, uint32_t u32baudrate, uint32_t u32
                     u32MinClkDiv = u32ClkDiv;
 
                     /* Break when get good results */
-                    if (u32Min == 0ul)
+                    if (u32Min == 0UL)
                     {
                         break;
                     }
                 }
             }
-
         }
 
         /* Set USCI_UART baud rate */
-        uuart->BRGEN = ((u32MinClkDiv - 1ul) << UUART_BRGEN_CLKDIV_Pos) |
-                       ((u32MinDSCnt - 1ul) << UUART_BRGEN_DSCNT_Pos) |
-                       ((u32PDSCnt - 1ul) << UUART_BRGEN_PDSCNT_Pos);
+        uuart->BRGEN = ((u32MinClkDiv - 1UL) << UUART_BRGEN_CLKDIV_Pos) |
+                       ((u32MinDSCnt - 1UL) << UUART_BRGEN_DSCNT_Pos) |
+                       ((u32PDSCnt - 1UL) << UUART_BRGEN_PDSCNT_Pos);
     }
     else
     {
-        u32PDSCnt = ((uuart->BRGEN & UUART_BRGEN_PDSCNT_Msk) >> UUART_BRGEN_PDSCNT_Pos) + 1ul;
-        u32MinDSCnt = ((uuart->BRGEN & UUART_BRGEN_DSCNT_Msk) >> UUART_BRGEN_DSCNT_Pos) + 1ul;
-        u32MinClkDiv = ((uuart->BRGEN & UUART_BRGEN_CLKDIV_Msk) >> UUART_BRGEN_CLKDIV_Pos) + 1ul;
+        u32PDSCnt = ((uuart->BRGEN & UUART_BRGEN_PDSCNT_Msk) >> UUART_BRGEN_PDSCNT_Pos) + 1UL;
+        u32MinDSCnt = ((uuart->BRGEN & UUART_BRGEN_DSCNT_Msk) >> UUART_BRGEN_DSCNT_Pos) + 1UL;
+        u32MinClkDiv = ((uuart->BRGEN & UUART_BRGEN_CLKDIV_Msk) >> UUART_BRGEN_CLKDIV_Pos) + 1UL;
     }
 
     /* Set USCI_UART line configuration */
@@ -614,25 +632,25 @@ uint32_t UUART_SetLine_Config(UUART_T *uuart, uint32_t u32baudrate, uint32_t u32
  *
  *    @details      The function is to write data into TX buffer to transmit data by USCI_UART.
  */
-uint32_t UUART_Write(UUART_T *uuart, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
+uint32_t UUART_Write(UUART_T *uuart, const uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
 {
-    uint32_t  u32Count, u32delayno;
+    uint32_t u32Count;
 
-    for (u32Count = 0ul; u32Count != u32WriteBytes; u32Count++)
+    for (u32Count = 0UL; u32Count != u32WriteBytes; u32Count++)
     {
-        u32delayno = 0ul;
+        uint32_t u32delayno = 0UL;
 
-        while ((uuart->BUFSTS & UUART_BUFSTS_TXEMPTY_Msk) == 0ul)  /* Wait Tx empty */
+        while ((uuart->BUFSTS & UUART_BUFSTS_TXEMPTY_Msk) == 0UL)  /* Wait Tx empty */
         {
             u32delayno++;
 
-            if (u32delayno >= 0x40000000ul)
+            if (u32delayno >= 0x40000000UL)
             {
                 break;
             }
         }
 
-        if (u32delayno >= 0x40000000ul)
+        if (u32delayno >= 0x40000000UL)
         {
             break;
         }

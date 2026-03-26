@@ -163,7 +163,7 @@ void SYS_Init(void)
     /* Enable CRYPTO module clock */
     CLK_EnableModuleClock(CRYPTO0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/
@@ -223,12 +223,12 @@ int  main(void)
 
     /* Prepare the key and message for DMA. The format is key + msg */
     u32KeyLen = Str2Hex(keyStr, &gau8HMACSrc[0], 0);
-    u32MsgLen = Str2Hex(msg,    &gau8HMACSrc[(u32KeyLen + 3) & 0xfffffffc], 0);
+    u32MsgLen = Str2Hex(msg, &gau8HMACSrc[(u32KeyLen + 3) & 0xfffffffc], 0);
 
 #if (NVT_DCACHE_ON == 1)
     SCB_CleanDCache_by_Addr(gau8HMACSrc, sizeof(gau8HMACSrc));
 #endif
-    u32MacLen = Str2Hex(hmac,   &gau8HMAC[0], 0);
+    u32MacLen = Str2Hex(hmac, &gau8HMAC[0], 0);
 
     /* Key alignment for DMA */
     u32KeyLenAlign = ((u32KeyLen + 3) & 0xfffffffc);

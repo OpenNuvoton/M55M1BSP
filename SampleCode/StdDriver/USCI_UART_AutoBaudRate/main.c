@@ -40,7 +40,7 @@ void SYS_Init(void)
     /* Enable USCI0 peripheral clock */
     CLK_EnableModuleClock(USCI0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

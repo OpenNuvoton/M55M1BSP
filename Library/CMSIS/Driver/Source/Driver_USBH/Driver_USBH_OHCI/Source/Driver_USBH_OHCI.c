@@ -39,9 +39,6 @@
 #include "Driver_USBH_OHCI_Regs.h"
 #include "Driver_USBH_OHCI_HW.h"
 
-#include "cmsis_os2.h"
-#include "cmsis_compiler.h"
-
 //M55M1 series...
 #include "NuMicro.h"
 #include "misc.h"
@@ -513,7 +510,7 @@ static bool USBH_OHCI_TD_Dequeue(uint8_t ctrl, USBH_OHCI_ED *ptr_ED, USBH_OHCI_T
     }
 
     ptr_ED->DW0.K   = 1U;                 // Set skip bit of endpoint descriptor (stop processing it)
-    (void)osDelay(1U);                    // Wait ~1 ms to be sure that endpoint descriptor is not being processed
+    (void)delay_ms(1U);                    // Wait ~1 ms to be sure that endpoint descriptor is not being processed
 
     ptr_prev_TD = USBH_OHCI_TD_GetPrevious(ctrl, ptr_TD);
 
@@ -1509,14 +1506,14 @@ static int32_t USBH_HW_PowerControl(uint8_t ctrl, ARM_POWER_STATE state)
 
             usbh_ohci_reg_ptr[ctrl]->HcControl       = 0;   // Host Controller Reset
             usbh_ohci_reg_ptr[ctrl]->HcCommandStatus = USBH_OHCI_HcCommandStatus_HCR;   // Host Ctrl Reset
-            (void)osDelay(10U);
+            (void)delay_ms(10U);
 
             usbh_ohci_reg_ptr[ctrl]->HcControlHeadED = 0;   // Initialize Control list head
             usbh_ohci_reg_ptr[ctrl]->HcBulkHeadED    = 0;   // Initialize Bulk list head
 
             usbh_ohci_reg_ptr[ctrl]->HcRhStatus = USBH_OHCI_HcRhStatus_OCI | USBH_OHCI_HcRhStatus_LPS;
             usbh_ohci_reg_ptr[ctrl]->HcControl       = 0;   // Host Controller Reset
-            (void)osDelay(100U);
+            (void)delay_ms(100U);
 
             usbh_ohci_reg_ptr[ctrl]->HcFmInterval    = USBH_OHCI_HcFmInterval_FSMPS(0x2778) | // Max Packet Size
                                                        USBH_OHCI_HcFmInterval_FI(0x2EDF);                 // Frame Interval
@@ -1529,19 +1526,6 @@ static int32_t USBH_HW_PowerControl(uint8_t ctrl, ARM_POWER_STATE state)
             usbh_ohci_reg_ptr[ctrl]->HcControl       = ((usbh_ohci_reg_ptr[ctrl]->HcControl & ~USBH_OHCI_HcControl_HCFS) | USBH_OHCI_FS_USB_OPERATIONAL);
 
             // Enable individually powered ports
-            if (usbh_ohci_reg_ptr[ctrl]->HcRhDescriptorA & USBH_OHCI_HcRhDescriptorA_PSM)
-            {
-                if ((usbh_ohci_reg_ptr[ctrl]->HcRhDescriptorA & 0xFU) == 1)
-                    usbh_ohci_reg_ptr[ctrl]->HcRhDescriptorB = 0x20000;
-                else
-                    usbh_ohci_reg_ptr[ctrl]->HcRhDescriptorB = 0x7E0000;
-
-                for (uint8_t i = 0; i < (usbh_ohci_reg_ptr[ctrl]->HcRhDescriptorA & 0xFU); i++)
-                {
-                    usbh_ohci_reg_ptr[ctrl]->HcRhPortStatus[i] = USBH_OHCI_HcRhPortStatus_PSS;
-                }
-            }
-            else
             {
                 usbh_ohci_reg_ptr[ctrl]->HcRhDescriptorA = (usbh_ohci_reg_ptr[ctrl]->HcRhDescriptorA | (1 << 9)) & ~USBH_OHCI_HcRhDescriptorA_PSM;
                 usbh_ohci_reg_ptr[ctrl]->HcRhStatus = USBH_OHCI_HcRhStatus_LPS;
@@ -1622,7 +1606,7 @@ static int32_t USBH_HW_PortReset(uint8_t ctrl, uint8_t port)
     {
         usbh_ohci_reg_ptr[ctrl]->HcRhPortStatus[port] |=  USBH_OHCI_HcRhPortStatus_PRS;      // Port Reset
 
-        (void)osDelay(50U);
+        (void)delay_ms(50U);
     }
 
     return ARM_DRIVER_OK;
@@ -1698,7 +1682,7 @@ static int32_t USBH_HW_PortResume(uint8_t ctrl, uint8_t port)
         usbh_ohci_reg_ptr[ctrl]->HcControl = _Ohci_Ctrl_Reg_Tampe[ctrl];
         usbh_ohci_reg_ptr[ctrl]->HcControl = (_Ohci_Ctrl_Reg_Tampe[ctrl] & ~USBH_OHCI_HcControl_CBSR) | USBH_OHCI_FS_USB_RESUME;
 
-        (void)osDelay(20U);
+        (void)delay_ms(20U);
 
         usbh_ohci_reg_ptr[ctrl]->HcControl = _Ohci_Ctrl_Reg_Tampe[ctrl];
         usbh_ohci_reg_ptr[ctrl]->HcControl = (_Ohci_Ctrl_Reg_Tampe[ctrl] & ~USBH_OHCI_HcControl_CBSR) | USBH_OHCI_FS_USB_OPERATIONAL;
@@ -1711,7 +1695,7 @@ static int32_t USBH_HW_PortResume(uint8_t ctrl, uint8_t port)
         usbh_ohci_reg_ptr[ctrl]->HcControl = _Ohci_Ctrl_Reg_Tampe[ctrl];
         usbh_ohci_reg_ptr[ctrl]->HcControl = (_Ohci_Ctrl_Reg_Tampe[ctrl] & ~USBH_OHCI_HcControl_CBSR) | USBH_OHCI_FS_USB_RESUME;
 
-        (void)osDelay(20U);
+        (void)delay_ms(20U);
 
 
         usbh_ohci_reg_ptr[ctrl]->HcControl = _Ohci_Ctrl_Reg_Tampe[ctrl];
@@ -1722,7 +1706,7 @@ static int32_t USBH_HW_PortResume(uint8_t ctrl, uint8_t port)
         return ARM_DRIVER_ERROR;
     }
 
-    (void)osDelay(20U);
+    (void)delay_ms(20U);
 
     return ARM_DRIVER_OK;
 }
@@ -1986,7 +1970,7 @@ static int32_t USBH_HW_PipeModify(uint8_t ctrl, ARM_USBH_PIPE_HANDLE pipe_hndl, 
     // Update only maximum packet size, device address and device speed
     // Use scratch pad 0 area for endpoint type information
     ptr_ED->DW0.K   = 1U;                 // Set skip bit of endpoint descriptor (stop processing it)
-    (void)osDelay(1U);                    // Wait ~1 ms to be sure that endpoint descriptor is not being processed
+    (void)delay_ms(1U);                    // Wait ~1 ms to be sure that endpoint descriptor is not being processed
 
     ptr_ED->DW0.MPS = ep_max_packet_size;
 
@@ -2103,7 +2087,7 @@ static int32_t USBH_HW_PipeDelete(uint8_t ctrl, ARM_USBH_PIPE_HANDLE pipe_hndl)
     // If NextED exists check if currently this ED is being processed if so set
     // currently processed ED to NextED
     ptr_ED->DW0.K   = 1U;                 // Set skip bit of endpoint descriptor (stop processing it)
-    (void)osDelay(1U);                    // Wait ~1 ms to be sure that endpoint descriptor is not being processed
+    (void)delay_ms(1U);                    // Wait ~1 ms to be sure that endpoint descriptor is not being processed
 
     switch (ptr_ED->DW0.SCR & 3U)         // Endpoint Type
     {

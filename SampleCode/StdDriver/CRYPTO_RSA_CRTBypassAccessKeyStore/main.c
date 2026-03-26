@@ -124,7 +124,7 @@ void SYS_Init(void)
     /* Enable KS module clock */
     CLK_EnableModuleClock(KS0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

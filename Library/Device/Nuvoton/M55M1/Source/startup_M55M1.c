@@ -36,7 +36,11 @@ void Default_Handler(void);
 /* Exceptions */
 void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void HardFault_Handler(void) __attribute__((weak));
-void MemManage_Handler(void) __attribute__((weak, alias("Default_Handler")));
+#ifdef _RTE_
+    void MemManage_Handler(void) __attribute__((weak));
+#else
+    void MemManage_Handler(void) __attribute__((weak, alias("Default_Handler")));
+#endif
 void BusFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void UsageFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void SecureFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
@@ -581,6 +585,56 @@ __WEAK void HardFault_Handler(void)
     // Get the instruction caused the hardfault
     ProcessHardFault((uint32_t *)psStackFrame);
 }
+
+#ifdef _RTE_
+__WEAK void MemManage_Handler(void)
+{
+    // 1. Check the fault status register
+    uint32_t u32MMFSR = SCB->CFSR & 0xFF; // Memory Management Fault Status Register (lower 8 bits of CFSR)
+
+    // 2. Analyze the fault
+    if (u32MMFSR & SCB_CFSR_IACCVIOL_Msk)
+    {
+        // Instruction Access Violation (e.g., executing from a non-executable region)
+        // Log or handle the error
+    }
+
+    if (u32MMFSR & SCB_CFSR_DACCVIOL_Msk)
+    {
+        // Data Access Violation (e.g., accessing privileged memory in unprivileged mode)
+        // Log or handle the error
+        printf("* Please set Default Processor mode for Thread execution to Privileged mode in RTX_Config.h !");
+    }
+
+    if (u32MMFSR & SCB_CFSR_MUNSTKERR_Msk)
+    {
+        // Unstacking fault during exception return
+        if (MPU->CTRL & MPU_CTRL_ENABLE_Msk)
+        {
+            uint32_t control = __get_CONTROL();
+
+            if (control & CONTROL_nPRIV_Msk)
+            {
+                printf(" * Please set Default Processor mode for Thread execution to Privileged mode in RTX_Config.h !");
+            }
+        }
+    }
+
+    if (u32MMFSR & SCB_CFSR_MSTKERR_Msk)
+    {
+        // Stacking fault during exception entry
+    }
+
+    // 3. Get the faulting address (if available)
+    if (u32MMFSR & SCB_CFSR_MMARVALID_Msk)
+    {
+        //uint32_t fault_address = SCB->MMFAR; // Memory Management Fault Address Register
+        // Use this address for debugging
+    }
+
+    while (1); // Fallback infinite loop (for debugging)
+}
+#endif  // _RTE_
 
 /*----------------------------------------------------------------------------
   Default Handler for Exceptions / Interrupts

@@ -49,8 +49,8 @@
  *        memory banks.
  */
 
-__STACK_SIZE = 0x00001000;
-__HEAP_SIZE  = 0x00008000;
+__STACK_SIZE = 0x00004000;
+__HEAP_SIZE  = 0x0000A000;
 
 /* System memory brief */
 MEMORY

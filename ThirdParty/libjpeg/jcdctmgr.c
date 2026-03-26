@@ -89,14 +89,18 @@ forward_DCT (j_compress_ptr cinfo, jpeg_component_info * compptr,
     /* This routine is heavily used, so it's worth coding it tightly. */
     my_fdct_ptr fdct = (my_fdct_ptr) cinfo->fdct;
     forward_DCT_method_ptr do_dct = fdct->do_dct[compptr->component_index];
-    DCTELEM * divisors = (DCTELEM *) compptr->dct_table;
+    
 
 #ifdef WITH_JPEGACC
     /*To fit the simd int16x8 format, allocation space for int16 data*/
+#ifdef DBG_NVT_JPEG	
     DCTELEM * divisors_recp = (DCTELEM *) compptr->dct_recp_table;
-    //int16_t i16workspace[DCTSIZE2];
-	  int16_t i16divisors_recp[DCTSIZE2*4];
+#endif
+	//int16_t i16workspace[DCTSIZE2];
+	  //int16_t i16divisors_recp[DCTSIZE2*4];
 	  int16_t *divisor_recp_ptr;
+#else
+	  DCTELEM * divisors = (DCTELEM *) compptr->dct_table;
 #endif
 
     DCTELEM workspace[DCTSIZE2];	/* work area for FDCT subroutine */
@@ -111,8 +115,7 @@ forward_DCT (j_compress_ptr cinfo, jpeg_component_info * compptr,
         (*do_dct) (workspace, sample_data, start_col);
 
         /* Quantize/descale the coefficients, and store into coef_blocks[] */
-        {   register DCTELEM temp, qval;
-            register int i;
+        {   
             register JCOEFPTR output_ptr = coef_blocks[bi];
 
 #ifdef WITH_JPEGACC
@@ -138,7 +141,8 @@ forward_DCT (j_compress_ptr cinfo, jpeg_component_info * compptr,
 #endif//DBG_NVT_JPEG        
 
 #else
-
+            register DCTELEM temp, qval;
+            register int i;
             for (i = 0; i < DCTSIZE2; i++) {
                 qval = divisors[i];
                 temp = workspace[i];

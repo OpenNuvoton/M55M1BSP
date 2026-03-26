@@ -43,6 +43,9 @@ The driver instance is mapped to hardware as shown in the table below:
 
 */
 
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
 /* Project can define PRJ_RTE_DEVICE_HEADER macro to include private or global RTE_Device.h. */
 #ifdef   PRJ_RTE_DEVICE_HEADER
     #include PRJ_RTE_DEVICE_HEADER
@@ -52,6 +55,7 @@ The driver instance is mapped to hardware as shown in the table below:
 
 #include "Driver_Flash.h"
 #include "NuMicro.h"
+#include "drv_pdma.h"
 #include <string.h>
 
 #if ((RTE_FLASH_START_OFFSET + RTE_FLASH_BYTE_SIZE) > FMC_APROM_SIZE)
@@ -70,14 +74,14 @@ static const ARM_DRIVER_VERSION DriverVersion =
 /* Driver Capabilities */
 static const ARM_FLASH_CAPABILITIES DriverCapabilities =
 {
-    0,  /* event_ready */
+    1,  /* event_ready */
     2,  /* data_width = 0:8-bit, 1:16-bit, 2:32-bit */
     0,  /* erase_chip */
     0   /* reserved (must be zero) */
 };
 
 #ifndef DRIVER_FLASH_NUM
-    #define DRIVER_FLASH_NUM        0           /* Default driver number */
+    #define DRIVER_FLASH_NUM    0           /* Default driver number */
 #endif
 
 /* Sector Information */
@@ -102,7 +106,97 @@ static ARM_FLASH_INFO FlashInfo =
 };
 
 /* Flash Status */
-static ARM_FLASH_STATUS FlashStatus;
+static volatile ARM_FLASH_STATUS FlashStatus;
+
+static struct
+{
+    ARM_Flash_SignalEvent_t m_cb_event;
+    int32_t m_i32NuPDMA_Chan;
+    struct nu_pdma_chn_cb m_pfnNuPDMA_ReadCB;
+    volatile uint32_t *m_pu32DataPtr;
+    volatile uint32_t m_u32ProcessBytes;
+    uint32_t m_u32RequestBytes;
+} s_sFlashContextInfo;
+
+void ISP_IRQHandler(void)
+{
+    uint32_t u32FlashEvent = ARM_FLASH_EVENT_READY;
+
+    if (FMC_GET_FAIL_FLAG())
+    {
+        FMC_CLR_FAIL_FLAG();
+        u32FlashEvent = ARM_FLASH_EVENT_ERROR;
+        FlashStatus.error = 1;
+    }
+    else
+    {
+        if (FMC->ISPCMD == FMC_ISPCMD_READ)
+        {
+            M32((uint32_t)s_sFlashContextInfo.m_pu32DataPtr + s_sFlashContextInfo.m_u32ProcessBytes) = FMC->ISPDAT;
+        }
+
+        s_sFlashContextInfo.m_u32ProcessBytes += FLASH_PROGRAM_UNIT;
+
+        if (s_sFlashContextInfo.m_u32ProcessBytes < s_sFlashContextInfo.m_u32RequestBytes)
+        {
+            if (FMC->ISPCMD == FMC_ISPCMD_PROGRAM)
+            {
+                FMC->ISPDAT = M32((uint32_t)s_sFlashContextInfo.m_pu32DataPtr + s_sFlashContextInfo.m_u32ProcessBytes);
+            }
+
+            /* Clear INT flag and trigger next operation */
+            FMC->ISPSTS  = FMC_ISPSTS_INTFLAG_Msk;
+            FMC->ISPADDR = (FMC->ISPADDR + 4);
+            FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+            return ;
+        }
+    }
+
+    FlashStatus.busy  = 0;
+
+    if (s_sFlashContextInfo.m_cb_event != NULL)
+    {
+        s_sFlashContextInfo.m_cb_event(u32FlashEvent);
+    }
+
+    FMC->ISPSTS = FMC_ISPSTS_INTFLAG_Msk;
+}
+
+#if defined (RTE_FLASH_READ_PDMA) && (RTE_FLASH_READ_PDMA == 1)
+static void Flash_Read_PDMA_CB_Handler(void *ptr_priv, uint32_t event)
+{
+    uint32_t u32FlashEvent = ARM_FLASH_EVENT_READY;
+
+    NVT_UNUSED(ptr_priv);
+
+    if (event & (NU_PDMA_EVENT_TRANSFER_DONE | NU_PDMA_EVENT_ABORT))
+    {
+        FlashStatus.busy = 0;
+
+        if (event & (NU_PDMA_EVENT_ABORT))
+        {
+            FlashStatus.error = 1;
+            u32FlashEvent = ARM_FLASH_EVENT_ERROR;
+        }
+        else
+        {
+#if (NVT_DCACHE_ON == 1)
+
+            if ((s_sFlashContextInfo.m_pu32DataPtr != NULL) && (s_sFlashContextInfo.m_u32RequestBytes > 0))
+            {
+                SCB_InvalidateDCache_by_Addr((void *)s_sFlashContextInfo.m_pu32DataPtr, (int32_t)s_sFlashContextInfo.m_u32RequestBytes);
+            }
+
+#endif
+        }
+
+        if (s_sFlashContextInfo.m_cb_event != NULL)
+        {
+            s_sFlashContextInfo.m_cb_event(u32FlashEvent);
+        }
+    }
+}
+#endif  /* RTE_FLASH_READ_PDMA */
 
 /**
   \fn          ARM_DRIVER_VERSION ARM_Flash_GetVersion (void)
@@ -133,8 +227,20 @@ static ARM_FLASH_CAPABILITIES ARM_Flash_GetCapabilities(void)
 */
 static int32_t ARM_Flash_Initialize(ARM_Flash_SignalEvent_t cb_event)
 {
-    NVT_UNUSED(cb_event);
+    FlashStatus.busy  = 0;
     FlashStatus.error = 0;
+
+    if (cb_event != NULL)
+    {
+        s_sFlashContextInfo.m_cb_event = cb_event;
+    }
+
+#if defined (RTE_FLASH_READ_PDMA) && (RTE_FLASH_READ_PDMA == 1)
+    s_sFlashContextInfo.m_i32NuPDMA_Chan = -1;
+    s_sFlashContextInfo.m_pfnNuPDMA_ReadCB.m_eCBType = eCBType_Event;
+    s_sFlashContextInfo.m_pfnNuPDMA_ReadCB.m_pfnCBHandler = Flash_Read_PDMA_CB_Handler;
+    s_sFlashContextInfo.m_pfnNuPDMA_ReadCB.m_pvUserData = NULL;
+#endif
 
     return ARM_DRIVER_OK;
 }
@@ -146,7 +252,13 @@ static int32_t ARM_Flash_Initialize(ARM_Flash_SignalEvent_t cb_event)
 */
 static int32_t ARM_Flash_Uninitialize(void)
 {
+    FlashStatus.busy  = 0;
     FlashStatus.error = 0;
+    s_sFlashContextInfo.m_cb_event = NULL;
+
+#if defined (RTE_FLASH_READ_PDMA) && (RTE_FLASH_READ_PDMA == 1)
+    s_sFlashContextInfo.m_i32NuPDMA_Chan = -1;
+#endif
 
     return ARM_DRIVER_OK;
 }
@@ -165,11 +277,26 @@ static int32_t ARM_Flash_PowerControl(ARM_POWER_STATE state)
     {
         case ARM_POWER_OFF:
             if (u32IsRegLocked)
+            {
                 SYS_UnlockReg();
+            }
 
+            NVIC_DisableIRQ(ISP_IRQn);
+            FMC_DisableINT();
             FMC_DISABLE_AP_UPDATE();
             FMC_Close();
             CLK_DisableModuleClock(ISP0_MODULE);
+
+#if defined (RTE_FLASH_READ_PDMA) && (RTE_FLASH_READ_PDMA == 1)
+
+            if (s_sFlashContextInfo.m_i32NuPDMA_Chan >= 0)
+            {
+                nu_pdma_channel_terminate(s_sFlashContextInfo.m_i32NuPDMA_Chan);
+                nu_pdma_channel_free(s_sFlashContextInfo.m_i32NuPDMA_Chan);
+                s_sFlashContextInfo.m_i32NuPDMA_Chan = -1;
+            }
+
+#endif
             break;
 
         case ARM_POWER_LOW:
@@ -177,9 +304,36 @@ static int32_t ARM_Flash_PowerControl(ARM_POWER_STATE state)
 
         case ARM_POWER_FULL:
             if (u32IsRegLocked)
+            {
                 SYS_UnlockReg();
+            }
 
             CLK_EnableModuleClock(ISP0_MODULE);
+            FMC_EnableINT();
+            NVIC_EnableIRQ(ISP_IRQn);
+
+#if defined (RTE_FLASH_READ_PDMA) && (RTE_FLASH_READ_PDMA == 1)
+
+            if (RTE_FLASH_READ_PDMA_FIXED)
+            {
+                /* Allocate a fixed PDMA channel */
+                s_sFlashContextInfo.m_i32NuPDMA_Chan = nu_pdma_channel_allocate(PDMA_MEM, RTE_FLASH_PDMA_PORT, RTE_FLASH_PDMA_CHANNEL);
+            }
+            else
+            {
+                /* Dynamically allocate a free PDMA channel */
+                s_sFlashContextInfo.m_i32NuPDMA_Chan = nu_pdma_channel_dynamic_allocate(PDMA_MEM);
+            }
+
+            if (s_sFlashContextInfo.m_i32NuPDMA_Chan < 0)
+            {
+                return ARM_DRIVER_ERROR_PARAMETER;
+            }
+
+            /* Register PDMA callback function for allocated channel */
+            nu_pdma_filtering_set(s_sFlashContextInfo.m_i32NuPDMA_Chan, NU_PDMA_EVENT_TRANSFER_DONE | NU_PDMA_EVENT_ABORT);
+            nu_pdma_callback_register(s_sFlashContextInfo.m_i32NuPDMA_Chan, &s_sFlashContextInfo.m_pfnNuPDMA_ReadCB);
+#endif
             FMC_Open();
             FMC_ENABLE_AP_UPDATE();
             break;
@@ -187,10 +341,6 @@ static int32_t ARM_Flash_PowerControl(ARM_POWER_STATE state)
         default:
             return ARM_DRIVER_ERROR_PARAMETER;
     }
-
-    // Restore Register Lock Control if necessary
-    if (u32IsRegLocked)
-        SYS_LockReg();
 
     return ARM_DRIVER_OK;
 }
@@ -205,41 +355,50 @@ static int32_t ARM_Flash_PowerControl(ARM_POWER_STATE state)
 */
 static int32_t ARM_Flash_ReadData(uint32_t addr, void *data, uint32_t cnt)
 {
-    uint32_t u32ReadCnt;
-    uint32_t *pu32DataBuf = (uint32_t *)data;
-    uint32_t u32IsRegLocked = SYS_IsRegLocked();
+    if (FlashStatus.busy)
+    {
+        return ARM_DRIVER_ERROR_BUSY;
+    }
 
     if ((addr % FLASH_PROGRAM_UNIT) || ((cnt * FLASH_PROGRAM_UNIT) > RTE_FLASH_BYTE_SIZE) ||
             ((addr + (cnt * FLASH_PROGRAM_UNIT)) > RTE_FLASH_BYTE_SIZE))
-        return ARM_DRIVER_ERROR_PARAMETER;
-
-    if (u32IsRegLocked)
-        SYS_UnlockReg();
-
-    FlashStatus.error = 0;
-
-    for (u32ReadCnt = 0; u32ReadCnt < cnt; u32ReadCnt++)
     {
-        *pu32DataBuf = FMC_Read(FMC_APROM_BASE + RTE_FLASH_START_OFFSET + addr + (u32ReadCnt * FLASH_PROGRAM_UNIT));
-
-        if (g_FMC_i32ErrCode != FMC_OK)
-        {
-            FMC_CLR_FAIL_FLAG();
-            FlashStatus.error = 1;
-            break;
-        }
-
-        pu32DataBuf++;
+        return ARM_DRIVER_ERROR_PARAMETER;
     }
 
-    // Restore Register Lock Control if necessary
-    if (u32IsRegLocked)
-        SYS_LockReg();
+    FlashStatus.busy  = 1;
+    FlashStatus.error = 0;
 
-    if (FlashStatus.error)
-        return ARM_DRIVER_ERROR;
+    s_sFlashContextInfo.m_pu32DataPtr     = (uint32_t *)data;
+    s_sFlashContextInfo.m_u32RequestBytes = cnt * FLASH_PROGRAM_UNIT;
+    s_sFlashContextInfo.m_u32ProcessBytes = 0;
 
-    return u32ReadCnt;
+#if defined (RTE_FLASH_READ_PDMA) && (RTE_FLASH_READ_PDMA == 1)
+
+    /* Try to use PDMA for read data transfer */
+    if (cnt >= 8)
+    {
+        if (s_sFlashContextInfo.m_i32NuPDMA_Chan >= 0)
+        {
+            nu_pdma_transfer(s_sFlashContextInfo.m_i32NuPDMA_Chan, 32,
+                             FMC_APROM_BASE + RTE_FLASH_START_OFFSET + addr,
+                             (uint32_t)data,
+                             cnt, 0);
+
+
+            /* Non blocking mode: Return immediately, transfer in progress */
+            return ARM_DRIVER_OK;
+        }
+    }
+
+    /* Fall through to read data with FMC ISP command */
+#endif
+
+    FMC->ISPCMD  = FMC_ISPCMD_READ;
+    FMC->ISPADDR = FMC_APROM_BASE + RTE_FLASH_START_OFFSET + addr;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
+
+    return ARM_DRIVER_OK;
 }
 
 /**
@@ -252,41 +411,28 @@ static int32_t ARM_Flash_ReadData(uint32_t addr, void *data, uint32_t cnt)
 */
 static int32_t ARM_Flash_ProgramData(uint32_t addr, const void *data, uint32_t cnt)
 {
-    uint32_t u32ProgCnt;
-    uint32_t *pu32DataBuf = (uint32_t *)data;
-    uint32_t u32IsRegLocked = SYS_IsRegLocked();
+    if (FlashStatus.busy)
+    {
+        return ARM_DRIVER_ERROR_BUSY;
+    }
 
     if ((addr % FLASH_PROGRAM_UNIT) || ((cnt * FLASH_PROGRAM_UNIT) > RTE_FLASH_BYTE_SIZE) ||
             ((addr + (cnt * FLASH_PROGRAM_UNIT)) > RTE_FLASH_BYTE_SIZE))
         return ARM_DRIVER_ERROR_PARAMETER;
 
-    if (u32IsRegLocked)
-        SYS_UnlockReg();
-
+    FlashStatus.busy  = 1;
     FlashStatus.error = 0;
 
-    for (u32ProgCnt = 0; u32ProgCnt < cnt; u32ProgCnt++)
-    {
-        FMC_Write(FMC_APROM_BASE + RTE_FLASH_START_OFFSET + addr + (u32ProgCnt * FLASH_PROGRAM_UNIT), *pu32DataBuf);
+    s_sFlashContextInfo.m_pu32DataPtr     = (uint32_t *)data;
+    s_sFlashContextInfo.m_u32RequestBytes = cnt * FLASH_PROGRAM_UNIT;
+    s_sFlashContextInfo.m_u32ProcessBytes = 0;
 
-        if (g_FMC_i32ErrCode != FMC_OK)
-        {
-            FMC_CLR_FAIL_FLAG();
-            FlashStatus.error = 1;
-            break;
-        }
+    FMC->ISPCMD  = FMC_ISPCMD_PROGRAM;
+    FMC->ISPADDR = FMC_APROM_BASE + RTE_FLASH_START_OFFSET + addr;
+    FMC->ISPDAT  = *s_sFlashContextInfo.m_pu32DataPtr;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
 
-        pu32DataBuf++;
-    }
-
-    // Restore Register Lock Control if necessary
-    if (u32IsRegLocked)
-        SYS_LockReg();
-
-    if (FlashStatus.error)
-        return ARM_DRIVER_ERROR;
-
-    return u32ProgCnt;
+    return ARM_DRIVER_OK;
 }
 
 /**
@@ -297,28 +443,24 @@ static int32_t ARM_Flash_ProgramData(uint32_t addr, const void *data, uint32_t c
 */
 static int32_t ARM_Flash_EraseSector(uint32_t addr)
 {
-    uint32_t u32IsRegLocked = SYS_IsRegLocked();
-
-    FlashStatus.error = 0;
+    if (FlashStatus.busy)
+    {
+        return ARM_DRIVER_ERROR_BUSY;
+    }
 
     if ((addr % FLASH_SECTOR_SIZE) || (addr >= RTE_FLASH_BYTE_SIZE))
         return ARM_DRIVER_ERROR_PARAMETER;
 
-    if (u32IsRegLocked)
-        SYS_UnlockReg();
+    FlashStatus.busy  = 1;
+    FlashStatus.error = 0;
 
-    if (FMC_Erase(FMC_APROM_BASE + RTE_FLASH_START_OFFSET + addr) != 0)
-    {
-        FMC_CLR_FAIL_FLAG();
-        FlashStatus.error = 1;
-    }
+    s_sFlashContextInfo.m_pu32DataPtr     = NULL;
+    s_sFlashContextInfo.m_u32RequestBytes = FLASH_PROGRAM_UNIT;
+    s_sFlashContextInfo.m_u32ProcessBytes = 0;
 
-    // Restore Register Lock Control if necessary
-    if (u32IsRegLocked)
-        SYS_LockReg();
-
-    if (FlashStatus.error)
-        return ARM_DRIVER_ERROR;
+    FMC->ISPCMD  = FMC_ISPCMD_PAGE_ERASE;
+    FMC->ISPADDR = FMC_APROM_BASE + RTE_FLASH_START_OFFSET + addr;
+    FMC->ISPTRG  = FMC_ISPTRG_ISPGO_Msk;
 
     return ARM_DRIVER_OK;
 }

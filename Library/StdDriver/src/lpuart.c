@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     lpuart.c
  * @version  V1.00
- * @brief    M55M1 series LPUART driver source file
+ * @brief    LPUART driver source file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -78,7 +78,7 @@ void LPUART_ClearIntFlag(LPUART_T *lpuart, uint32_t u32InterruptFlag)
  */
 void LPUART_Close(LPUART_T *lpuart)
 {
-    lpuart->INTEN = 0ul;
+    lpuart->INTEN = 0UL;
 }
 
 
@@ -179,9 +179,9 @@ void LPUART_EnableInt(LPUART_T  *lpuart, uint32_t u32InterruptFlag)
  */
 void LPUART_Open(LPUART_T *lpuart, uint32_t u32baudrate)
 {
-    uint32_t u32LpUartClkSrcSel = 0ul, u32LpUartClkDivNum = 0ul;
-    uint32_t u32ClkTbl[4] = {0, __LXT, __MIRC, __HIRC};
-
+    uint32_t u32LpUartClkSrcSel = 0UL;
+    uint32_t u32LpUartClkDivNum = 0UL;
+    uint32_t u32ClkTbl[4] = {0UL, __LXT, __MIRC, __HIRC};
 
     if (lpuart == (LPUART_T *)LPUART0)
     {
@@ -191,7 +191,6 @@ void LPUART_Open(LPUART_T *lpuart, uint32_t u32baudrate)
         u32LpUartClkDivNum = (CLK->LPUARTDIV & CLK_LPUARTDIV_LPUART0DIV_Msk) >> CLK_LPUARTDIV_LPUART0DIV_Pos;
 
     }
-
 
     /* Select LPUART function */
     lpuart->FUNCSEL = LPUART_FUNCSEL_LPUART;
@@ -203,21 +202,21 @@ void LPUART_Open(LPUART_T *lpuart, uint32_t u32baudrate)
     lpuart->FIFO &= ~(LPUART_FIFO_RFITL_Msk | LPUART_FIFO_RTSTRGLV_Msk);
 
     /* Get PLL clock frequency if LPUART clock source selection is PCLK2 */
-    if (u32LpUartClkSrcSel == 0ul)
+    if (u32LpUartClkSrcSel == 0UL)
     {
         u32ClkTbl[0] = CLK_GetPCLK4Freq();
     }
 
     /* Set LPUART baud rate */
-    if (u32baudrate != 0ul)
+    if (u32baudrate != 0UL)
     {
         uint32_t u32Baud_Div;
 
-        u32Baud_Div = LPUART_BAUD_MODE2_DIVIDER((u32ClkTbl[u32LpUartClkSrcSel]) / (u32LpUartClkDivNum + 1ul), u32baudrate);
+        u32Baud_Div = LPUART_BAUD_MODE2_DIVIDER((u32ClkTbl[u32LpUartClkSrcSel]) / (u32LpUartClkDivNum + 1UL), u32baudrate);
 
-        if (u32Baud_Div > 0xFFFFul)
+        if (u32Baud_Div > 0xFFFFUL)
         {
-            lpuart->BAUD = (LPUART_BAUD_MODE0 | LPUART_BAUD_MODE0_DIVIDER((u32ClkTbl[u32LpUartClkSrcSel]) / (u32LpUartClkDivNum + 1ul), u32baudrate));
+            lpuart->BAUD = (LPUART_BAUD_MODE0 | LPUART_BAUD_MODE0_DIVIDER((u32ClkTbl[u32LpUartClkSrcSel]) / (u32LpUartClkDivNum + 1UL), u32baudrate));
         }
         else
         {
@@ -238,14 +237,14 @@ void LPUART_Open(LPUART_T *lpuart, uint32_t u32baudrate)
  *
  *    @details      The function is used to read Rx data from RX FIFO and the data will be stored in pu8RxBuf.
  */
-uint32_t LPUART_Read(LPUART_T *lpuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
+uint32_t LPUART_Read(const LPUART_T *lpuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes)
 {
-    uint32_t  u32Count, u32delayno;
-    uint32_t  u32Exit = 0ul;
+    uint32_t u32Count;
+    uint32_t u32Exit = 0UL;
 
-    for (u32Count = 0ul; u32Count < u32ReadBytes; u32Count++)
+    for (u32Count = 0UL; u32Count < u32ReadBytes; u32Count++)
     {
-        u32delayno = 0ul;
+        uint32_t u32delayno = 0UL;
 
         while (lpuart->FIFOSTS & LPUART_FIFOSTS_RXEMPTY_Msk)  /* Check RX empty => failed */
         {
@@ -253,15 +252,12 @@ uint32_t LPUART_Read(LPUART_T *lpuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes
 
             if (u32delayno >= 0x40000000ul)
             {
-                u32Exit = 1ul;
+                u32Exit = 1UL;
                 break;
-            }
-            else
-            {
             }
         }
 
-        if (u32Exit == 1ul)
+        if (u32Exit == 1UL)
         {
             break;
         }
@@ -304,12 +300,11 @@ uint32_t LPUART_Read(LPUART_T *lpuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes
  */
 void LPUART_SetLineConfig(LPUART_T *lpuart, uint32_t u32baudrate, uint32_t u32data_width, uint32_t u32parity, uint32_t  u32stop_bits)
 {
-    uint32_t u32UartClkSrcSel = 0ul, u32UartClkDivNum = 0ul;
-    uint32_t u32ClkTbl[4] = {0, __LXT, __MIRC, __HIRC};
+    uint32_t u32UartClkSrcSel = 0UL, u32UartClkDivNum = 0UL;
+    uint32_t u32ClkTbl[4] = {0UL, __LXT, __MIRC, __HIRC};
 
     if (lpuart == (LPUART_T *)LPUART0)
     {
-
         /* Get LPUART clock source selection */
         u32UartClkSrcSel = ((CLK->LPUARTSEL & CLK_LPUARTSEL_LPUART0SEL_Msk)) >> CLK_LPUARTSEL_LPUART0SEL_Pos;
         /* Get LPUART clock divider number */
@@ -317,24 +312,21 @@ void LPUART_SetLineConfig(LPUART_T *lpuart, uint32_t u32baudrate, uint32_t u32da
     }
 
     /* Get PLL clock frequency if LPUART clock source selection is PCLK2 */
-    if (u32UartClkSrcSel == 0ul)
+    if (u32UartClkSrcSel == 0UL)
     {
         u32ClkTbl[0] = CLK_GetPCLK4Freq();
     }
-    else
-    {
-    }
 
     /* Set LPUART baud rate */
-    if (u32baudrate != 0ul)
+    if (u32baudrate != 0UL)
     {
         uint32_t u32Baud_Div;
 
-        u32Baud_Div = LPUART_BAUD_MODE2_DIVIDER((u32ClkTbl[u32UartClkSrcSel]) / (u32UartClkDivNum + 1ul), u32baudrate);
+        u32Baud_Div = LPUART_BAUD_MODE2_DIVIDER((u32ClkTbl[u32UartClkSrcSel]) / (u32UartClkDivNum + 1UL), u32baudrate);
 
         if (u32Baud_Div > 0xFFFFul)
         {
-            lpuart->BAUD = (LPUART_BAUD_MODE0 | LPUART_BAUD_MODE0_DIVIDER((u32ClkTbl[u32UartClkSrcSel]) / (u32UartClkDivNum + 1ul), u32baudrate));
+            lpuart->BAUD = (LPUART_BAUD_MODE0 | LPUART_BAUD_MODE0_DIVIDER((u32ClkTbl[u32UartClkSrcSel]) / (u32UartClkDivNum + 1UL), u32baudrate));
         }
         else
         {
@@ -404,30 +396,27 @@ void LPUART_SelectRS485Mode(LPUART_T *lpuart, uint32_t u32Mode, uint32_t u32Addr
  *
  *    @details      The function is to write data into TX buffer to transmit data by LPUART.
  */
-uint32_t LPUART_Write(LPUART_T *lpuart, uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
+uint32_t LPUART_Write(LPUART_T *lpuart, const uint8_t pu8TxBuf[], uint32_t u32WriteBytes)
 {
-    uint32_t  u32Count, u32delayno;
-    uint32_t  u32Exit = 0ul;
+    uint32_t u32Count;
+    uint32_t u32Exit = 0UL;
 
-    for (u32Count = 0ul; u32Count != u32WriteBytes; u32Count++)
+    for (u32Count = 0UL; u32Count != u32WriteBytes; u32Count++)
     {
-        u32delayno = 0ul;
+        uint32_t u32delayno = 0UL;
 
         while (lpuart->FIFOSTS & LPUART_FIFOSTS_TXFULL_Msk)  /* Check Tx Full */
         {
             u32delayno++;
 
-            if (u32delayno >= 0x40000000ul)
+            if (u32delayno >= 0x40000000UL)
             {
-                u32Exit = 1ul;
+                u32Exit = 1UL;
                 break;
-            }
-            else
-            {
             }
         }
 
-        if (u32Exit == 1ul)
+        if (u32Exit == 1UL)
         {
             break;
         }
@@ -439,6 +428,7 @@ uint32_t LPUART_Write(LPUART_T *lpuart, uint8_t pu8TxBuf[], uint32_t u32WriteByt
 
     return u32Count;
 }
+
 /**
  *    @brief        Select and configure Automatic Operation function
  *
@@ -466,11 +456,9 @@ void LPUART_SelectAutoOperationMode(LPUART_T *lpuart, uint32_t u32TrigSel)
     /*Set Automatic Operation Clock Always-on*/
     lpuart->AUTOCTL |= LPUART_AUTOCTL_CKAWOEN_Msk;
 
-
     // Set Auto Operation mode Trigger source
     lpuart->AUTOCTL &= ~(LPUART_AUTOCTL_TRIGSEL_Msk | LPUART_AUTOCTL_TRIGEN_Msk);
     lpuart->AUTOCTL |=  u32TrigSel;
-
 
 }
 

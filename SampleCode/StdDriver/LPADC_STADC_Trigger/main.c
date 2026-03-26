@@ -57,7 +57,7 @@ void SYS_Init(void)
     /* Enable LPADC module clock */
     CLK_EnableModuleClock(LPADC0_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /* Enable GPB peripheral clock */

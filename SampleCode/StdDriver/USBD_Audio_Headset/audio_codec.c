@@ -119,22 +119,22 @@ void NAU8822_ConfigSampleRate(uint32_t u32SampleRate)
         case 44100:
             I2C_WriteNAU8822(6, 0x14D);    /* Divide by 2, 48K */
             I2C_WriteNAU8822(7, 0x000);    /* 48K for internal filter coefficients */
-            u32BuffLen = 441;
-            u32RxBuffLen = 444;
+            g_u32BuffLen = 441;
+            g_u32RxBuffLen = 444;
             break;
 
         case 48000:
             I2C_WriteNAU8822(6, 0x14D);    /* Divide by 2, 48K */
             I2C_WriteNAU8822(7, 0x000);    /* 48K for internal filter coefficients */
-            u32BuffLen = 768;
-            u32RxBuffLen = 192;
+            g_u32BuffLen = 768;
+            g_u32RxBuffLen = 192;
             break;
 
         case 96000:
             I2C_WriteNAU8822(6, 0x109);    /* Divide by 1, 96K */
             I2C_WriteNAU8822(72, 0x013);
-            u32BuffLen = 768;
-            u32RxBuffLen = 384;
+            g_u32BuffLen = 768;
+            g_u32RxBuffLen = 384;
             break;
     }
 }
@@ -191,7 +191,7 @@ void AdjustCodecPll(RESAMPLE_STATE_T r)
         {0x01F, 0x076, 0x191}    // * .995 = 7.488
     };
     static RESAMPLE_STATE_T current = E_RS_NONE;
-    int i, s;
+    int i, s = 0;
 
     if (r == current)
         return;
@@ -450,7 +450,7 @@ void AdjustCodecPll(RESAMPLE_STATE_T r)
     static uint16_t tb1[3] = {0x86C2, 0x9062, 0x7D1B};
 
     static RESAMPLE_STATE_T current = E_RS_NONE;
-    int s;
+    int s = 0;
 
     if (r == current)
         return;

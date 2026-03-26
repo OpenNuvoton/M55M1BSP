@@ -55,9 +55,9 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/clk.c</locationURI>
 		</link>
 		<link>
-			<name>Library/retarget.c</name>
+			<name>Library/hsusbd.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/retarget.c</locationURI>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/hsusbd.c</locationURI>
 		</link>
 		<link>
 			<name>Library/sys.c</name>
@@ -78,11 +78,6 @@
 			<name>User/fmc_user.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/common/fmc_user.c</locationURI>
-		</link>
-		<link>
-			<name>User/hsusbd_user.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/hsusbd_user.c</locationURI>
 		</link>
 		<link>
 			<name>User/main.c</name>

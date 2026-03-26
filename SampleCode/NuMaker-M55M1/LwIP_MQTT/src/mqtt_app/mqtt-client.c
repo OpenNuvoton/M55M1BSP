@@ -464,7 +464,7 @@ _E_MQTT_ERRORS mqtt_client_publish(_S_MQTT_CLIENT_INFO *info, char *_topic, cons
     _E_MQTT_ERRORS mqtt_err;
     uint32_t dup = 0;
     MQTTString topic;
-    int32_t ret;
+    int32_t ret = 0;
     uint8_t _packet_type;
 
     if (retry == 0)

@@ -80,7 +80,7 @@ void SYS_Init(void)
     /* Enable GPB peripheral clock */
     CLK_EnableModuleClock(GPIOB_MODULE);
 
-    /* Debug UART clock setting*/
+    /* Debug UART clock setting */
     SetDebugUartCLK();
 
     /*---------------------------------------------------------------------------------------------------------*/

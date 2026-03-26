@@ -56,11 +56,6 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/clk.c</locationURI>
 		</link>
 		<link>
-			<name>Driver/retarget.c</name>
-			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/retarget.c</locationURI>
-		</link>
-		<link>
 			<name>Driver/eadc.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/eadc.c</locationURI>
@@ -71,15 +66,25 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/epwm.c</locationURI>
 		</link>
 		<link>
+			<name>Driver/gpio.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/gpio.c</locationURI>
+		</link>
+		<link>
 			<name>Driver/pdma.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/pdma.c</locationURI>
 		</link>
-		<link>		
-			<name>Driver/gpio.c</name>
+		<link>
+			<name>Driver/pmc.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/gpio.c</locationURI>
-		</link>		
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/pmc.c</locationURI>
+		</link>
+		<link>
+			<name>Driver/retarget.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/retarget.c</locationURI>
+		</link>
 		<link>
 			<name>Driver/sys.c</name>
 			<type>1</type>

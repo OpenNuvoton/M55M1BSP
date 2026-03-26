@@ -15,8 +15,6 @@
 extern "C" {
 #endif
 
-#define USING_UART0    1
-
 #if defined (__ICCARM__)
 //#pragma diag_suppress=Be006
 #endif
@@ -24,34 +22,42 @@ extern "C" {
 /* Macro Definition                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
 #ifndef NVT_DCACHE_ON
-#define NVT_DCACHE_ON       1                   /*!< Set 1 to enable data cache or 0 to disable data cache */
-#endif
-
-#ifndef DEBUG_PORT
-#if (USING_UART0 == 1)
-#define DEBUG_PORT              UART0           /*!< Set default Debug UART Port used for retarget.c to output debug message */
-#else
-#define DEBUG_PORT              UART6           /*!< Set default Debug UART Port used for retarget.c to output debug message */
-#endif
+#define NVT_DCACHE_ON               1    /*!< Set 1 to enable data cache or 0 to disable data cache */
 #endif
 
 #ifndef CHECK_SCU_VIOLATION
-#define CHECK_SCU_VIOLATION     0               /*!< Set default SCU violation check disabled */
+#define CHECK_SCU_VIOLATION         0    /*!< Set default SCU violation check disabled */
 #endif
 
-#if (USING_UART0 == 1)
-#define DEBUG_PORT_MODULE       UART0##_MODULE
-#define DEBUG_PORT_IRQn         UART0##_IRQn
-#define DEBUG_PORT_IRQHandler   UART0##_IRQHandler
-#define DEBUG_PORT_RST          SYS_##UART0##RST
-#define DEBUG_PORT_FIFO_SIZE    UART0##_FIFO_SIZE
-#else
-#define DEBUG_PORT_MODULE       UART6##_MODULE
-#define DEBUG_PORT_IRQn         UART6##_IRQn
-#define DEBUG_PORT_IRQHandler   UART6##_IRQHandler
-#define DEBUG_PORT_RST          SYS_##UART6##RST
-#define DEBUG_PORT_FIFO_SIZE    UART6##_FIFO_SIZE
+#if !defined(DEBUG_PORT_UART_IDX)
+#define DEBUG_PORT_UART_IDX         0    /*!< Set UART port index to specify console port. */
 #endif
+
+#if !defined(DEBUG_PORT_UART_GRP_IDX)
+#define DEBUG_PORT_UART_GRP_IDX     0    /*!< Set UART port group number of specified console port. */
+#endif
+
+#define PASTER(a, b, c)         a##b##c
+#define EVAL_MACRO(a, b, c)     PASTER(a, b, c)
+#define _UARTn(n)               EVAL_MACRO(UART, n, )
+#define _UARTn_MODULE(n)        EVAL_MACRO(UART, n, _MODULE)
+#define _UARTn_IRQn(n)          EVAL_MACRO(UART, n, _IRQn)
+#define _UARTn_IRQHandler(n)    EVAL_MACRO(UART, n, _IRQHandler)
+#define _UARTn_FIFO_SIZE(n)     EVAL_MACRO(UART, n, _FIFO_SIZE)
+#define _UARTn_RST(n)           EVAL_MACRO(SYS_, EVAL_MACRO(UART, n, RST), )
+#define _UARTn_CLKSEL(m, n)     EVAL_MACRO(CLK_, EVAL_MACRO(UARTSEL, m, _), EVAL_MACRO(UART, n, SEL_HIRC))
+#define _UARTn_CLKDIV(m, n)     EVAL_MACRO(CLK_, EVAL_MACRO(UARTDIV, m, _), EVAL_MACRO(UART, n, DIV(1)))
+
+#if !defined(DEBUG_PORT)
+#define DEBUG_PORT              _UARTn(DEBUG_PORT_UART_IDX)                                    /*!< UARTn                       */
+#endif
+#define DEBUG_PORT_MODULE       _UARTn_MODULE(DEBUG_PORT_UART_IDX)                             /*!< UARTn_MODULE                */
+#define DEBUG_PORT_IRQn         _UARTn_IRQn(DEBUG_PORT_UART_IDX)                               /*!< UARTn_IRQn                  */
+#define DEBUG_PORT_IRQHandler   _UARTn_IRQHandler(DEBUG_PORT_UART_IDX)                         /*!< UARTn_IRQHandler            */
+#define DEBUG_PORT_FIFO_SIZE    _UARTn_FIFO_SIZE(DEBUG_PORT_UART_IDX)                          /*!< UARTn_FIFO_SIZE             */
+#define DEBUG_PORT_RST          _UARTn_RST(DEBUG_PORT_UART_IDX)                                /*!< UARTn_RST                   */
+#define DEBUG_PORT_CLKSEL       _UARTn_CLKSEL(DEBUG_PORT_UART_GRP_IDX, DEBUG_PORT_UART_IDX)    /*!< CLK_UARTSELm_UARTnSEL_HIRC  */
+#define DEBUG_PORT_CLKDIV       _UARTn_CLKDIV(DEBUG_PORT_UART_GRP_IDX, DEBUG_PORT_UART_IDX)    /*!< CLK_UARTDIVm_UARTnDIV(1)    */
 
 #define ICACHE_LINE_SIZE                        (__SCB_ICACHE_LINE_SIZE)    /*!< ICache line byte size              */
 #define DCACHE_LINE_SIZE                        (__SCB_DCACHE_LINE_SIZE)    /*!< DCache line byte size              */

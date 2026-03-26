@@ -6,7 +6,6 @@
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
-
 #include "NuMicro.h"
 
 /** @addtogroup Standard_Driver Standard Driver
@@ -122,7 +121,7 @@ uint32_t BPWM_ConfigCaptureChannel(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_
  * @param[in] u32ChannelNum BPWM channel number. Valid values are between 0~5
  * @param[in] u32Frequency Target generator frequency
  * @param[in] u32DutyCycle Target generator duty cycle percentage. Valid range are between 0 ~ 100. 10 means 10%, 20 means 20%...
- * @return Nearest frequency clock in nano second
+ * @return Nearest frequency clock
  * @note Since all channels shares a prescaler. Call this API to configure BPWM frequency may affect
  *       existing frequency of other channel.
  * @note This function is used for initial stage.
@@ -130,10 +129,12 @@ uint32_t BPWM_ConfigCaptureChannel(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_
  */
 uint32_t BPWM_ConfigOutputChannel(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t u32Frequency, uint32_t u32DutyCycle)
 {
-    uint32_t u32Src;
-    uint32_t u32BPWMClockSrc;
-    uint32_t i;
-    uint32_t u32Prescale = 1UL, u32CNR = 0xFFFFUL;
+    uint32_t u32Src, u32BPWMClockSrc;
+    uint32_t u32NearestFrequency, u32NearestCNR, u32CNR = 0x10000UL;
+    uint32_t u32Prescale = 1UL;
+
+    if (u32Frequency == 0)
+        return u32Frequency;
 
     if (bpwm == BPWM0)
     {
@@ -164,20 +165,26 @@ uint32_t BPWM_ConfigOutputChannel(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t
         u32BPWMClockSrc = CLK_GetHCLK0Freq();
     }
 
-    for (u32Prescale = 1UL; u32Prescale < 0xFFFUL; u32Prescale++)  /* prescale could be 0~0xFFF */
+    if (u32Frequency > u32BPWMClockSrc)
+        return 0;
+
+    for (u32Prescale = 1UL; u32Prescale <= 0x1000UL; u32Prescale++)  /* CLKPSC could be 0~0xFFF */
     {
-        i = (u32BPWMClockSrc / u32Frequency) / u32Prescale;
+        u32NearestCNR = (u32BPWMClockSrc / u32Frequency) / u32Prescale;
 
         /* If target value is larger than CNR, need to use a larger prescaler */
-        if (i <= (0x10000UL))
+        if (u32NearestCNR <= (0x10000UL))
         {
-            u32CNR = i;
+            u32CNR = u32NearestCNR;
             break;
         }
     }
 
+    if (u32Prescale > 0x1000UL)
+        return 0;
+
     /* Store return value here 'cos we're gonna change u32Prescale & u32CNR to the real value to fill into register */
-    i = u32BPWMClockSrc / (u32Prescale * u32CNR);
+    u32NearestFrequency = u32BPWMClockSrc / (u32Prescale * u32CNR);
 
     /* convert to real register value */
     /* all channels share a prescaler */
@@ -195,7 +202,7 @@ uint32_t BPWM_ConfigOutputChannel(BPWM_T *bpwm, uint32_t u32ChannelNum, uint32_t
     (bpwm)->WGCTL1 = ((bpwm)->WGCTL1 & ~((BPWM_WGCTL1_CMPDCTL0_Msk | BPWM_WGCTL1_CMPUCTL0_Msk) << (u32ChannelNum << 1))) | \
                      (BPWM_OUTPUT_LOW << (u32ChannelNum << 1UL << BPWM_WGCTL1_CMPUCTL0_Pos));
 
-    return (i);
+    return (u32NearestFrequency);
 }
 
 /**

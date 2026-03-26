@@ -85,7 +85,7 @@ extern int32_t g_I2C_i32ErrCode;
  *    @details      Set I2C_CTL register to control I2C bus conditions of START, STOP, SI, ACK.
  *    \hideinitializer
  */
-#define I2C_SET_CONTROL_REG(i2c, u8Ctrl) ((i2c)->CTL0 = ((i2c)->CTL0 & ~0x3c) | (u8Ctrl))
+#define I2C_SET_CONTROL_REG(i2c, u8Ctrl) ((i2c)->CTL0 = ((i2c)->CTL0 & ~0x3cUL) | (u8Ctrl))
 
 /**
  *    @brief        The macro is used to set START condition of I2C Bus
@@ -423,7 +423,7 @@ extern int32_t g_I2C_i32ErrCode;
  *
  *    @details      This macro clear specified I2C interrupt at I2C_STATUS1.
  */
-#define I2C_CLR_STATUS1_FLAG(i2c, u32eIntSts)  ((i2c)->STATUS1 |= u32eIntSts)
+#define I2C_CLR_STATUS1_FLAG(i2c, u32eIntSts)  ((i2c)->STATUS1 |= (u32eIntSts))
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* inline functions                                                                                        */
@@ -443,12 +443,14 @@ __STATIC_INLINE void I2C_STOP(I2C_T *i2c);
 __STATIC_INLINE void I2C_STOP(I2C_T *i2c)
 {
     uint32_t u32TimeOutCount = I2C_TIMEOUT;
-
     (i2c)->CTL0 |= (I2C_CTL0_SI_Msk | I2C_CTL0_STO_Msk);
 
     while (i2c->CTL0 & I2C_CTL0_STO_Msk)
     {
-        if (--u32TimeOutCount == 0) break;
+        if (--u32TimeOutCount == 0)
+        {
+            break;
+        }
     }
 }
 
@@ -457,11 +459,11 @@ void I2C_Close(I2C_T *i2c);
 void I2C_Trigger(I2C_T *i2c, uint8_t u8Start, uint8_t u8Stop, uint8_t u8Si, uint8_t u8Ack);
 void I2C_DisableInt(I2C_T *i2c);
 void I2C_EnableInt(I2C_T *i2c);
-uint32_t I2C_GetBusClockFreq(I2C_T *i2c);
-uint32_t I2C_GetIntFlag(I2C_T *i2c);
-uint32_t I2C_GetStatus(I2C_T *i2c);
+uint32_t I2C_GetBusClockFreq(const I2C_T *i2c);
+uint32_t I2C_GetIntFlag(const I2C_T *i2c);
+uint32_t I2C_GetStatus(const I2C_T *i2c);
 uint32_t I2C_Open(I2C_T *i2c, uint32_t u32BusClock);
-uint8_t I2C_GetData(I2C_T *i2c);
+uint8_t I2C_GetData(const I2C_T *i2c);
 void I2C_SetSlaveAddr(I2C_T *i2c, uint8_t u8SlaveNo, uint16_t u16SlaveAddr, uint8_t u8GCMode);
 void I2C_SetSlaveAddrMask(I2C_T *i2c, uint8_t u8SlaveNo, uint16_t u16SlaveAddrMask);
 uint32_t I2C_SetBusClockFreq(I2C_T *i2c, uint32_t u32BusClock);
@@ -473,24 +475,24 @@ void I2C_SetData(I2C_T *i2c, uint8_t u8Data);
 void I2C_EnableTwoBufferMode(I2C_T *i2c, uint32_t u32BitCount);
 void I2C_DisableTwoBufferMode(I2C_T *i2c);
 uint8_t I2C_WriteByte(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t data);
-uint32_t I2C_WriteMultiBytes(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t data[], uint32_t u32wLen);
+uint32_t I2C_WriteMultiBytes(I2C_T *i2c, uint8_t u8SlaveAddr, const uint8_t data[], uint32_t u32wLen);
 uint8_t I2C_WriteByteOneReg(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr, uint8_t data);
-uint32_t I2C_WriteMultiBytesOneReg(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr, uint8_t data[], uint32_t u32wLen);
+uint32_t I2C_WriteMultiBytesOneReg(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr, const uint8_t data[], uint32_t u32wLen);
 uint8_t I2C_WriteByteTwoRegs(I2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr, uint8_t data);
-uint32_t I2C_WriteMultiBytesTwoRegs(I2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr, uint8_t data[], uint32_t u32wLen);
+uint32_t I2C_WriteMultiBytesTwoRegs(I2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr, const uint8_t data[], uint32_t u32wLen);
 uint8_t I2C_ReadByte(I2C_T *i2c, uint8_t u8SlaveAddr);
 uint32_t I2C_ReadMultiBytes(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t rdata[], uint32_t u32rLen);
 uint8_t I2C_ReadByteOneReg(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr);
 uint32_t I2C_ReadMultiBytesOneReg(I2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr, uint8_t rdata[], uint32_t u32rLen);
 uint8_t I2C_ReadByteTwoRegs(I2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr);
 uint32_t I2C_ReadMultiBytesTwoRegs(I2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr, uint8_t rdata[], uint32_t u32rLen);
-uint32_t I2C_SMBusGetStatus(I2C_T *i2c);
+uint32_t I2C_SMBusGetStatus(const I2C_T *i2c);
 void I2C_SMBusClearInterruptFlag(I2C_T *i2c, uint8_t u8SMBusIntFlag);
 void I2C_SMBusSetPacketByteCount(I2C_T *i2c, uint32_t u32PktSize);
 void I2C_SMBusOpen(I2C_T *i2c, uint8_t u8HostDevice);
 void I2C_SMBusClose(I2C_T *i2c);
 void I2C_SMBusPECTxEnable(I2C_T *i2c, uint8_t u8PECTxEn);
-uint8_t I2C_SMBusGetPECValue(I2C_T *i2c);
+uint8_t I2C_SMBusGetPECValue(const I2C_T *i2c);
 void I2C_SMBusIdleTimeout(I2C_T *i2c, uint32_t us, uint32_t u32Hclk);
 void I2C_SMBusTimeout(I2C_T *i2c, uint32_t ms, uint32_t u32Pclk);
 void I2C_SMBusClockLoTimeout(I2C_T *i2c, uint32_t ms, uint32_t u32Pclk);

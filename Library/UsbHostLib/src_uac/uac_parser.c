@@ -184,7 +184,7 @@ static int  uac_set_microphone_feature_unit(UAC_DEV_T *uac)
 int uac_parse_control_interface(UAC_DEV_T *uac, IFACE_T *iface)
 {
     DESC_CONF_T  *config;
-    DESC_IF_T    *ifd;
+    DESC_IF_T    *ifd = NULL;
     int          if_num;
     uint8_t      *bptr;
     int          size, ret;
@@ -457,7 +457,7 @@ static void *uac_find_feature_unit(UAC_DEV_T *uac, uint8_t bUnitID)
 int uac_parse_streaming_interface(UAC_DEV_T *uac, IFACE_T *iface, uint8_t bAlternateSetting)
 {
     DESC_CONF_T  *config;
-    DESC_IF_T    *ifd;
+    DESC_IF_T    *ifd = NULL;
     AS_IF_T      asif;
     int          if_num;
     uint8_t      *bptr;

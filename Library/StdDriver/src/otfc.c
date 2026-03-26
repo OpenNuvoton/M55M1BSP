@@ -20,12 +20,12 @@
 /** @addtogroup OTFC_EXPORTED_FUNCTIONS OTFC Exported Functions
   @{
 */
-static int32_t otfc_wait_busy(OTFC_T *otfc, uint32_t u32PR)
+static int32_t otfc_wait_busy(const OTFC_T *otfc, uint32_t u32PR)
 {
     volatile int32_t i32Timeout = OTFC_TIMEOUT;
 
     /* Wait Protection Region 0 ~ 3 not Busy*/
-    while (OTFC_GET_BUSY(otfc, u32PR) == 1)
+    while (OTFC_GET_BUSY(otfc, u32PR) != 0U)
     {
         if (i32Timeout-- <= 0)
         {
@@ -136,7 +136,7 @@ int32_t OTFC_SetKeyFromKeyStore(OTFC_T *otfc, uint32_t u32PR,
     {
         OTFC_ENABLE_KS_SRAM(otfc, u32PR, u32KeyNum);
     }
-    else if (u32KeySrc == OTFC_KS_SRC_OTP)
+    else
     {
         OTFC_ENABLE_KS_OTP(otfc, u32PR, u32KeyNum);
     }
@@ -156,7 +156,7 @@ int32_t OTFC_SetKeyFromKeyStore(OTFC_T *otfc, uint32_t u32PR,
  * @param[in] u32SAddr       Protection region start address.
  * @param[in] u32PRSize      Protection region Size.
  */
-int32_t OTFC_SetKeyFromKeyReg(OTFC_T *otfc, uint32_t *pau32KeyTable, uint32_t u32PR,
+int32_t OTFC_SetKeyFromKeyReg(OTFC_T *otfc, const uint32_t *pau32KeyTable, uint32_t u32PR,
                               uint32_t u32SAddr, uint32_t u32PRSize)
 {
     /* Wait Protection Region 0 ~ 3 not Busy*/

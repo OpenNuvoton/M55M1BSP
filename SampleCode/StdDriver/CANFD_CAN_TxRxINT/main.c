@@ -14,20 +14,23 @@
 /*---------------------------------------------------------------------------------------------------------*/
 /* Global variables                                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
-
 CANFD_FD_MSG_T      g_sRxMsgFrame;
 CANFD_FD_MSG_T      g_sTxMsgFrame;
 volatile uint8_t   g_u8RxFifO0CompleteFlag = 0;
+volatile uint8_t   g_u8BusOffFlag = 0;
+volatile uint32_t  g_u32BusOffRecoveryCounter = 0;
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* Define functions prototype                                                                              */
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void);
 void SYS_Init(void);
+void CAN_Init(void);
 void CAN_SendMessage(CANFD_FD_MSG_T *psTxMsg, E_CANFD_ID_TYPE eIdType, uint32_t u32Id, uint8_t u8Len);
 void CAN_ShowRecvMessage(void);
 void CAN_RxTest(void);
 void CAN_TxTest(void);
+uint8_t CAN_BusOffRecovery(void);
 #if defined (__GNUC__) && !defined(__ARMCC_VERSION) && defined(OS_USE_SEMIHOSTING)
     extern void initialise_monitor_handles(void);
 #endif
@@ -38,12 +41,50 @@ void CAN_TxTest(void);
 /*---------------------------------------------------------------------------------------------------------*/
 NVT_ITCM void CANFD00_IRQHandler(void)
 {
-    printf("IR =0x%08X \n", CANFD0->IR);
-    /* Clear the Interrupt flag */
-    CANFD_ClearStatusFlag(CANFD0, CANFD_IR_TOO_Msk | CANFD_IR_RF0N_Msk);
-    /* Recieve the Rx Fifo0 message */
-    CANFD_ReadRxFifoMsg(CANFD0, 0, &g_sRxMsgFrame);
-    g_u8RxFifO0CompleteFlag = 1;
+    uint32_t u32IntStatus;
+
+    u32IntStatus = CANFD0->IR;
+    printf("IR =0x%08X \n", u32IntStatus);
+
+    /* Check Error Warning status */
+    if (u32IntStatus & CANFD_IR_EW_Msk)
+    {
+        printf("Error warning flag is set.\n");
+        CANFD_ClearStatusFlag(CANFD0, CANFD_IR_EW_Msk);
+    }
+
+    /* Check Error Passive status */
+    if (u32IntStatus & CANFD_IR_EP_Msk)
+    {
+        printf("Error passive flag is set.\n");
+        CANFD_ClearStatusFlag(CANFD0, CANFD_IR_EP_Msk);
+    }
+
+    /* Check Bus-Off status */
+    if (u32IntStatus & CANFD_IR_BO_Msk)
+    {
+        if (CANFD0->PSR & CANFD_PSR_BO_Msk)
+        {
+            printf("Bus-Off detected! Recovery will be triggered on next transmission attempt.\n");
+            g_u8BusOffFlag = 1;
+        }
+
+        /* Always clear Bus-Off interrupt flag to prevent repeated interrupts */
+        CANFD_ClearStatusFlag(CANFD0, CANFD_IR_BO_Msk);
+    }
+
+    /* Check Rx FIFO0 New Message interrupt */
+    if (u32IntStatus & CANFD_IR_RF0N_Msk)
+    {
+        /* Receive the Rx Fifo0 buffer */
+        CANFD_ReadRxFifoMsg(CANFD0, 0, &g_sRxMsgFrame);
+        g_u8RxFifO0CompleteFlag = 1;
+        /* Clear Rx FIFO0 New Message interrupt flag */
+        CANFD_ClearStatusFlag(CANFD0, CANFD_IR_RF0N_Msk);
+    }
+
+    /* Clear other interrupt flags */
+    CANFD_ClearStatusFlag(CANFD0, CANFD_IR_TOO_Msk);
 }
 
 
@@ -172,6 +213,22 @@ void CAN_SendMessage(CANFD_FD_MSG_T *psTxMsg, E_CANFD_ID_TYPE eIdType, uint32_t 
 {
     uint8_t u8Cnt;
 
+    /* Check if CAN is in Bus-Off state before transmitting */
+    if (g_u8BusOffFlag)
+    {
+        printf("CAN is in Bus-Off state. Starting recovery process...\n");
+
+        if (CAN_BusOffRecovery())
+        {
+            printf("Bus-Off recovery successful. Proceeding with transmission.\n");
+        }
+        else
+        {
+            printf("Bus-Off recovery failed. Cannot transmit.\n");
+            return;
+        }
+    }
+
     psTxMsg->u32Id = u32Id;
     psTxMsg->eIdType = eIdType;
     psTxMsg->eFrmType = eCANFD_DATA_FRM;
@@ -239,6 +296,48 @@ void CAN_ShowRecvMessage(void)
 
 
 /*---------------------------------------------------------------------------------------------------------*/
+/*                                 CAN Bus-Off Recovery Function                                           */
+/*---------------------------------------------------------------------------------------------------------*/
+uint8_t CAN_BusOffRecovery(void)
+{
+    printf("Starting CAN Bus-Off recovery sequence...\n");
+
+    /* CAN0 run to initial mode */
+    CANFD_RunToNormal(CANFD0, FALSE);
+
+    /* Cancel all transmit requests */
+    CANFD0->TXBCR = 0xFFFFFFFF;
+
+    /* Clear all interrupt flag */
+    CANFD_ClearStatusFlag(CANFD0, 0xFFFFFFFF);
+
+    /* CAN0 run to normal mode */
+    CANFD_RunToNormal(CANFD0, TRUE);
+
+    /* 50ms delay after recovery process */
+    CLK_SysTickDelay(50000);
+
+    /* Check if recovery was successful by verifying Bus-Off status */
+    if (CANFD0->PSR & CANFD_PSR_BO_Msk)
+    {
+        /* Still in Bus-Off state, recovery failed */
+        printf("CAN Bus-Off recovery failed. Still in Bus-Off state.\n");
+        /* Recovery failed */
+        return 0;
+    }
+    else
+    {
+        /* Recovery successful, clear Bus-Off flag */
+        g_u8BusOffFlag = 0;
+        g_u32BusOffRecoveryCounter++;
+        printf("CAN Bus-Off recovery completed. Recovery count: %u\n", g_u32BusOffRecoveryCounter);
+        /* Recovery successful */
+        return 1;
+    }
+}
+
+
+/*---------------------------------------------------------------------------------------------------------*/
 /*                                    Init CAN                                                             */
 /*---------------------------------------------------------------------------------------------------------*/
 void CAN_Init(void)
@@ -285,8 +384,8 @@ void CAN_Init(void)
     CANFD_SetXIDFltr(CANFD0, 2, CANFD_RX_FIFO0_EXT_MASK_LOW(0x44444), CANFD_RX_FIFO0_EXT_MASK_HIGH(0x1FFFFFFF));
     /* Reject Non-Matching Standard ID and Extended ID Filter(RX fifo0) */
     CANFD_SetGFC(CANFD0, eCANFD_REJ_NON_MATCH_FRM, eCANFD_REJ_NON_MATCH_FRM, 1, 1);
-    /* Enable RX fifo0 new message interrupt using interrupt line 0. */
-    CANFD_EnableInt(CANFD0, (CANFD_IE_TOOE_Msk | CANFD_IE_RF0NE_Msk), 0, 0, 0);
+    /* Enable RX fifo0 new message interrupt, Bus-Off interrupt, Error Warning and Error Passive interrupts using interrupt line 0. */
+    CANFD_EnableInt(CANFD0, (CANFD_IE_RF0NE_Msk | CANFD_IE_BOE_Msk | CANFD_IE_EWE_Msk | CANFD_IE_EPE_Msk), 0, 0, 0);
     /* Enable CANFD0 IRQ00 Handler */
     NVIC_EnableIRQ(CANFD00_IRQn);
     /* CAN FD0 Run to Normal mode */
@@ -305,13 +404,14 @@ void CAN_TxRxINTTest(void)
     CAN_Init();
 
     printf("+--------------------------------------------------------------------------+\n");
-    printf("|                      CAN Function Test                                   |\n");
+    printf("|                           CAN Function Test                              |\n");
     printf("+--------------------------------------------------------------------------+\n");
     printf("|  Description :                                                           |\n");
     printf("|    The sample code needs two boards. One is master(CAN transmitter) and  |\n");
     printf("|    the other is slave(CAN receiver). Master will send 6 messages with    |\n");
     printf("|    different sizes of data and ID to the slave. Slave will check if      |\n");
     printf("|    received data is correct after getting 6 messages data.               |\n");
+    printf("|    Bus-Off recovery feature is enabled for error handling.               |\n");
     printf("|  Please select Master or Slave test                                      |\n");
     printf("|  [0] Master(CAN transmitter)    [1] Slave(CAN receiver)                  |\n");
     printf("+--------------------------------------------------------------------------+\n\n");
@@ -327,7 +427,12 @@ void CAN_TxRxINTTest(void)
         CAN_RxTest();
     }
 
-    printf("CANFD Sample Code End.\n");
+    printf("CAN Sample Code End.\n");
+
+    if (g_u32BusOffRecoveryCounter > 0)
+    {
+        printf("Total Bus-Off recovery cycles: %u\n", g_u32BusOffRecoveryCounter);
+    }
 }
 
 

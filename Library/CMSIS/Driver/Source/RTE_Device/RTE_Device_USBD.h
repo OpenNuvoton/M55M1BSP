@@ -9,6 +9,13 @@
 
 //-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 
+/*
+  CMSIS Driver Instance | Hardware Resource
+  :---------------------|:-----------------------
+  Driver_USBD0          | USBD0
+  Driver_USBD1          | HSUSBD0
+*/
+
 #ifndef __RTE_DEVICE_USBD_H
 #define __RTE_DEVICE_USBD_H
 

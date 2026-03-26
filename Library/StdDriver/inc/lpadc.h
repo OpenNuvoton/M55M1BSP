@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     lpadc.h
  * @version  V1.00
- * @brief    M55M1 series LPADC driver header file
+ * @brief    LPADC driver header file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -127,10 +127,8 @@ extern "C"
 /* Define Error Code                                                                                */
 /*--------------------------------------------------------------------------------------------------*/
 #define LPADC_TIMEOUT_ERR     (-1)    /*!< LPADC operation abort due to timeout error \hideinitializer */
-
+#define LPADC_CAL_ERR         (-2)    /*!< LPADC do calibration error \hideinitializer */
 /** @} end of group LPADC_EXPORTED_CONSTANTS */
-
-extern int32_t g_LPADC_i32ErrCode;
 
 /** @addtogroup LPADC_EXPORTED_FUNCTIONS LPADC Exported Functions
   @{
@@ -557,7 +555,7 @@ extern int32_t g_LPADC_i32ErrCode;
 #define LPADC_CLEAR_Compare_1_WAKEUP_FLAG(lpadc)    ((lpadc)->AUTOSTS = LPADC_AUTOSTS_CMP1WKF_Msk)
 
 void LPADC_Open(LPADC_T *lpadc, uint32_t u32InputMode, uint32_t u32OpMode, uint32_t u32ChMask);
-void LPADC_Calibration(LPADC_T *lpadc);
+int32_t LPADC_Calibration(LPADC_T *lpadc);
 void LPADC_Close(LPADC_T *lpadc);
 void LPADC_EnableHWTrigger(LPADC_T *lpadc, uint32_t u32Source, uint32_t u32Param);
 void LPADC_DisableHWTrigger(LPADC_T *lpadc);

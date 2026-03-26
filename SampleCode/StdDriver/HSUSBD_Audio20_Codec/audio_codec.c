@@ -244,6 +244,8 @@ void AdjustCodecPll(RESAMPLE_STATE_T r)
 /***************************************/
 uint8_t I2cWrite_MultiByteforNAU88L25(uint8_t chipadd, uint16_t subaddr, const uint8_t *p, uint32_t len)
 {
+    (void)len;
+
     /* Send START */
     I2C_START(I2C3);
     I2C_WAIT_READY(I2C3);

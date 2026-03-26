@@ -36,7 +36,7 @@ uint32_t EPWM_ConfigCaptureChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_
 {
     uint32_t u32Src;
     uint32_t u32EPWMClockSrc;
-    uint32_t u32NearestUnitTimeNsec;
+    uint32_t u32NearestUnitTimeNsec = 0U;
     uint32_t u16Prescale = 1U, u16CNR = 0xFFFFU;
 
     NVT_UNUSED(u32CaptureEdge);
@@ -121,16 +121,18 @@ uint32_t EPWM_ConfigCaptureChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_
  * @param[in] u32ChannelNum EPWM channel number. Valid values are between 0~5
  * @param[in] u32Frequency Target generator frequency
  * @param[in] u32DutyCycle Target generator duty cycle percentage. Valid range are between 0 ~ 100. 10 means 10%, 20 means 20%...
- * @return Nearest frequency clock in nano second
+ * @return Nearest frequency clock
  * @note This function is used for initial stage.
  *       To change duty cycle later, it should get the configured period value and calculate the new comparator value.
  */
 uint32_t EPWM_ConfigOutputChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Frequency, uint32_t u32DutyCycle)
 {
-    uint32_t u32Src;
-    uint32_t u32EPWMClockSrc;
-    uint32_t i;
-    uint32_t u32Prescale = 1U, u32CNR = 0xFFFFU;
+    uint32_t u32Src, u32EPWMClockSrc;
+    uint32_t u32NearestFrequency, u32NearestCNR, u32CNR = 0x10000UL;
+    uint32_t u32Prescale = 1U;
+
+    if (u32Frequency == 0)
+        return u32Frequency;
 
     if (epwm == EPWM0)
     {
@@ -161,20 +163,26 @@ uint32_t EPWM_ConfigOutputChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t
         u32EPWMClockSrc = CLK_GetHCLK0Freq();
     }
 
-    for (u32Prescale = 1U; u32Prescale < 0xFFFU; u32Prescale++)  /* prescale could be 0~0xFFF */
+    if (u32Frequency > u32EPWMClockSrc)
+        return 0;
+
+    for (u32Prescale = 1U; u32Prescale <= 0x1000U; u32Prescale++)  /* CLKPSC could be 0~0xFFF */
     {
-        i = (u32EPWMClockSrc / u32Frequency) / u32Prescale;
+        u32NearestCNR = (u32EPWMClockSrc / u32Frequency) / u32Prescale;
 
         /* If target value is larger than CNR, need to use a larger prescaler */
-        if (i < (0x10000U))
+        if (u32NearestCNR <= (0x10000U))
         {
-            u32CNR = i;
+            u32CNR = u32NearestCNR;
             break;
         }
     }
 
-    /* Store return value here 'cos we're gonna change u16Prescale & u16CNR to the real value to fill into register */
-    i = u32EPWMClockSrc / (u32Prescale * u32CNR);
+    if (u32Prescale > 0x1000UL)
+        return 0;
+
+    /* Store return value here 'cos we're gonna change u32Prescale & u32CNR to the real value to fill into register */
+    u32NearestFrequency = u32EPWMClockSrc / (u32Prescale * u32CNR);
 
     /* convert to real register value */
     u32Prescale -= 1U;
@@ -193,7 +201,7 @@ uint32_t EPWM_ConfigOutputChannel(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t
     (epwm)->WGCTL1 = ((epwm)->WGCTL1 & ~((EPWM_WGCTL1_CMPDCTL0_Msk | EPWM_WGCTL1_CMPUCTL0_Msk) << (u32ChannelNum << 1U))) | \
                      ((uint32_t)EPWM_OUTPUT_LOW << ((u32ChannelNum << 1U) + (uint32_t)EPWM_WGCTL1_CMPUCTL0_Pos));
 
-    return (i);
+    return (u32NearestFrequency);
 }
 
 /**
@@ -475,7 +483,7 @@ uint32_t EPWM_GetDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum)
  * @param[in] u32ChannelMask Combination of enabled channels. Each bit corresponds to a channel.
  * @param[in] u32LevelMask Output high or low while fault brake occurs, each bit represent the level of a channel
  *                         while fault brake occurs. Bit 0 represents channel 0, bit 1 represents channel 1...
- * @param[in] u32BrakeSource Fault brake source, could be one of following source
+ * @param[in] u32BrakeSourceMask Fault brake source Mask, could be Mask of following source
  *                  - \ref EPWM_FB_EDGE_ACMP0
  *                  - \ref EPWM_FB_EDGE_ACMP1
  *                  - \ref EPWM_FB_EDGE_ACMP2
@@ -504,7 +512,7 @@ uint32_t EPWM_GetDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum)
  * @details This function is used to enable fault brake of selected channel(s).
  *          The write-protection function should be disabled before using this function.
  */
-void EPWM_EnableFaultBrake(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32LevelMask, uint32_t u32BrakeSource)
+void EPWM_EnableFaultBrake(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32LevelMask, uint32_t u32BrakeSourceMask)
 {
     uint32_t i;
 
@@ -512,17 +520,15 @@ void EPWM_EnableFaultBrake(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32Le
     {
         if (u32ChannelMask & (1UL << i))
         {
-            if ((u32BrakeSource == EPWM_FB_EDGE_SYS_CSS) || (u32BrakeSource == EPWM_FB_EDGE_SYS_BOD) || \
-                    (u32BrakeSource == EPWM_FB_EDGE_SYS_RAM) || (u32BrakeSource == EPWM_FB_EDGE_SYS_COR) || \
-                    (u32BrakeSource == EPWM_FB_LEVEL_SYS_CSS) || (u32BrakeSource == EPWM_FB_LEVEL_SYS_BOD) || \
-                    (u32BrakeSource == EPWM_FB_LEVEL_SYS_RAM) || (u32BrakeSource == EPWM_FB_LEVEL_SYS_COR))
+            if (u32BrakeSourceMask & (EPWM_FB_EDGE_SYS_CSS | EPWM_FB_EDGE_SYS_BOD | EPWM_FB_EDGE_SYS_RAM | EPWM_FB_EDGE_SYS_COR | \
+                                      EPWM_FB_LEVEL_SYS_CSS | EPWM_FB_LEVEL_SYS_BOD | EPWM_FB_LEVEL_SYS_RAM | EPWM_FB_LEVEL_SYS_COR))
             {
-                (epwm)->BRKCTL[i >> 1U] |= (u32BrakeSource & (EPWM_BRKCTL0_1_SYSEBEN_Msk | EPWM_BRKCTL0_1_SYSLBEN_Msk));
-                (epwm)->FAILBRK |= (u32BrakeSource & 0xFU);
+                (epwm)->BRKCTL[i >> 1U] |= (u32BrakeSourceMask & (EPWM_BRKCTL0_1_SYSEBEN_Msk | EPWM_BRKCTL0_1_SYSLBEN_Msk));
+                (epwm)->FAILBRK |= (u32BrakeSourceMask & 0xFU);
             }
             else
             {
-                (epwm)->BRKCTL[i >> 1U] |= u32BrakeSource;
+                (epwm)->BRKCTL[i >> 1U] |= u32BrakeSourceMask;
             }
         }
 

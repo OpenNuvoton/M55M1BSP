@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     utcpd.c
  * @version  V1.00
- * @brief    M55M1 series UTCPD driver source file
+ * @brief    UTCPD driver source file
  *
  * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -12,11 +12,6 @@
 #ifdef __cplusplus
 extern "C"
 {
-#endif
-
-#if (defined (__GNUC__)) && !defined(__ARMCC_VERSION)
-#undef NULL
-#define NULL 0
 #endif
 
 /** @addtogroup Standard_Driver Standard Driver
@@ -57,7 +52,7 @@ extern "C"
   */
 int32_t UTCPD_GetAlertStatus(int port, int *i32AlertSts)
 {
-    return tcpc_addr_read16(port, NULL, TCPC_REG_ALERT, i32AlertSts);
+    return tcpc_addr_read16(port, 0, TCPC_REG_ALERT, i32AlertSts);
 }
 
 /**
@@ -391,7 +386,7 @@ int32_t UTCPD_DisableFaultStatusMask(int port, int mask_clr)
   */
 int32_t UTCPD_GetFaultStatus(int port, int *pi32RegData)
 {
-    return tcpc_addr_read16(port, NULL, TCPC_REG_FAULT_STATUS, pi32RegData);
+    return tcpc_addr_read16(port, 0, TCPC_REG_FAULT_STATUS, pi32RegData);
 }
 
 /**
@@ -438,8 +433,8 @@ int32_t UTCPD_ClearFaultStatus(int port, int FaultStClr)
   */
 int32_t UTCPD_SetRoleCtrl(int port, uint32_t u32DrpToggle, uint32_t u32Rpvalue, uint32_t u32CC2, uint32_t u32CC1)
 {
-    uint8_t reg_set = u32DrpToggle | u32Rpvalue | u32CC2 | u32CC1;
-    return tcpc_addr_write16(port, NULL, TCPC_REG_ROLE_CTRL, reg_set);
+    uint32_t reg_set = u32DrpToggle | u32Rpvalue | u32CC2 | u32CC1;
+    return tcpc_addr_write16(port, 0, TCPC_REG_ROLE_CTRL, reg_set);
 }
 
 /**
@@ -467,14 +462,14 @@ int32_t UTCPD_SetRoleCtrl(int port, uint32_t u32DrpToggle, uint32_t u32Rpvalue, 
   */
 int32_t UTCPD_GetRoleCtrl(int port, uint32_t *pu32DrpToggle, uint32_t *pu32CC1, uint32_t *pu32CC2, uint32_t *pu32Rpvalue)
 {
-    int i32Reg;
+    uint32_t u32Reg;
     int32_t rv;
 
-    rv = tcpc_addr_read32(port, NULL, TCPC_REG_ROLE_CTRL, &i32Reg);
-    *pu32DrpToggle = i32Reg & UTCPD_ROLCTL_DRP_Msk;
-    *pu32Rpvalue = i32Reg & UTCPD_ROLCTL_RPVALUE_Msk;
-    *pu32CC2 = i32Reg & UTCPD_ROLCTL_CC2_Msk;
-    *pu32CC1 = i32Reg & UTCPD_ROLCTL_CC1_Msk;
+    rv = tcpc_addr_read32(port, 0, TCPC_REG_ROLE_CTRL, (int *)&u32Reg);
+    *pu32DrpToggle = u32Reg & UTCPD_ROLCTL_DRP_Msk;
+    *pu32Rpvalue = u32Reg & UTCPD_ROLCTL_RPVALUE_Msk;
+    *pu32CC2 = u32Reg & UTCPD_ROLCTL_CC2_Msk;
+    *pu32CC1 = u32Reg & UTCPD_ROLCTL_CC1_Msk;
     return rv;
 }
 
@@ -491,13 +486,13 @@ int32_t UTCPD_GetRoleCtrl(int port, uint32_t *pu32DrpToggle, uint32_t *pu32CC1, 
   */
 int32_t UTCPD_SetTypeCPortCtrl(int port, uint32_t u32BistMode, uint32_t u32Orient)
 {
-    uint8_t reg_set = u32BistMode | u32Orient;
-    return tcpc_addr_write16(port, NULL, TCPC_REG_TCPC_CTRL, reg_set);
+    uint32_t reg_set = u32BistMode | u32Orient;
+    return tcpc_addr_write16(port, 0, TCPC_REG_TCPC_CTRL, reg_set);
 }
 
 
 /**
-  * @brief      Get Role Control
+  * @brief      Get Type-C Port Control
   *
   * @param[in]  port          Specify UTCPD port
   * @param[in]  pu32BistMode  Enable or Disable BIST Mode
@@ -508,14 +503,15 @@ int32_t UTCPD_SetTypeCPortCtrl(int port, uint32_t u32BistMode, uint32_t u32Orien
   */
 int32_t UTCPD_GetTypeCPortCtrl(int port, uint32_t *pu32BistMode, uint32_t *pu32Orient)
 {
-    int i32Reg;
+    uint32_t u32Reg;
     int32_t rv;
 
-    rv = tcpc_addr_read32(port, NULL, TCPC_REG_TCPC_CTRL, &i32Reg);
-    *pu32BistMode = i32Reg & UTCPD_TCPCCTL_BISTEN;
-    *pu32Orient = i32Reg & UTCPD_TCPCCTL_ORIENT;
+    rv = tcpc_addr_read32(port, 0, TCPC_REG_TCPC_CTRL, (int *)&u32Reg);
+    *pu32BistMode = u32Reg & UTCPD_TCPCCTL_BISTEN;
+    *pu32Orient = u32Reg & UTCPD_TCPCCTL_ORIENT;
     return rv;
 }
+
 /**
   * @brief      UTCPD Issue Command
   *
@@ -535,8 +531,7 @@ int32_t UTCPD_GetTypeCPortCtrl(int port, uint32_t *pu32BistMode, uint32_t *pu32O
   */
 int32_t UTCPD_IsssueCmd(int port, uint32_t cmd)
 {
-
-    return tcpc_addr_write16(port, NULL, TCPC_REG_COMMAND, cmd);
+    return tcpc_addr_write16(port, 0, TCPC_REG_COMMAND, cmd);
 }
 
 
@@ -573,14 +568,14 @@ int32_t UTCPD_IsssueCmd(int port, uint32_t cmd)
   */
 int32_t UTCPD_GetCCSts(int port, uint32_t *pu32Look4Con, uint32_t *pu32ConRlt, uint32_t *pu32CC2Sts, uint32_t *pu32CC1Sts)
 {
-    int i32Reg;
+    uint32_t u32Reg;
     int32_t rv;
 
-    rv = tcpc_addr_read32(port, NULL, TCPC_REG_CC_STATUS, &i32Reg);
-    *pu32Look4Con = (i32Reg & TCPC_REG_CC_STATUS_LOOK4CONNECTION_MASK);
-    *pu32ConRlt = (i32Reg & TCPC_REG_CC_STATUS_CONNECT_RESULT_MASK);
-    *pu32CC2Sts = (i32Reg & TCPC_REG_CC_STATUS_CC2_STATE_MASK);
-    *pu32CC1Sts = (i32Reg & TCPC_REG_CC_STATUS_CC1_STATE_MASK);
+    rv = tcpc_addr_read32(port, 0, TCPC_REG_CC_STATUS, (int *)&u32Reg);
+    *pu32Look4Con = (u32Reg & TCPC_REG_CC_STATUS_LOOK4CONNECTION_MASK);
+    *pu32ConRlt = (u32Reg & TCPC_REG_CC_STATUS_CONNECT_RESULT_MASK);
+    *pu32CC2Sts = (u32Reg & TCPC_REG_CC_STATUS_CC2_STATE_MASK);
+    *pu32CC1Sts = (u32Reg & TCPC_REG_CC_STATUS_CC1_STATE_MASK);
     return rv;
 }
 
@@ -599,14 +594,14 @@ int32_t UTCPD_GetCCSts(int port, uint32_t *pu32Look4Con, uint32_t *pu32ConRlt, u
   */
 int32_t UTCPD_GetPwrSts(int port, uint32_t *pu32VBUSDetEn, uint32_t *pu32VBUSPresent, uint32_t *pu32VCONNPresent, uint32_t *pu32SnkVBUS)
 {
-    int i32Reg;
+    uint32_t u32Reg;
     int32_t rv;
 
-    rv = tcpc_addr_read32(port, NULL, TCPC_REG_POWER_STATUS, &i32Reg);
-    *pu32VBUSDetEn = i32Reg & UTCPD_PWRSTS_VBPSDTEN_Msk;
-    *pu32VBUSPresent = i32Reg & UTCPD_PWRSTS_VBPS_Msk;
-    *pu32VCONNPresent = i32Reg & UTCPD_PWRSTS_VCPS_Msk;
-    *pu32SnkVBUS = i32Reg & UTCPD_PWRSTS_SKVB_Msk;
+    rv = tcpc_addr_read32(port, 0, TCPC_REG_POWER_STATUS, (int *)&u32Reg);
+    *pu32VBUSDetEn = u32Reg & UTCPD_PWRSTS_VBPSDTEN_Msk;
+    *pu32VBUSPresent = u32Reg & UTCPD_PWRSTS_VBPS_Msk;
+    *pu32VCONNPresent = u32Reg & UTCPD_PWRSTS_VCPS_Msk;
+    *pu32SnkVBUS = u32Reg & UTCPD_PWRSTS_SKVB_Msk;
     return rv;
 }
 
@@ -623,13 +618,13 @@ int32_t UTCPD_GetPwrSts(int port, uint32_t *pu32VBUSDetEn, uint32_t *pu32VBUSPre
   */
 int32_t UTCPD_GetPwrStsExt(int port, uint32_t *pu32DbgAccessory, uint32_t *pu32SrcNonDefVBUS, uint32_t *pu32SrcDefVBUS)
 {
-    int i32Reg;
+    uint32_t u32Reg;
     int32_t rv;
 
-    rv = tcpc_addr_read32(port, NULL, TCPC_REG_POWER_STATUS, &i32Reg);
-    *pu32DbgAccessory = i32Reg & UTCPD_PWRSTS_DACON_Msk;
-    *pu32SrcNonDefVBUS = i32Reg & UTCPD_PWRSTS_SRHV_Msk;
-    *pu32SrcDefVBUS = i32Reg & UTCPD_PWRSTS_SRVB_Msk;
+    rv = tcpc_addr_read32(port, 0, TCPC_REG_POWER_STATUS, (int *)&u32Reg);
+    *pu32DbgAccessory = u32Reg & UTCPD_PWRSTS_DACON_Msk;
+    *pu32SrcNonDefVBUS = u32Reg & UTCPD_PWRSTS_SRHV_Msk;
+    *pu32SrcDefVBUS = u32Reg & UTCPD_PWRSTS_SRVB_Msk;
     return rv;
 }
 
@@ -647,13 +642,13 @@ int32_t UTCPD_GetPwrStsExt(int port, uint32_t *pu32DbgAccessory, uint32_t *pu32S
   */
 int32_t UTCPD_GetFaultSts(int port, uint32_t *pu32VBUSOverCurr, uint32_t *pu32VBUSOverVolt, uint32_t *pu32VCONNOverCurr, uint32_t *pu32I2CInfErr)
 {
-    int i32Reg;
+    uint32_t u32Reg;
     int32_t rv;
 
-    rv = tcpc_addr_read32(port, NULL, TCPC_REG_FAULT_STATUS, &i32Reg);
-    *pu32VBUSOverCurr = i32Reg & UTCPD_FUTSTS_VBOCFUT_Msk;
-    *pu32VBUSOverVolt = i32Reg & UTCPD_FUTSTS_VBOVFUT_Msk;
-    *pu32VCONNOverCurr = i32Reg & UTCPD_FUTSTS_VCOCFUT_Msk;
+    rv = tcpc_addr_read32(port, 0, TCPC_REG_FAULT_STATUS, (int *)&u32Reg);
+    *pu32VBUSOverCurr = u32Reg & UTCPD_FUTSTS_VBOCFUT_Msk;
+    *pu32VBUSOverVolt = u32Reg & UTCPD_FUTSTS_VBOVFUT_Msk;
+    *pu32VCONNOverCurr = u32Reg & UTCPD_FUTSTS_VCOCFUT_Msk;
     *pu32I2CInfErr = 0;  /* M55M1 didn't support I2C */
     return rv;
 }
@@ -672,13 +667,13 @@ int32_t UTCPD_GetFaultSts(int port, uint32_t *pu32VBUSOverCurr, uint32_t *pu32VB
   */
 int32_t UTCPD_GetFaultStsExt(int port, uint32_t *pu32ForceOffFat, uint32_t *pu32AutoDiscFat, uint32_t *pu32ForceDiscFat)
 {
-    int i32Reg;
+    uint32_t u32Reg;
     int32_t rv;
 
-    rv = tcpc_addr_read32(port, NULL, TCPC_REG_FAULT_STATUS, &i32Reg);
-    *pu32ForceOffFat = i32Reg & UTCPD_FUTSTS_FOFFVB_Msk;
-    *pu32AutoDiscFat = i32Reg & UTCPD_FUTSTS_ADGFAL_Msk;
-    *pu32ForceDiscFat = i32Reg & UTCPD_FUTSTS_FDGFAL_Msk;
+    rv = tcpc_addr_read32(port, 0, TCPC_REG_FAULT_STATUS, (int *)&u32Reg);
+    *pu32ForceOffFat = u32Reg & UTCPD_FUTSTS_FOFFVB_Msk;
+    *pu32AutoDiscFat = u32Reg & UTCPD_FUTSTS_ADGFAL_Msk;
+    *pu32ForceDiscFat = u32Reg & UTCPD_FUTSTS_FDGFAL_Msk;
     return rv;
 }
 
@@ -705,8 +700,8 @@ int32_t UTCPD_GetFaultStsExt(int port, uint32_t *pu32ForceOffFat, uint32_t *pu32
   */
 int32_t UTCPD_SetMsgHeaderInfo(int port, uint32_t u32DataRole, uint32_t u32Revision, uint32_t u32PwrRole)
 {
-    uint8_t reg_set = u32DataRole | u32Revision | u32PwrRole;
-    return tcpc_addr_write16(port, NULL, TCPC_REG_MSG_HDR_INFO, reg_set);
+    uint32_t reg_set = u32DataRole | u32Revision | u32PwrRole;
+    return tcpc_addr_write16(port, 0, TCPC_REG_MSG_HDR_INFO, reg_set);
 }
 
 /**
@@ -729,8 +724,8 @@ int32_t UTCPD_SetMsgHeaderInfo(int port, uint32_t u32DataRole, uint32_t u32Revis
   */
 int32_t UTCPD_SetRecDetect(int port, uint32_t u32RegData)
 {
-    uint8_t reg_set = u32RegData;
-    return tcpc_addr_write16(port, NULL, TCPC_REG_RX_DETECT, reg_set);
+    uint32_t reg_set = u32RegData;
+    return tcpc_addr_write16(port, 0, TCPC_REG_RX_DETECT, reg_set);
 }
 
 /**
@@ -767,7 +762,7 @@ int32_t UTCPD_SetVBUSAlarm(int port, uint32_t u32AlarmH, uint32_t u32AlarmL)
   */
 int32_t UTCPD_SetSnkDisconnect(int port, uint32_t u32SnkDiscVolt)
 {
-    return tcpc_addr_write16(port, NULL, TCPC_REG_VBUS_SINK_DISCONNECT_THRESH, u32SnkDiscVolt);
+    return tcpc_addr_write16(port, 0, TCPC_REG_VBUS_SINK_DISCONNECT_THRESH, u32SnkDiscVolt);
 }
 
 /**
@@ -783,7 +778,7 @@ int32_t UTCPD_SetSnkDisconnect(int port, uint32_t u32SnkDiscVolt)
   */
 int32_t UTCPD_SetStopDischargeVolt(int port, uint32_t u32StopDischgVolt)
 {
-    return tcpc_addr_write16(port, NULL, TCPC_REG_VBUS_STOP_DISCHARGE_THRESH, u32StopDischgVolt);
+    return tcpc_addr_write16(port, 0, TCPC_REG_VBUS_STOP_DISCHARGE_THRESH, u32StopDischgVolt);
 }
 
 
@@ -801,8 +796,9 @@ int32_t UTCPD_SetStopDischargeVolt(int port, uint32_t u32StopDischgVolt)
   */
 void UTCPD_vconn_disable_src_cc(int port)
 {
-    tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_ENABLE_VCONN, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_ENABLE_VCONN, MASK_CLR);
 }
+
 /**
   * @brief      Enable VCONN Power Source to CCx pin
   *
@@ -814,7 +810,7 @@ void UTCPD_vconn_disable_src_cc(int port)
   */
 void UTCPD_vconn_enable_src_cc(int port)
 {
-    tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_ENABLE_VCONN, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_ENABLE_VCONN, MASK_SET);
 }
 
 /**
@@ -828,7 +824,7 @@ void UTCPD_vconn_enable_src_cc(int port)
   */
 void UTCPD_vconn_enable_from_cc2(int port)
 {
-    tcpc_update16(port, TCPC_REG_TCPC_CTRL, TCPC_REG_TCPC_CTRL_PLUG_ORIENTATION, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_TCPC_CTRL, TCPC_REG_TCPC_CTRL_PLUG_ORIENTATION, MASK_CLR);
 }
 
 /**
@@ -842,7 +838,7 @@ void UTCPD_vconn_enable_from_cc2(int port)
   */
 void UTCPD_vconn_enable_from_cc1(int port)
 {
-    tcpc_update16(port, TCPC_REG_TCPC_CTRL, TCPC_REG_TCPC_CTRL_PLUG_ORIENTATION, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_TCPC_CTRL, TCPC_REG_TCPC_CTRL_PLUG_ORIENTATION, MASK_SET);
 }
 
 /**
@@ -856,7 +852,7 @@ void UTCPD_vconn_enable_from_cc1(int port)
   */
 void UTCPD_vconn_polarity_active_low(int port)
 {
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VCEN, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VCEN, MASK_CLR);
 }
 
 /**
@@ -871,7 +867,7 @@ void UTCPD_vconn_polarity_active_low(int port)
 void UTCPD_vconn_polarity_active_high(int port)
 {
     /* Set VCONN Polarity Active Low due to CC1VCENS and CC2VCENS default high */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VCEN, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VCEN, MASK_SET);
 }
 
 /**
@@ -885,7 +881,7 @@ void UTCPD_vconn_polarity_active_high(int port)
   */
 void UTCPD_vconn_disable_oc_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VCONN_OCP_FAULT_DIS, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VCONN_OCP_FAULT_DIS, MASK_SET);
 }
 
 /**
@@ -899,7 +895,7 @@ void UTCPD_vconn_disable_oc_fault(int port)
   */
 void UTCPD_vconn_enable_oc_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VCONN_OCP_FAULT_DIS, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VCONN_OCP_FAULT_DIS, MASK_CLR);
 }
 
 /**
@@ -914,10 +910,10 @@ void UTCPD_vconn_enable_oc_fault(int port)
   */
 void UTCPD_vconn_mux_selection(int port, uint32_t cc1vcensel, uint32_t cc2vcensel)
 {
-    int data;
-    tcpc_addr_read16(port, NULL, UTCPD_MUXSEL, &data);
+    uint32_t data;
+    (void)tcpc_addr_read16(port, 0, UTCPD_MUXSEL, (int *)&data);
     data = (data & ~(CC2VCENS | CC1VCENS)) | ((cc1vcensel << 24) | (cc2vcensel << 28));
-    tcpc_addr_write32(port, NULL, UTCPD_MUXSEL, (unsigned int)data);
+    (void)tcpc_addr_write32(port, 0, UTCPD_MUXSEL, (int)data);
 }
 
 /**
@@ -938,53 +934,58 @@ void UTCPD_vconn_mux_selection(int port, uint32_t cc1vcensel, uint32_t cc2vcense
   */
 void UTCPD_vconn_configure_oc_detection_soruce(int port, uint32_t u32Src)
 {
-    int data;
-    tcpc_addr_read16(port, NULL, UTCPD_MUXSEL, &data);
+    uint32_t data;
+    (void)tcpc_addr_read16(port, 0, UTCPD_MUXSEL, (int *)&data);
     data = (data & ~VCOCS) | (u32Src << 4);
-    tcpc_addr_write16(port, NULL, UTCPD_MUXSEL, data);
+    (void)tcpc_addr_write16(port, 0, UTCPD_MUXSEL, (int)data);
 }
 
 /* ============  VBUS SRCEN Polarity ==========*/
 void UTCPD_vbus_srcen_polarity_active_low(int port)
 {
     /* Set VBUS SRCEN Polarity active Low */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SRCEN, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SRCEN, MASK_CLR);
 }
+
 void UTCPD_vbus_srcen_polarity_active_high(int port)
 {
     /* Set VBUS SRCEN Polarity Active high */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SRCEN, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SRCEN, MASK_SET);
 }
+
 /* ============  VBUS SNKEN Polarity ==========*/
 void UTCPD_vbus_snken_polarity_active_low(int port)
 {
     /* Set VBUS SNKEN Polarity active Low */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SNKEN, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SNKEN, MASK_CLR);
 }
+
 void UTCPD_vbus_snken_polarity_active_high(int port)
 {
     /* Set VBUS SNKEN Polarity Active high */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SNKEN, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_SNKEN, MASK_SET);
 }
 
 void UTCPD_vbus_disable_oc_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OCP_FAULT_DIS, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OCP_FAULT_DIS, MASK_SET);
 }
+
 void UTCPD_vbus_enable_oc_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OCP_FAULT_DIS, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OCP_FAULT_DIS, MASK_CLR);
 }
 
 void UTCPD_vbus_discharge_polarity_active_low(int port)
 {
     /* Set VBUS discharge Polarity Active low */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VBDCHG, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VBDCHG, MASK_CLR);
 }
+
 void UTCPD_vbus_discharge_polarity_active_high(int port)
 {
     /* Set VBUS discharge Polarity Active high */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VBDCHG, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_VBDCHG, MASK_SET);
 }
 
 /**
@@ -1005,126 +1006,125 @@ void UTCPD_vbus_discharge_polarity_active_high(int port)
   */
 void UTCPD_vbus_configure_oc_soruce(int port, uint32_t u32Src)
 {
-    int data;
-    tcpc_addr_read16(port, NULL, UTCPD_MUXSEL, &data);
+    uint32_t data;
+    (void)tcpc_addr_read16(port, 0, UTCPD_MUXSEL, (int *)&data);
     data = (data & ~VBOCS) | (u32Src << 0);
-    tcpc_addr_write16(port, NULL, UTCPD_MUXSEL, data);
+    (void)tcpc_addr_write16(port, 0, UTCPD_MUXSEL, (int)data);
 }
 
 /* VBUS ovp fault */
 void UTCPD_vbus_disable_ov_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OVP_FAULT_DIS, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OVP_FAULT_DIS, MASK_SET);
 }
+
 void UTCPD_vbus_enable_ov_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OVP_FAULT_DIS, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_OVP_FAULT_DIS, MASK_CLR);
 }
 
 /* VBUS force off fault */
 void UTCPD_vbus_disable_forceoff_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_FORCE_OFF_DIS, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_FORCE_OFF_DIS, MASK_SET);
 }
+
 void UTCPD_vbus_enable_forceoff_fault(int port)
 {
-    tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_FORCE_OFF_DIS, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_FAULT_CTRL, TCPC_REG_FAULT_CTRL_VBUS_FORCE_OFF_DIS, MASK_CLR);
 }
 
 
 uint32_t UTCPD_vbus_is_source(int port)
 {
-    int data;
-    tcpc_addr_read16(port, NULL, TCPC_REG_POWER_STATUS, &data);
+    uint32_t data;
+    (void)tcpc_addr_read16(port, 0, TCPC_REG_POWER_STATUS, (int *)&data);
 
     if (data & TCPC_REG_POWER_STATUS_SOURCING_VBUS)
+    {
         return 1;
+    }
     else
+    {
         return 0;
+    }
 }
 
 uint32_t UTCPD_vbus_is_sink(int port)
 {
-    int data;
-    tcpc_addr_read16(port, NULL, TCPC_REG_POWER_STATUS, &data);
+    uint32_t data;
+    (void)tcpc_addr_read16(port, 0, TCPC_REG_POWER_STATUS, (int *)&data);
 
     if (data & TCPC_REG_POWER_STATUS_SINKING_VBUS)
+    {
         return 1;
+    }
     else
+    {
         return 0;
+    }
 }
 
 uint32_t UTCPD_vbus_is_source_hv(int port)
 {
-    int data;
-    tcpc_addr_read16(port, NULL, TCPC_REG_POWER_STATUS, &data);
+    uint32_t data;
+    (void)tcpc_addr_read16(port, 0, TCPC_REG_POWER_STATUS, (int *)&data);
 
     if (data & TCPC_REG_POWER_STATUS_SOURCING_HIGH_VBUS)
+    {
         return 1;
+    }
     else
+    {
         return 0;
+    }
 }
 
 //=================================== for VBUS and VCONN
 void UTCPD_power_enable_monitor(int port)
 {
     /* 0 enable monitor */
-    tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_VBUS_VOL_MONITOR_DIS, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_VBUS_VOL_MONITOR_DIS, MASK_CLR);
 }
 
 void UTCPD_power_disable_monitor(int port)
 {
     /* 1 disable monitor */
-    tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_VBUS_VOL_MONITOR_DIS, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_VBUS_VOL_MONITOR_DIS, MASK_SET);
 }
 
 /* VBUS enable auto discharge */
 void UTCPD_power_disable_auto_discharge(int port)
 {
     /* Disable Auto Discharge = 0 */
-    tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_AUTO_DISCHARGE_DISCONNECT, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_AUTO_DISCHARGE_DISCONNECT, MASK_CLR);
 }
+
 void UTCPD_power_enable_auto_discharge(int port)
 {
     /* Enable Auto Discharge = 0 */
-    tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_AUTO_DISCHARGE_DISCONNECT, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_POWER_CTRL, TCPC_REG_POWER_CTRL_AUTO_DISCHARGE_DISCONNECT, MASK_SET);
 }
 
 void UTCPD_frs_tx_polarity_active_low(int port)
 {
     /* Set FRS Polarity Active low */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_FRSTX, MASK_CLR);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_FRSTX, MASK_CLR);
 }
+
 void UTCPD_frs_tx_polarity_active_high(int port)
 {
     /* Set FRS Polarity Active high */
-    tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_FRSTX, MASK_SET);
+    (void)tcpc_update16(port, TCPC_REG_PINPL, TCPC_REG_PINPL_FRSTX, MASK_SET);
 }
 
 void UTCPD_frs_mux_selection(int port, uint32_t cc1frssel, uint32_t cc2frssel)
 {
-    int data;
-    tcpc_addr_read16(port, NULL, UTCPD_MUXSEL, &data);
+    uint32_t data;
+    (void)tcpc_addr_read16(port, 0, UTCPD_MUXSEL, (int *)&data);
     data = (data & ~(CC2FRSS | CC1FRSS)) | ((cc1frssel << 25) | (cc2frssel << 29));
-    tcpc_addr_write32(port, NULL, UTCPD_MUXSEL, data);
+    (void)tcpc_addr_write32(port, 0, UTCPD_MUXSEL, (int)data);
 }
-
-/**
-  * @brief      Get VBUS VBUS/VCONN Voltage Information
-  *
-  * @param[in]  port                Specify UTCPD port
-  * @param[in]  pu16VbusVol         VBUS Voltage Information. The voltage needs to be divided less than VREF of ADC
-  * @param[in]  pu16VconnVol        VCONN Voltage Information. The voltage needs to be divided less than VREF of ADC
-  * @details
-  *
-  */
-void UTCPD_GetVoltagInfo(int port, uint16_t *pu16VbusVol, uint16_t *pu16VconnVol)
-{
-    tcpc_addr_read16(port, NULL, TCPC_REG_VBUS_VOLTAGE, (int *)pu16VbusVol);
-    *pu16VbusVol &= TCPC_REG_VBUS_VOLTAGE_VBVOL;
-    tcpc_addr_read16(port, NULL, UTCPD_VCVOL, (int *)pu16VconnVol);
-}
-
 
 /**
   * @brief      Enable specify UTCPD Controller and set Clock Divider
@@ -1146,22 +1146,21 @@ uint32_t UTCPD_Open(int port)
     SYS_ResetModule(SYS_UTCPD0RST);
 
 
-    outp32((uint32_t)UTCPD0_BASE + 0x308, 0xA5);
+    outp32((uint32_t)UTCPD0_BASE + 0x308UL, 0xA5);
     // UTCPD trim value, if romap has , you can't write this code.
-    outp32((uint32_t)UTCPD0_BASE + 0x118, 0x82648423);
-    //outp32((uint32_t)UTCPD0_BASE + 0x118, 0xB1538423);
+    outp32((uint32_t)UTCPD0_BASE + 0x118UL, 0x82648423UL);
 
     /* Set SYS_UTCPDCTL IO as CCx and CCDBx function */
     SYS->UTCPDCTL &= ~(SYS_UTCPDCTL_IOMODE_Msk);
     /* Enable UTCPD0 PHY */
     SYS->UTCPDCTL |= SYS_UTCPDCTL_POREN0_Msk;
-    tcpc_addr_write16(port, NULL, UTCPD_PHYCTL, 0x03);
+    (void)tcpc_addr_write16(port, 0, UTCPD_PHYCTL, 0x03);
 
 
-    outp32((uint32_t)UTCPD0_BASE + 0x308, 0);
+    outp32((uint32_t)UTCPD0_BASE + 0x308UL, 0);
     UTCPD_frs_mux_selection(port, 1, 1);
     UTCPD_vconn_mux_selection(port, 1, 1);
-    UTCPD->IE = 0xfff; /* enable interrupt */
+    UTCPD->IE = 0xfffUL; /* enable interrupt */
 
     return 0;
 }
@@ -1175,6 +1174,7 @@ uint32_t UTCPD_Open(int port)
 
 #ifdef __cplusplus
 }
+
 #endif
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

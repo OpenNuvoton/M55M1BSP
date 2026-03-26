@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     usci_uart.h
  * @version  V1.00
- * @brief    M55M1 serie USCI_UART driver header file
+ * @brief    USCI_UART driver header file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -511,14 +511,14 @@ extern "C"
 #define UUART_DEGLITCH_DISABLE(psUUART) ( (psUUART)->PROTCTL &= ~UUART_PROTCTL_DEG_Msk )
 
 void UUART_ClearIntFlag(UUART_T *uuart, uint32_t u32Mask);
-uint32_t UUART_GetIntFlag(UUART_T *uuart, uint32_t u32Mask);
+uint32_t UUART_GetIntFlag(const UUART_T *uuart, uint32_t u32Mask);
 void UUART_Close(UUART_T *uuart);
 void UUART_DisableInt(UUART_T  *uuart, uint32_t u32Mask);
 void UUART_EnableInt(UUART_T  *uuart, uint32_t u32Mask);
 uint32_t UUART_Open(UUART_T *uuart, uint32_t u32baudrate);
-uint32_t UUART_Read(UUART_T *uuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes);
+uint32_t UUART_Read(const UUART_T *uuart, uint8_t pu8RxBuf[], uint32_t u32ReadBytes);
 uint32_t UUART_SetLine_Config(UUART_T *uuart, uint32_t u32baudrate, uint32_t u32data_width, uint32_t u32parity, uint32_t u32stop_bits);
-uint32_t UUART_Write(UUART_T *uuart, uint8_t pu8TxBuf[], uint32_t u32WriteBytes);
+uint32_t UUART_Write(UUART_T *uuart, const uint8_t pu8TxBuf[], uint32_t u32WriteBytes);
 void UUART_EnableWakeup(UUART_T *uuart, uint32_t u32WakeupMode);
 void UUART_DisableWakeup(UUART_T *uuart);
 void UUART_EnableFlowCtrl(UUART_T *uuart);

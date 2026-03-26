@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     dac.c
  * @version  V1.00
- * @brief    M55M1 series DAC driver source file
+ * @brief    DAC driver source file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.

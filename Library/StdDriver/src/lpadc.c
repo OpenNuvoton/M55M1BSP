@@ -1,7 +1,7 @@
 /**************************************************************************//**
  * @file     lpadc.c
  * @version  V1.00
- * @brief    M55M1 series LPADC driver source file
+ * @brief    LPADC driver source file
  *
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
@@ -16,8 +16,6 @@
 /** @addtogroup LPADC_Driver LPADC Driver
   @{
 */
-
-int32_t g_LPADC_i32ErrCode = 0;   /*!< LPADC global error code */
 
 /** @addtogroup LPADC_EXPORTED_FUNCTIONS LPADC Exported Functions
   @{
@@ -57,45 +55,47 @@ void LPADC_Open(LPADC_T *lpadc, uint32_t u32InputMode, uint32_t u32OpMode, uint3
   *
   * @param[in]  lpadc The pointer of the specified LPADC module
   *
-  * @return     None
+  * @retval 0                 LPADC calibration OK.
+  * @retval LPADC_TIMEOUT_ERR LPADC operation abort due to timeout error.
+  * @retval LPADC_CAL_ERR     LPADC has calibration error.
   *
   * @details    To decrease the effect of electrical random noise, the calibration mode performs an offset and mismatch measurement cycles.
   *             Afterwards, in normal operation mode, the calibration engine applies to the capacitor array, so that the offset and mismatch are removed.
   * @note       This API will reset and calibrate LPADC if LPADC never be calibrated after chip power on.
   * @note       If chip power off, calibration function should be executed again.
-  * @note       This function sets g_LPADC_i32ErrCode to LPADC_TIMEOUT_ERR if CALIF(LPADC_ADCALSTSR[0]) is not set to 1
   * @note       If you use the calibration function again, you must write 1 to clear CALIF (LPADC_ADCALSTSR[[0]).
   */
-void LPADC_Calibration(LPADC_T *lpadc)
+int32_t LPADC_Calibration(LPADC_T *lpadc)
 {
-    uint32_t u32Delay = SystemCoreClock;    /* 1 second */
+    volatile uint32_t u32Delay;
 
-    g_LPADC_i32ErrCode = 0;
     /*Enable the LPADC Power on*/
     LPADC_POWER_ON(lpadc);
+
+    u32Delay = SystemCoreClock;
 
     /*Wait the LPADC Power On Ready  */
     while (!(lpadc->ADSR0 & LPADC_ADSR0_ADPRDY_Msk))
     {
         if (--u32Delay == 0)
         {
-            g_LPADC_i32ErrCode = LPADC_TIMEOUT_ERR;
-            break;
+            return LPADC_TIMEOUT_ERR;
         }
     }
 
     /* Do calibration for LPADC to decrease the effect of electrical random noise. */
-    if ((lpadc->ADCALSTS & LPADC_ADCALSTS_CALIF_Msk) == 0)
+    if ((lpadc->ADCALSTS & LPADC_ADCALSTS_CALIF_Msk) == 0UL)
     {
         /* Must reset LPADC before LPADC calibration */
         lpadc->ADCR |= LPADC_ADCR_RESET_Msk;
 
+        u32Delay = SystemCoreClock;
+
         while ((lpadc->ADCR & LPADC_ADCR_RESET_Msk) == LPADC_ADCR_RESET_Msk)
         {
-            if (--u32Delay == 0)
+            if (--u32Delay == 0UL)
             {
-                g_LPADC_i32ErrCode = LPADC_TIMEOUT_ERR;
-                break;
+                return LPADC_TIMEOUT_ERR;
             }
         }
 
@@ -106,15 +106,14 @@ void LPADC_Calibration(LPADC_T *lpadc)
 
         while ((lpadc->ADCALSTS & LPADC_ADCALSTS_CALIF_Msk) != LPADC_ADCALSTS_CALIF_Msk)   /* Wait calibration finish */
         {
-            if (--u32Delay == 0)
+            if (--u32Delay == 0UL)
             {
-                g_LPADC_i32ErrCode = LPADC_TIMEOUT_ERR;
-                break;
+                return LPADC_TIMEOUT_ERR;
             }
         }
-
     }
 
+    return 0;
 }
 
 /**
@@ -204,13 +203,19 @@ void LPADC_DisableHWTrigger(LPADC_T *lpadc)
 void LPADC_EnableInt(LPADC_T *lpadc, uint32_t u32Mask)
 {
     if ((u32Mask) & LPADC_ADF_INT)
+    {
         lpadc->ADCR |= LPADC_ADCR_ADIE_Msk;
+    }
 
     if ((u32Mask) & LPADC_CMP0_INT)
+    {
         lpadc->ADCMPR[0] |= LPADC_ADCMPR_CMPIE_Msk;
+    }
 
     if ((u32Mask) & LPADC_CMP1_INT)
+    {
         lpadc->ADCMPR[1] |= LPADC_ADCMPR_CMPIE_Msk;
+    }
 
     return;
 }
@@ -229,13 +234,19 @@ void LPADC_EnableInt(LPADC_T *lpadc, uint32_t u32Mask)
 void LPADC_DisableInt(LPADC_T *lpadc, uint32_t u32Mask)
 {
     if ((u32Mask) & LPADC_ADF_INT)
+    {
         lpadc->ADCR &= ~LPADC_ADCR_ADIE_Msk;
+    }
 
     if ((u32Mask) & LPADC_CMP0_INT)
+    {
         lpadc->ADCMPR[0] &= ~LPADC_ADCMPR_CMPIE_Msk;
+    }
 
     if ((u32Mask) & LPADC_CMP1_INT)
+    {
         lpadc->ADCMPR[1] &= ~LPADC_ADCMPR_CMPIE_Msk;
+    }
 
     return;
 }

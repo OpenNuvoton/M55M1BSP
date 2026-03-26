@@ -86,14 +86,20 @@ __WEAK void SetDebugUartMFP(void)
 {
 #if (!defined(DEBUG_ENABLE_SEMIHOST) || (DEBUG_ENABLE_SEMIHOST == 1)) && !defined(OS_USE_SEMIHOSTING)
 
-#if(USING_UART0  == 1)
+#if(DEBUG_PORT_UART_IDX  == 0)
     /* Set PB12 as UART0 RXD and PB13 as UART0 TXD */
     SET_UART0_RXD_PB12();
     SET_UART0_TXD_PB13();
-#else
+#elif(DEBUG_PORT_UART_IDX  == 5)
+    /* Set GPB4 as UART5 RXD and GPB5 as UART5 TXD */
+    SET_UART5_RXD_PB4();
+    SET_UART5_TXD_PB5();
+#elif(DEBUG_PORT_UART_IDX  == 6)
     /* Set GPH5 as UART6 RXD and GPH4 as UART6 TXD */
     SET_UART6_RXD_PH5();
     SET_UART6_TXD_PH4();
+#else
+#error "[Miss] Set UART MFP"
 #endif
 
 #endif
@@ -109,24 +115,22 @@ __WEAK void SetDebugUartMFP(void)
 __WEAK void SetDebugUartCLK(void)
 {
 #if (!defined(DEBUG_ENABLE_SEMIHOST) || (DEBUG_ENABLE_SEMIHOST == 1)) && !defined(OS_USE_SEMIHOSTING)
+
     /* Enable External HXT clock */
     CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
 
     /* Waiting for HXT clock ready */
     CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
-#if(USING_UART0  == 1)
-    /* Select UART0 clock source from HIRC */
-    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART0SEL_HIRC, CLK_UARTDIV0_UART0DIV(1));
-#else
-    /* Select UART6 clock source from HIRC */
-    CLK_SetModuleClock(DEBUG_PORT_MODULE, CLK_UARTSEL0_UART6SEL_HIRC, CLK_UARTDIV0_UART6DIV(1));
-#endif
+
+    /* Select UARTn clock source from HIRC */
+    CLK_SetModuleClock(DEBUG_PORT_MODULE, DEBUG_PORT_CLKSEL, DEBUG_PORT_CLKDIV);
 
     /* Enable UART clock */
     CLK_EnableModuleClock(DEBUG_PORT_MODULE);
 
     /* Reset UART module */
     SYS_ResetModule(DEBUG_PORT_RST);
+
 #endif
 }
 

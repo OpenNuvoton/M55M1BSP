@@ -23,6 +23,7 @@ project:
           C-CPP:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
+            - -Wconditional-uninitialized
           CPP:
             - -xc++
             - -std=c++11
@@ -37,6 +38,7 @@ project:
             - -std=gnu11
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
+            - -Wmaybe-uninitialized
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -57,11 +59,11 @@ project:
       files:
         - file: ../../../../Library/StdDriver/src/clk.c
         - file: ../../../../Library/StdDriver/src/sys.c
+        - file: ../../../../Library/StdDriver/src/hsusbd.c
     - group: User
       files:
         - file: ../main.c
         - file: ../descriptors.c
-        - file: ../hsusbd_user.c
         - file: ../dfu_transfer.c
         - file: ../../common/targetdev.c
         - file: ../../common/fmc_user.c

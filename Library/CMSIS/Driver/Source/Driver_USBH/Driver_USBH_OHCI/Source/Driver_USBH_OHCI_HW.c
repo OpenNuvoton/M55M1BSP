@@ -25,13 +25,16 @@
  * -----------------------------------------------------------------------------
  */
 
-#ifdef    RTE_device_header
-    #include  RTE_device_header
+#ifdef _RTE_
+    #include "RTE_Components.h"
+#endif
+#ifdef    PRJ_RTE_DEVICE_HEADER
+    #include  PRJ_RTE_DEVICE_HEADER
 #else
     #include "RTE_Device/RTE_Device.h"
 #endif
 
-#include "cmsis_os2.h"
+#include "misc.h"
 
 #include "NuMicro.h"
 
@@ -107,13 +110,13 @@ int32_t USBH_OHCI_HW_Initialize(uint8_t ctrl, USBH_OHCI_Interrupt_t interrupt_ha
         _ohci->HcMiscControl |= USBH_HcMiscControl_OCAL_Msk;
 #endif
 
-        osDelay(10U); //wait 10ms
+        delay_ms(10U); //wait 10ms
 
         OHCI1_IRQ_Handler = interrupt_handler;
 
         NVIC_EnableIRQ(USBH0_IRQn);
 
-        osDelay(20U); //wait 1ms
+        delay_ms(20U); //wait 1ms
 
         _Ohci_HW_Initialize_status[ctrl] = OHCI_HW_INITIALIZE;
     }

@@ -14,8 +14,6 @@
 #include "dfu_transfer.h"
 #include "targetdev.h"
 
-#define TRIM_INIT       (SYS_BASE + 0x10C)
-
 // Empty function to reduce code size
 uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 {

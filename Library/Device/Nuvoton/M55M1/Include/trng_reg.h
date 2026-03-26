@@ -47,7 +47,7 @@ typedef struct
      * |        |          |1 = Start TRNG.
      * |        |          |Note: Do not enable START and KATEN at the same time. This bit is always 0 when it is read back.
      * |[5:4]   |MODE      |Random Bit Generator Output Selection
-     * |        |          |00 = Output data is from entropy (32-bits).
+     * |        |          |00 = Reserved.
      * |        |          |01 = Output data is from NRBG (128-bits).
      * |        |          |10 = Output data is from DRBG (128-bits).
      * |        |          |11 = Reserved.
