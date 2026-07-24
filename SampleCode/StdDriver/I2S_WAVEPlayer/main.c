@@ -97,6 +97,13 @@ uint32_t get_ticks(void)
  */
 void delay_us(int usec)
 {
+    uint32_t u32TimeOutCnt;
+
+    if (usec <= 0)
+    {
+        return;
+    }
+
     /*
      *  Configure Timer0, clock source from XTL_12M. Prescale 12
      */
@@ -110,7 +117,14 @@ void delay_us(int usec)
     TIMER0->CMP = (uint32_t)usec;
     TIMER0->CTL = (11 << TIMER_CTL_PSC_Pos) | TIMER_ONESHOT_MODE | TIMER_CTL_CNTEN_Msk;
 
-    while (!TIMER0->INTSTS);
+    u32TimeOutCnt = (SystemCoreClock != 0UL) ? SystemCoreClock : __HXT;
+
+    while ((TIMER0->INTSTS == 0U) && (u32TimeOutCnt != 0UL))
+    {
+        u32TimeOutCnt--;
+    }
+
+    TIMER0->CTL = 0U;
 }
 
 #if NAU8822
@@ -611,6 +625,7 @@ void PDMA_Init(void)
 int32_t main(void)
 {
     TCHAR sd_path[] = { '0', ':', 0 };    /* SD drive started from 0 */
+    FRESULT res;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -630,8 +645,19 @@ int32_t main(void)
     printf("  NOTE: This sample code needs to work with audio codec.\n");
 
     /* Configure FATFS */
-    SDH_Open_Disk(SDH0, CardDetect_From_GPIO);
-    f_chdrive(sd_path);          /* set default path */
+    if (SDH_Open_Disk(SDH0, CardDetect_From_GPIO) != SDH_OK)
+    {
+        printf("Open disk failed!\n");
+        return -1;
+    }
+
+    res = f_chdrive(sd_path);          /* set default path */
+
+    if (res != FR_OK)
+    {
+        printf("Change drive failed!\n");
+        return -1;
+    }
 
     /* Init I2C to access codec */
     I2C_Init();
@@ -645,7 +671,11 @@ int32_t main(void)
 #endif
 
     /* Configure as I2S slave */
-    I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_STEREO, I2S_FORMAT_I2S);
+    if (I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_STEREO, I2S_FORMAT_I2S) == 0UL)
+    {
+        printf("Open I2S0 failed!\n");
+        return -1;
+    }
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
     SET_GPIO_PD1();

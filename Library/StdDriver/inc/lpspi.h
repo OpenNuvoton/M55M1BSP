@@ -90,7 +90,7 @@ extern "C"
   * @details    Write 1 to UNITIF bit of LPSPI_STATUS register to clear the unit transfer interrupt flag.
   * \hideinitializer
   */
-#define LPSPI_CLR_UNIT_TRANS_INT_FLAG(lpspi)    ((lpspi)->STATUS |= LPSPI_STATUS_UNITIF_Msk)
+#define LPSPI_CLR_UNIT_TRANS_INT_FLAG(lpspi)    ((lpspi)->STATUS = LPSPI_STATUS_UNITIF_Msk)
 
 /**
   * @brief      Trigger RX PDMA function.
@@ -118,7 +118,7 @@ extern "C"
   * \hideinitializer
   */
 #define LPSPI_TRIGGER_TX_RX_PDMA(lpspi) \
-    ((lpspi)->PDMACTL = (LPSPI_PDMACTL_TXPDMAEN_Msk | LPSPI_PDMACTL_RXPDMAEN_Msk))
+    ((lpspi)->PDMACTL |= (LPSPI_PDMACTL_TXPDMAEN_Msk | LPSPI_PDMACTL_RXPDMAEN_Msk))
 
 /**
   * @brief      Disable RX PDMA transfer.
@@ -218,8 +218,8 @@ extern "C"
   * \hideinitializer
   */
 #define LPSPI_SET_SS_HIGH(lpspi)    \
-    ((lpspi)->SSCTL = ((lpspi)->SSCTL & ~(LPSPI_SSCTL_AUTOSS_Msk)) | \
-                      (LPSPI_SSCTL_SSACTPOL_Msk | LPSPI_SSCTL_SS_Msk))
+    ((lpspi)->SSCTL = (((lpspi)->SSCTL & ~(LPSPI_SSCTL_AUTOSS_Msk | LPSPI_SSCTL_SS_Msk))) | \
+                      ((((lpspi)->SSCTL & LPSPI_SSCTL_SSACTPOL_Msk) != 0U) ? LPSPI_SSCTL_SS_Msk : 0U))
 
 /**
   * @brief      Set SPIx_SS pin to low state.
@@ -229,8 +229,8 @@ extern "C"
   * \hideinitializer
   */
 #define LPSPI_SET_SS_LOW(lpspi) \
-    ((lpspi)->SSCTL = ((lpspi)->SSCTL & ~(LPSPI_SSCTL_AUTOSS_Msk | LPSPI_SSCTL_SSACTPOL_Msk)) | \
-                      LPSPI_SSCTL_SS_Msk)
+    ((lpspi)->SSCTL = (((lpspi)->SSCTL & ~(LPSPI_SSCTL_AUTOSS_Msk | LPSPI_SSCTL_SS_Msk))) | \
+                      ((((lpspi)->SSCTL & LPSPI_SSCTL_SSACTPOL_Msk) == 0U) ? LPSPI_SSCTL_SS_Msk : 0U))
 
 /**
   * @brief      Enable Byte Reorder function.
@@ -261,7 +261,7 @@ extern "C"
   */
 #define LPSPI_SET_SUSPEND_CYCLE(lpspi, u32SuspCycle)        \
     ((lpspi)->CTL = ((lpspi)->CTL & ~(LPSPI_CTL_SUSPITV_Msk)) | \
-                    ((u32SuspCycle) << LPSPI_CTL_SUSPITV_Pos))
+                    (((u32SuspCycle) & 0xFUL) << LPSPI_CTL_SUSPITV_Pos))
 
 /**
   * @brief      Set the LPSPI transfer sequence with LSB first.
@@ -286,12 +286,30 @@ extern "C"
   * @param[in]  lpspi The pointer of the specified LPSPI module.
   * @param[in]  u32Width The bit width of one transaction.
   * @return     None.
-  * @details    The data width can be 8 ~ 32 bits.
+  * @details    The data width can be 4 ~ 32 bits.
   * \hideinitializer
   */
-#define LPSPI_SET_DATA_WIDTH(lpspi, u32Width)               \
-    ((lpspi)->CTL = ((lpspi)->CTL & ~(LPSPI_CTL_DWIDTH_Msk)) |  \
-                    (((u32Width) & 0x1F) << LPSPI_CTL_DWIDTH_Pos))
+__STATIC_INLINE void LPSPI_SET_DATA_WIDTH(LPSPI_T *lpspi, uint32_t u32Width)
+{
+    uint32_t u32WidthTmp = u32Width;
+
+    if ((u32WidthTmp > 0U) && (u32WidthTmp < 4U))
+    {
+        u32WidthTmp = 4U;
+    }
+    else if (u32WidthTmp >= 32U)
+    {
+        u32WidthTmp = 0U;
+    }
+    else
+    {
+        u32WidthTmp &= 0x1FUL;
+    }
+
+    lpspi->CTL = (lpspi->CTL & ~LPSPI_CTL_DWIDTH_Msk) |
+                 (u32WidthTmp << LPSPI_CTL_DWIDTH_Pos);
+}
+
 
 /**
   * @brief      Get the LPSPI busy state.
@@ -362,17 +380,18 @@ extern "C"
   *             enable Software Trigger in Auto Operation Mode.
   * \hideinitializer
   */
-#define LPSPI_ENABLE_AUTO_SW_TRIG(lpspi)    ((lpspi)->AUTOCTL |= LPSPI_AUTOCTL_SWTRG_Msk)
+#define LPSPI_ENABLE_AUTO_SW_TRIG(lpspi)    \
+    ((lpspi)->AUTOCTL = (((lpspi)->AUTOCTL & ~LPSPI_AUTOCTL_SWTRG_Msk) | LPSPI_AUTOCTL_SWTRG_Msk))
 
 /**
-  * @brief      Disable Software Trigger for Auto Operation.
+  * @brief      Compatibility macro for software trigger pulse.
   * @param[in]  lpspi The pointer of the specified LPSPI module.
   * @return     None.
-  * @details    Clear SWTRIG (LPSPI_AUTOCTL[9], Write Only bit) to
-  *             disable Software Trigger in Auto Operation Mode.
+  * @details    SWTRIG is a write-only pulse bit. This macro is kept for source compatibility
+  *             and has no effect.
   * \hideinitializer
   */
-#define LPSPI_DISABLE_AUTO_SW_TRIG(lpspi)   ((lpspi)->AUTOCTL &= ~LPSPI_AUTOCTL_SWTRG_Msk)
+#define LPSPI_DISABLE_AUTO_SW_TRIG(lpspi)   ((void)(lpspi))
 
 /**
   * @brief      Enable LPSPI Auto Operation Mode.
@@ -584,7 +603,7 @@ void LPSPI_DisableAutoSS(LPSPI_T *lpspi);
 void LPSPI_EnableAutoSS(LPSPI_T *lpspi, uint32_t u32SSPinMask, uint32_t u32ActiveLevel);
 uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock);
 void LPSPI_SetFIFO(LPSPI_T *lpspi, uint32_t u32TxThreshold, uint32_t u32RxThreshold);
-uint32_t LPSPI_GetBusClock(LPSPI_T *lpspi);
+uint32_t LPSPI_GetBusClock(const LPSPI_T *lpspi);
 void LPSPI_EnableInt(LPSPI_T *lpspi, uint32_t u32Mask);
 void LPSPI_DisableInt(LPSPI_T *lpspi, uint32_t u32Mask);
 uint32_t LPSPI_GetIntFlag(const LPSPI_T *lpspi, uint32_t u32Mask);

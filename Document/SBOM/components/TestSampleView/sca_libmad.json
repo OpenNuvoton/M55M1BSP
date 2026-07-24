@@ -1,0 +1,59 @@
+{
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/libmad@0.15.1-beta?source=vendored&path=ThirdParty/libmad",
+      "name": "libmad",
+      "scope": "required",
+      "purl": "pkg:generic/libmad@0.15.1-beta",
+      "cpe": "cpe:2.3:a:underbit:libmad:0.15.1b:*:*:*:*:*:*:*",
+      "description": "libmad - MPEG audio decoder library",
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "ThirdParty/libmad"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_source"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "third-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "libmad MPEG audio decoder"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/components/sca_libmad.json"
+        },
+        {
+          "name": "bsp:evidence-path",
+          "value": "ThirdParty/libmad"
+        },
+        {
+          "name": "bsp:version-evidence",
+          "value": "ThirdParty/libmad/inc/version.h"
+        },
+        {
+          "name": "bsp:license-evidence",
+          "value": "ThirdParty/libmad/inc/version.h; ThirdParty/libmad/README"
+        }
+      ],
+      "version": "0.15.1-beta",
+      "author": "Underbit Technologies, Inc.",
+      "supplier": {
+        "name": "Underbit Technologies, Inc."
+      },
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-or-later"
+          }
+        }
+      ]
+    }
+  ]
+}

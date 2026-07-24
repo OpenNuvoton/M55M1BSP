@@ -18,7 +18,7 @@
 static void ExecCTROperation(I3C_DEVICE_T *dev);
 
 /**
-  * @brief  SDR Dummy Write to wake up target.
+  * @brief  SDR Dummy Read to wake up target.
   */
 static int32_t SDRReadDummy(I3C_DEVICE_T *dev, uint8_t tgt)
 {

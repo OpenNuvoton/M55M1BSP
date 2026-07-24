@@ -16,7 +16,7 @@
         <TargetCommonOption>
           <Device>M55M1H2LJAE</Device>
           <Vendor>Nuvoton</Vendor>
-          <PackID>Nuvoton.NuMicroM55_DFP.1.0.2</PackID>
+          <PackID>Nuvoton.NuMicroM55_DFP.3.1.4-rc.3</PackID>
           <PackURL>https://github.com/OpenNuvoton/cmsis-packs/raw/master/Nuvoton_DFP/</PackURL>
           <Cpu>IRAM(0x20100000,0x150000) IRAM2(0x30100000,0x150000) IROM(0x00100000,0x200000) IROM2(0x10100000,0x200000) CPUTYPE("Cortex-M55") FPU3(DFPU) DSP TZ MVE(FP) CLOCK(12000000) ESEL ELITTLE IROM3(0x0F100000,0x00002000)</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -83,7 +83,7 @@
             <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>1</RunUserProg2>
             <UserProg1Name>fromelf --bin ".\Objects\@L.axf" --output ".\Objects\@L.bin"</UserProg1Name>
-            <UserProg2Name>..\..\FwSign.bat ".\Objects\@L.bin" ..\FwKey\ECC-P256.pem</UserProg2Name>
+            <UserProg2Name>python ..\..\FwSign.py ".\Objects\@L.bin" ..\UNSAFE_DEV_ONLY_KEY\ECC-P256.pem 0</UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
             <nStopA1X>0</nStopA1X>
@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define>NVT_CMSE_NON_SECURE, DEBUG_PORT=UART0_NS, NVT_DBG_UART_OFF, NVT_VECTOR_ON_FLASH</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\..\Library\StdDriver\inc;..\..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..</IncludePath>
@@ -431,9 +431,9 @@
   </Targets>
 
   <RTE>
-    <apis></apis>
-    <components></components>
-    <files></files>
+    <apis/>
+    <components/>
+    <files/>
   </RTE>
 
   <LayerInfo>

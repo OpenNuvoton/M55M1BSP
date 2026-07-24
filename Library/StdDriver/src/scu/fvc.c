@@ -9,16 +9,16 @@
 #include "NuMicro.h"
 
 /** @addtogroup Standard_Driver Standard Driver
-  @{
+    @{
 */
 
 /** @addtogroup FVC_Driver FVC Driver
-  @{
+    @{
 */
 
 
 /** @addtogroup FVC_EXPORTED_FUNCTIONS FVC Exported Functions
-  @{
+    @{
 */
 
 /**
@@ -35,7 +35,9 @@ int32_t FVC_Open(void)
 
     /* Just return when it is ready */
     if (FVC->STS & FVC_STS_RDY_Msk)
+    {
         return 0;
+    }
 
     /* Init FVC */
     FVC->CTL = FVC_WVCODE | FVC_CTL_INIT_Msk;
@@ -43,7 +45,7 @@ int32_t FVC_Open(void)
     /* Waiting for ready */
     i32Timeout = 0x100000;
 
-    while ((FVC->STS & FVC_STS_RDY_Msk) == 0)
+    while ((FVC->STS & FVC_STS_RDY_Msk) == 0U)
     {
         if (i32Timeout-- < 0)
         {
@@ -76,7 +78,9 @@ int32_t FVC_EnableMonotone(void)
     while (FVC->STS & FVC_STS_BUSY_Msk)
     {
         if (i32Timeout-- < 0)
+        {
             return -1;
+        }
     }
 
     return 0;
@@ -98,25 +102,31 @@ int32_t FVC_SetNVC(uint32_t u32NvcIdx, uint32_t u32Cnt)
 {
     int32_t i32Timeout;
 
-    if (u32NvcIdx < 2)
+    if (u32NvcIdx < 2U)
     {
-        if (u32Cnt >= 64)
+        if (u32Cnt >= 64U)
         {
             /* The counter value is out of range */
             return -1;
         }
     }
-    else if (u32NvcIdx < 4)
+    else if (u32NvcIdx < 4U)
+    {
         return -1;
-    else if (u32NvcIdx < 6)
+    }
+    else if (u32NvcIdx < 6U)
     {
         /* The counter value is out of range */
-        if (u32Cnt >= 256)
+        if (u32Cnt >= 256U)
+        {
             /* The counter value is out of range */
             return -1;
+        }
     }
     else
+    {
         return -1;
+    }
 
     FVC->NVC[u32NvcIdx] = (FVC->NVC[u32NvcIdx] << FVC_NVC0_WVCODE_Pos) | (u32Cnt & FVC_NVC1_FWVER_Msk);
     i32Timeout = 0x100000;
@@ -124,11 +134,15 @@ int32_t FVC_SetNVC(uint32_t u32NvcIdx, uint32_t u32Cnt)
     while (FVC->STS & FVC_STS_BUSY_Msk)
     {
         if (i32Timeout-- < 0)
+        {
             return -1;
+        }
     }
 
     if (FVC->NVC[u32NvcIdx] != u32Cnt)
+    {
         return -1;
+    }
 
     return 0;
 }
@@ -144,8 +158,10 @@ int32_t FVC_SetNVC(uint32_t u32NvcIdx, uint32_t u32Cnt)
   */
 int32_t FVC_GetNVC(uint32_t u32NvcIdx)
 {
-    if ((u32NvcIdx == 2) || (u32NvcIdx == 3) || (u32NvcIdx > 5))
+    if ((u32NvcIdx == 2U) || (u32NvcIdx == 3U) || (u32NvcIdx > 5U))
+    {
         return -1;
+    }
 
     return FVC->NVC[u32NvcIdx];
 }

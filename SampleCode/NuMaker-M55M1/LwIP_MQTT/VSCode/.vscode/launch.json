@@ -18,6 +18,32 @@
             "overrideLaunchCommands": [
                 "monitor reset halt"
             ]
+        },
+        {
+            "name": "CMSIS_DAP@pyOCD (attach)",
+            "type": "gdbtarget",
+            "request": "attach",
+            "cwd": "${workspaceFolder}/",
+            "program": "out/LwIP_MQTT/ARMCLANG/Release/LwIP_MQTT.axf",
+            "gdb": "arm-none-eabi-gdb",
+            "auxiliaryGdb": true,
+            "initCommands": [
+                ""
+            ],
+            "customResetCommands": [
+                "monitor reset halt",
+                "maintenance flush register-cache",
+                "maintenance flush dcache",
+                "tbreak main",
+                "continue"
+            ],
+            "target": {
+                "port": "3333"
+            },
+            "cmsis": {
+                "cbuildRunFile": "${command:cmsis-csolution.getCbuildRunFile}",
+                "updateConfiguration": "auto"
+            }
         }
     ]
 }

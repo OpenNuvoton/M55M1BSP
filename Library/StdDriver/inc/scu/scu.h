@@ -35,8 +35,8 @@ extern "C"
 #define SRAM2_SIZE          ((uint32_t) 0x00050000UL)
 #define SRAM3_SIZE          ((uint32_t) 0x00002000UL)
 #define LPSRAM_SIZE         ((uint32_t) 0x00002000UL)
-#define SPIM0_MEM_BASE      ((uint32_t) 0x80000000UL)
-#define SPIM0_MEM_SIZE      ((uint32_t) 0x02000000UL)
+#define SPIM0_MEM_BASE      (SPIM_DMM0_SADDR)
+#define SPIM0_MEM_SIZE      (SPIM_DMM_SIZE)
 /* EBI memory secure/non-secure is decided by SCU_D1PNS1 and did not support MPC config */
 
 #define SRAM0MPC_BLK        (0x8000UL)        // Block size: 32 KB
@@ -80,7 +80,7 @@ typedef enum
     eSCU_INT_IDX_D2PPC0     = 11,
     eSCU_INT_IDX_EBI        = 16,
     eSCU_INT_IDX_FLASH      = 17,
-    eSCU_INT_IDX_GDMA       = 32 +  0,
+    eSCU_INT_IDX_GDMA       = 32,
     eSCU_INT_IDX_PDMA0      = 32 +  1,
     eSCU_INT_IDX_PDMA1      = 32 +  2,
     eSCU_INT_IDX_USBH0      = 32 +  3,
@@ -96,7 +96,7 @@ typedef enum
     eSCU_INT_IDX_NPUIF1     = 32 + 14,
     eSCU_INT_IDX_NPUIF0     = 32 + 15,
     eSCU_INT_IDX_SPIM0      = 32 + 16,
-    eSCU_INT_IDX_SRAM0_MPC  = 64 +  0,
+    eSCU_INT_IDX_SRAM0_MPC  = 64,
     eSCU_INT_IDX_SRAM1_MPC  = 64 +  1,
     eSCU_INT_IDX_SRAM2_MPC  = 64 +  2,
     eSCU_INT_IDX_SRAM3_MPC  = 64 +  3,
@@ -116,7 +116,7 @@ typedef enum
     eSCU_PERI_IDX_SPIM0          = 64 + 2,
 
     /******  SCU_D1PNS0 **********************************************************************************/
-    eSCU_PERI_IDX_PDMA0          = 256 +  0,
+    eSCU_PERI_IDX_PDMA0          = 256,
     eSCU_PERI_IDX_PDMA1          = 256 +  1,
     eSCU_PERI_IDX_USBH0          = 256 +  2,
     eSCU_PERI_IDX_HSUSBH         = 256 +  4,
@@ -134,7 +134,7 @@ typedef enum
     eSCU_PERI_IDX_EBI            = 288 + 16,
 
     /******  SCU_D1PNS2 **********************************************************************************/
-    eSCU_PERI_IDX_WWDT0          = 320 +  0,
+    eSCU_PERI_IDX_WWDT0          = 320,
     eSCU_PERI_IDX_EADC0          = 320 +  1,
     eSCU_PERI_IDX_EPWM0          = 320 +  2,
     eSCU_PERI_IDX_BPWM0          = 320 +  3,
@@ -164,7 +164,7 @@ typedef enum
     eSCU_PERI_IDX_USBD           = 320 + 28,
 
     /******  SCU_D1PNS4 **********************************************************************************/
-    eSCU_PERI_IDX_WWDT1          = 384 +  0,
+    eSCU_PERI_IDX_WWDT1          = 384,
     eSCU_PERI_IDX_EPWM1          = 384 +  2,
     eSCU_PERI_IDX_BPWM1          = 384 +  3,
     eSCU_PERI_IDX_EQEI1          = 384 +  4,
@@ -193,12 +193,12 @@ typedef enum
     eSCU_PERI_IDX_UTCPD          = 384 + 27,
 
     /******  SCU_D2PNS0 **********************************************************************************/
-    eSCU_PERI_IDX_LPPDMA         = 512 + 0,
+    eSCU_PERI_IDX_LPPDMA         = 512,
     eSCU_PERI_IDX_CCAP           = 512 + 1,
     eSCU_PERI_IDX_LPGPIO         = 512 + 3,
 
     /******  SCU_D2PNS2 **********************************************************************************/
-    eSCU_PERI_IDX_LPTMR01        = 576 + 0,
+    eSCU_PERI_IDX_LPTMR01        = 576,
     eSCU_PERI_IDX_TTMR01         = 576 + 1,
     eSCU_PERI_IDX_LPADC0         = 576 + 2,
     eSCU_PERI_IDX_LPI2C0         = 576 + 3,
@@ -226,7 +226,7 @@ typedef enum
   * @details    This macro is used to set a peripheral to be non-secure peripheral.
   *
   */
-#define SCU_SET_PERI_NS(ePeriIdx)     (SCU->DxPNSy[(ePeriIdx) / 32] |= (1 << ((ePeriIdx) & 0x1Ful)))
+#define SCU_SET_PERI_NS(ePeriIdx)     (SCU->DxPNSy[(ePeriIdx) / 32] |= (1 << ((ePeriIdx) & 0x1FUL)))
 
 /**
   * @brief      Set peripheral to secure state
@@ -239,7 +239,7 @@ typedef enum
   * @details    This macro is used to set a peripheral to be secure peripheral.
   *
   */
-#define SCU_SET_PERI_S(ePeriIdx)     (SCU->DxPNSy[(ePeriIdx) / 32] &= ~(1 << ((ePeriIdx) & 0x1Ful)))
+#define SCU_SET_PERI_S(ePeriIdx)     (SCU->DxPNSy[(ePeriIdx) / 32] &= ~(1 << ((ePeriIdx) & 0x1FUL)))
 
 /**
  * @brief       Get peripheral secure/non-secure attribution
@@ -253,7 +253,7 @@ typedef enum
  *
  * @details     This macro gets the peripheral secure/non-secure attribution.
  */
-#define SCU_IS_PERI_NS(ePeriIdx)      ((SCU->DxPNSy[(ePeriIdx) / 32] >> ((ePeriIdx) & 0x1Ful)) & 1ul)
+#define SCU_IS_PERI_NS(ePeriIdx)      ((SCU->DxPNSy[(ePeriIdx) / 32] >> ((ePeriIdx) & 0x1FUL)) & 1UL)
 
 
 /**
@@ -305,7 +305,7 @@ typedef enum
  * @details     This macro is used to enable slave secure violation interrupt of SCU.
  *              The secure violation interrupt could be used to detect attack of secure elements.
  */
-#define SCU_ENABLE_INT(eIntIdx)       (SCU->SVIEN[(eIntIdx) / 32] |= (1 << ((eIntIdx) & 0x1Ful)))
+#define SCU_ENABLE_INT(eIntIdx)       (SCU->SVIEN[(eIntIdx) / 32] |= (1 << ((eIntIdx) & 0x1FUL)))
 
 
 /**
@@ -330,7 +330,7 @@ typedef enum
  * @details     This macro is used to disable slave secure violation interrupt of SCU.
  *
  */
-#define SCU_DISABLE_INT(eIntIdx)      (SCU->SVIEN[(eIntIdx) / 32] &= ~(1 << ((eIntIdx) & 0x1Ful)))
+#define SCU_DISABLE_INT(eIntIdx)      (SCU->SVIEN[(eIntIdx) / 32] &= ~(1 << ((eIntIdx) & 0x1FUL)))
 
 
 /**
@@ -364,7 +364,7 @@ typedef enum
   *           - \ref eSCU_INT_IDX_SPIM0_MPC
   * @return   The value of interrupt flag status
   */
-#define SCU_GET_INT_FLAG(eIntIdx)     ((SCU->SVINTSTS[(eIntIdx) / 32] >> ((eIntIdx) & 0x1Ful)) & 0x1ul)
+#define SCU_GET_INT_FLAG(eIntIdx)     ((SCU->SVINTSTS[(eIntIdx) / 32] >> ((eIntIdx) & 0x1FUL)) & 0x1UL)
 
 /**
   * @brief      Clear secure violation interrupt flag
@@ -403,7 +403,7 @@ typedef enum
   * @details    Clear SCU related interrupt flags specified by flag parameter.
   *
   */
-#define SCU_CLR_INT_FLAG(eIntIdx)     (SCU->SVINTSTS[(eIntIdx) / 32] = (1 << ((eIntIdx) & 0x1Ful)))
+#define SCU_CLR_INT_FLAG(eIntIdx)     (SCU->SVINTSTS[(eIntIdx) / 32] = (1 << ((eIntIdx) & 0x1FUL)))
 
 /**
   * @brief      Control the behavior of non-secure monitor when CPU is in idle state.
@@ -444,7 +444,7 @@ typedef enum
  *
  * @details     This macro returns CPU is in secure or non-secure state.
  */
-#define SCU_IS_CPU_NS(psSCU)        ((psSCU->NSMSTS & SCU_NSMSTS_CURRNS_Msk) >> SCU_NSMSTS_CURRNS_Pos)
+#define SCU_IS_CPU_NS(psSCU)        (((psSCU)->NSMSTS & SCU_NSMSTS_CURRNS_Msk) >> SCU_NSMSTS_CURRNS_Pos)
 
 /**
  * @brief Retrieve the non-secure flash base address.
@@ -478,8 +478,8 @@ __STATIC_INLINE void SCU_NSMConfig(uint32_t u32Ticks, uint32_t u32Prescale)
 {
 
     SCU->NSMLOAD = u32Ticks;
-    SCU->NSMVAL  = 0ul;
-    SCU->NSMCTL  = SCU_NSMCTL_AUTORLD_Msk | SCU_NSMCTL_NSMIEN_Msk | (u32Prescale & 0xFFul);
+    SCU->NSMVAL  = 0UL;
+    SCU->NSMCTL  = SCU_NSMCTL_AUTORLD_Msk | SCU_NSMCTL_NSMIEN_Msk | (u32Prescale & 0xFFUL);
 }
 
 /**
@@ -499,8 +499,8 @@ __STATIC_INLINE void SCU_TimerConfig(uint32_t u32Ticks, uint32_t u32Prescale)
 {
 
     SCU->NSMLOAD = u32Ticks;
-    SCU->NSMVAL  = 0ul;
-    SCU->NSMCTL  = SCU_NSMCTL_AUTORLD_Msk | SCU_NSMCTL_NSMIEN_Msk | SCU_NSMCTL_TMRMOD_Msk | (u32Prescale & 0xFFul);
+    SCU->NSMVAL  = 0UL;
+    SCU->NSMCTL  = SCU_NSMCTL_AUTORLD_Msk | SCU_NSMCTL_NSMIEN_Msk | SCU_NSMCTL_TMRMOD_Msk | (u32Prescale & 0xFFUL);
 }
 
 /** @} end of group SCU_EXPORTED_FUNCTIONS */

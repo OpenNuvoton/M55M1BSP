@@ -17,8 +17,26 @@ FATFS  _FatfsVolSd1;
 
 static TCHAR  _Path[3];
 
+static FATFS *SDH_GetFatFsVolume(SDH_T *sdh)
+{
+    return (sdh == SDH0) ? &_FatfsVolSd0 : &_FatfsVolSd1;
+}
+
+static void SDH_GetDrivePath(SDH_T *sdh, TCHAR *pachPath)
+{
+    pachPath[0] = (sdh == SDH0) ? '0' : '1';
+    pachPath[1] = ':';
+    pachPath[2] = 0;
+}
+
 int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc)
 {
+    FATFS *pFatFs = SDH_GetFatFsVolume(sdh);
+
+    SDH_GetDrivePath(sdh, _Path);
+    f_mount(NULL, _Path, 1);
+    (void)memset(pFatFs, 0, sizeof(FATFS));
+
     SDH_Open(sdh, u32CardDetSrc);
 
     if (SDH_Probe(sdh))
@@ -27,18 +45,10 @@ int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc)
         return -1;
     }
 
-    _Path[1] = ':';
-    _Path[2] = 0;
-
-    if (sdh == SDH0)
+    if (f_mount(pFatFs, _Path, 1) != FR_OK)
     {
-        _Path[0] = '0';
-        f_mount(&_FatfsVolSd0, _Path, 1);
-    }
-    else
-    {
-        _Path[0] = '1';
-        f_mount(&_FatfsVolSd1, _Path, 1);
+        printf("f_mount fail!!\n");
+        return -1;
     }
 
     return 0;
@@ -46,17 +56,12 @@ int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc)
 
 void SDH_Close_Disk(SDH_T *sdh)
 {
-    if (sdh == SDH0)
-    {
-        memset(&SD0, 0, sizeof(SDH_INFO_T));
-        f_mount(NULL, _Path, 1);
-        memset(&_FatfsVolSd0, 0, sizeof(FATFS));
-    }
-    else
-    {
-        memset(&SD1, 0, sizeof(SDH_INFO_T));
-        f_mount(NULL, _Path, 1);
-        memset(&_FatfsVolSd1, 0, sizeof(FATFS));
-    }
-}
+    FATFS *pFatFs = SDH_GetFatFsVolume(sdh);
+    SDH_INFO_T *pSD = (sdh == SDH0) ? &SD0 : &SD1;
 
+    SDH_GetDrivePath(sdh, _Path);
+    f_mount(NULL, _Path, 1);
+    (void)memset(pFatFs, 0, sizeof(FATFS));
+    (void)memset(pSD, 0, sizeof(SDH_INFO_T));
+    SDH_Close(sdh);
+}

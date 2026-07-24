@@ -4,7 +4,7 @@ project:
   setups:
     - output:
         # bin, elf, hex, lib
-        type: bin
+        type: ["elf", "bin"]
     - setup: Options for NuBL32
       processor:
         fpu: dp
@@ -27,6 +27,7 @@ project:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
             - -Wconditional-uninitialized
+            - -mno-unaligned-access
           CPP:
             - -xc++
             - -std=c++11
@@ -43,6 +44,7 @@ project:
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
             - -Wmaybe-uninitialized
+            - -mno-unaligned-access
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -85,22 +87,12 @@ project:
       files:
         - file: ../main.c
         - file: ../partition_M55M1.h
-
   executes:
-    - execute: HelloPython
-      run: python -V
-      always: # always generate signed fw image
     - execute: GenerateSignedImageV1
-      run: python ../../../../../../Tool/imgtool.py sign -k ../../FwKey/ECC-P256.pem --public-key-format hash --align 4 -v 1.2.3 -H 0x400 --pad-header -S 0x40000 -s 0 $input$ $output$
-      always: # always generate signed fw image
+      run: python ../../../FwSign.py $input$ ../../UNSAFE_DEV_ONLY_KEY/ECC-P256.pem 0
       input:
-        - $bin(NuBL32)$
-      output:
-        - $OutDir()$/NuBL32v1_signed.bin # signed fw image binary
+        - $bin()$
     - execute: GenerateSignedImageV2
-      run: python ../../../../../../Tool/imgtool.py sign -k ../../FwKey/ECC-P256.pem --public-key-format hash --align 4 -v 1.2.3 -H 0x400 --pad-header -S 0x40000 -s 1 $input$ $output$
-      always: # always generate signed fw image
+      run: python ../../../FwSign.py $input$ ../../UNSAFE_DEV_ONLY_KEY/ECC-P256.pem 1
       input:
-        - $bin(NuBL32)$
-      output:
-        - $OutDir()$/NuBL32v2_signed.bin # signed fw image binary
+        - $bin()$

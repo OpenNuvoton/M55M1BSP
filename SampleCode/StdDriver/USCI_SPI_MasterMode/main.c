@@ -25,12 +25,21 @@ volatile uint32_t g_u32RxDataCount;
 NVT_ITCM void USCI0_IRQHandler(void)
 {
     uint32_t u32RxData;
+    uint32_t u32TimeOutCount = SystemCoreClock;
 
     /* Clear TX end interrupt flag */
     USPI_CLR_PROT_INT_FLAG(USPI0, USPI_PROTSTS_TXENDIF_Msk);
 
     /* Waiting for RX is not empty */
-    while (USPI_GET_RX_EMPTY_FLAG(USPI0) == 1);
+    while (USPI_GET_RX_EMPTY_FLAG(USPI0) == 1)
+    {
+        if (u32TimeOutCount == 0U)
+        {
+            return;
+        }
+
+        u32TimeOutCount--;
+    }
 
     /* Check RX EMPTY flag */
     while (USPI_GET_RX_EMPTY_FLAG(USPI0) == 0)
@@ -52,7 +61,15 @@ void USCI_SPI_Init(void)
 {
     /* Configure USCI_SPI0 as a master, USCI_SPI0 clock rate 2 MHz,
        clock idle low, 16-bit transaction, drive output on falling clock edge and latch input on rising edge. */
-    USPI_Open(USPI0, USPI_MASTER, USPI_MODE_0, 16, 2000000);
+    if (USPI_Open(USPI0, USPI_MASTER, USPI_MODE_0, 16, 2000000) == 0U)
+    {
+        printf("USPI_Open failed!\n");
+
+        while (1)
+        {
+        }
+    }
+
     /* Enable the automatic hardware slave selection function and configure USCI_SPI_SS pin as low-active. */
     USPI_EnableAutoSS(USPI0, 0, USPI_SS_ACTIVE_LOW);
 }
@@ -105,12 +122,13 @@ void SYS_Init(void)
     SET_USCI0_DAT1_PA9();
 
     /* USCI_SPI clock pin enable schmitt trigger */
-    PA->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
+    PA->SMTEN |= GPIO_SMTEN_SMTEN11_Msk;
 }
 
 int main()
 {
     uint32_t u32DataCount;
+    uint32_t u32TimeOutCount;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -164,7 +182,21 @@ int main()
     USPI_WRITE_TX(USPI0, g_au32SourceData[g_u32TxDataCount++]);
 
     /* Wait for transfer done */
-    while (g_u32RxDataCount < TEST_COUNT);
+    u32TimeOutCount = SystemCoreClock;
+
+    while (g_u32RxDataCount < TEST_COUNT)
+    {
+        if (u32TimeOutCount == 0U)
+        {
+            printf("Wait for transfer done time-out!\n");
+
+            while (1)
+            {
+            }
+        }
+
+        u32TimeOutCount--;
+    }
 
     /* Print the received data */
     printf("Received data:\n");

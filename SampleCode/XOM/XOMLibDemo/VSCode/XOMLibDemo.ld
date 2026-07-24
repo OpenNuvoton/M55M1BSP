@@ -58,7 +58,7 @@ MEMORY
   ITCM   (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00010000
   /* Because XOM region is set to 0x00104000 ~ 0x00105FFF in XOMLib */
   /* Check normal code region should not overlap with XOM region    */
-  FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x00004000
+  FLASH  (rx)  : ORIGIN = 0x00108000, LENGTH = 0x00004000
   DTCM   (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00020000
   SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00150000
   LPSRAM (rwx) : ORIGIN = 0x20310000, LENGTH = 0x00002000

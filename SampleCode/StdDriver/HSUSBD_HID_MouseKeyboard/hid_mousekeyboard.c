@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 /*!<Includes */
+#include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
 #include "hid_mousekeyboard.h"
@@ -578,7 +579,7 @@ void HID_UpdateMouseData(void)
         }
 
         move_len++;
-        HSUSBD->EP[EPA].EPRSPCTL = HSUSBD_EP_RSPCTL_SHORTTXEN;
+        HSUSBD->EP[EPA].EPTXCNT = 4;
         g_u8EPAReady = 0;
         HSUSBD_ENABLE_EP_INT(EPA, HSUSBD_EPINTEN_INTKIEN_Msk);
     }
@@ -609,7 +610,7 @@ void HID_UpdateKeyboardData(void)
         for (i = 0; i < 8; i++)
             HSUSBD->EP[EPB].EPDAT_BYTE = buf[i];
 
-        HSUSBD->EP[EPB].EPRSPCTL = HSUSBD_EP_RSPCTL_SHORTTXEN;
+        HSUSBD->EP[EPB].EPTXCNT = 8;
         HSUSBD_ENABLE_EP_INT(EPB, HSUSBD_EPINTEN_INTKIEN_Msk);
     }
 

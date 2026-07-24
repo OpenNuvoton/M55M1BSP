@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define></Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\StdDriver\inc;..\..\USBD_HID_Transfer_CTRL</IncludePath>

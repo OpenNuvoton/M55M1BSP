@@ -15,14 +15,18 @@
 #include "scu/mpc_sie_drv.h"
 
 #ifndef FMC_INIT_MIRROR_BOUND
-    #define FMC_INIT_MIRROR_BOUND       0x0
+    #define FMC_INIT_MIRROR_BOUND       0x0UL
 #endif
 
 /*----------------------------------------------------------------------------
   Exception / Interrupt Vector table
  *----------------------------------------------------------------------------*/
-extern const VECTOR_TABLE_Type __VECTOR_TABLE[];
-extern const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[];
+#ifdef NVT_VECTOR_ON_FLASH
+    extern const VECTOR_TABLE_Type __VECTOR_TABLE[FMC_VECMAP_SIZE / 4UL];
+#else
+    extern const VECTOR_TABLE_Type __VECTOR_TABLE[16];
+    extern const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[FMC_VECMAP_SIZE / 4UL];
+#endif
 
 /*----------------------------------------------------------------------------
   System Core Clock Variable
@@ -30,8 +34,8 @@ extern const VECTOR_TABLE_Type DTCM_VECTOR_TABLE[];
 uint32_t SystemCoreClock = __HSI;                /*!< System Clock Frequency (Core Clock) */
 uint32_t CyclesPerUs     = (__HSI / 1000000UL);  /*!< Cycles per micro second             */
 uint32_t PllClock        = __HSI;                /*!< PLL Output Clock Frequency          */
-uint32_t g_u32NonCacheableBase  = 0,
-         g_u32NonCacheableLimit = 0;
+uint32_t g_u32NonCacheableBase  = 0UL;
+uint32_t g_u32NonCacheableLimit = 0UL;
 
 void TZ_SAU_Setup(void);
 void FMC_NSCBA_Setup(void);
@@ -120,7 +124,7 @@ __WEAK void SetDebugUartCLK(void)
     CLK_EnableXtalRC(CLK_SRCCTL_HXTEN_Msk);
 
     /* Waiting for HXT clock ready */
-    CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
+    (void)CLK_WaitClockReady(CLK_STATUS_HXTSTB_Msk);
 
     /* Select UARTn clock source from HIRC */
     CLK_SetModuleClock(DEBUG_PORT_MODULE, DEBUG_PORT_CLKSEL, DEBUG_PORT_CLKDIV);
@@ -162,97 +166,104 @@ __WEAK void InitDebugUart(void)
  */
 __WEAK int32_t InitPreDefMPURegion(const ARM_MPU_Region_t *psMPURegion, uint32_t u32RegionCnt)
 {
-    int32_t i32RetCode = 0;
-
-    uint32_t ui32RegionIdx = 0;
-    const uint8_t WTRA   = ARM_MPU_ATTR_MEMORY_(1, 0, 1, 0); // Non-transient, Write-Through, Read-allocate, Not Write-allocate
-    const uint8_t WBWARA = ARM_MPU_ATTR_MEMORY_(1, 1, 1, 1); // Non-transient, Write-Back, Read-allocate, Write-allocate
+    int32_t  i32RetCode   = 0;
+    uint32_t u32RegionIdx = 0U;
+    const uint8_t WTRA    = ARM_MPU_ATTR_MEMORY_(1U, 0U, 1U, 0U); // Non-transient, Write-Through, Read-allocate, Not Write-allocate
+    const uint8_t WBWARA  = ARM_MPU_ATTR_MEMORY_(1U, 1U, 1U, 1U); // Non-transient, Write-Back, Read-allocate, Write-allocate
 
     NVT_UNUSED(WTRA);
     NVT_UNUSED(WBWARA);
 
-#if (MPU_INIT_MEM_ATTRS & BIT0)
-    ARM_MPU_SetMemAttr(eMPU_ATTR_DEV_nGnRnE,        ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_nGnRnE, ARM_MPU_ATTR_DEVICE_nGnRnE));
+#if ((MPU_INIT_MEM_ATTRS & BIT0) == BIT0)
+    ARM_MPU_SetMemAttr((uint8_t)eMPU_ATTR_DEV_nGnRnE,        ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_nGnRnE, ARM_MPU_ATTR_DEVICE_nGnRnE));
 #endif
 
-#if (MPU_INIT_MEM_ATTRS & BIT1)
-    ARM_MPU_SetMemAttr(eMPU_ATTR_DEV_nGnRE,         ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_nGnRE,  ARM_MPU_ATTR_DEVICE_nGnRnE));
+#if ((MPU_INIT_MEM_ATTRS & BIT1) == BIT1)
+    ARM_MPU_SetMemAttr((uint8_t)eMPU_ATTR_DEV_nGnRE,         ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_nGnRE,  ARM_MPU_ATTR_DEVICE_nGnRnE));
 #endif
 
-#if (MPU_INIT_MEM_ATTRS & BIT2)
-    ARM_MPU_SetMemAttr(eMPU_ATTR_DEV_nGRE,          ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_nGRE,   ARM_MPU_ATTR_DEVICE_nGRE));
+#if ((MPU_INIT_MEM_ATTRS & BIT2) == BIT2)
+    ARM_MPU_SetMemAttr((uint8_t)eMPU_ATTR_DEV_nGRE,          ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_nGRE,   ARM_MPU_ATTR_DEVICE_nGRE));
 #endif
 
-#if (MPU_INIT_MEM_ATTRS & BIT3)
-    ARM_MPU_SetMemAttr(eMPU_ATTR_DEV_GRE,           ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_GRE,    ARM_MPU_ATTR_DEVICE_GRE));
+#if ((MPU_INIT_MEM_ATTRS & BIT3) == BIT3)
+    ARM_MPU_SetMemAttr((uint8_t)eMPU_ATTR_DEV_GRE,           ARM_MPU_ATTR(ARM_MPU_ATTR_DEVICE_GRE,    ARM_MPU_ATTR_DEVICE_GRE));
 #endif
 
-#if (MPU_INIT_MEM_ATTRS & BIT4)
-    ARM_MPU_SetMemAttr(eMPU_ATTR_NON_CACHEABLE,     ARM_MPU_ATTR(ARM_MPU_ATTR_NON_CACHEABLE, ARM_MPU_ATTR_NON_CACHEABLE));
+#if ((MPU_INIT_MEM_ATTRS & BIT4) == BIT4)
+    ARM_MPU_SetMemAttr((uint8_t)eMPU_ATTR_NON_CACHEABLE,     ARM_MPU_ATTR(ARM_MPU_ATTR_NON_CACHEABLE, ARM_MPU_ATTR_NON_CACHEABLE));
 #endif
 
-#if (MPU_INIT_MEM_ATTRS & BIT5)
-    ARM_MPU_SetMemAttr(eMPU_ATTR_CACHEABLE_WTRA,    ARM_MPU_ATTR(WTRA, WTRA));
+#if ((MPU_INIT_MEM_ATTRS & BIT5) == BIT5)
+    ARM_MPU_SetMemAttr((uint8_t)eMPU_ATTR_CACHEABLE_WTRA,    ARM_MPU_ATTR(WTRA, WTRA));
 #endif
 
-#if (MPU_INIT_MEM_ATTRS & BIT6)
-    ARM_MPU_SetMemAttr(eMPU_ATTR_CACHEABLE_WBWARA,  ARM_MPU_ATTR(WBWARA, WBWARA));
+#if ((MPU_INIT_MEM_ATTRS & BIT6) == BIT6)
+    ARM_MPU_SetMemAttr((uint8_t)eMPU_ATTR_CACHEABLE_WBWARA,  ARM_MPU_ATTR(WBWARA, WBWARA));
 #endif
 
-    ui32RegionIdx = 0;
+    u32RegionIdx = 0U;
 
-#if (MPU_INIT_REGIONS != 0)
-
-    if (MPU_INIT_REGION(0) != 0)
+#if (MPU_INIT_REGION0 != 0U)
     {
-        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(0, MPU_INIT_BASE(0)), ARM_MPU_RLAR(MPU_INIT_LIMIT(0), MPU_MEM_ATTR(0)));
-        ui32RegionIdx++;
+        ARM_MPU_SetRegion(u32RegionIdx, MPU_INIT_RBAR(0, MPU_INIT_BASE(0)), ARM_MPU_RLAR(MPU_INIT_LIMIT(0), MPU_MEM_ATTR(0)));
+        u32RegionIdx++;
     }
+#endif
 
-    if (MPU_INIT_REGION(1) != 0)
+#if (MPU_INIT_REGION1 != 0U)
     {
-        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(1, MPU_INIT_BASE(1)), ARM_MPU_RLAR(MPU_INIT_LIMIT(1), MPU_MEM_ATTR(1)));
-        ui32RegionIdx++;
+        ARM_MPU_SetRegion(u32RegionIdx, MPU_INIT_RBAR(1, MPU_INIT_BASE(1)), ARM_MPU_RLAR(MPU_INIT_LIMIT(1), MPU_MEM_ATTR(1)));
+        u32RegionIdx++;
     }
+#endif
 
-    if (MPU_INIT_REGION(2) != 0)
+#if (MPU_INIT_REGION2 != 0U)
     {
-        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(2, MPU_INIT_BASE(2)), ARM_MPU_RLAR(MPU_INIT_LIMIT(2), MPU_MEM_ATTR(2)));
-        ui32RegionIdx++;
+        ARM_MPU_SetRegion(u32RegionIdx, MPU_INIT_RBAR(2, MPU_INIT_BASE(2)), ARM_MPU_RLAR(MPU_INIT_LIMIT(2), MPU_MEM_ATTR(2)));
+        u32RegionIdx++;
     }
+#endif
 
-    if (MPU_INIT_REGION(3) != 0)
+#if (MPU_INIT_REGION3 != 0U)
     {
-        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(3, MPU_INIT_BASE(3)), ARM_MPU_RLAR(MPU_INIT_LIMIT(3), MPU_MEM_ATTR(3)));
-        ui32RegionIdx++;
+        ARM_MPU_SetRegion(u32RegionIdx, MPU_INIT_RBAR(3, MPU_INIT_BASE(3)), ARM_MPU_RLAR(MPU_INIT_LIMIT(3), MPU_MEM_ATTR(3)));
+        u32RegionIdx++;
     }
+#endif
 
-    if (MPU_INIT_REGION(4) != 0)
+#if (MPU_INIT_REGION4 != 0U)
     {
-        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(4, MPU_INIT_BASE(4)), ARM_MPU_RLAR(MPU_INIT_LIMIT(4), MPU_MEM_ATTR(4)));
-        ui32RegionIdx++;
+        ARM_MPU_SetRegion(u32RegionIdx, MPU_INIT_RBAR(4, MPU_INIT_BASE(4)), ARM_MPU_RLAR(MPU_INIT_LIMIT(4), MPU_MEM_ATTR(4)));
+        u32RegionIdx++;
     }
+#endif
 
-    if (MPU_INIT_REGION(5) != 0)
+#if (MPU_INIT_REGION5 != 0U)
     {
-        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(5, MPU_INIT_BASE(5)), ARM_MPU_RLAR(MPU_INIT_LIMIT(5), MPU_MEM_ATTR(5)));
-        ui32RegionIdx++;
+        ARM_MPU_SetRegion(u32RegionIdx, MPU_INIT_RBAR(5, MPU_INIT_BASE(5)), ARM_MPU_RLAR(MPU_INIT_LIMIT(5), MPU_MEM_ATTR(5)));
+        u32RegionIdx++;
     }
+#endif
 
-    if (MPU_INIT_REGION(6) != 0)
+#if (MPU_INIT_REGION6 != 0U)
     {
-        ARM_MPU_SetRegion(ui32RegionIdx, MPU_INIT_RBAR(6, MPU_INIT_BASE(6)), ARM_MPU_RLAR(MPU_INIT_LIMIT(6), MPU_MEM_ATTR(6)));
-        ui32RegionIdx++;
+        ARM_MPU_SetRegion(u32RegionIdx, MPU_INIT_RBAR(6, MPU_INIT_BASE(6)), ARM_MPU_RLAR(MPU_INIT_LIMIT(6), MPU_MEM_ATTR(6)));
+        u32RegionIdx++;
     }
+#endif
 
-#endif  // (MPU_INIT_REGIONS != 0)
-
-    if (psMPURegion != NULL)
+    if (psMPURegion != (const ARM_MPU_Region_t *)NULL)
     {
-        if (u32RegionCnt < (MPU_REGIONS_MAX - ui32RegionIdx - 1))
-            ARM_MPU_Load(ui32RegionIdx, psMPURegion, u32RegionCnt);
+        /* MPU Region 7 is reserved for Non-cacheable region. */
+        if (u32RegionCnt < (uint32_t)(MPU_REGIONS_MAX - u32RegionIdx - 1UL))
+        {
+            ARM_MPU_Load(u32RegionIdx, psMPURegion, u32RegionCnt);
+        }
         else
+        {
             return -1;
+        }
     }
 
     // Enable MPU with default priv access to all other regions
@@ -261,7 +272,8 @@ __WEAK int32_t InitPreDefMPURegion(const ARM_MPU_Region_t *psMPURegion, uint32_t
 #if (NVT_DCACHE_ON == 1)
 
 #if defined (__ICCARM__)
-    __WEAK extern uint32_t NonCacheable_start, NonCacheable_end;
+    __WEAK extern uint32_t NonCacheable_start;
+    __WEAK extern uint32_t NonCacheable_end;
 
     if (((uint32_t)&NonCacheable_start) && ((uint32_t)&NonCacheable_end))
     {
@@ -302,9 +314,9 @@ __WEAK int32_t InitPreDefMPURegion(const ARM_MPU_Region_t *psMPURegion, uint32_t
         ARM_MPU_SetMemAttr(eMPU_ATTR_NON_CACHEABLE, ARM_MPU_ATTR(ARM_MPU_ATTR_NON_CACHEABLE, ARM_MPU_ATTR_NON_CACHEABLE));
 
         /* Configure MPU memory regions */
-        ARM_MPU_SetRegion((MPU_REGIONS_MAX - 1),                                                   /* Region (MPU_REGIONS_MAX - 1) */
-                          ARM_MPU_RBAR((uint32_t)g_u32NonCacheableBase, ARM_MPU_SH_NON, 0, 0, 0),  /* Non-shareable, read/write, privileged, executable */
-                          ARM_MPU_RLAR((uint32_t)g_u32NonCacheableLimit, eMPU_ATTR_NON_CACHEABLE)  /* Use Attr eMPU_ATTR_NON_CACHEABLE */
+        ARM_MPU_SetRegion((MPU_REGIONS_MAX - 1U),                                                   /* Region (MPU_REGIONS_MAX - 1) */
+                          ARM_MPU_RBAR((uint32_t)g_u32NonCacheableBase, ARM_MPU_SH_NON, 0U, 0U, 0U),  /* Non-shareable, read/write, privileged, executable */
+                          ARM_MPU_RLAR((uint32_t)g_u32NonCacheableLimit, (uint32_t)eMPU_ATTR_NON_CACHEABLE)  /* Use Attr eMPU_ATTR_NON_CACHEABLE */
                          );
         /* Enable MPU */
         ARM_MPU_Enable(MPU_CTRL_PRIVDEFENA_Msk);
@@ -330,9 +342,9 @@ __attribute__((constructor)) void SystemInit(void)
 
 #if defined (__VTOR_PRESENT) && (__VTOR_PRESENT == 1U)
 #ifdef NVT_VECTOR_ON_FLASH
-    SCB->VTOR = (uint32_t)(&__VECTOR_TABLE[0]);
+    SCB->VTOR = (uint32_t)(&__VECTOR_TABLE);
 #else
-    SCB->VTOR = (uint32_t)(&DTCM_VECTOR_TABLE[0]);
+    SCB->VTOR = (uint32_t)(&DTCM_VECTOR_TABLE);
 #endif
 #endif
 
@@ -352,7 +364,7 @@ __attribute__((constructor)) void SystemInit(void)
 #endif
 
     /* Initialize MPU setting and use default configurations. */
-    InitPreDefMPURegion(NULL, 0);
+    (void)InitPreDefMPURegion(NULL, 0U);
 }
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3U)
@@ -364,9 +376,14 @@ __attribute__((constructor)) void SystemInit(void)
  */
 void FMC_NSCBA_Setup(void)
 {
+    uint32_t u32TimeOutCnt;
+
     /* Skip NSCBA Setup according config */
-    if (FMC_INIT_NSCBA == 0)
+#if (FMC_INIT_NSCBA == 0)
+    {
         return;
+    }
+#endif
 
     /* Check if NSCBA value with current active NSCBA */
     if ((SCU->FNSADDR != FMC_SECURE_END) ||
@@ -386,18 +403,36 @@ void FMC_NSCBA_Setup(void)
         FMC->ISPCMD = FMC_ISPCMD_READ;
         FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
 
-        while (FMC->ISPTRG)
-            ;
+        u32TimeOutCnt = FMC_TIMEOUT_READ;
+
+        while ((FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) != 0UL)
+        {
+            if (u32TimeOutCnt == 0UL)
+            {
+                return ;
+            }
+
+            u32TimeOutCnt--;
+        }
 
         /* Setting NSCBA when it is empty */
-        if (FMC->ISPDAT != 0xFFFFFFFFul)
+        if (FMC->ISPDAT != 0xFFFFFFFFUL)
         {
             /* Erase old setting */
             FMC->ISPCMD = FMC_ISPCMD_CFG_ERASE;
             FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
 
-            while (FMC->ISPTRG)
-                ;
+            u32TimeOutCnt = FMC_TIMEOUT_ERASE;
+
+            while ((FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) != 0UL)
+            {
+                if (u32TimeOutCnt == 0UL)
+                {
+                    return ;
+                }
+
+                u32TimeOutCnt--;
+            }
         }
 
         /* Set new base */
@@ -405,15 +440,25 @@ void FMC_NSCBA_Setup(void)
         FMC->ISPCMD = FMC_ISPCMD_PROGRAM;
         FMC->ISPTRG = FMC_ISPTRG_ISPGO_Msk;
 
-        while (FMC->ISPTRG)
-            ;
+        u32TimeOutCnt = FMC_TIMEOUT_WRITE;
+
+        while ((FMC->ISPTRG & FMC_ISPTRG_ISPGO_Msk) != 0UL)
+        {
+            if (u32TimeOutCnt == 0UL)
+            {
+                return ;
+            }
+
+            u32TimeOutCnt--;
+        }
 
         /* Force Chip Reset to valid new setting */
         SYS->RSTCTL = SYS_RSTCTL_CHIPRST_Msk;
     }
 }
 
-#define NVIC_ITNS_CONF(IRQn)    (NVIC->ITNS[(IRQn / 32)] |= (uint32_t)(1 << (IRQn % 32)))
+/* IRQn MUST be a valid interrupt number except for system exceptions. */
+#define NVIC_ITNS_CONF(IRQn)    (NVIC->ITNS[((uint32_t)(IRQn) / 32U)] |= (1UL << ((uint32_t)(IRQn) % 32U)))
 #define MPC_RANGE_LIST_LEN      (2)
 
 /**
@@ -598,322 +643,433 @@ void SCU_Setup(void)
 
     /* Set interrupt to Non-secure according to DxPNSy settings */
     /* SCU_D0PNS0 */
-    if (SCU_INIT_D0PNS0_VAL & SCU_D0PNS0_NPU_Msk)
-        NVIC_ITNS_CONF(NPU_IRQn);
+#if ((SCU_INIT_D0PNS0_VAL & SCU_D0PNS0_NPU_Msk) == SCU_D0PNS0_NPU_Msk)
+    NVIC_ITNS_CONF(NPU_IRQn);
+#endif
 
     /* SCU_D0PNS2 */
-    if (SCU_INIT_D0PNS2_VAL & SCU_D0PNS2_SPIM0_Msk)
-        NVIC_ITNS_CONF(SPIM0_IRQn);
+#if ((SCU_INIT_D0PNS2_VAL & SCU_D0PNS2_SPIM0_Msk) == SCU_D0PNS2_SPIM0_Msk)
+    NVIC_ITNS_CONF(SPIM0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_PDMA0_Msk)
-        NVIC_ITNS_CONF(PDMA0_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_PDMA0_Msk) == SCU_D1PNS0_PDMA0_Msk)
+    NVIC_ITNS_CONF(PDMA0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_PDMA1_Msk)
-        NVIC_ITNS_CONF(PDMA1_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_PDMA1_Msk) == SCU_D1PNS0_PDMA1_Msk)
+    NVIC_ITNS_CONF(PDMA1_IRQn);
+#endif
 
     /* SCU_D1PNS0 */
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_USBH0_Msk)
-        NVIC_ITNS_CONF(USBH0_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_USBH0_Msk) == SCU_D1PNS0_USBH0_Msk)
+    NVIC_ITNS_CONF(USBH0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_HSUSBH_Msk)
-        NVIC_ITNS_CONF(HSUSBH_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_HSUSBH_Msk) == SCU_D1PNS0_HSUSBH_Msk)
+    NVIC_ITNS_CONF(HSUSBH_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_HSUSBD_Msk)
-        NVIC_ITNS_CONF(HSUSBD_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_HSUSBD_Msk) == SCU_D1PNS0_HSUSBD_Msk)
+    NVIC_ITNS_CONF(HSUSBD_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_SDH0_Msk)
-        NVIC_ITNS_CONF(SDH0_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_SDH0_Msk) == SCU_D1PNS0_SDH0_Msk)
+    NVIC_ITNS_CONF(SDH0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_SDH1_Msk)
-        NVIC_ITNS_CONF(SDH1_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_SDH1_Msk) == SCU_D1PNS0_SDH1_Msk)
+    NVIC_ITNS_CONF(SDH1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_EMAC0_Msk)
-        NVIC_ITNS_CONF(EMAC0_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_EMAC0_Msk) == SCU_D1PNS0_EMAC0_Msk)
+    NVIC_ITNS_CONF(EMAC0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_CRYPTO_Msk)
-        NVIC_ITNS_CONF(CRYPTO_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_CRYPTO_Msk) == SCU_D1PNS0_CRYPTO_Msk)
+    NVIC_ITNS_CONF(CRYPTO_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_CRC_Msk)
-        NVIC_ITNS_CONF(CRC_IRQn);
+#if ((SCU_INIT_D1PNS0_VAL & SCU_D1PNS0_CRC_Msk) == SCU_D1PNS0_CRC_Msk)
+    NVIC_ITNS_CONF(CRC_IRQn);
+#endif
 
     /* SCU_D1PNS1 */
-    if (SCU_INIT_D1PNS1_VAL & SCU_D1PNS1_CANFD0_Msk)
-    {
-        NVIC_ITNS_CONF(CANFD00_IRQn);
-        NVIC_ITNS_CONF(CANFD01_IRQn);
-    }
+#if ((SCU_INIT_D1PNS1_VAL & SCU_D1PNS1_CANFD0_Msk) == SCU_D1PNS1_CANFD0_Msk)
+    NVIC_ITNS_CONF(CANFD00_IRQn);
+    NVIC_ITNS_CONF(CANFD01_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS1_VAL & SCU_D1PNS1_CANFD1_Msk)
-    {
-        NVIC_ITNS_CONF(CANFD10_IRQn);
-        NVIC_ITNS_CONF(CANFD11_IRQn);
-    }
+#if ((SCU_INIT_D1PNS1_VAL & SCU_D1PNS1_CANFD1_Msk) == SCU_D1PNS1_CANFD1_Msk)
+    NVIC_ITNS_CONF(CANFD10_IRQn);
+    NVIC_ITNS_CONF(CANFD11_IRQn);
+#endif
 
     /* SCU_D1PNS2 */
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_WWDT0_Msk)
-        NVIC_ITNS_CONF(WWDT0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_WWDT0_Msk) == SCU_D1PNS2_WWDT0_Msk)
+    NVIC_ITNS_CONF(WWDT0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EADC0_Msk)
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EADC0_Msk) == SCU_D1PNS2_EADC0_Msk)
     {
         NVIC_ITNS_CONF(EADC00_IRQn);
         NVIC_ITNS_CONF(EADC01_IRQn);
         NVIC_ITNS_CONF(EADC02_IRQn);
         NVIC_ITNS_CONF(EADC03_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EPWM0_Msk)
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EPWM0_Msk) == SCU_D1PNS2_EPWM0_Msk)
     {
         NVIC_ITNS_CONF(BRAKE0_IRQn);
         NVIC_ITNS_CONF(EPWM0P0_IRQn);
         NVIC_ITNS_CONF(EPWM0P1_IRQn);
         NVIC_ITNS_CONF(EPWM0P2_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_BPWM0_Msk)
-        NVIC_ITNS_CONF(BPWM0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_BPWM0_Msk) == SCU_D1PNS2_BPWM0_Msk)
+    NVIC_ITNS_CONF(BPWM0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EQEI0_Msk)
-        NVIC_ITNS_CONF(EQEI0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EQEI0_Msk) == SCU_D1PNS2_EQEI0_Msk)
+    NVIC_ITNS_CONF(EQEI0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EQEI2_Msk)
-        NVIC_ITNS_CONF(EQEI2_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_EQEI2_Msk) == SCU_D1PNS2_EQEI2_Msk)
+    NVIC_ITNS_CONF(EQEI2_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_ECAP0_Msk)
-        NVIC_ITNS_CONF(ECAP0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_ECAP0_Msk) == SCU_D1PNS2_ECAP0_Msk)
+    NVIC_ITNS_CONF(ECAP0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_ECAP2_Msk)
-        NVIC_ITNS_CONF(ECAP2_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_ECAP2_Msk) == SCU_D1PNS2_ECAP2_Msk)
+    NVIC_ITNS_CONF(ECAP2_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_I2C0_Msk)
-        NVIC_ITNS_CONF(I2C0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_I2C0_Msk) == SCU_D1PNS2_I2C0_Msk)
+    NVIC_ITNS_CONF(I2C0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_I2C2_Msk)
-        NVIC_ITNS_CONF(I2C2_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_I2C2_Msk) == SCU_D1PNS2_I2C2_Msk)
+    NVIC_ITNS_CONF(I2C2_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_QSPI0_Msk)
-        NVIC_ITNS_CONF(QSPI0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_QSPI0_Msk) == SCU_D1PNS2_QSPI0_Msk)
+    NVIC_ITNS_CONF(QSPI0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SPI0_Msk)
-        NVIC_ITNS_CONF(SPI0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SPI0_Msk) == SCU_D1PNS2_SPI0_Msk)
+    NVIC_ITNS_CONF(SPI0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SPI2_Msk)
-        NVIC_ITNS_CONF(SPI2_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SPI2_Msk) == SCU_D1PNS2_SPI2_Msk)
+    NVIC_ITNS_CONF(SPI2_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART0_Msk)
-        NVIC_ITNS_CONF(UART0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART0_Msk) == SCU_D1PNS2_UART0_Msk)
+    NVIC_ITNS_CONF(UART0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART2_Msk)
-        NVIC_ITNS_CONF(UART2_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART2_Msk) == SCU_D1PNS2_UART2_Msk)
+    NVIC_ITNS_CONF(UART2_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART4_Msk)
-        NVIC_ITNS_CONF(UART4_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART4_Msk) == SCU_D1PNS2_UART4_Msk)
+    NVIC_ITNS_CONF(UART4_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART6_Msk)
-        NVIC_ITNS_CONF(UART6_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART6_Msk) == SCU_D1PNS2_UART6_Msk)
+    NVIC_ITNS_CONF(UART6_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART8_Msk)
-        NVIC_ITNS_CONF(UART8_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_UART8_Msk) == SCU_D1PNS2_UART8_Msk)
+    NVIC_ITNS_CONF(UART8_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_USCI0_Msk)
-        NVIC_ITNS_CONF(USCI0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_USCI0_Msk) == SCU_D1PNS2_USCI0_Msk)
+    NVIC_ITNS_CONF(USCI0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SC0_Msk)
-        NVIC_ITNS_CONF(SC0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SC0_Msk) == SCU_D1PNS2_SC0_Msk)
+    NVIC_ITNS_CONF(SC0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SC2_Msk)
-        NVIC_ITNS_CONF(SC2_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_SC2_Msk) == SCU_D1PNS2_SC2_Msk)
+    NVIC_ITNS_CONF(SC2_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_PSIO_Msk)
-        NVIC_ITNS_CONF(PSIO_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_PSIO_Msk) == SCU_D1PNS2_PSIO_Msk)
+    NVIC_ITNS_CONF(PSIO_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_TMR01_Msk)
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_TMR01_Msk) == SCU_D1PNS2_TMR01_Msk)
     {
         NVIC_ITNS_CONF(TIMER0_IRQn);
         NVIC_ITNS_CONF(TIMER1_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_DAC01_Msk)
-        NVIC_ITNS_CONF(DAC01_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_DAC01_Msk) == SCU_D1PNS2_DAC01_Msk)
+    NVIC_ITNS_CONF(DAC01_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_HSOTG_Msk)
-        NVIC_ITNS_CONF(HSOTG_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_HSOTG_Msk) == SCU_D1PNS2_HSOTG_Msk)
+    NVIC_ITNS_CONF(HSOTG_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_I2S0_Msk)
-        NVIC_ITNS_CONF(I2S0_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_I2S0_Msk) == SCU_D1PNS2_I2S0_Msk)
+    NVIC_ITNS_CONF(I2S0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_ACMP01_Msk)
-        NVIC_ITNS_CONF(ACMP01_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_ACMP01_Msk) == SCU_D1PNS2_ACMP01_Msk)
+    NVIC_ITNS_CONF(ACMP01_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_USBD_Msk)
-        NVIC_ITNS_CONF(USBD_IRQn);
+#if ((SCU_INIT_D1PNS2_VAL & SCU_D1PNS2_USBD_Msk) == SCU_D1PNS2_USBD_Msk)
+    NVIC_ITNS_CONF(USBD_IRQn);
+#endif
 
     /* SCU_D1PNS4 */
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_WWDT1_Msk)
-        NVIC_ITNS_CONF(WWDT1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_WWDT1_Msk) == SCU_D1PNS4_WWDT1_Msk)
+    NVIC_ITNS_CONF(WWDT1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_EPWM1_Msk)
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_EPWM1_Msk) == SCU_D1PNS4_EPWM1_Msk)
     {
         NVIC_ITNS_CONF(BRAKE1_IRQn);
         NVIC_ITNS_CONF(EPWM1P0_IRQn);
         NVIC_ITNS_CONF(EPWM1P1_IRQn);
         NVIC_ITNS_CONF(EPWM1P2_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_BPWM1_Msk)
-        NVIC_ITNS_CONF(BPWM1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_BPWM1_Msk) == SCU_D1PNS4_BPWM1_Msk)
+    NVIC_ITNS_CONF(BPWM1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_EQEI1_Msk)
-        NVIC_ITNS_CONF(EQEI1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_EQEI1_Msk) == SCU_D1PNS4_EQEI1_Msk)
+    NVIC_ITNS_CONF(EQEI1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_EQEI3_Msk)
-        NVIC_ITNS_CONF(EQEI3_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_EQEI3_Msk) == SCU_D1PNS4_EQEI3_Msk)
+    NVIC_ITNS_CONF(EQEI3_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_ECAP1_Msk)
-        NVIC_ITNS_CONF(ECAP1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_ECAP1_Msk) == SCU_D1PNS4_ECAP1_Msk)
+    NVIC_ITNS_CONF(ECAP1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_ECAP3_Msk)
-        NVIC_ITNS_CONF(ECAP3_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_ECAP3_Msk) == SCU_D1PNS4_ECAP3_Msk)
+    NVIC_ITNS_CONF(ECAP3_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I2C1_Msk)
-        NVIC_ITNS_CONF(I2C1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I2C1_Msk) == SCU_D1PNS4_I2C1_Msk)
+    NVIC_ITNS_CONF(I2C1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I2C3_Msk)
-        NVIC_ITNS_CONF(I2C3_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I2C3_Msk) == SCU_D1PNS4_I2C3_Msk)
+    NVIC_ITNS_CONF(I2C3_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_QSPI1_Msk)
-        NVIC_ITNS_CONF(QSPI1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_QSPI1_Msk) == SCU_D1PNS4_QSPI1_Msk)
+    NVIC_ITNS_CONF(QSPI1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_SPI1_Msk)
-        NVIC_ITNS_CONF(SPI1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_SPI1_Msk) == SCU_D1PNS4_SPI1_Msk)
+    NVIC_ITNS_CONF(SPI1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_SPI3_Msk)
-        NVIC_ITNS_CONF(SPI3_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_SPI3_Msk) == SCU_D1PNS4_SPI3_Msk)
+    NVIC_ITNS_CONF(SPI3_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART1_Msk)
-        NVIC_ITNS_CONF(UART1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART1_Msk) == SCU_D1PNS4_UART1_Msk)
+    NVIC_ITNS_CONF(UART1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART3_Msk)
-        NVIC_ITNS_CONF(UART3_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART3_Msk) == SCU_D1PNS4_UART3_Msk)
+    NVIC_ITNS_CONF(UART3_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART5_Msk)
-        NVIC_ITNS_CONF(UART5_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART5_Msk) == SCU_D1PNS4_UART5_Msk)
+    NVIC_ITNS_CONF(UART5_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART7_Msk)
-        NVIC_ITNS_CONF(UART7_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART7_Msk) == SCU_D1PNS4_UART7_Msk)
+    NVIC_ITNS_CONF(UART7_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART9_Msk)
-        NVIC_ITNS_CONF(UART9_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UART9_Msk) == SCU_D1PNS4_UART9_Msk)
+    NVIC_ITNS_CONF(UART9_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_SC1_Msk)
-        NVIC_ITNS_CONF(SC1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_SC1_Msk) == SCU_D1PNS4_SC1_Msk)
+    NVIC_ITNS_CONF(SC1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_OTG_Msk)
-        NVIC_ITNS_CONF(USBOTG_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_OTG_Msk) == SCU_D1PNS4_OTG_Msk)
+    NVIC_ITNS_CONF(USBOTG_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_KPI_Msk)
-        NVIC_ITNS_CONF(KPI_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_KPI_Msk) == SCU_D1PNS4_KPI_Msk)
+    NVIC_ITNS_CONF(KPI_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_TMR23_Msk)
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_TMR23_Msk) == SCU_D1PNS4_TMR23_Msk)
     {
         NVIC_ITNS_CONF(TIMER2_IRQn);
         NVIC_ITNS_CONF(TIMER3_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_TRNG_Msk)
-        NVIC_ITNS_CONF(TRNG_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_TRNG_Msk) == SCU_D1PNS4_TRNG_Msk)
+    NVIC_ITNS_CONF(TRNG_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_RTC_Msk)
-        NVIC_ITNS_CONF(RTC_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_RTC_Msk) == SCU_D1PNS4_RTC_Msk)
+    NVIC_ITNS_CONF(RTC_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I2S1_Msk)
-        NVIC_ITNS_CONF(I2S1_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I2S1_Msk) == SCU_D1PNS4_I2S1_Msk)
+    NVIC_ITNS_CONF(I2S1_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_ACMP23_Msk)
-        NVIC_ITNS_CONF(ACMP23_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_ACMP23_Msk) == SCU_D1PNS4_ACMP23_Msk)
+    NVIC_ITNS_CONF(ACMP23_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I3C0_Msk)
-        NVIC_ITNS_CONF(I3C0_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_I3C0_Msk) == SCU_D1PNS4_I3C0_Msk)
+    NVIC_ITNS_CONF(I3C0_IRQn);
+#endif
 
-    if (SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UTCPD_Msk)
-        NVIC_ITNS_CONF(UTCPD_IRQn);
+#if ((SCU_INIT_D1PNS4_VAL & SCU_D1PNS4_UTCPD_Msk) == SCU_D1PNS4_UTCPD_Msk)
+    NVIC_ITNS_CONF(UTCPD_IRQn);
+#endif
 
     /* SCU_D2PNS0 */
-    if (SCU_INIT_D2PNS0_VAL & SCU_D2PNS0_LPPDMA_Msk)
-        NVIC_ITNS_CONF(LPPDMA_IRQn);
+#if ((SCU_INIT_D2PNS0_VAL & SCU_D2PNS0_LPPDMA_Msk) == SCU_D2PNS0_LPPDMA_Msk)
+    NVIC_ITNS_CONF(LPPDMA_IRQn);
+#endif
 
-    if (SCU_INIT_D2PNS0_VAL & SCU_D2PNS0_CCAP_Msk)
-        NVIC_ITNS_CONF(CCAP_IRQn);
+#if ((SCU_INIT_D2PNS0_VAL & SCU_D2PNS0_CCAP_Msk) == SCU_D2PNS0_CCAP_Msk)
+    NVIC_ITNS_CONF(CCAP_IRQn);
+#endif
 
     /* SCU_D2PNS2 */
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPTMR01_Msk)
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPTMR01_Msk) == SCU_D2PNS2_LPTMR01_Msk)
     {
         NVIC_ITNS_CONF(LPTMR0_IRQn);
         NVIC_ITNS_CONF(LPTMR1_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_TTMR01_Msk)
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_TTMR01_Msk) == SCU_D2PNS2_TTMR01_Msk)
     {
         NVIC_ITNS_CONF(TTMR0_IRQn);
         NVIC_ITNS_CONF(TTMR1_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPADC0_Msk)
-        NVIC_ITNS_CONF(LPADC0_IRQn);
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPADC0_Msk) == SCU_D2PNS2_LPADC0_Msk)
+    NVIC_ITNS_CONF(LPADC0_IRQn);
+#endif
 
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPI2C0_Msk)
-        NVIC_ITNS_CONF(LPI2C0_IRQn);
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPI2C0_Msk) == SCU_D2PNS2_LPI2C0_Msk)
+    NVIC_ITNS_CONF(LPI2C0_IRQn);
+#endif
 
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPSPI0_Msk)
-        NVIC_ITNS_CONF(LPSPI0_IRQn);
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPSPI0_Msk) == SCU_D2PNS2_LPSPI0_Msk)
+    NVIC_ITNS_CONF(LPSPI0_IRQn);
+#endif
 
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_DMIC0_Msk)
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_DMIC0_Msk) == SCU_D2PNS2_DMIC0_Msk)
     {
         NVIC_ITNS_CONF(DMIC0_IRQn);
         NVIC_ITNS_CONF(DMIC0VAD_IRQn);
     }
+#endif
 
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPUART0_Msk)
-        NVIC_ITNS_CONF(LPUART0_IRQn);
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_LPUART0_Msk) == SCU_D2PNS2_LPUART0_Msk)
+    NVIC_ITNS_CONF(LPUART0_IRQn);
+#endif
 
-    if (SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_AWF_Msk)
-        NVIC_ITNS_CONF(AWF_IRQn);
+#if ((SCU_INIT_D2PNS2_VAL & SCU_D2PNS2_AWF_Msk) == SCU_D2PNS2_AWF_Msk)
+    NVIC_ITNS_CONF(AWF_IRQn);
+#endif
 
     /* Set interrupt to Non-secure according to SCU_INIT_IO_ITNS_VAL settings */
-    if (SCU_INIT_IO_ITNS_VAL & BIT0) NVIC_ITNS_CONF(GPA_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT0) == BIT0)
+    NVIC_ITNS_CONF(GPA_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT1) NVIC_ITNS_CONF(GPB_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT1) == BIT1)
+    NVIC_ITNS_CONF(GPB_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT2) NVIC_ITNS_CONF(GPC_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT2) == BIT2)
+    NVIC_ITNS_CONF(GPC_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT3) NVIC_ITNS_CONF(GPD_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT3) == BIT3)
+    NVIC_ITNS_CONF(GPD_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT4) NVIC_ITNS_CONF(GPE_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT4) == BIT4)
+    NVIC_ITNS_CONF(GPE_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT5) NVIC_ITNS_CONF(GPF_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT5) == BIT5)
+    NVIC_ITNS_CONF(GPF_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT6) NVIC_ITNS_CONF(GPG_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT6) == BIT6)
+    NVIC_ITNS_CONF(GPG_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT7) NVIC_ITNS_CONF(GPH_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT7) == BIT7)
+    NVIC_ITNS_CONF(GPH_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT8) NVIC_ITNS_CONF(GPI_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT8) == BIT8)
+    NVIC_ITNS_CONF(GPI_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT9) NVIC_ITNS_CONF(GPJ_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT9) == BIT9)
+    NVIC_ITNS_CONF(GPJ_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT10) NVIC_ITNS_CONF(EINT0_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT10) == BIT10)
+    NVIC_ITNS_CONF(EINT0_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT11) NVIC_ITNS_CONF(EINT1_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT11) == BIT11)
+    NVIC_ITNS_CONF(EINT1_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT12) NVIC_ITNS_CONF(EINT2_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT12) == BIT12)
+    NVIC_ITNS_CONF(EINT2_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT13) NVIC_ITNS_CONF(EINT3_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT13) == BIT13)
+    NVIC_ITNS_CONF(EINT3_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT14) NVIC_ITNS_CONF(EINT4_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT14) == BIT14)
+    NVIC_ITNS_CONF(EINT4_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT15) NVIC_ITNS_CONF(EINT5_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT15) == BIT15)
+    NVIC_ITNS_CONF(EINT5_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT16) NVIC_ITNS_CONF(EINT6_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT16) == BIT16)
+    NVIC_ITNS_CONF(EINT6_IRQn);
+#endif
 
-    if (SCU_INIT_IO_ITNS_VAL & BIT17) NVIC_ITNS_CONF(EINT7_IRQn);
+#if ((SCU_INIT_IO_ITNS_VAL & BIT17) == BIT17)
+    NVIC_ITNS_CONF(EINT7_IRQn);
+#endif
 
     /* Enable SCU Int status */
     SCU->SVIEN0 = (uint32_t)(-1);
@@ -956,7 +1112,7 @@ __WEAK void SCU_IRQHandler(void)
                 printf("  INT_Info1: 0x%08X\n", psMPC->int_info1);
                 printf("  INT_Info2: 0x%08X\n", psMPC->int_info2);
 
-                while (1) ;
+                for (;;) {}
 
 #endif
             }
@@ -979,7 +1135,7 @@ __WEAK void SCU_IRQHandler(void)
                 printf("  %s access ", sc_astrMasterName[SCU->PVSRC[i]]);
                 printf("%s@0x%08X illegallly.\n", sc_astrSlaveName[i], SCU->PVA[i]);
 
-                while (1) ;
+                for (;;) {}
 
 #endif
             }
@@ -1001,7 +1157,7 @@ __WEAK void SCU_IRQHandler(void)
                 printf("\nMSC violation detected. (SCU_INTSTS1: 0x%08X)\n", u32Reg);
                 printf("  %s access 0x%08X illegally.\n", sc_astrMasterVioName[i], SCU->MVA[i]);
 
-                while (1) ;
+                for (;;) {}
 
 #endif
             }
@@ -1017,8 +1173,8 @@ __WEAK void SCU_IRQHandler(void)
  */
 void NSC_Init(uint32_t u32RegionIdx)
 {
-    uint32_t u32Base = 0,
-             u32Limit = 0;
+    uint32_t u32Base  = 0;
+    uint32_t u32Limit = 0;
 
 #if defined (__ICCARM__)
 # pragma section = "Veneer$$CMSE"
@@ -1039,12 +1195,12 @@ void NSC_Init(uint32_t u32RegionIdx)
     u32Limit = (uint32_t)__end_NSC;
 #endif
 
-    if (u32Limit > 0)
+    if (u32Limit > 0UL)
     {
         SAU->RNR  = (u32RegionIdx & SAU_RNR_REGION_Msk);
         SAU->RBAR = (u32Base & SAU_RBAR_BADDR_Msk);
         SAU->RLAR = (u32Limit & SAU_RLAR_LADDR_Msk) |
-                    (SAU_RLAR_NSC_Msk | 1ul);
+                    (SAU_RLAR_NSC_Msk | 1UL);
     }
 }
 
@@ -1056,60 +1212,63 @@ void NSC_Init(uint32_t u32RegionIdx)
  */
 void TZ_SAU_Setup(void)
 {
-#if defined (__SAUREGION_PRESENT) && (__SAUREGION_PRESENT == 1U)
+#if defined (__SAUREGION_PRESENT) && (__SAUREGION_PRESENT == 1UL)
+#if (SAU_INIT_CTRL == 1) && (SAU_INIT_CTRL_ENABLE == 1)
 
-#if defined (SAU_INIT_REGION0) && (SAU_INIT_REGION0 == 1U)
+#if defined (SAU_INIT_REGION0) && (SAU_INIT_REGION0 == 1UL)
     SAU_INIT_REGION(0);
 #endif
 
-#if defined (SAU_INIT_REGION1) && (SAU_INIT_REGION1 == 1U)
+#if defined (SAU_INIT_REGION1) && (SAU_INIT_REGION1 == 1UL)
     SAU_INIT_REGION(1);
 #endif
 
-#if defined (SAU_INIT_REGION2) && (SAU_INIT_REGION2 == 1U)
+#if defined (SAU_INIT_REGION2) && (SAU_INIT_REGION2 == 1UL)
     SAU_INIT_REGION(2);
 #endif
 
-#if defined (SAU_INIT_REGION3) && (SAU_INIT_REGION3 == 1U)
+#if defined (SAU_INIT_REGION3) && (SAU_INIT_REGION3 == 1UL)
     SAU_INIT_REGION(3);
 #endif
 
-#if defined (SAU_INIT_REGION4) && (SAU_INIT_REGION4 == 1U)
+#if defined (SAU_INIT_REGION4) && (SAU_INIT_REGION4 == 1UL)
     SAU_INIT_REGION(4);
 #endif
 
-#if defined (SAU_INIT_REGION5) && (SAU_INIT_REGION5 == 1U)
+#if defined (SAU_INIT_REGION5) && (SAU_INIT_REGION5 == 1UL)
     SAU_INIT_REGION(5);
 #endif
 
-#if defined (SAU_INIT_REGION6) && (SAU_INIT_REGION6 == 1U)
+#if defined (SAU_INIT_REGION6) && (SAU_INIT_REGION6 == 1UL)
     SAU_INIT_REGION(6);
 #endif
 
-#if defined (SAU_INIT_REGION7) && (SAU_INIT_REGION7 == 1U)
+#if defined (SAU_INIT_REGION7) && (SAU_INIT_REGION7 == 1UL)
     SAU_INIT_REGION(7);
 #endif
+
+#endif /* (SAU_INIT_CTRL == 1) && (SAU_INIT_CTRL_ENABLE == 1) */
 #endif /* defined (__SAUREGION_PRESENT) && (__SAUREGION_PRESENT == 1U) */
 
-#if defined (SAU_INIT_CTRL) && (SAU_INIT_CTRL == 1U)
+#if defined (SAU_INIT_CTRL) && (SAU_INIT_CTRL == 1UL)
     SAU->CTRL = ((SAU_INIT_CTRL_ENABLE << SAU_CTRL_ENABLE_Pos) & SAU_CTRL_ENABLE_Msk) |
                 ((SAU_INIT_CTRL_ALLNS  << SAU_CTRL_ALLNS_Pos)  & SAU_CTRL_ALLNS_Msk)   ;
 #endif
 
-#if defined (SCB_CSR_AIRCR_INIT) && (SCB_CSR_AIRCR_INIT == 1U)
+#if defined (SCB_CSR_AIRCR_INIT) && (SCB_CSR_AIRCR_INIT == 1UL)
     SCB->SCR   = (SCB->SCR   & ~(SCB_SCR_SLEEPDEEPS_Msk)) |
                  ((SCB_CSR_DEEPSLEEPS_VAL     << SCB_SCR_SLEEPDEEPS_Pos)     & SCB_SCR_SLEEPDEEPS_Msk);
 
-    SCB->AIRCR = (0x05FA << SCB_AIRCR_VECTKEY_Pos) |
+    SCB->AIRCR = (0x05FAUL << SCB_AIRCR_VECTKEY_Pos) |
                  ((SCB_AIRCR_SYSRESETREQS_VAL << SCB_AIRCR_SYSRESETREQS_Pos) & SCB_AIRCR_SYSRESETREQS_Msk) |
                  ((SCB_AIRCR_BFHFNMINS_VAL    << SCB_AIRCR_BFHFNMINS_Pos)    & SCB_AIRCR_BFHFNMINS_Msk)    |
                  ((SCB_AIRCR_PRIS_VAL         << SCB_AIRCR_PRIS_Pos)         & SCB_AIRCR_PRIS_Msk);
 
-#endif /* defined (SCB_CSR_AIRCR_INIT) && (SCB_CSR_AIRCR_INIT == 1U) */
+#endif /* defined (SCB_CSR_AIRCR_INIT) && (SCB_CSR_AIRCR_INIT == 1UL) */
 
-#if (((defined (__FPU_USED) && (__FPU_USED == 1U))              || \
+#if (((defined (__FPU_USED) && (__FPU_USED == 1UL))              || \
       (defined (__ARM_FEATURE_MVE) && (__ARM_FEATURE_MVE > 0))) && \
-      (defined (TZ_FPU_NS_USAGE) && (TZ_FPU_NS_USAGE == 1U)))
+      (defined (TZ_FPU_NS_USAGE) && (TZ_FPU_NS_USAGE == 1UL)))
 
     SCB->NSACR = (SCB->NSACR & ~(SCB_NSACR_CP10_Msk | SCB_NSACR_CP11_Msk)) |
                  ((SCB_NSACR_CP10_11_VAL << SCB_NSACR_CP10_Pos) & (SCB_NSACR_CP10_Msk | SCB_NSACR_CP11_Msk));
@@ -1120,10 +1279,10 @@ void TZ_SAU_Setup(void)
                  ((FPU_FPCCR_CLRONRET_VAL  << FPU_FPCCR_CLRONRET_Pos) & FPU_FPCCR_CLRONRET_Msk);
 #endif
 
-#if defined (SCB_ICSR_INIT) && (SCB_ICSR_INIT == 1U)
+#if defined (SCB_ICSR_INIT) && (SCB_ICSR_INIT == 1UL)
     SCB->ICSR  = (SCB->ICSR  & ~(SCB_ICSR_STTNS_Msk)) |
                  ((SCB_ICSR_STTNS_VAL         << SCB_ICSR_STTNS_Pos)         & SCB_ICSR_STTNS_Msk);
-#endif /* defined (SCB_ICSR_INIT) && (SCB_ICSR_INIT == 1U) */
+#endif /* defined (SCB_ICSR_INIT) && (SCB_ICSR_INIT == 1UL) */
 
     /* Repeat this for all possible ITNS elements */
 

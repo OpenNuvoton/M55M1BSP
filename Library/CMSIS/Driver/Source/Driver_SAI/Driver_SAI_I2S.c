@@ -123,8 +123,8 @@ static inline uint32_t sai_idx_from_port_rt(uint32_t n)
                                               SAI_TO_I2S_PDMA_TX_CH(n),        \
                                               SAI_TO_I2S_PDMA_RX_NUM(n),       \
                                               SAI_TO_I2S_PDMA_TX_NUM(n),       \
-                                             }                                \
-                                           };
+                                              }                                \
+                                             };
 
 // Local driver functions declarations (for instances)
 #if (RTE_SAI_I2S0 == 1)
@@ -1014,7 +1014,7 @@ static int32_t SAIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg1, u
 
     phi2s->CTL0 = ((phi2s->CTL0 & I2S_CTL0_ORDER_Msk) | u32LSBFirst);
 
-    if (I2S_Open(phi2s, u32Mode, u32SampleRate, u32DataBits, u32MonoMode, u32Protocol) < 0)
+    if (I2S_Open(phi2s, u32Mode, u32SampleRate, u32DataBits, u32MonoMode, u32Protocol) == 0UL)
         return ARM_DRIVER_ERROR;
 
     // --------- Step 9: Enable TDM if slots > 2 ---------

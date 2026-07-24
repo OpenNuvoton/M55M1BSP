@@ -10,15 +10,15 @@
 #include "NuMicro.h"
 
 /** @cond HIDDEN_SYMBOLS */
+void _I3C_DrvMsg(const char *format, ...);
 
-#ifndef I3C_DrvMsg_EN
-    #define I3C_DrvMsg_EN (0) // default turn off debug message
-#endif
+void _I3C_DrvMsg(const char *format, ...)
+{
+    (void)format;
+}
 
-#if (I3C_DrvMsg_EN)
-    #define I3C_DrvMsg printf
-#else
-    #define I3C_DrvMsg(...)
+#ifndef I3C_DrvMsg
+    #define I3C_DrvMsg _I3C_DrvMsg
 #endif
 /** @endcond HIDDEN_SYMBOLS */
 
@@ -51,8 +51,8 @@ int32_t I3C_DeviceInit(I3C_DEVICE_T *dev)
     dev->port->DBTHCTL  = ((0UL << I3C_DBTHCTL_TXTH_Pos) | (0UL << I3C_DBTHCTL_RXTH_Pos));
     /* Rx and Tx start threshold */
     dev->port->DBTHCTL |= ((0UL << I3C_DBTHCTL_TXSTATH_Pos) | (0UL << I3C_DBTHCTL_RXSTATH_Pos));
-    /* Clear current interrupt status */
-    dev->port->INTSTS |= dev->port->INTSTS;
+    /* Clear all interrupt status */
+    dev->port->INTSTS = ~0UL;
     /* Enable all interrupt status */
     dev->port->INTSTSEN = ~0UL;
     /* Enable specified interrupt signal */
@@ -89,7 +89,7 @@ int32_t I3C_DeviceInit(I3C_DEVICE_T *dev)
         /* Includes I3C Broadcast Address */
         dev->port->DEVCTL |= (I3C_DEVCTL_IBAINCL_Msk);
 
-        if (dev->main_target_sa != 0UL)
+        if (dev->main_target_sa != 0U)
         {
             /* Program Statis Address for Target */
             dev->port->DEVADDR |= (I3C_DEVADDR_SAVALID_Msk | (dev->main_target_sa << I3C_DEVADDR_SA_Pos));
@@ -164,7 +164,7 @@ int32_t I3C_SetDeviceAddr(I3C_T *i3c, uint8_t u8DevIndex, uint8_t u8DevType, uin
     volatile uint32_t count = 0;
     volatile uint32_t u32Device = 0;
 
-    if ((u8DAddr & 0x80UL) || (u8SAddr & 0x80UL))
+    if ((u8DAddr & 0x80U) || (u8SAddr & 0x80U))
     {
         return I3C_STS_INVALID_INPUT;
     }
@@ -172,7 +172,7 @@ int32_t I3C_SetDeviceAddr(I3C_T *i3c, uint8_t u8DevIndex, uint8_t u8DevType, uin
     // I3C Device Dynamic Address with Odd Parity
     for (i = 0UL; i < 8UL; i++)
     {
-        if ((u8DAddr >> i) & 0x1UL)
+        if ((u8DAddr >> i) & 0x1U)
         {
             count ++;
         }
@@ -184,11 +184,11 @@ int32_t I3C_SetDeviceAddr(I3C_T *i3c, uint8_t u8DevIndex, uint8_t u8DevType, uin
     }
     else
     {
-        u32Device = (u8DAddr << I3C_DEVADR_DADR_Pos);
+        u32Device = ((u8DAddr & 0x7FUL) << I3C_DEVADR_DADR_Pos);
     }
 
     // I2C Device Static Address
-    u32Device |= (u8SAddr << I3C_DEVADR_STADR_Pos);
+    u32Device |= ((u8SAddr & 0x7FUL) << I3C_DEVADR_STADR_Pos);
     // Support IBI with one or more Mandatory Bytes
     u32Device |= (I3C_DEVADR_IBIWDATA_Msk);
 
@@ -200,13 +200,13 @@ int32_t I3C_SetDeviceAddr(I3C_T *i3c, uint8_t u8DevIndex, uint8_t u8DevType, uin
 
     switch (u8DevIndex)
     {
-        case 0UL:
-        case 1UL:
-        case 2UL:
-        case 3UL:
-        case 4UL:
-        case 5UL:
-        case 6UL:
+        case 0U:
+        case 1U:
+        case 2U:
+        case 3U:
+        case 4U:
+        case 5U:
+        case 6U:
             /* Configure device address on specify table location */
             i3c->DEVADR[u8DevIndex] = u32Device;
             break;
@@ -225,11 +225,8 @@ int32_t I3C_SetDeviceAddr(I3C_T *i3c, uint8_t u8DevIndex, uint8_t u8DevType, uin
 void I3C_BusClkConfig(I3C_DEVICE_T *dev)
 {
     volatile uint32_t count;
+    volatile float fcount;
     I3C_DrvMsg("\n");
-    I3C_DrvMsg("I3C_ENG_CLK = %d\n", dev->engclk);
-    I3C_DrvMsg("I2C_FM_FREQ = %d\n", dev->i2c_fm_freq);
-    I3C_DrvMsg("I2C_FM+_FREQ = %d\n", dev->i2c_fm_plus_freq);
-    I3C_DrvMsg("I3C_SDR_FREQ = %d\n", dev->i3c_sdr_freq);
 
     if (dev->i2c_fm_freq != 0UL)
     {
@@ -247,7 +244,6 @@ void I3C_BusClkConfig(I3C_DEVICE_T *dev)
         }
 
         dev->port->SCLFM = ((count << I3C_SCLFM_FMHCNT_Pos) | (count << I3C_SCLFM_FMLCNT_Pos));
-        I3C_DrvMsg("SCLFM = 0x%08X\n", dev->port->SCLFM);
     }
 
     if (dev->i2c_fm_plus_freq != 0UL)
@@ -266,18 +262,17 @@ void I3C_BusClkConfig(I3C_DEVICE_T *dev)
         }
 
         dev->port->SCLFMP = ((count << I3C_SCLFMP_FMPHCNT_Pos) | (count << I3C_SCLFMP_FMPLCNT_Pos));
-        I3C_DrvMsg("SCLFMP = 0x%08X\n", dev->port->SCLFMP);
     }
 
     if (dev->i3c_sdr_freq != 0UL)
     {
         if (dev->i3c_sdr_freq > 12500000UL)
         {
-            dev->i3c_sdr_freq = 12500000;
+            dev->i3c_sdr_freq = 12500000UL;
         }
 
         /* Set OD mode SCL freq 1MHz */
-        count = ((dev->engclk / 1000000UL) / 2UL);
+        count = ((dev->engclk / (1000UL * 1000UL)) / 2UL);
 
         if (count < 5UL)
         {
@@ -311,12 +306,12 @@ void I3C_BusClkConfig(I3C_DEVICE_T *dev)
             dev->i3c_sdr_freq = (dev->engclk / (count + count));
         }
 
-        I3C_DrvMsg("SCLPP = 0x%08X\n", dev->port->SCLPP);
         I3C_DrvMsg("[ DRV ] Set SCL %d Hz\n", dev->i3c_sdr_freq);
     }
 
     /*  Bus Idle Timing ~ 200us */
-    count = (uint32_t)(((float)200 * (float)dev->engclk) / (float)1000000);
+    fcount = ((float)200UL * dev->engclk) / (float)1000000UL;
+    count = (uint32_t)fcount;
 
     if (count == 0UL)
     {
@@ -325,7 +320,8 @@ void I3C_BusClkConfig(I3C_DEVICE_T *dev)
 
     dev->port->BUSIDLET = count;
     /* Bus Available(1.0us) Timing ~ 1.0us */
-    count = (uint32_t)(((float)1 * (float)dev->engclk) / (float)1000000);
+    fcount = ((float)1UL * dev->engclk) / (float)1000000UL;
+    count = (uint32_t)fcount;
 
     if (count == 0UL)
     {
@@ -334,7 +330,8 @@ void I3C_BusClkConfig(I3C_DEVICE_T *dev)
 
     dev->port->BUSFAT = (count << I3C_BUSFAT_AVAILTC_Pos);
     /* Bus Free Timing ~ 38.4ns/0.5us/1.3us */
-    count = (uint32_t)(((float)1300 * (float)dev->engclk) / (float)1000000000);
+    fcount = ((float)1300UL * dev->engclk) / (float)1000000000UL;
+    count = (uint32_t)fcount;
 
     if (count == 0UL)
     {
@@ -342,6 +339,8 @@ void I3C_BusClkConfig(I3C_DEVICE_T *dev)
     }
 
     dev->port->BUSFAT |= (count << I3C_BUSFAT_FREETC_Pos);
+    /* I3C Read Termination Bit Low Count */
+    dev->port->SCLTERM |= I3C_SCLTERM_EXTERM_Msk;
 }
 
 /**
@@ -349,15 +348,17 @@ void I3C_BusClkConfig(I3C_DEVICE_T *dev)
   */
 void I3C_PresentStateInfo(I3C_DEVICE_T *dev)
 {
-    volatile uint32_t role, sts, reg_val[2];
+    volatile uint32_t role;
+    volatile uint32_t sts;
+    volatile uint32_t reg_val[2];
     I3C_DrvMsg("\n");
     role = ((dev->port->DEVCTLE & I3C_DEVCTLE_OPERMODE_Msk) >> I3C_DEVCTLE_OPERMODE_Pos);
     reg_val[0] = dev->port->PRESENTS;
     reg_val[1] = dev->port->CCCDEVS;
-    I3C_DrvMsg("[ DRV ] Present state info: 0x%08x (%s mode)\n", reg_val[0], (role == 0) ? "Controller" : "Target");
+    I3C_DrvMsg("[ DRV ] Present state info: 0x%08x (%s mode)\n", reg_val[0], (role == 0UL) ? "Controller" : "Target");
     sts = ((reg_val[0] & I3C_PRESENTS_TFRTYPE_Msk) >> I3C_PRESENTS_TFRTYPE_Pos);
 
-    if (sts == 0)
+    if (sts == 0UL)
     {
         I3C_DrvMsg("\tDevice in IDLE state\n");
     }
@@ -374,7 +375,7 @@ void I3C_PresentStateInfo(I3C_DEVICE_T *dev)
                 I3C_DrvMsg("\tController is NOT in IDLE State\n");
             }
 
-            if (sts == 0xF)
+            if (sts == 0xFUL)
             {
                 I3C_DrvMsg("\tController in Halt State, waiting for resume\n");
             }
@@ -385,25 +386,23 @@ void I3C_PresentStateInfo(I3C_DEVICE_T *dev)
         }
         else
         {
-            if (sts == 1)
+            if (sts == 1UL)
             {
                 I3C_DrvMsg("\tHot-Join Transfer State\n");
             }
-            else if (sts == 2)
+            else if (sts == 2UL)
             {
                 I3C_DrvMsg("\nIBI Transfer State\n");
             }
-            else if (sts == 3)
+            else if (sts == 3UL)
             {
                 I3C_DrvMsg("\nController Write Transfer Ongoing\n");
             }
-            //else if(sts == 4) Not support in M3331
-            //    I3C_DrvMsg("\nRead Data Prefetch State\n");
-            else if (sts == 5)
+            else if (sts == 5UL)
             {
                 I3C_DrvMsg("\nController Read Transfer Ongoing\n");
             }
-            else if (sts == 6)
+            else if (sts == 6UL)
             {
                 I3C_DrvMsg("\nTarget in Halt State, waiting for resume\n");
             }
@@ -497,7 +496,7 @@ int32_t I3C_CtrDAA(I3C_DEVICE_T *dev)
 
     if (dev->ccc_code == I3C_CCC_SETDASA)
     {
-        if (dev->target_index > 6UL)
+        if (dev->target_index > 6U)
         {
             return I3C_STS_INVALID_INPUT;
         }
@@ -507,7 +506,7 @@ int32_t I3C_CtrDAA(I3C_DEVICE_T *dev)
     }
     else
     {
-        if (dev->target_count > 7UL)
+        if (dev->target_count > 7U)
         {
             return I3C_STS_INVALID_INPUT;
         }
@@ -541,9 +540,8 @@ int32_t I3C_CtrDAA(I3C_DEVICE_T *dev)
   */
 int32_t I3C_CtrCCCSet(I3C_DEVICE_T *dev)
 {
-    volatile uint32_t i;
     uint32_t val;
-    uint32_t *p32Buf;
+    const  uint32_t *p32Buf;
     I3C_DrvMsg("\n");
     /* Initialize command response value */
     dev->cmd_response = I3C_CTRRESP_INITIAL_VALUE;
@@ -556,16 +554,25 @@ int32_t I3C_CtrCCCSet(I3C_DEVICE_T *dev)
         switch (dev->tx_len)
         {
             case 3:
-                val |= (1 << (I3C_CMDQUE_BYTESTRB_Pos + 2));
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 2UL));
                 val |= (dev->tx_buf[2] << I3C_CMDQUE_DATBYTE2_Pos);
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 1UL));
+                val |= (dev->tx_buf[1] << I3C_CMDQUE_DATBYTE1_Pos);
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 0UL));
+                val |= (dev->tx_buf[0] << I3C_CMDQUE_DATBYTE0_Pos);
+                break;
 
             case 2:
-                val |= (1 << (I3C_CMDQUE_BYTESTRB_Pos + 1));
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 1UL));
                 val |= (dev->tx_buf[1] << I3C_CMDQUE_DATBYTE1_Pos);
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 0UL));
+                val |= (dev->tx_buf[0] << I3C_CMDQUE_DATBYTE0_Pos);
+                break;
 
             case 1:
-                val |= (1 << (I3C_CMDQUE_BYTESTRB_Pos + 0));
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 0UL));
                 val |= (dev->tx_buf[0] << I3C_CMDQUE_DATBYTE0_Pos);
+                break;
 
             default:
                 break;
@@ -579,7 +586,8 @@ int32_t I3C_CtrCCCSet(I3C_DEVICE_T *dev)
     }
     else if (dev->tx_len > I3C_SDAP_MAX_SIZE)
     {
-        p32Buf = (uint32_t *)dev->tx_buf;
+        volatile uint32_t i;
+        p32Buf = (uint32_t *)((uint32_t)dev->tx_buf);
 
         /* Write bytes to tx port */
         for (i = 0UL; i < ((dev->tx_len + 3UL) / 4UL); i++)
@@ -593,9 +601,12 @@ int32_t I3C_CtrCCCSet(I3C_DEVICE_T *dev)
         dev->port->CMDQUE = val;
         val = 0;
     }
-    else if (dev->tx_len == 0)
+    else if (dev->tx_len == 0UL)
     {
-        dev->port->CMDQUE = ((0 << I3C_CMDQUE_DATLEN_Pos) | I3C_CMDATTR_TRANSFER_ARG);
+        dev->port->CMDQUE = ((0UL << I3C_CMDQUE_DATLEN_Pos) | I3C_CMDATTR_TRANSFER_ARG);
+    }
+    else
+    {
     }
 
     /* Program transfer command */
@@ -680,9 +691,9 @@ int32_t I3C_CtrCCCGet(I3C_DEVICE_T *dev)
   */
 int32_t I3C_CtrWrite(I3C_DEVICE_T *dev)
 {
-    volatile uint32_t i;
+    int32_t ret = I3C_STS_NO_ERR;
     uint32_t val;
-    uint32_t *p32Buf;
+    const uint32_t *p32Buf;
     I3C_DrvMsg("\n");
     /* Initialize command response value */
     dev->cmd_response = I3C_CTRRESP_INITIAL_VALUE;
@@ -695,16 +706,25 @@ int32_t I3C_CtrWrite(I3C_DEVICE_T *dev)
         switch (dev->tx_len)
         {
             case 3:
-                val |= (1 << (I3C_CMDQUE_BYTESTRB_Pos + 2));
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 2UL));
                 val |= (dev->tx_buf[2] << I3C_CMDQUE_DATBYTE2_Pos);
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 1UL));
+                val |= (dev->tx_buf[1] << I3C_CMDQUE_DATBYTE1_Pos);
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 0UL));
+                val |= (dev->tx_buf[0] << I3C_CMDQUE_DATBYTE0_Pos);
+                break;
 
             case 2:
-                val |= (1 << (I3C_CMDQUE_BYTESTRB_Pos + 1));
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 1UL));
                 val |= (dev->tx_buf[1] << I3C_CMDQUE_DATBYTE1_Pos);
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 0UL));
+                val |= (dev->tx_buf[0] << I3C_CMDQUE_DATBYTE0_Pos);
+                break;
 
             case 1:
-                val |= (1 << (I3C_CMDQUE_BYTESTRB_Pos + 0));
+                val |= (1UL << (I3C_CMDQUE_BYTESTRB_Pos + 0UL));
                 val |= (dev->tx_buf[0] << I3C_CMDQUE_DATBYTE0_Pos);
+                break;
 
             default:
                 break;
@@ -718,16 +738,18 @@ int32_t I3C_CtrWrite(I3C_DEVICE_T *dev)
     }
     else if (dev->tx_len > I3C_SDAP_MAX_SIZE)
     {
-        p32Buf = (uint32_t *)dev->tx_buf;
+        p32Buf = (uint32_t *)((uint32_t)dev->tx_buf);
 
         /* Write bytes to tx port */
         if (dev->is_DMA)
         {
-            /* Use Tx PDAM */
-            I3C_ConfigTxDMA(dev, (uint32_t)(p32Buf), (uint32_t)(&dev->port->TXRXDAT), dev->tx_len);
+            /* Use Tx PDMA */
+            ret = I3C_ConfigTxDMA(dev, (uint32_t)(p32Buf), (uint32_t)(&dev->port->TXRXDAT), dev->tx_len);
         }
         else
         {
+            volatile uint32_t i;
+
             for (i = 0UL; i < ((dev->tx_len + 3UL) / 4UL); i++)
             {
                 dev->port->TXRXDAT = p32Buf[i];
@@ -770,7 +792,7 @@ int32_t I3C_CtrWrite(I3C_DEVICE_T *dev)
     dev->is_HDRBT_cmd = FALSE;
     dev->is_DB        = FALSE;
     dev->speed_mode   = I3C_DEVI3C_SPEED_SDR0;
-    return I3C_STS_NO_ERR;
+    return ret;
 }
 
 /**
@@ -778,13 +800,14 @@ int32_t I3C_CtrWrite(I3C_DEVICE_T *dev)
   */
 int32_t I3C_CtrRead(I3C_DEVICE_T *dev)
 {
+    int32_t ret = I3C_STS_NO_ERR;
     uint32_t val;
     I3C_DrvMsg("\n");
 
     if (dev->is_DMA)
     {
         /* Enable PDMA channel for I3C Rx function */
-        I3C_ConfigRxDMA(dev, (uint32_t)(&dev->port->TXRXDAT), (uint32_t)(dev->rx_buf), (I3C_DEVICE_RX_BUF_CNT * 4));
+        ret = I3C_ConfigRxDMA(dev, (uint32_t)(&dev->port->TXRXDAT), (uint32_t)(dev->rx_buf), (I3C_DEVICE_RX_BUF_CNT * 4UL));
     }
 
     /* Initialize command response value */
@@ -821,7 +844,7 @@ int32_t I3C_CtrRead(I3C_DEVICE_T *dev)
     dev->is_HDRBT_cmd = FALSE;
     dev->is_DB        = FALSE;
     dev->speed_mode   = I3C_DEVI3C_SPEED_SDR0;
-    return I3C_STS_NO_ERR;
+    return ret;
 }
 
 /**
@@ -829,7 +852,8 @@ int32_t I3C_CtrRead(I3C_DEVICE_T *dev)
   */
 int32_t I3C_CtrDEFTGTS(I3C_DEVICE_T *dev)
 {
-    volatile uint32_t i;
+    int32_t ret = I3C_STS_NO_ERR;
+    volatile uint8_t  i;
     volatile uint32_t j = 0;
     I3C_DrvMsg("\n");
     /* DEFTGTS CCC */
@@ -838,29 +862,29 @@ int32_t I3C_CtrDEFTGTS(I3C_DEVICE_T *dev)
     /* 4-bytes: Set Controller's info */
     dev->tx_buf[1] = (dev->main_controller_da << 1); // DA
     dev->tx_buf[2] = ((dev->port->SLVCHAR & I3C_SLVCHAR_DCR_Msk) >> I3C_SLVCHAR_DCR_Pos); // DCR;
-    dev->tx_buf[3] = (dev->port->SLVCHAR & 0xFF); // BCR;
+    dev->tx_buf[3] = (dev->port->SLVCHAR & 0xFFU); // BCR;
     dev->tx_buf[4] = 0x0; // SA
 
     /* N-bytes: Set valid Target's info */
-    for (i = 0; i < dev->tx_buf[0]; i++)
+    for (i = 0U; i < dev->tx_buf[0]; i++)
     {
         if (dev->ibi_id == dev->port->TGTCHAR[i].DADDR)
         {
             continue;
         }
 
-        dev->tx_buf[(j * 4) + 5 + 0] = (dev->port->TGTCHAR[i].DADDR << 1); // DA
-        dev->tx_buf[(j * 4) + 5 + 1] = (dev->port->TGTCHAR[i].BCRDCR & 0xFF); // DCR;
-        dev->tx_buf[(j * 4) + 5 + 2] = ((dev->port->TGTCHAR[i].BCRDCR & 0xFF00) >> 8); // BCR;
-        dev->tx_buf[(j * 4) + 5 + 3] = 0x0; // SA
+        dev->tx_buf[(j * 4U) + 5U + 0U] = (dev->port->TGTCHAR[i].DADDR << 1U); // DA
+        dev->tx_buf[(j * 4U) + 5U + 1U] = (dev->port->TGTCHAR[i].BCRDCR & 0xFFU); // DCR;
+        dev->tx_buf[(j * 4U) + 5U + 2U] = ((dev->port->TGTCHAR[i].BCRDCR & 0xFF00U) >> 8U); // BCR;
+        dev->tx_buf[(j * 4U) + 5U + 3U] = 0x0; // SA
         j++;
     }
 
     dev->target_index = 0; // for Broadcast CCC
-    dev->tx_len       = (1 + 4 + (dev->tx_buf[0] * 4));
+    dev->tx_len       = (1UL + 4UL + (dev->tx_buf[0] * 4UL));
     dev->is_last_cmd  = TRUE;
     dev->ccc_code     = I3C_CCC_DEFTGTS; // Not support IRQ
-    I3C_CtrCCCSet(dev);
+    ret = I3C_CtrCCCSet(dev);
 
     while ((dev->port->INTSTS & I3C_INTSTS_RESPRDY_Msk) == 0UL) {}
 
@@ -879,7 +903,7 @@ int32_t I3C_CtrDEFTGTS(I3C_DEVICE_T *dev)
     }
 
     I3C_DrvMsg("\n");
-    return I3C_STS_NO_ERR;
+    return ret;
 }
 
 /**
@@ -887,11 +911,12 @@ int32_t I3C_CtrDEFTGTS(I3C_DEVICE_T *dev)
   */
 int32_t I3C_CtrGETACCCR(I3C_DEVICE_T *dev)
 {
-    uint32_t *p32Buf;
+    int32_t ret = I3C_STS_NO_ERR;
+    I3C_DrvMsg("\n");
     dev->rx_len       = 1;
     dev->is_last_cmd  = TRUE;
     dev->ccc_code     = I3C_CCC_GETACCCR; // Not support IRQ
-    I3C_CtrCCCGet(dev);
+    ret = I3C_CtrCCCGet(dev);
 
     while ((dev->port->INTSTS & I3C_INTSTS_RESPRDY_Msk) == 0UL) {}
 
@@ -901,25 +926,26 @@ int32_t I3C_CtrGETACCCR(I3C_DEVICE_T *dev)
     if (dev->is_DMA)
     {
         /* Enable PDMA channel for I3C Rx function */
-        I3C_ConfigRxDMA(dev, (uint32_t)(&dev->port->TXRXDAT), (uint32_t)(dev->rx_buf), (I3C_DEVICE_RX_BUF_CNT * 4));
+        ret = I3C_ConfigRxDMA(dev, (uint32_t)(&dev->port->TXRXDAT), (uint32_t)(dev->rx_buf), (I3C_DEVICE_RX_BUF_CNT * 4UL));
     }
 
     if ((dev->cmd_response & I3C_CTRRESP_ERRSTS_Msk) == I3C_CTRRESP_NO_ERR)
     {
-        p32Buf = (uint32_t *)&dev->rx_buf[0];
+        uint32_t *p32Buf;
+        p32Buf = (uint32_t *)((uint32_t)dev->rx_buf);
 
-        if (dev->is_DMA == 0)
+        if (dev->is_DMA == 0U)
         {
             p32Buf[0] = dev->port->TXRXDAT;
         }
 
-        if (dev->ibi_id == ((p32Buf[0] & 0xFF) >> 1))
+        if (dev->ibi_id == ((p32Buf[0] & 0xFFUL) >> 1UL))
         {
             I3C_DrvMsg("[ DRV ] [ GETACCCR result ] matched: 0x%02x.\n", dev->ibi_id);
         }
         else
         {
-            I3C_DrvMsg("[ DRV ] [ GETACCCR result ] mismatch: 0x%02x, 0x%02x\n", dev->ibi_id, ((p32Buf[0] & 0xFF) >> 1));
+            I3C_DrvMsg("[ DRV ] [ GETACCCR result ] mismatch: 0x%02x, 0x%02x\n", dev->ibi_id, ((p32Buf[0] & 0xFFUL) >> 1UL));
             return -1;
         }
     }
@@ -930,7 +956,7 @@ int32_t I3C_CtrGETACCCR(I3C_DEVICE_T *dev)
     }
 
     I3C_DrvMsg("\n");
-    return I3C_STS_NO_ERR;
+    return ret;
 }
 
 /**
@@ -938,15 +964,16 @@ int32_t I3C_CtrGETACCCR(I3C_DEVICE_T *dev)
   */
 int32_t I3C_CtrGetIBI(I3C_DEVICE_T *dev)
 {
-    volatile uint32_t i;
-    uint32_t ibi_len, ibi_id, *p32Buf, word_cnt, RWBit = 0;
-
     if (dev->ibi_status & I3C_IBIQSTS_NACK)
     {
         I3C_DrvMsg("\n[ DRV ] NACK IBI, status 0x%08x\n", dev->ibi_status);
     }
     else
     {
+        volatile uint32_t i;
+        uint32_t ibi_len;
+        uint32_t ibi_id;
+        uint32_t RWBit = 0;
         ibi_len = ((dev->ibi_status & I3C_IBISTS_DATLEN_Msk) >> I3C_IBISTS_DATLEN_Pos);
         ibi_id  = (((dev->ibi_status & I3C_IBISTS_IBIID_Msk) >> I3C_IBISTS_IBIID_Pos) >> 1);
         RWBit   = ((dev->ibi_status >> I3C_IBISTS_IBIID_Pos) & BIT0);
@@ -965,85 +992,6 @@ int32_t I3C_CtrGetIBI(I3C_DEVICE_T *dev)
                 dev->ibi_type = I3C_IBI_TYPE_HJ;
                 dev->ibi_id   = ibi_id;
                 dev->ibi_len  = ibi_len;
-#if (0)
-
-                // perform ENTDAA for new Hot-Join Target and update Target's DA table
-                for (i = 0UL; i < 7UL; i++)
-                {
-                    if (dev->target_da[i] != 0x0UL)
-                    {
-                        i++; // set next target index
-                        break;
-                    }
-                }
-
-                I3C_DrvMsg("\n[ DRV ] Hot-Join ID (0x02) is detected ... process ENTDAA (get idx: %d)\n", i);
-
-                if (i > 7UL)
-                {
-                    return -2;
-                }
-                else
-                {
-                    if (i == 7UL)
-                    {
-                        i = 0;
-                    }
-
-                    dev->target_index = i;  // set ENTDAA index to max. target count
-                }
-
-                /* Add delay loop */
-                I3C_DelayLoop(SystemCoreClock / 500UL);
-                dev->target_count = 7;
-                dev->ccc_code     = I3C_CCC_ENTDAA;
-                I3C_CtrDAA(dev);
-
-                if (dev->irq_enable)
-                {
-                    while ((dev->port->INTSTS & I3C_INTSTS_RESPRDY_Msk) == 0UL) {}
-
-                    dev->cmd_response = dev->port->RESPQUE;
-                }
-                else
-                {
-                    while ((dev->port->INTSTS & I3C_INTSTS_RESPRDY_Msk) == 0UL) {}
-
-                    dev->cmd_response = dev->port->RESPQUE;
-                }
-
-                if ((dev->cmd_response & I3C_CTRRESP_ERRSTS_Msk) == I3C_CTRRESP_NO_ERR)
-                {
-                    dev->target_count = dev->target_index + dev->target_count;
-                    I3C_DrvMsg("\t[ ENTDAA PASS ] (total cnts: %d)\n", dev->target_count);
-                    //i = dev->target_index;
-                    //I3C_DrvMsg("\tTarget #%d:\n", dev->target_index);
-                    //dev->target_da[i] = ((dev->port->TGTCHAR[i].DADDR & I3C_TGTCHAR4_DADDR_Msk) >> I3C_TGTCHAR4_DADDR_Pos);
-                    //I3C_DrvMsg("\t - Provisional ID = 0x%08x%02x \n", dev->port->TGTCHAR[i].PIDMSB, dev->port->TGTCHAR[i].PIDLSB);
-                    //I3C_DrvMsg("\t - BCR, DCR       = 0x%08x \n", dev->port->TGTCHAR[i].BCRDCR);
-                    //I3C_DrvMsg("\t - DADDR          = 0x%02x \n", dev->target_da[i]);
-                }
-                else
-                {
-                    remain_cnts = (((uint32_t)dev->cmd_response & I3C_CTRRESP_DATLEN_Msk) >> I3C_CTRRESP_DATLEN_Pos);
-
-                    if (dev->target_count > remain_cnts)
-                    {
-                        dev->target_count = dev->target_index + (dev->target_count - remain_cnts);
-                        I3C_DrvMsg("\t[ ENTDAA get valid Target, error code %d ]\n", (uint32_t)((dev->cmd_response & I3C_CTRRESP_ERRSTS_Msk) >> I3C_CTRRESP_ERRSTS_Pos));
-                    }
-                    else
-                    {
-                        dev->ibi_id = 0x0;
-                        dev->target_count = dev->target_index; // ENTDAA fail, and restore target count
-                        I3C_DrvMsg("\t[ ENTDAA no valid Target, error code %d ]\n", (uint32_t)((dev->cmd_response & I3C_CTRRESP_ERRSTS_Msk) >> I3C_CTRRESP_ERRSTS_Pos));
-                    }
-
-                    I3C_DrvMsg("\tResuming the Controller\n\n");
-                    dev->port->DEVCTL |= I3C_DEVCTL_RESUME_Msk;
-                }
-
-#endif
             }
             else
             {
@@ -1053,13 +1001,11 @@ int32_t I3C_CtrGetIBI(I3C_DEVICE_T *dev)
                 dev->ibi_len  = ibi_len;
 
                 // accept Target CR request after Target DA matched
-                if (dev->ibi_id != 0UL)
+                if (dev->ibi_id != 0U)
                 {
                     // Check if Target's DA matched and send GETACCCR CCC
                     for (i = 0UL; i < 7UL; i++)
                     {
-                        I3C_DrvMsg("dev->target_da[%d] = 0x%X\n", i, dev->target_da[i]);
-
                         if (dev->target_da[i] == dev->ibi_id)
                         {
                             break;
@@ -1068,11 +1014,8 @@ int32_t I3C_CtrGetIBI(I3C_DEVICE_T *dev)
 
                     if (i >= 7UL)
                     {
-                        I3C_DrvMsg("No Target's DA matched\n", ibi_id);
                         return -3;    /* No Target's DA matched */
                     }
-
-#if (1)
 
                     if (dev->ibi_id == dev->main_controller_da)
                     {
@@ -1084,20 +1027,8 @@ int32_t I3C_CtrGetIBI(I3C_DEVICE_T *dev)
                     }
                     else
                     {
-                        //                        /* Perform DEFTGTS CCC while "ibi_id is matched with valid Target DA" */
-                        //                        if (I3C_CtrDEFTGTS(dev) != I3C_STS_NO_ERR)
-                        //                        {
-                        //                            return -4;    /* I3C_DEFTGTS error */
-                        //                        }
                     }
 
-#else
-                    //                    /* Perform DEFTGTS CCC while "ibi_id is matched with valid Target DA" */
-                    //                    if (I3C_CtrDEFTGTS(dev) != I3C_STS_NO_ERR)
-                    //                    {
-                    //                        return -4;    /* I3C_DEFTGTS error */
-                    //                    }
-#endif
                     /* Add delay loop */
                     I3C_DelayLoop(SystemCoreClock / 500UL);
 
@@ -1130,8 +1061,10 @@ int32_t I3C_CtrGetIBI(I3C_DEVICE_T *dev)
         }
         else
         {
+            uint32_t *p32Buf;
+            uint32_t word_cnt;
             /* For In-Band interrupt payload */
-            p32Buf   = (uint32_t *)&dev->rx_buf[0];
+            p32Buf = (uint32_t *)((uint32_t)dev->rx_buf);
             word_cnt = (ibi_len + 3UL) / 4UL;
 
             for (i = 0; i < word_cnt; i++)
@@ -1173,7 +1106,6 @@ void I3C_CtrHandleTransErr(I3C_DEVICE_T *dev)
     err_status = (dev->cmd_response & I3C_CTRRESP_ERRSTS_Msk);
     TID        = (((uint32_t)dev->cmd_response & I3C_CTRRESP_TID_Msk) >> I3C_CTRRESP_TID_Pos);
     LEN        = (((uint32_t)dev->cmd_response & I3C_CTRRESP_DATLEN_Msk) >> I3C_CTRRESP_DATLEN_Pos);
-    I3C_DrvMsg("[ DRV ] cmd_response 0x%08x.\n", dev->cmd_response);
     I3C_DrvMsg("[ DRV ] Controller error status 0x%08x.\n", err_status);
 
     switch (err_status)
@@ -1246,7 +1178,7 @@ void I3C_CtrHandleTransErr(I3C_DEVICE_T *dev)
     /* Reset all FIFO */
     dev->port->RSTCTL = (I3C_RSTCTL_RESPRST_Msk | I3C_RSTCTL_RXRST_Msk | I3C_RSTCTL_TXRST_Msk);
 
-    while (dev->port->RSTCTL != 0) {}
+    while (dev->port->RSTCTL != 0UL) {}
 
     /* Resume Controller if necessary */
     if (resume)
@@ -1263,7 +1195,7 @@ static void I3C_TgtResetAndResume(I3C_DEVICE_T *dev, uint8_t ExtCmdIdx)
     /* Reset all FIFO -> apply resume */
     dev->port->RSTCTL = (I3C_RSTCTL_RESPRST_Msk | I3C_RSTCTL_RXRST_Msk | I3C_RSTCTL_IBIQRST_Msk);
 
-    while (dev->port->RSTCTL != 0) {}
+    while (dev->port->RSTCTL != 0UL) {}
 
     dev->port->DEVCTL |= I3C_DEVCTL_RESUME_Msk;
 
@@ -1277,9 +1209,9 @@ static void I3C_TgtResetAndResume(I3C_DEVICE_T *dev, uint8_t ExtCmdIdx)
   */
 int32_t I3C_TgtRecv(I3C_DEVICE_T *dev)
 {
-    uint8_t             u8TargetID, u8ErrSts;
+    uint8_t             u8TargetID;
+    uint8_t             u8ErrSts;
     uint16_t            u16DataLen;
-    volatile uint16_t   i, RxBufIdx;
     volatile uint32_t   u32RespQ;
     uint32_t            *pu32RxBuf;
     (void)u8TargetID;
@@ -1291,17 +1223,16 @@ int32_t I3C_TgtRecv(I3C_DEVICE_T *dev)
         return I3C_STS_RESPQ_EMPTY;
     }
 
-    RxBufIdx  = 0;
-    pu32RxBuf = (uint32_t *)dev->rx_buf;
+    pu32RxBuf = (uint32_t *)((uint32_t)dev->rx_buf);
     dev->tgtRespQ[0].RxBufAddr = (uint32_t)(&pu32RxBuf[0]);
     dev->tgtRespQ[0].RxBufLen  = 0;
     u32RespQ = dev->port->RESPQUE;
-    I3C_DrvMsg("M55M1 RESPQUE = 0x%08X\n", u32RespQ);
-    u16DataLen  = ((u32RespQ & I3C_TGTRESP_DATLEN_Msk) >> I3C_TGTRESP_DATLEN_Pos);
-    u8TargetID = ((u32RespQ & I3C_TGTRESP_TID_Msk) >> I3C_TGTRESP_TID_Pos);
-    u8ErrSts   = ((u32RespQ & I3C_TGTRESP_ERRSTS_Msk) >> I3C_TGTRESP_ERRSTS_Pos);
+    I3C_DrvMsg("RESPQUE = 0x%08X\n", u32RespQ);
+    u16DataLen  = (uint16_t)((u32RespQ & I3C_TGTRESP_DATLEN_Msk) >> I3C_TGTRESP_DATLEN_Pos);
+    u8TargetID = (uint8_t)((u32RespQ & I3C_TGTRESP_TID_Msk) >> I3C_TGTRESP_TID_Pos);
+    u8ErrSts   = (uint8_t)((u32RespQ & I3C_TGTRESP_ERRSTS_Msk) >> I3C_TGTRESP_ERRSTS_Pos);
 
-    if (u8ErrSts != I3C_STS_NO_ERR)
+    if ((int32_t)u8ErrSts != I3C_STS_NO_ERR)
     {
         I3C_DrvMsg("\tError RESPQ: 0x%08x (TID: %d) (L-%d)\n", u32RespQ, u8TargetID, __LINE__);
         return (u32RespQ & I3C_TGTRESP_ERRSTS_Msk);
@@ -1312,15 +1243,15 @@ int32_t I3C_TgtRecv(I3C_DEVICE_T *dev)
 
     if (dev->is_DMA)
     {
-        /* Use PDAM RX */
+        /* Use PDMA RX */
     }
     else
     {
-        for (i = 0; i < ((u16DataLen + 3) / 4); i++, RxBufIdx++)
+        volatile uint32_t   i;
+
+        for (i = 0UL; i < ((u16DataLen + 3UL) / 4UL); i++)
         {
-            pu32RxBuf[RxBufIdx] = dev->port->TXRXDAT;
-            //if( (u32RespQ & I3C_TGTRESP_CCCWR_Msk) ) // for CCC Write operation
-            //    I3C_DrvMsg("\tRX: 0x%08x\n", pu32RxBuf[RxBufIdx]);
+            pu32RxBuf[i] = dev->port->TXRXDAT;
         }
     }
 
@@ -1334,27 +1265,29 @@ int32_t I3C_TgtRecv(I3C_DEVICE_T *dev)
   */
 int32_t I3C_TgtSend(I3C_DEVICE_T *dev)
 {
-    volatile uint32_t i;
+    int32_t ret = I3C_STS_NO_ERR;
     uint32_t txlen     = dev->tx_len;
-    uint32_t *p32Buf;
+    const uint32_t *p32Buf;
     I3C_DrvMsg("\n");
     /* Push data to EXT CMD TX Buffer */
-    p32Buf = (uint32_t *)dev->tx_buf;
+    p32Buf = (uint32_t *)((uint32_t)dev->tx_buf);
 
     if (dev->is_DMA)
     {
-        /* Use Tx PDAM */
-        I3C_ConfigTxDMA(dev, (uint32_t)(p32Buf), (uint32_t)&dev->port->TXRXDAT, txlen);
+        /* Use Tx PDMA */
+        ret = I3C_ConfigTxDMA(dev, (uint32_t)(p32Buf), (uint32_t)&dev->port->TXRXDAT, txlen);
     }
     else
     {
-        for (i = 0; i < ((txlen + 3) / 4); i++)
+        volatile uint32_t i;
+
+        for (i = 0UL; i < ((txlen + 3UL) / 4UL); i++)
         {
             dev->port->TXRXDAT = p32Buf[i];
         }
     }
 
-    uint32_t CMDQUE     = ((0 << I3C_CMDQUE_TID_Pos) | (txlen << I3C_CMDQUE_DATLEN_Pos));
+    uint32_t CMDQUE     = ((0UL << I3C_CMDQUE_TID_Pos) | (txlen << I3C_CMDQUE_DATLEN_Pos));
     I3C_DrvMsg("[ DRV ] [CMD val: 0x%08X] - I3C_CtrWrite\n", CMDQUE);
     dev->port->CMDQUE = CMDQUE;
     /*
@@ -1365,7 +1298,7 @@ int32_t I3C_TgtSend(I3C_DEVICE_T *dev)
     dev->is_DB        = FALSE;
     dev->is_HDR_cmd   = FALSE;
     dev->is_HDRBT_cmd = FALSE;
-    return I3C_STS_NO_ERR;
+    return ret;
 }
 
 /**
@@ -1384,7 +1317,6 @@ int32_t I3C_TgtGetSendResult(I3C_DEVICE_T *dev)
 int32_t I3C_TgtIssueIBI(I3C_DEVICE_T *dev)
 {
     (void)dev;
-#if (1)
     I3C_DrvMsg("\n");
 
     if ((dev->port->SLVEVNTS & I3C_SLVEVNTS_SIREN_Msk) == 0UL)
@@ -1411,7 +1343,7 @@ int32_t I3C_TgtIssueIBI(I3C_DEVICE_T *dev)
             break;
 
         case I3C_IBI_TYPE_CR:
-            if ((dev->port->SLVEVNTS & I3C_SLVEVNTS_MREN_Msk) == 0)
+            if ((dev->port->SLVEVNTS & I3C_SLVEVNTS_MREN_Msk) == 0UL)
             {
                 I3C_DrvMsg("[ DRV ] ERROR. Controller Request NOT Enabled.\n\n");
                 return I3C_STS_INVALID_INPUT;
@@ -1432,18 +1364,17 @@ int32_t I3C_TgtIssueIBI(I3C_DEVICE_T *dev)
     }
 
     /* Check if payload length > 4-bytes */
-    if (dev->ibi_len > 4UL)
+    if (dev->ibi_len > 4U)
     {
         return I3C_STS_INVALID_INPUT;
     }
 
     /* Program IBI payload data, payload length and MDB */
-    dev->port->SIR    = ((dev->ibi_len << I3C_SIR_DATLEN_Pos) | (dev->ibi_MDB << I3C_SIR_MDB_Pos) | (0 << I3C_SIR_CTL_Pos));
+    dev->port->SIR    = (((dev->ibi_len & 0xFFUL) << I3C_SIR_DATLEN_Pos) | ((dev->ibi_MDB & 0xFFUL) << I3C_SIR_MDB_Pos) | (0U << I3C_SIR_CTL_Pos));
     dev->port->SIRDAT = dev->ibi_payload;
     /* Trigger IBI request */
     /* SIR EN bit be cleared automatically after the Controller accepts the IBI request or Target unable to issue the IBI request */
     dev->port->SIR |= I3C_SIR_EN_Msk;
-#endif
     return I3C_STS_NO_ERR;
 }
 

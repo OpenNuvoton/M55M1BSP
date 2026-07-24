@@ -227,7 +227,9 @@ static int32_t ECC_GenPubKey(mbedtls_ecp_group *grp, mbedtls_mpi *d, mbedtls_ecp
     while ((crpt->INTSTS & CRYPTO_INTSTS_ECCIF_Msk) == 0)
     {
         if (timeout-- <= 0)
+        {
             return MBEDTLS_ERR_ECP_HW_ACCEL_FAILED;
+        }
     }
 
     len = grp->pbits / 8 + ((grp->pbits & 0x7) != 0);
@@ -318,7 +320,9 @@ int32_t  ECC_ComputeShared(mbedtls_ecp_group *grp, mbedtls_mpi *z, const mbedtls
     memset((void *)crpt->ECC_Y2, 0, 72);
 
     if ((ret = ECC_FixCurve(grp)) != 0)
+    {
         return ret;
+    }
 
 
     ECC_Copy((void *)crpt->ECC_A, grp->A.MBEDTLS_PRIVATE(p), mbedtls_mpi_size(&grp->A));
@@ -347,7 +351,9 @@ int32_t  ECC_ComputeShared(mbedtls_ecp_group *grp, mbedtls_mpi *z, const mbedtls
     while ((crpt->INTSTS & CRYPTO_INTSTS_ECCIF_Msk) == 0)
     {
         if (timeout-- <= 0)
+        {
             return MBEDTLS_ERR_ECP_HW_ACCEL_FAILED;
+        }
     }
 
     mbedtls_mpi_lset(z, 0);

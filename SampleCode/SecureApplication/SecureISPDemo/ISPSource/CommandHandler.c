@@ -35,8 +35,8 @@ uint32_t CMDLIB_VERSION(void)
 #define ECC_KEY_SIZE        256             /* 256-bits */
 #define ALL_ONE_2PAGE_CHKS  0xB4293435      /* 2 page all 0xFF CRC32 checksum value */
 
-void Hex2Reg(char input[], uint32_t volatile reg[]);
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
+//void Hex2Reg(char input[], uint32_t volatile reg[]);
+//void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
 
 static uint32_t GetMaxAPROMSize(void)
 {

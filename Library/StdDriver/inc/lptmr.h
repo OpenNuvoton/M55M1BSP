@@ -160,7 +160,7 @@ extern "C"
   * @details    This macro is used to select lptmr toggle-output pin is output on TMx or TMx_EXT pin.
   * \hideinitializer
   */
-#define LPTMR_SELECT_TOUT_PIN(lptmr, u32ToutSel)    ((lptmr)->CTL = ((lptmr)->CTL & ~LPTMR_CTL_TGLPINSEL_Msk) | (u32ToutSel))
+#define LPTMR_SELECT_TOUT_PIN(lptmr, u32ToutSel)    ((lptmr)->CTL = ((lptmr)->CTL & ~LPTMR_CTL_TGLPINSEL_Msk) | (u32ToutSel & LPTMR_CTL_TGLPINSEL_Msk))
 
 /**
   * @brief      Select LPTMR operating mode
@@ -175,7 +175,7 @@ extern "C"
   * @return     None
   * \hideinitializer
   */
-#define LPTMR_SET_OPMODE(lptmr, u32OpMode)   ((lptmr)->CTL = ((lptmr)->CTL & ~LPTMR_CTL_OPMODE_Msk) | (u32OpMode))
+#define LPTMR_SET_OPMODE(lptmr, u32OpMode)   ((lptmr)->CTL = ((lptmr)->CTL & ~LPTMR_CTL_OPMODE_Msk) | (u32OpMode & LPTMR_CTL_OPMODE_Msk))
 
 /* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
 __STATIC_INLINE void LPTMR_Start(LPTMR_T *lptmr);
@@ -192,15 +192,15 @@ __STATIC_INLINE void LPTMR_EnableInt(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_DisableInt(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_EnableCaptureInt(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_DisableCaptureInt(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTMR_GetIntFlag(LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTMR_GetIntFlag(const LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_ClearIntFlag(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlag(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlagOV(LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlag(const LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlagOV(const LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_ClearCaptureIntFlag(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTMR_GetWakeupFlag(LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTMR_GetWakeupFlag(const LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_ClearWakeupFlag(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTMR_GetCaptureData(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTMR_GetCounter(LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTMR_GetCaptureData(const LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTMR_GetCounter(const LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_EnablePDCLK(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_DisablePDCLK(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTMR_EventCounterSelect(LPTMR_T *lptmr, uint32_t u32Src);
@@ -413,7 +413,7 @@ __STATIC_INLINE void LPTMR_DisableCaptureInt(LPTMR_T *lptmr)
   *
   * @details    This function indicates lptmr time-out interrupt occurred or not.
   */
-__STATIC_INLINE uint32_t LPTMR_GetIntFlag(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTMR_GetIntFlag(const LPTMR_T *lptmr)
 {
     return ((lptmr->INTSTS & LPTMR_INTSTS_TIF_Msk) ? 1UL : 0UL);
 }
@@ -442,7 +442,7 @@ __STATIC_INLINE void LPTMR_ClearIntFlag(LPTMR_T *lptmr)
   *
   * @details    This function indicates lptmr capture trigger interrupt occurred or not.
   */
-__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlag(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlag(const LPTMR_T *lptmr)
 {
     return ((lptmr->EINTSTS & LPTMR_EINTSTS_CAPIF_Msk) ? 1UL : 0UL);
 }
@@ -457,7 +457,7 @@ __STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlag(LPTMR_T *lptmr)
   *
   * @details    This function indicates lptmr capture trigger interrupt overrun or not.
   */
-__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlagOV(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTMR_GetCaptureIntFlagOV(const LPTMR_T *lptmr)
 {
     return ((lptmr->EINTSTS & LPTMR_EINTSTS_CAPIFOV_Msk) ? 1UL : 0UL);
 }
@@ -486,9 +486,9 @@ __STATIC_INLINE void LPTMR_ClearCaptureIntFlag(LPTMR_T *lptmr)
   *
   * @details    This function indicates lptmr interrupt event has waked up system or not.
   */
-__STATIC_INLINE uint32_t LPTMR_GetWakeupFlag(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTMR_GetWakeupFlag(const LPTMR_T *lptmr)
 {
-    return (lptmr->INTSTS & LPTMR_INTSTS_TWKF_Msk ? 1UL : 0UL);
+    return (((lptmr->INTSTS & LPTMR_INTSTS_TWKF_Msk) != 0UL) ? 1UL : 0UL);
 }
 
 /**
@@ -514,7 +514,7 @@ __STATIC_INLINE void LPTMR_ClearWakeupFlag(LPTMR_T *lptmr)
   *
   * @details    This function reports the current 24-bit lptmr capture value.
   */
-__STATIC_INLINE uint32_t LPTMR_GetCaptureData(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTMR_GetCaptureData(const LPTMR_T *lptmr)
 {
     return lptmr->CAP;
 }
@@ -528,7 +528,7 @@ __STATIC_INLINE uint32_t LPTMR_GetCaptureData(LPTMR_T *lptmr)
   *
   * @details    This function reports the current 24-bit lptmr counter value.
   */
-__STATIC_INLINE uint32_t LPTMR_GetCounter(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTMR_GetCounter(const LPTMR_T *lptmr)
 {
     return lptmr->CNT;
 }
@@ -577,7 +577,7 @@ __STATIC_INLINE void LPTMR_DisablePDCLK(LPTMR_T *lptmr)
   */
 __STATIC_INLINE void LPTMR_EventCounterSelect(LPTMR_T *lptmr, uint32_t u32Src)
 {
-    lptmr->EXTCTL = (lptmr->EXTCTL & ~LPTMR_EXTCTL_ECNTSSEL_Msk) | u32Src;
+    lptmr->EXTCTL = (lptmr->EXTCTL & ~LPTMR_EXTCTL_ECNTSSEL_Msk) | (u32Src & LPTMR_EXTCTL_ECNTSSEL_Msk);
 }
 
 uint32_t LPTMR_Open(LPTMR_T *lptmr, uint32_t u32Mode, uint32_t u32Freq);
@@ -588,7 +588,7 @@ void LPTMR_CaptureSelect(LPTMR_T *lptmr, uint32_t u32Src);
 void LPTMR_DisableCapture(LPTMR_T *lptmr);
 void LPTMR_EnableEventCounter(LPTMR_T *lptmr, uint32_t u32Edge);
 void LPTMR_DisableEventCounter(LPTMR_T *lptmr);
-uint32_t LPTMR_GetModuleClock(LPTMR_T *lptmr);
+uint32_t LPTMR_GetModuleClock(const LPTMR_T *lptmr);
 void LPTMR_SetTriggerSource(LPTMR_T *lptmr, uint32_t u32Src);
 void LPTMR_SetTriggerTarget(LPTMR_T *lptmr, uint32_t u32Mask);
 int32_t LPTMR_ResetCounter(LPTMR_T *lptmr);

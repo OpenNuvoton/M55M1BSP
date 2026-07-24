@@ -1,0 +1,63 @@
+{
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/shine@3.1.1?source=vendored&path=ThirdParty/shine",
+      "name": "shine",
+      "version": "3.1.1",
+      "scope": "required",
+      "author": "Savonet / shine project",
+      "purl": "pkg:generic/shine@3.1.1",
+      "description": "shine fixed-point MP3 encoding library vendored in ThirdParty/shine, including encoder library sources, command-line encoder source, JavaScript build support, test assets, build metadata, and license text.",
+      "licenses": [
+        {
+          "license": {
+            "id": "LGPL-2.0-only"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "ThirdParty/shine"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_source"
+        },
+        {
+          "name": "shine_version",
+          "value": "3.1.1"
+        },
+        {
+          "name": "shine_included_top_level_paths",
+          "value": "js; src"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "third-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "shine"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/components/sca_shine.json"
+        },
+        {
+          "name": "bsp:evidence-path",
+          "value": "ThirdParty/shine"
+        },
+        {
+          "name": "bsp:version-evidence",
+          "value": "ThirdParty/shine/configure.ac; ThirdParty/shine/ChangeLog; ThirdParty/shine/shine.pc.in"
+        },
+        {
+          "name": "bsp:license-evidence",
+          "value": "ThirdParty/shine/COPYING"
+        }
+      ]
+    }
+  ]
+}

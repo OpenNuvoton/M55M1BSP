@@ -395,55 +395,55 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  CLKDIV constant definitions.                                                                          */
 /*---------------------------------------------------------------------------------------------------------*/
-#define CLK_SCLKDIV_SCLKDIV(x)              (((x) - 1UL) << CLK_SCLKDIV_SCLKDIV_Pos)        /*!< SCLKDIV Setting for SCLK clock divider. It could be 1~16 \hideinitializer */
-#define CLK_HCLKDIV_HCLK2DIV(x)             (((x) - 1UL) << CLK_HCLKDIV_HCLK2DIV_Pos)       /*!< HCLKDIV Setting for HCLK2 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_PCLKDIV_PCLK0DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK0DIV_Pos)       /*!< PCLKDIV Setting for PCLK0 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_PCLKDIV_PCLK1DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK1DIV_Pos)       /*!< PCLKDIV Setting for PCLK1 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_PCLKDIV_PCLK2DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK2DIV_Pos)       /*!< PCLKDIV Setting for PCLK2 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_PCLKDIV_PCLK3DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK3DIV_Pos)       /*!< PCLKDIV Setting for PCLK3 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_PCLKDIV_PCLK4DIV(x)             (((x) - 1UL) << CLK_PCLKDIV_PCLK4DIV_Pos)       /*!< PCLKDIV Setting for PCLK4 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_SCLKDIV_SCLKDIV(x)              (((uint32_t)(x) - 1UL) << CLK_SCLKDIV_SCLKDIV_Pos)        /*!< SCLKDIV Setting for SCLK clock divider. It could be 1~16 \hideinitializer */
+#define CLK_HCLKDIV_HCLK2DIV(x)             (((uint32_t)(x) - 1UL) << CLK_HCLKDIV_HCLK2DIV_Pos)       /*!< HCLKDIV Setting for HCLK2 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_PCLKDIV_PCLK0DIV(x)             (((uint32_t)(x) - 1UL) << CLK_PCLKDIV_PCLK0DIV_Pos)       /*!< PCLKDIV Setting for PCLK0 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_PCLKDIV_PCLK1DIV(x)             (((uint32_t)(x) - 1UL) << CLK_PCLKDIV_PCLK1DIV_Pos)       /*!< PCLKDIV Setting for PCLK1 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_PCLKDIV_PCLK2DIV(x)             (((uint32_t)(x) - 1UL) << CLK_PCLKDIV_PCLK2DIV_Pos)       /*!< PCLKDIV Setting for PCLK2 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_PCLKDIV_PCLK3DIV(x)             (((uint32_t)(x) - 1UL) << CLK_PCLKDIV_PCLK3DIV_Pos)       /*!< PCLKDIV Setting for PCLK3 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_PCLKDIV_PCLK4DIV(x)             (((uint32_t)(x) - 1UL) << CLK_PCLKDIV_PCLK4DIV_Pos)       /*!< PCLKDIV Setting for PCLK4 clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_STDIV_ST0DIV(x)                 (((x) - 1UL) << CLK_STDIV_ST0DIV_Pos)           /*!< STDIV Setting for ST0 clock divider. It could be 1~256 \hideinitializer */
+#define CLK_STDIV_ST0DIV(x)                 (((uint32_t)(x) - 1UL) << CLK_STDIV_ST0DIV_Pos)           /*!< STDIV Setting for ST0 clock divider. It could be 1~256 \hideinitializer */
 
-#define CLK_CANFDDIV_CANFD0DIV(x)           (((x) - 1UL) << CLK_CANFDDIV_CANFD0DIV_Pos)     /*!< CANFDDIV Setting for CANFD0 clock divider. It could be 1~256 \hideinitializer */
-#define CLK_CANFDDIV_CANFD1DIV(x)           (((x) - 1UL) << CLK_CANFDDIV_CANFD1DIV_Pos)     /*!< CANFDDIV Setting for CANFD1 clock divider. It could be 1~256 \hideinitializer */
+#define CLK_CANFDDIV_CANFD0DIV(x)           (((uint32_t)(x) - 1UL) << CLK_CANFDDIV_CANFD0DIV_Pos)     /*!< CANFDDIV Setting for CANFD0 clock divider. It could be 1~256 \hideinitializer */
+#define CLK_CANFDDIV_CANFD1DIV(x)           (((uint32_t)(x) - 1UL) << CLK_CANFDDIV_CANFD1DIV_Pos)     /*!< CANFDDIV Setting for CANFD1 clock divider. It could be 1~256 \hideinitializer */
 
-#define CLK_DMICDIV_DMIC0DIV(x)            (((x) - 1UL) << CLK_DMICDIV_DMIC0DIV_Pos)        /*!< DMICDIV Setting for DMIC0 clock divider. It could be 1~256 \hideinitializer */
+#define CLK_DMICDIV_DMIC0DIV(x)             (((uint32_t)(x) - 1UL) << CLK_DMICDIV_DMIC0DIV_Pos)        /*!< DMICDIV Setting for DMIC0 clock divider. It could be 1~256 \hideinitializer */
 
-#define CLK_EADCDIV_EADC0DIV(x)             (((x) - 1UL) << CLK_EADCDIV_EADC0DIV_Pos)       /*!< CANFDDIV Setting for EADC0 clock divider. It could be 1~256 \hideinitializer */
+#define CLK_EADCDIV_EADC0DIV(x)             (((uint32_t)(x) - 1UL) << CLK_EADCDIV_EADC0DIV_Pos)       /*!< CANFDDIV Setting for EADC0 clock divider. It could be 1~256 \hideinitializer */
 
-#define CLK_I2SDIV_I2S0DIV(x)               (((x) - 1UL) << CLK_I2SDIV_I2S0DIV_Pos)         /*!< I2SDIV Setting for I2S0 clock divider. It could be 1~256 \hideinitializer */
-#define CLK_I2SDIV_I2S1DIV(x)               (((x) - 1UL) << CLK_I2SDIV_I2S1DIV_Pos)         /*!< I2SDIV Setting for I2S1 clock divider. It could be 1~256 \hideinitializer */
+#define CLK_I2SDIV_I2S0DIV(x)               (((uint32_t)(x) - 1UL) << CLK_I2SDIV_I2S0DIV_Pos)         /*!< I2SDIV Setting for I2S0 clock divider. It could be 1~256 \hideinitializer */
+#define CLK_I2SDIV_I2S1DIV(x)               (((uint32_t)(x) - 1UL) << CLK_I2SDIV_I2S1DIV_Pos)         /*!< I2SDIV Setting for I2S1 clock divider. It could be 1~256 \hideinitializer */
 
-#define CLK_KPIDIV_KPI0DIV(x)               (((x) - 1UL) << CLK_KPIDIV_KPI0DIV_Pos)         /*!< KPIDIV Setting for KPI clock divider. It could be 1~256 \hideinitializer */
+#define CLK_KPIDIV_KPI0DIV(x)               (((uint32_t)(x) - 1UL) << CLK_KPIDIV_KPI0DIV_Pos)         /*!< KPIDIV Setting for KPI clock divider. It could be 1~256 \hideinitializer */
 
-#define CLK_LPADCDIV_LPADC0DIV(x)           (((x) - 1UL) << CLK_LPADCDIV_LPADC0DIV_Pos)     /*!< LPADCDIV Setting for LPADC clock divider. It could be 1~16 \hideinitializer */
+#define CLK_LPADCDIV_LPADC0DIV(x)           (((uint32_t)(x) - 1UL) << CLK_LPADCDIV_LPADC0DIV_Pos)     /*!< LPADCDIV Setting for LPADC clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_LPUARTDIV_LPUART0DIV(x)         (((x) - 1UL) << CLK_LPUARTDIV_LPUART0DIV_Pos)   /*!< LPUARTDIV Setting for LPUART clock divider. It could be 1~16 \hideinitializer */
+#define CLK_LPUARTDIV_LPUART0DIV(x)         (((uint32_t)(x) - 1UL) << CLK_LPUARTDIV_LPUART0DIV_Pos)   /*!< LPUARTDIV Setting for LPUART clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_PSIODIV_PSIO0DIV(x)             (((x) - 1UL) << CLK_PSIODIV_PSIO0DIV_Pos)       /*!< PSIODIV Setting for PSIO clock divider. It could be 1~16 \hideinitializer */
+#define CLK_PSIODIV_PSIO0DIV(x)             (((uint32_t)(x) - 1UL) << CLK_PSIODIV_PSIO0DIV_Pos)       /*!< PSIODIV Setting for PSIO clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_SCDIV_SC0DIV(x)                 (((x) - 1UL) << CLK_SCDIV_SC0DIV_Pos)           /*!< SCDIV Setting for SC0 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_SCDIV_SC1DIV(x)                 (((x) - 1UL) << CLK_SCDIV_SC1DIV_Pos)           /*!< SCDIV Setting for SC1 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_SCDIV_SC2DIV(x)                 (((x) - 1UL) << CLK_SCDIV_SC2DIV_Pos)           /*!< SCDIV Setting for SC2 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_SCDIV_SC0DIV(x)                 (((uint32_t)(x) - 1UL) << CLK_SCDIV_SC0DIV_Pos)           /*!< SCDIV Setting for SC0 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_SCDIV_SC1DIV(x)                 (((uint32_t)(x) - 1UL) << CLK_SCDIV_SC1DIV_Pos)           /*!< SCDIV Setting for SC1 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_SCDIV_SC2DIV(x)                 (((uint32_t)(x) - 1UL) << CLK_SCDIV_SC2DIV_Pos)           /*!< SCDIV Setting for SC2 clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_SDHDIV_SDH0DIV(x)               (((x) - 1UL) << CLK_SDHDIV_SDH0DIV_Pos)         /*!< SDHDIV Setting for SDH0 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_SDHDIV_SDH1DIV(x)               (((x) - 1UL) << CLK_SDHDIV_SDH1DIV_Pos)         /*!< SDHDIV Setting for SDH1 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_SDHDIV_SDH0DIV(x)               (((uint32_t)(x) - 1UL) << CLK_SDHDIV_SDH0DIV_Pos)         /*!< SDHDIV Setting for SDH0 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_SDHDIV_SDH1DIV(x)               (((uint32_t)(x) - 1UL) << CLK_SDHDIV_SDH1DIV_Pos)         /*!< SDHDIV Setting for SDH1 clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_UARTDIV0_UART0DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART0DIV_Pos)      /*!< UARTDIV0 Setting for UART0 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV0_UART1DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART1DIV_Pos)      /*!< UARTDIV0 Setting for UART1 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV0_UART2DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART2DIV_Pos)      /*!< UARTDIV0 Setting for UART2 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV0_UART3DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART3DIV_Pos)      /*!< UARTDIV0 Setting for UART3 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV0_UART4DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART4DIV_Pos)      /*!< UARTDIV0 Setting for UART4 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV0_UART5DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART5DIV_Pos)      /*!< UARTDIV0 Setting for UART5 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV0_UART6DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART6DIV_Pos)      /*!< UARTDIV0 Setting for UART6 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV0_UART7DIV(x)            (((x) - 1UL) << CLK_UARTDIV0_UART7DIV_Pos)      /*!< UARTDIV0 Setting for UART7 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV1_UART8DIV(x)            (((x) - 1UL) << CLK_UARTDIV1_UART8DIV_Pos)      /*!< UARTDIV1 Setting for UART8 clock divider. It could be 1~16 \hideinitializer */
-#define CLK_UARTDIV1_UART9DIV(x)            (((x) - 1UL) << CLK_UARTDIV1_UART9DIV_Pos)      /*!< UARTDIV1 Setting for UART9 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART0DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART0DIV_Pos)      /*!< UARTDIV0 Setting for UART0 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART1DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART1DIV_Pos)      /*!< UARTDIV0 Setting for UART1 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART2DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART2DIV_Pos)      /*!< UARTDIV0 Setting for UART2 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART3DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART3DIV_Pos)      /*!< UARTDIV0 Setting for UART3 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART4DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART4DIV_Pos)      /*!< UARTDIV0 Setting for UART4 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART5DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART5DIV_Pos)      /*!< UARTDIV0 Setting for UART5 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART6DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART6DIV_Pos)      /*!< UARTDIV0 Setting for UART6 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV0_UART7DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV0_UART7DIV_Pos)      /*!< UARTDIV0 Setting for UART7 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV1_UART8DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV1_UART8DIV_Pos)      /*!< UARTDIV1 Setting for UART8 clock divider. It could be 1~16 \hideinitializer */
+#define CLK_UARTDIV1_UART9DIV(x)            (((uint32_t)(x) - 1UL) << CLK_UARTDIV1_UART9DIV_Pos)      /*!< UARTDIV1 Setting for UART9 clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_USBDIV_USBDIV(x)                (((x) - 1UL) << CLK_USBDIV_USBDIV_Pos)          /*!< USBDIV Setting for USB clock divider. It could be 1~16 \hideinitializer */
+#define CLK_USBDIV_USBDIV(x)                (((uint32_t)(x) - 1UL) << CLK_USBDIV_USBDIV_Pos)          /*!< USBDIV Setting for USB clock divider. It could be 1~16 \hideinitializer */
 
-#define CLK_VSENSEDIV_VSENSEDIV(x)          (((x) - 1UL) << CLK_VSENSEDIV_VSENSEDIV_Pos)    /*!< VSENSEDIV Setting for VSENSE clock divider. It could be 1~256 \hideinitializer */
+#define CLK_VSENSEDIV_VSENSEDIV(x)          (((uint32_t)(x) - 1UL) << CLK_VSENSEDIV_VSENSEDIV_Pos)    /*!< VSENSEDIV Setting for VSENSE clock divider. It could be 1~256 \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  APLLCTL constant definitions. APLL = FIN * 2 * NF / NR / NO                                              */
@@ -455,22 +455,22 @@ extern "C"
 #define CLK_APLLCTL_APLLSRC_HIRC          0x00000002UL    /*!< For APLL clock source is HIRC.      4MHz < FIN/NR < 8MHz \hideinitializer */
 #define CLK_APLLCTL_APLLSRC_HIRC48_DIV4   0x00000003UL    /*!< For APLL clock source is HIRC48/4.  4MHz < FIN/NR < 8MHz \hideinitializer */
 
-#define CLK_APLLCTL_NF(x)        (((x)-2UL))       /*!< x must be constant and 2 <= x <= 513.    200MHz < FIN*2*NF/NR < 500MHz. \hideinitializer */
-#define CLK_APLLCTL_NR(x)        (((x)-1UL)<<9)    /*!< x must be constant and 1 <= x <= 32.     4MHz < FIN/NR < 8MHz \hideinitializer */
+#define CLK_APLLCTL_NF(x)        (((uint32_t)(x)-(uint32_t)2))       /*!< x must be constant and 2 <= x <= 513.    200MHz < FIN*2*NF/NR < 500MHz. \hideinitializer */
+#define CLK_APLLCTL_NR(x)        (((uint32_t)(x)-(uint32_t)1) << 9)    /*!< x must be constant and 1 <= x <= 32.     4MHz < FIN/NR < 8MHz \hideinitializer */
 
 #define CLK_APLLCTL_NO_1         0x0000UL        /*!< For output divider is 1 \hideinitializer */
 #define CLK_APLLCTL_NO_2         0x4000UL        /*!< For output divider is 2 \hideinitializer */
 #define CLK_APLLCTL_NO_4         0xC000UL        /*!< For output divider is 4 \hideinitializer */
 
-#define CLK_APLLCTL_72MHz           (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 36UL) | CLK_APLLCTL_NO_4) /*!< Predefined APLLCTL setting for 72MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_80MHz           (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 40UL) | CLK_APLLCTL_NO_4) /*!< Predefined APLLCTL setting for 80MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_144MHz          (CLK_APLLCTL_NR(2UL) | CLK_APLLCTL_NF( 24UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 144MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_160MHz          (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 40UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 160MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_180MHz          (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 45UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 180MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_192MHz          (CLK_APLLCTL_NR(2UL) | CLK_APLLCTL_NF( 32UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 192MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_200MHz          (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 25UL) | CLK_APLLCTL_NO_1) /*!< Predefined APLLCTL setting for 200MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_220MHz          (CLK_APLLCTL_NR(3UL) | CLK_APLLCTL_NF( 55UL) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 200MHz APLL output with 12MHz \hideinitializer */
-#define CLK_APLLCTL_384MHz          (CLK_APLLCTL_NR(2UL) | CLK_APLLCTL_NF( 32UL) | CLK_APLLCTL_NO_1) /*!< Predefined APLLCTL setting for 384MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_72MHz           (CLK_APLLCTL_NR(3) | CLK_APLLCTL_NF( 36) | CLK_APLLCTL_NO_4) /*!< Predefined APLLCTL setting for 72MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_80MHz           (CLK_APLLCTL_NR(3) | CLK_APLLCTL_NF( 40) | CLK_APLLCTL_NO_4) /*!< Predefined APLLCTL setting for 80MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_144MHz          (CLK_APLLCTL_NR(2) | CLK_APLLCTL_NF( 24) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 144MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_160MHz          (CLK_APLLCTL_NR(3) | CLK_APLLCTL_NF( 40) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 160MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_180MHz          (CLK_APLLCTL_NR(3) | CLK_APLLCTL_NF( 45) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 180MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_192MHz          (CLK_APLLCTL_NR(2) | CLK_APLLCTL_NF( 32) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 192MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_200MHz          (CLK_APLLCTL_NR(3) | CLK_APLLCTL_NF( 25) | CLK_APLLCTL_NO_1) /*!< Predefined APLLCTL setting for 200MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_220MHz          (CLK_APLLCTL_NR(3) | CLK_APLLCTL_NF( 55) | CLK_APLLCTL_NO_2) /*!< Predefined APLLCTL setting for 200MHz APLL output with 12MHz \hideinitializer */
+#define CLK_APLLCTL_384MHz          (CLK_APLLCTL_NR(2) | CLK_APLLCTL_NF( 32) | CLK_APLLCTL_NO_1) /*!< Predefined APLLCTL setting for 384MHz APLL output with 12MHz \hideinitializer */
 
 #define CLK_APLLCTL_STBSEL_820     (0UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL stable time is 820 APLL source clock \hideinitializer */
 #define CLK_APLLCTL_STBSEL_2460    (1UL << CLK_APLL0CTL_STBSEL_Pos)    /*!< Select APLL stable time is 2460 APLL source clock \hideinitializer */
@@ -967,7 +967,7 @@ extern "C"
   * @return     None
   * @details    This macro set SCLK clock divider
   */
-#define CLK_SET_SCLKDIV(u32SclkDiv)        (CLK->SCLKDIV = (CLK->SCLKDIV & (~CLK_SCLKDIV_SCLKDIV_Msk)) | CLK_SCLKDIV_SCLKDIV(u32SclkDiv))
+#define CLK_SET_SCLKDIV(u32SclkDiv)        (CLK->SCLKDIV = (CLK->SCLKDIV & (uint32_t)(~CLK_SCLKDIV_SCLKDIV_Msk)) | CLK_SCLKDIV_SCLKDIV(u32SclkDiv))
 
 /**
   * @brief      Set HCLK2 Divider
@@ -975,7 +975,7 @@ extern "C"
   * @return     None
   * @details    This macro set HCLK2 clock divider
   */
-#define CLK_SET_HCLK2DIV(u32Hclk2Div)        (CLK->HCLKDIV = (CLK->HCLKDIV & (~CLK_HCLKDIV_HCLK2DIV_Msk)) | CLK_HCLKDIV_HCLK2DIV(u32Hclk2Div))
+#define CLK_SET_HCLK2DIV(u32Hclk2Div)        (CLK->HCLKDIV = (CLK->HCLKDIV & (uint32_t)(~CLK_HCLKDIV_HCLK2DIV_Msk)) | CLK_HCLKDIV_HCLK2DIV(u32Hclk2Div))
 
 /**
   * @brief      Set PCLK0 Divider
@@ -983,7 +983,7 @@ extern "C"
   * @return     None
   * @details    This macro set PCLK0 clock divider
   */
-#define CLK_SET_PCLK0DIV(u32PCLK0Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (~CLK_PCLKDIV_PCLK0DIV_Msk)) | CLK_PCLKDIV_PCLK0DIV(u32PCLK0Div))
+#define CLK_SET_PCLK0DIV(u32PCLK0Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (uint32_t)(~CLK_PCLKDIV_PCLK0DIV_Msk)) | CLK_PCLKDIV_PCLK0DIV(u32PCLK0Div))
 
 /**
   * @brief      Set PCLK1 Divider
@@ -991,7 +991,7 @@ extern "C"
   * @return     None
   * @details    This macro set PCLK1 clock divider
   */
-#define CLK_SET_PCLK1DIV(u32PCLK1Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (~CLK_PCLKDIV_PCLK1DIV_Msk)) | CLK_PCLKDIV_PCLK1DIV(u32PCLK1Div))
+#define CLK_SET_PCLK1DIV(u32PCLK1Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (uint32_t)(~CLK_PCLKDIV_PCLK1DIV_Msk)) | CLK_PCLKDIV_PCLK1DIV(u32PCLK1Div))
 
 /**
   * @brief      Set PCLK2 Divider
@@ -999,7 +999,7 @@ extern "C"
   * @return     None
   * @details    This macro set PCLK2 clock divider
   */
-#define CLK_SET_PCLK2DIV(u32PCLK2Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (~CLK_PCLKDIV_PCLK2DIV_Msk)) | CLK_PCLKDIV_PCLK2DIV(u32PCLK2Div))
+#define CLK_SET_PCLK2DIV(u32PCLK2Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (uint32_t)(~CLK_PCLKDIV_PCLK2DIV_Msk)) | CLK_PCLKDIV_PCLK2DIV(u32PCLK2Div))
 
 /**
   * @brief      Set PCLK3 Divider
@@ -1007,7 +1007,7 @@ extern "C"
   * @return     None
   * @details    This macro set PCLK3 clock divider
   */
-#define CLK_SET_PCLK3DIV(u32PCLK3Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (~CLK_PCLKDIV_PCLK3DIV_Msk)) | CLK_PCLKDIV_PCLK3DIV(u32PCLK3Div))
+#define CLK_SET_PCLK3DIV(u32PCLK3Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (uint32_t)(~CLK_PCLKDIV_PCLK3DIV_Msk)) | CLK_PCLKDIV_PCLK3DIV(u32PCLK3Div))
 
 /**
   * @brief      Set PCLK4 Divider
@@ -1015,7 +1015,7 @@ extern "C"
   * @return     None
   * @details    This macro set PCLK4 clock divider
   */
-#define CLK_SET_PCLK4DIV(u32PCLK4Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (~CLK_PCLKDIV_PCLK4DIV_Msk)) | CLK_PCLKDIV_PCLK4DIV(u32PCLK4Div))
+#define CLK_SET_PCLK4DIV(u32PCLK4Div)        (CLK->PCLKDIV = (CLK->PCLKDIV & (uint32_t)(~CLK_PCLKDIV_PCLK4DIV_Msk)) | CLK_PCLKDIV_PCLK4DIV(u32PCLK4Div))
 
 /**
   * @brief      Set System Tick Divider
@@ -1023,7 +1023,7 @@ extern "C"
   * @return     None
   * @details    This macro set system tick clock divider
   */
-#define CLK_SET_STDIV(u32ST0Div)        (CLK->STDIV = (CLK->STDIV & (~CLK_STDIV_ST0DIV_Msk)) | CLK_STDIV_ST0DIV(u32ST0Div))
+#define CLK_SET_STDIV(u32ST0Div)        (CLK->STDIV = (CLK->STDIV & (uint32_t)(~CLK_STDIV_ST0DIV_Msk)) | CLK_STDIV_ST0DIV(u32ST0Div))
 
 void CLK_DisableCKO(void);
 void CLK_EnableCKO(uint32_t u32ClkSrc, uint32_t u32ClkDiv, uint32_t u32ClkDivBy1En);
@@ -1052,8 +1052,8 @@ void CLK_EnableXtalRC(uint32_t u32ClkMask);
 void CLK_DisableXtalRC(uint32_t u32ClkMask);
 void CLK_EnableModuleClock(uint64_t u64ModuleIdx);
 void CLK_DisableModuleClock(uint64_t u64ModuleIdx);
-uint32_t CLK_EnableAPLL(uint32_t u32APLLClkSrc, uint32_t u32APLLFreq, uint32_t u32APLLSelect);
-void CLK_DisableAPLL(uint32_t u32APLLSelect);
+uint32_t CLK_EnableAPLL(uint32_t u32PllClkSrc, uint32_t u32PllFreq, uint32_t u32PllSelect);
+void CLK_DisableAPLL(uint32_t u32PllSelect);
 uint32_t CLK_WaitClockReady(uint32_t u32ClkMask);
 uint32_t CLK_WaitClockDisable(uint32_t u32ClkMask);
 void CLK_EnableSysTick(uint32_t u32ClkSrc, uint32_t u32Count);

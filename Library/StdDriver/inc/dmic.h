@@ -74,13 +74,13 @@ extern "C"
 
 #define DMIC_DIV_HPF_CUT_F        (0x70000000UL)             /*!< DMIC High pass filter -3B cut-off frequency Setting 7 = 1.029%. */
 #define DMIC_CTL_DSPMEMT_Pos      (26)                               /*!< DMIC Enable the MCU accessing of DSP RAM Position */
-#define DMIC_CTL_DSPMEMT_Msk      (0x1ul << DMIC_CTL_DSPMEMT_Pos)    /*!< DMIC Enable the MCU accessing of DSP RAM Mask */
-#define DMIC_DSP0_RAMDATA         (DMIC0_BASE+0x40)          /*!< DMIC DSP0 RAM Test Data Register. */
-#define DMIC_DSP1_RAMDATA         (DMIC0_BASE+0x44)          /*!< DMIC DSP1 RAM Test Data Register. */
-#define DMIC_RAM_LGAIN_ADDR       (58)                       /*!< DMIC RAM LGAIN_ADDR. */
-#define DMIC_RAM_RGAIN_ADDR       (122)                      /*!< DMIC RAM RGAIN_ADDR. */
-#define DMIC_RAM_LINITSAMPLE_ADDR (62)                       /*!< DMIC RAM LINITSAMPLE_ADDR. */
-#define DMIC_RAM_RINITSAMPLE_ADDR (126)                      /*!< DMIC RAM RINITSAMPLE_ADDR. */
+#define DMIC_CTL_DSPMEMT_Msk      (0x1UL << DMIC_CTL_DSPMEMT_Pos)    /*!< DMIC Enable the MCU accessing of DSP RAM Mask */
+#define DMIC_DSP0_RAMDATA         ((uint32_t)DMIC0_BASE + 0x40UL)          /*!< DMIC DSP0 RAM Test Data Register. */
+#define DMIC_DSP1_RAMDATA         ((uint32_t)DMIC0_BASE + 0x44UL)          /*!< DMIC DSP1 RAM Test Data Register. */
+#define DMIC_RAM_LGAIN_ADDR       (58UL)                      /*!< DMIC RAM LGAIN_ADDR. */
+#define DMIC_RAM_RGAIN_ADDR       (122UL)                     /*!< DMIC RAM RGAIN_ADDR. */
+#define DMIC_RAM_LINITSAMPLE_ADDR (62UL)                      /*!< DMIC RAM LINITSAMPLE_ADDR. */
+#define DMIC_RAM_RINITSAMPLE_ADDR (126UL)                     /*!< DMIC RAM RINITSAMPLE_ADDR. */
 /*---------------------------------------------------------------------------------------------------------*/
 /* VAD SINCCTL Constant Definitions                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
@@ -161,7 +161,7 @@ typedef struct
   * @return     None
   * @details    DMIC FIFO threshold interrupt Enabled.
   */
-#define DMIC_ENABLE_FIFOTH_INT(dmic,u8Value)    ((dmic)->DIV = (((dmic)->DIV&~DMIC_DIV_DMTH_Msk)|((((uint32_t)u8Value)<<DMIC_DIV_DMTH_Pos)&DMIC_DIV_DMTH_Msk))|DMIC_DIV_DMTHIE_Msk)
+#define DMIC_ENABLE_FIFOTH_INT(dmic,u8Value)    ((dmic)->DIV = ((((dmic)->DIV & ~DMIC_DIV_DMTH_Msk) | ((((uint32_t)(u8Value)) << DMIC_DIV_DMTH_Pos) & DMIC_DIV_DMTH_Msk)) | DMIC_DIV_DMTHIE_Msk))
 
 /**
   * @brief      Disable DMIC FIFO threshold interrupt.
@@ -372,8 +372,8 @@ __STATIC_INLINE void DMIC_SetGainStep(DMIC_T *dmic, uint32_t u32Volume);
 __STATIC_INLINE void DMIC_ResetDSP(DMIC_T *dmic);
 __STATIC_INLINE void DMIC_EnableMute(DMIC_T *dmic, uint32_t u32ChMute);
 __STATIC_INLINE void DMIC_DisableMute(DMIC_T *dmic, uint32_t u32ChMute);
-__STATIC_INLINE uint32_t DMIC_GetFIFOPTR(DMIC_T *dmic);
-__STATIC_INLINE void DMIC_VAD_SetBIQCoeff(VAD_T *vad, DMIC_VAD_BIQ_T *psBIQCoeff);
+__STATIC_INLINE uint32_t DMIC_GetFIFOPTR(const DMIC_T *dmic);
+__STATIC_INLINE void DMIC_VAD_SetBIQCoeff(VAD_T *vad, const DMIC_VAD_BIQ_T *psBIQCoeff);
 
 /**
   * @brief      Set DMIC Data Effective Bit in FIFO.
@@ -417,9 +417,8 @@ __STATIC_INLINE void DMIC_ResetDSP(DMIC_T *dmic)
     dmic->CTL |= DMIC_CTL_SWRST_Msk;
     u32Delay = SystemCoreClock >> 3;
 
-    while ((dmic->CTL & DMIC_CTL_SWRST_Msk) && (--u32Delay))
+    while (((dmic->CTL & DMIC_CTL_SWRST_Msk) != 0UL) && ((--u32Delay) > 0UL))
     {
-        __NOP();
     }
 }
 
@@ -464,7 +463,7 @@ __STATIC_INLINE void DMIC_DisableMute(DMIC_T *dmic, uint32_t u32ChMute)
   *
   * @details    This function indicates the field that the valid data count within the DMIC FIFO buffer.
   */
-__STATIC_INLINE uint32_t DMIC_GetFIFOPTR(DMIC_T *dmic)
+__STATIC_INLINE uint32_t DMIC_GetFIFOPTR(const DMIC_T *dmic)
 {
     return ((dmic->STATUS & DMIC_STATUS_FIFOPTR_Msk) >> DMIC_STATUS_FIFOPTR_Pos);
 }
@@ -475,7 +474,7 @@ __STATIC_INLINE uint32_t DMIC_GetFIFOPTR(DMIC_T *dmic)
   * @param[in]  psBIQCoeff: Biquad Filter Coefficient Struct
   * @return     None.
   */
-__STATIC_INLINE void DMIC_VAD_SetBIQCoeff(VAD_T *vad, DMIC_VAD_BIQ_T *psBIQCoeff)
+__STATIC_INLINE void DMIC_VAD_SetBIQCoeff(VAD_T *vad, const DMIC_VAD_BIQ_T *psBIQCoeff)
 {
     vad->BIQCTL0 = (vad->BIQCTL0 & ~VAD_BIQCTL0_BIQA1_Msk) | ((psBIQCoeff->u16BIQCoeffA1 << VAD_BIQCTL0_BIQA1_Pos)&VAD_BIQCTL0_BIQA1_Msk);
     vad->BIQCTL0 = (vad->BIQCTL0 & ~VAD_BIQCTL0_BIQA2_Msk) | ((psBIQCoeff->u16BIQCoeffA2 << VAD_BIQCTL0_BIQA2_Pos)&VAD_BIQCTL0_BIQA2_Msk);
@@ -491,10 +490,10 @@ void DMIC_Close(DMIC_T *dmic);
 void DMIC_SetDSPGainVolume(DMIC_T *dmic, uint32_t u32ChMsk, int16_t i16ChVolume);
 void DMIC_ClearFIFO(DMIC_T *dmic);
 uint32_t DMIC_SetSampleRate(DMIC_T *dmic, uint32_t u32SampleRate);
-uint32_t DMIC_GetSampleRate(DMIC_T *dmic);
+uint32_t DMIC_GetSampleRate(const DMIC_T *dmic);
 
 uint32_t DMIC_VAD_SetSampleRate(VAD_T *vad, uint32_t u32SampleRate);
-uint32_t DMIC_VAD_GetSampleRate(VAD_T *vad);
+uint32_t DMIC_VAD_GetSampleRate(const VAD_T *vad);
 /** @} end of group DMIC_EXPORTED_FUNCTIONS */
 
 /** @} end of group DMIC_Driver */

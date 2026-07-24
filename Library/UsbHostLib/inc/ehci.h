@@ -18,16 +18,17 @@ struct qh_t;
 struct iso_ep_t;
 struct ep_info_t;
 
+
 /*----------------------------------------------------------------------------------------*/
 /*  Periodic Frame List Size (256, 512, or 1024)                                          */
 /*----------------------------------------------------------------------------------------*/
-#define FL_SIZE              1024            /* frame list size can be 256, 512, or 1024   */
-#define NUM_IQH              11              /* depends on FL_SIZE, 256:9, 512:10, 1024:11 */
+#define FL_SIZE              1024U           /* frame list size can be 256, 512, or 1024   */
+#define NUM_IQH              11U             /* depends on FL_SIZE, 256:9, 512:10, 1024:11 */
 
 /*----------------------------------------------------------------------------------------*/
 /*  Interrupt Threshold Control (1, 2, 4, 6, .. 64)                                       */
 /*----------------------------------------------------------------------------------------*/
-#define UCMDR_INT_THR_CTRL     (0x1<<HSUSBH_UCMDR_ITC_Pos)     /* 1 micro-frames          */
+#define UCMDR_INT_THR_CTRL     (0x1UL << HSUSBH_UCMDR_ITC_Pos)     /* 1 micro-frames          */
 
 /*----------------------------------------------------------------------------------------*/
 /*  Queue Element Transfer Descriptor (qTD)                                               */
@@ -47,36 +48,36 @@ typedef struct qTD_t
     struct qTD_t  *next;                    /* link for <qtd_list> of QH                  */
 }  qTD_T;
 
-#define QTD_LIST_END              0x1       /* Indicate the terminate of qTD list.        */
-#define QTD_PTR(x)                ((qTD_T *)((uint32_t)(x) & ~0x1F))
+#define QTD_LIST_END              0x1U      /* Indicate the terminate of qTD list.        */
+#define QTD_PTR(x)                ((qTD_T *)((uint32_t)(x) & ~0x1FU))
 
 /*
  *  Status: qTD Token[7:0]
  */
-#define QTD_STS_PS_OUT            (0<<0)    /* directs the HC to issue an OUT PID         */
-#define QTD_STS_PS_PING           (1<<0)    /* directs the HC to issue an PING PID        */
-#define QTD_STS_SPLIT_STRAT       (0<<1)    /* directs the HC to issue an Start split     */
-#define QTD_STS_SPLIT_COMPLETE    (1<<1)    /* directs the HC to issue an Complete split  */
-#define QTD_STS_MISS_MF           (1<<2)    /* miss a required complete-split transaction */
-#define QTD_STS_XactErr           (1<<3)    /* Transaction Error occurred                 */
-#define QTD_STS_BABBLE            (1<<4)    /* Babble Detected                            */
-#define QTD_STS_DATA_BUFF_ERR     (1<<5)    /* Data Buffer Error                          */
-#define QTD_STS_HALT              (1<<6)    /* Halted                                     */
-#define QTD_STS_ACTIVE            (1<<7)    /* Active                                     */
+#define QTD_STS_PS_OUT            (0U << 0)    /* directs the HC to issue an OUT PID         */
+#define QTD_STS_PS_PING           (1U << 0)    /* directs the HC to issue an PING PID        */
+#define QTD_STS_SPLIT_STRAT       (0U << 1)    /* directs the HC to issue an Start split     */
+#define QTD_STS_SPLIT_COMPLETE    (1U << 1)    /* directs the HC to issue an Complete split  */
+#define QTD_STS_MISS_MF           (1U << 2)    /* miss a required complete-split transaction */
+#define QTD_STS_XactErr           (1U << 3)    /* Transaction Error occurred                 */
+#define QTD_STS_BABBLE            (1U << 4)    /* Babble Detected                            */
+#define QTD_STS_DATA_BUFF_ERR     (1U << 5)    /* Data Buffer Error                          */
+#define QTD_STS_HALT              (1U << 6)    /* Halted                                     */
+#define QTD_STS_ACTIVE            (1U << 7)    /* Active                                     */
 
 /*
  *  PID: qTD Token[9:8]
  */
-#define QTD_PID_Msk              (0x3<<8)
-#define QTD_PID_OUT               (0<<8)    /* generates token (E1H)                      */
-#define QTD_PID_IN                (1<<8)    /* generates token (69H)                      */
-#define QTD_PID_SETUP             (2<<8)    /* generates token (2DH)                      */
+#define QTD_PID_Msk              (0x3UL << 8)
+#define QTD_PID_OUT               (0UL << 8)   /* generates token (E1H)                      */
+#define QTD_PID_IN                (1UL << 8)   /* generates token (69H)                      */
+#define QTD_PID_SETUP             (2UL << 8)   /* generates token (2DH)                      */
 
-#define QTD_ERR_COUNTER           (3<<10)   /* Token[11:10]                               */
-#define QTD_IOC                   (1<<15)   /* Token[15] - Interrupt On Complete          */
-#define QTD_TODO_LEN_Pos          16        /* Token[31:16] - Total Bytes to Transfer     */
-#define QTD_TODO_LEN(x)           (((x)>>16) & 0x7FFF)
-#define QTD_DT                    (1UL<<31) /* Token[31] - Data Toggle                    */
+#define QTD_ERR_COUNTER           (3UL << 10)  /* Token[11:10]                               */
+#define QTD_IOC                   (1UL << 15)  /* Token[15] - Interrupt On Complete          */
+#define QTD_TODO_LEN_Pos          16U        /* Token[31:16] - Total Bytes to Transfer     */
+#define QTD_TODO_LEN(x)           ((((uint32_t)(x)) >> QTD_TODO_LEN_Pos) & 0x7FFFU)
+#define QTD_DT                    (1UL << 31) /* Token[31] - Data Toggle                    */
 
 /*----------------------------------------------------------------------------------------*/
 /*  Queue Head (QH)                                                                       */
@@ -105,37 +106,37 @@ typedef struct qh_t
 }  QH_T;
 
 /*  HLink[0] T field of "Queue Head Horizontal Link Pointer" */
-#define QH_HLNK_END               0x1
+#define QH_HLNK_END               0x1U
 
 /*
  *  HLink[2:1] Typ field of "Queue Head Horizontal Link Pointer"
  */
-#define QH_HLNK_ITD(x)            (((uint32_t)(x) & ~0x1F) | 0x0)
-#define QH_HLNK_QH(x)             (((uint32_t)(x) & ~0x1F) | 0x2)
-#define QH_HLNK_SITD(x)           (((uint32_t)(x) & ~0x1F) | 0x4)
-#define QH_HLNK_FSTN(x)           (((uint32_t)(x) & ~0x1F) | 0x6)
-#define QH_PTR(x)                 ((QH_T *)((uint32_t)(x) & ~0x1F))
+#define QH_HLNK_ITD(x)            ((((uint32_t)(x)) & ~0x1FU) | 0x0U)
+#define QH_HLNK_QH(x)             ((((uint32_t)(x)) & ~0x1FU) | 0x2U)
+#define QH_HLNK_SITD(x)           ((((uint32_t)(x)) & ~0x1FU) | 0x4U)
+#define QH_HLNK_FSTN(x)           ((((uint32_t)(x)) & ~0x1FU) | 0x6U)
+#define QH_PTR(x)                 ((QH_T *)(((uint32_t)(x)) & ~0x1FU))
 
 /*
  *  Bit fields of "Endpoint Characteristics"
  */
-#define QH_NAK_RL                 (4L<<28)  /* Chrst[31:28] - NAK Count Reload            */
-#define QH_CTRL_EP_FLAG           (1<<27)   /* Chrst[27] - Control Endpoint Flag          */
-#define QH_RCLM_LIST_HEAD         (1<<15)   /* Chrst[15] - Head of Reclamation List Flag  */
-#define QH_DTC                    (1<<14)   /* Chrst[14] - Data Toggle Control            */
-#define QH_EPS_FULL               (0<<12)   /* Chrst[13:12] - Endpoint Speed (Full)       */
-#define QH_EPS_LOW                (1<<12)   /* Chrst[13:12] - Endpoint Speed (Low)        */
-#define QH_EPS_HIGH               (2<<12)   /* Chrst[13:12] - Endpoint Speed (High)       */
-#define QH_I_NEXT                 (1<<7)    /* Chrst[7] - Inactivate on Next Transaction  */
+#define QH_NAK_RL                 (4UL << 28U)  /* Chrst[31:28] - NAK Count Reload            */
+#define QH_CTRL_EP_FLAG           (1UL << 27U)  /* Chrst[27] - Control Endpoint Flag          */
+#define QH_RCLM_LIST_HEAD         (1UL << 15U)  /* Chrst[15] - Head of Reclamation List Flag  */
+#define QH_DTC                    (1UL << 14U)  /* Chrst[14] - Data Toggle Control            */
+#define QH_EPS_FULL               (0UL << 12U)  /* Chrst[13:12] - Endpoint Speed (Full)       */
+#define QH_EPS_LOW                (1UL << 12U)  /* Chrst[13:12] - Endpoint Speed (Low)        */
+#define QH_EPS_HIGH               (2UL << 12U)  /* Chrst[13:12] - Endpoint Speed (High)       */
+#define QH_I_NEXT                 (1UL << 7U)   /* Chrst[7] - Inactivate on Next Transaction  */
 
 /*
  *  Bit fields of "Endpoint Capabilities"
  */
-#define QH_MULT_Pos               30        /* Cap[31:30] - High-Bandwidth Pipe Multiplier */
-#define QH_HUB_PORT_Pos           23        /* Cap[29:23] - Hub Port Number               */
-#define QH_HUB_ADDR_Pos           16        /* Cap[22:16] - Hub Addr                      */
-#define QH_C_MASK_Msk             0xFF00    /* Cap[15:8]  - uFrame C-mask                 */
-#define QH_S_MASK_Msk             0x00FF    /* Cap[7:0]   - uFrame S-mask                 */
+#define QH_MULT_Pos               30U       /* Cap[31:30] - High-Bandwidth Pipe Multiplier */
+#define QH_HUB_PORT_Pos           23U       /* Cap[29:23] - Hub Port Number               */
+#define QH_HUB_ADDR_Pos           16U       /* Cap[22:16] - Hub Addr                      */
+#define QH_C_MASK_Msk             0xFF00U   /* Cap[15:8]  - uFrame C-mask                 */
+#define QH_S_MASK_Msk             0x00FFU   /* Cap[7:0]   - uFrame S-mask                 */
 
 /*----------------------------------------------------------------------------------------*/
 /*  Isochronous (High-Speed) Transfer Descriptor (iTD)                                    */
@@ -160,41 +161,41 @@ typedef struct itd_t
 /*
  *  Next_Link[2:1] Typ field of "Next Schedule Element Pointer"  Typ field
  */
-#define ITD_HLNK_ITD(x)           (((uint32_t)(x) & ~0x1F) | 0x0)
-#define ITD_HLNK_QH(x)            (((uint32_t)(x) & ~0x1F) | 0x2)
-#define ITD_HLNK_SITD(x)          (((uint32_t)(x) & ~0x1F) | 0x4)
-#define ITD_HLNK_FSTN(x)          (((uint32_t)(x) & ~0x1F) | 0x6)
-#define ITD_PTR(x)                ((iTD_T *)((uint32_t)(x) & ~0x1F))
+#define ITD_HLNK_ITD(x)           (((uint32_t)(x) & ~0x1FU) | 0x0U)
+#define ITD_HLNK_QH(x)            (((uint32_t)(x) & ~0x1FU) | 0x2U)
+#define ITD_HLNK_SITD(x)          (((uint32_t)(x) & ~0x1FU) | 0x4U)
+#define ITD_HLNK_FSTN(x)          (((uint32_t)(x) & ~0x1FU) | 0x6U)
+#define ITD_PTR(x)                ((iTD_T *)((uint32_t)(x) & ~0x1FU))
 
 /*
  *  Transaction[8]
  */
-#define ITD_STATUS(x)             (((x)>>28)&0xF)
+#define ITD_STATUS(x)             ((((uint32_t)(x))>>28)&0xFU)
 #define ITD_STATUS_ACTIVE         (0x80000000UL)      /* Active                           */
 #define ITD_STATUS_BUFF_ERR       (0x40000000UL)      /* Data Buffer Error                */
 #define ITD_STATUS_BABBLE         (0x20000000UL)      /* Babble Detected                  */
 #define ITD_STATUS_XACT_ERR       (0x10000000UL)      /* Transcation Error                */
 
-#define ITD_XLEN_Pos              16
-#define ITD_XFER_LEN(x)           (((x)>>16)&0xFFF)
-#define ITD_IOC                   (1<<15)
-#define ITD_PG_Pos                12
-#define ITD_XFER_OFF_Msk          0xFFF
+#define ITD_XLEN_Pos              16U
+#define ITD_XFER_LEN(x)           ((((uint32_t)(x))>>16)&0xFFFU)
+#define ITD_IOC                   (1UL<<15)
+#define ITD_PG_Pos                12U
+#define ITD_XFER_OFF_Msk          0xFFFU
 
 /*
  *  Bptr[7]
  */
-#define ITD_BUFF_PAGE_Pos         12
+#define ITD_BUFF_PAGE_Pos         12U
 /* Bptr[0] */
-#define ITD_EP_NUM_Pos            8
-#define ITD_EP_NUM(itd)           (((itd)->Bptr[0]>>8)&0xF)
-#define ITD_DEV_ADDR_Pos          0
-#define ITD_DEV_ADDR(itd)         ((itd)->Bptr[0]&0x7F)
+#define ITD_EP_NUM_Pos            8U
+#define ITD_EP_NUM(itd)           (((itd)->Bptr[0]>>8)&0xFU)
+#define ITD_DEV_ADDR_Pos          0U
+#define ITD_DEV_ADDR(itd)         ((itd)->Bptr[0]&0x7FU)
 /* Bptr[1] */
-#define ITD_DIR_IN                (1<<11)
-#define ITD_DIR_OUT               (0<<11)
-#define ITD_MAX_PKTSZ_Pos         0
-#define ITD_MAX_PKTSZ(itd)        ((itd)->Bptr[1]&0x7FF)
+#define ITD_DIR_IN                (1UL<<11)
+#define ITD_DIR_OUT               (0UL<<11)
+#define ITD_MAX_PKTSZ_Pos         0U
+#define ITD_MAX_PKTSZ(itd)        ((itd)->Bptr[1]&0x7FFU)
 
 /*----------------------------------------------------------------------------------------*/
 /*  Split Isochronous (Full-Speed) Transfer Descriptor (siTD)                             */
@@ -217,41 +218,41 @@ typedef struct sitd_t
     struct sitd_t *next;                    /* used by software to maintain siTD list     */
 }  siTD_T;
 
-#define SITD_LIST_END              0x1      /* Indicate the terminate of siTD list.       */
+#define SITD_LIST_END              0x1U     /* Indicate the terminate of siTD list.       */
 
 #define SITD_XFER_IO_Msk           (1UL<<31)
 #define SITD_XFER_IN               (1UL<<31)
 #define SITD_XFER_OUT              (0UL<<31)
 
-#define SITD_PORT_NUM_Pos          24
-#define SITD_HUB_ADDR_Pos          16
-#define SITD_EP_NUM_Pos            8
-#define SITD_DEV_ADDR_Pos          0
+#define SITD_PORT_NUM_Pos          24U
+#define SITD_HUB_ADDR_Pos          16U
+#define SITD_EP_NUM_Pos            8U
+#define SITD_DEV_ADDR_Pos          0U
 
 #define SITD_IOC                   (1UL<<31)
-#define SITD_XFER_CNT_Pos          16
-#define SITD_XFER_CNT_Msk          (0x3FF<<SITD_XFER_CNT_Pos)
+#define SITD_XFER_CNT_Pos          16U
+#define SITD_XFER_CNT_Msk          (0x3FFUL<<SITD_XFER_CNT_Pos)
 
-#define SITD_STATUS(x)             ((x)&0xFC)
-#define SITD_STATUS_ACTIVE         0x80
-#define SITD_STATUS_ERR            0x40
-#define SITD_STATUS_BUFF_ERR       0x20
-#define SITD_BABBLE_DETECTED       0x10
-#define SITD_STATUS_XFER_ERR       0x08
-#define SITD_STATUS_MISSED_MF      0x04
-#define SITD_STATUS_ERROR_MASK     0x78
+#define SITD_STATUS(x)             (((uint32_t)(x))&0xFCU)
+#define SITD_STATUS_ACTIVE         0x80U
+#define SITD_STATUS_ERR            0x40U
+#define SITD_STATUS_BUFF_ERR       0x20U
+#define SITD_BABBLE_DETECTED       0x10U
+#define SITD_STATUS_XFER_ERR       0x08U
+#define SITD_STATUS_MISSED_MF      0x04U
+#define SITD_STATUS_ERROR_MASK     0x78U
 
 /*
  *  Next_Link[2:1] Typ field of "Next Schedule Element Pointer"  Typ field
  */
-#define SITD_HLNK_ITD(x)          (((uint32_t)(x) & ~0x1F) | 0x0)
-#define SITD_HLNK_QH(x)           (((uint32_t)(x) & ~0x1F) | 0x2)
-#define SITD_HLNK_SITD(x)         (((uint32_t)(x) & ~0x1F) | 0x4)
-#define SITD_HLNK_FSTN(x)         (((uint32_t)(x) & ~0x1F) | 0x6)
-#define SITD_PTR(x)               ((siTD_T *)((uint32_t)(x) & ~0x1F))
+#define SITD_HLNK_ITD(x)          (((uint32_t)(x) & ~0x1FU) | 0x0U)
+#define SITD_HLNK_QH(x)           (((uint32_t)(x) & ~0x1FU) | 0x2U)
+#define SITD_HLNK_SITD(x)         (((uint32_t)(x) & ~0x1FU) | 0x4U)
+#define SITD_HLNK_FSTN(x)         (((uint32_t)(x) & ~0x1FU) | 0x6U)
+#define SITD_PTR(x)               ((siTD_T *)((uint32_t)(x) & ~0x1FU))
 
-#define HLINK_IS_TERMINATED(x)    (((uint32_t)(x) & 0x1) ? 1 : 0)
-#define HLINK_IS_SITD(x)          ((((uint32_t)(x) & 0x6) == 0x4) ? 1 : 0)
+#define HLINK_IS_TERMINATED(x)    ((((uint32_t)(x) & 0x1U) != 0U) ? 1 : 0)
+#define HLINK_IS_SITD(x)          ((((uint32_t)(x) & 0x6U) == 0x4U) ? 1 : 0)
 
 /*----------------------------------------------------------------------------------------*/
 /*  Isochronous endpoint transfer information block. (Software only)                      */
@@ -268,6 +269,10 @@ typedef struct iso_ep_t
 } ISO_EP_T;
 
 extern void scan_isochronous_list(void);
+
+extern uint32_t _PFList[FL_SIZE];           /* Periodic frame list                        */
+extern ISO_EP_T  *iso_ep_list;              /* list of activated isochronous pipes        */
+
 
 /// @endcond
 

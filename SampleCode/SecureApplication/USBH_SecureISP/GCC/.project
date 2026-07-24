@@ -145,6 +145,11 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_hid/hid_driver.c</locationURI>
 		</link>
 		<link>
+			<name>USBH_HID_Lib/hid_parser.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_hid/hid_parser.c</locationURI>
+		</link>
+		<link>
 			<name>USBH_HID_Lib/user_hid_core.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/user_hid_core.c</locationURI>

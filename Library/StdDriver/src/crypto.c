@@ -8,10 +8,11 @@
 *****************************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 #include "NuMicro.h"
 
 /** @cond HIDDEN_SYMBOLS */
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
     #define CRYPTO_DBGMSG   printf
 #else
     #define CRYPTO_DBGMSG(...)   do { } while (0)       /* disable debug */
@@ -27,14 +28,28 @@
   @{
 */
 
+#define ECCOP_POINT_MUL     (0x0UL << CRYPTO_ECC_CTL_ECCOP_Pos)
+#define ECCOP_MODULE        (0x1UL << CRYPTO_ECC_CTL_ECCOP_Pos)
+#define ECCOP_POINT_ADD     (0x2UL << CRYPTO_ECC_CTL_ECCOP_Pos)
+#define ECCOP_POINT_DOUBLE  (0x0UL << CRYPTO_ECC_CTL_ECCOP_Pos)
+
+#define MODOP_DIV           (0x0UL << CRYPTO_ECC_CTL_MODOP_Pos)
+#define MODOP_MUL           (0x1UL << CRYPTO_ECC_CTL_MODOP_Pos)
+#define MODOP_ADD           (0x2UL << CRYPTO_ECC_CTL_MODOP_Pos)
+#define MODOP_SUB           (0x3UL << CRYPTO_ECC_CTL_MODOP_Pos)
+
 /** @cond HIDDEN_SYMBOLS */
 static uint32_t g_AES_CTL[4];
-static char  hex_char_tbl[] = "0123456789abcdef";
+static ECC_CURVE  *pCurve = (ECC_CURVE *)NULL;
+
 static char get_Nth_nibble_char(uint32_t val32, uint32_t idx);
 static char ch2hex(char ch);
 static int  get_nibble_value(char c);
-void  dump_buff_hex(uint8_t *pucBuff, int nBytes);
-#if ENABLE_DEBUG
+static ECC_CURVE *get_curve(E_ECC_CURVE ecc_curve);
+static void run_ecc_codec(CRYPTO_T *crypto, uint32_t mode, int enable_scap);
+static int32_t ecc_init_curve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve);
+
+#if defined(ENABLE_DEBUG)
     static void dump_ecc_reg(char *str, uint32_t volatile regs[], int32_t count);
 #endif
 /** @endcond HIDDEN_SYMBOLS */
@@ -96,7 +111,8 @@ void PRNG_Start(CRYPTO_T *crypto)
   */
 void PRNG_Read(CRYPTO_T *crypto, uint32_t u32RandKey[])
 {
-    uint32_t  i, wcnt;
+    uint32_t  i;
+    uint32_t  wcnt;
 
     wcnt = (((crypto->PRNG_CTL & CRYPTO_PRNG_CTL_KEYSZ_Msk) >> CRYPTO_PRNG_CTL_KEYSZ_Pos) + 1U) * 2U;
 
@@ -176,9 +192,13 @@ void AES_Start(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t u32DMAMode)
 void AES_Start_KS(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t u32DMAMode, int ksel, int knum)
 {
     if (ksel == 0)
-        crypto->AES_KSCTL = CRYPTO_AES_KSCTL_RSRC_Msk | knum;     /* from KS SRAM */
+    {
+        crypto->AES_KSCTL = CRYPTO_AES_KSCTL_RSRC_Msk | (uint32_t)knum;     /* from KS SRAM */
+    }
     else
-        crypto->AES_KSCTL = (2 << CRYPTO_AES_KSCTL_RSSRC_Pos) | CRYPTO_AES_KSCTL_RSRC_Msk | knum; /* from KS OTP */
+    {
+        crypto->AES_KSCTL = (2UL << CRYPTO_AES_KSCTL_RSSRC_Pos) | CRYPTO_AES_KSCTL_RSRC_Msk | (uint32_t)knum; /* from KS OTP */
+    }
 
     crypto->AES_CTL = g_AES_CTL[u32Channel];
     crypto->AES_CTL |= CRYPTO_AES_CTL_START_Msk | (u32DMAMode << CRYPTO_AES_CTL_DMALAST_Pos);
@@ -195,20 +215,19 @@ void AES_Start_KS(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t u32DMAMode, in
   *         - \ref AES_KEY_SIZE_256
   * @return None
   */
-void AES_SetKey(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t au32Keys[], uint32_t u32KeySize)
+void AES_SetKey(CRYPTO_T *crypto, uint32_t u32Channel, const uint32_t au32Keys[], uint32_t u32KeySize)
 {
-    uint32_t  i, wcnt;
-    void    *key_reg_addr;
-    uint32_t *u32p_key_reg;
+    uint32_t  i;
+    uintptr_t reg_addr;
+    uint32_t  wcnt;
 
-    key_reg_addr = (void *)((uint32_t)&crypto->AES_KEY[0] + (u32Channel * 0x3CUL));
-    wcnt = 4UL + u32KeySize * 2UL;
-    u32p_key_reg = (uint32_t *)key_reg_addr;
+    reg_addr = (uintptr_t)&crypto->AES_KEY[0] + ((uintptr_t)u32Channel * 0x3CUL);
+    wcnt = 4UL + (u32KeySize * 2UL);
 
     for (i = 0U; i < wcnt; i++)
     {
-        outpw(u32p_key_reg, au32Keys[i]);
-        u32p_key_reg++;
+        outpw(reg_addr, au32Keys[i]);
+        reg_addr += sizeof(uint32_t);
     }
 }
 
@@ -229,7 +248,7 @@ void AES_SetKey_KS(CRYPTO_T *crypto, KS_MEM_Type mem, int32_t i32KeyIdx)
 {
     /* Use key in key store */
     crypto->AES_KSCTL = CRYPTO_AES_KSCTL_RSRC_Msk /* use KS */  |
-                        (uint32_t)((int)mem << CRYPTO_AES_KSCTL_RSSRC_Pos) /* KS Memory type */ |
+                        ((uint32_t)mem << CRYPTO_AES_KSCTL_RSSRC_Pos) /* KS Memory type */ |
                         (uint32_t)i32KeyIdx /* key num */ ;
 
 }
@@ -241,18 +260,17 @@ void AES_SetKey_KS(CRYPTO_T *crypto, KS_MEM_Type mem, int32_t i32KeyIdx)
   * @param[in]  au32IV        A four entry word array contains AES initial vectors.
   * @return None
   */
-void AES_SetInitVect(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t au32IV[])
+void AES_SetInitVect(CRYPTO_T *crypto, uint32_t u32Channel, const uint32_t au32IV[])
 {
     uint32_t  i;
-    void   *iv_reg_addr;
-    uint32_t *u32p_iv_reg;
-    iv_reg_addr = (void *)((uint32_t)&crypto->AES_IV[0] + (u32Channel * 0x3CUL));
-    u32p_iv_reg = (uint32_t *)iv_reg_addr;
+    uintptr_t reg_addr;
+
+    reg_addr = (uintptr_t)&crypto->AES_IV[0] + ((uintptr_t)u32Channel * 0x3CUL);
 
     for (i = 0U; i < 4U; i++)
     {
-        outpw(u32p_iv_reg, au32IV[i]);
-        u32p_iv_reg++;
+        outpw(reg_addr, au32IV[i]);
+        reg_addr += sizeof(uint32_t);
     }
 }
 
@@ -268,15 +286,15 @@ void AES_SetInitVect(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t au32IV[])
 void AES_SetDMATransfer(CRYPTO_T *crypto, uint32_t u32Channel, uint32_t u32SrcAddr,
                         uint32_t u32DstAddr, uint32_t u32TransCnt)
 {
-    void *reg_addr;
+    uintptr_t reg_addr;
 
-    reg_addr = (void *)((uint32_t)&crypto->AES_SADDR + (u32Channel * 0x3CUL));
+    reg_addr = (uintptr_t)&crypto->AES_SADDR + ((uintptr_t)u32Channel * 0x3CUL);
     outpw(reg_addr, u32SrcAddr);
 
-    reg_addr = (void *)((uint32_t)&crypto->AES_DADDR + (u32Channel * 0x3CUL));
+    reg_addr = (uintptr_t)&crypto->AES_DADDR + ((uintptr_t)u32Channel * 0x3CUL);
     outpw(reg_addr, u32DstAddr);
 
-    reg_addr = (void *)((uint32_t)&crypto->AES_CNT + (u32Channel * 0x3CUL));
+    reg_addr = (uintptr_t)&crypto->AES_CNT + ((uintptr_t)u32Channel * 0x3CUL);
     outpw(reg_addr, u32TransCnt);
 }
 
@@ -306,7 +324,7 @@ void SHA_Open(CRYPTO_T *crypto, uint32_t u32OpMode, uint32_t u32SwapType, uint32
     if (hmac_key_len != 0UL)
     {
         crypto->HMAC_KEYCNT = hmac_key_len;
-        crypto->HMAC_CTL |= (1 << 11); /* M55M1, migrate from M480LD HMACEN is CRYPTO_HMAC_CTL[11] */
+        crypto->HMAC_CTL |= CRYPTO_HMAC_CTL_HMACEN_Msk;
     }
 }
 
@@ -346,7 +364,8 @@ void SHA_SetDMATransfer(CRYPTO_T *crypto, uint32_t u32SrcAddr, uint32_t u32Trans
   */
 void SHA_Read(CRYPTO_T *crypto, uint32_t u32Digest[])
 {
-    uint32_t  i, wcnt;
+    uint32_t  i;
+    uint32_t  wcnt;
     uint32_t  reg_addr;
 
     i = (crypto->HMAC_CTL & CRYPTO_HMAC_CTL_OPMODE_Msk) >> CRYPTO_HMAC_CTL_OPMODE_Pos;
@@ -384,448 +403,474 @@ void SHA_Read(CRYPTO_T *crypto, uint32_t u32Digest[])
 
 /** @cond HIDDEN_SYMBOLS */
 
-#define ECCOP_POINT_MUL     (0x0UL << CRYPTO_ECC_CTL_ECCOP_Pos)
-#define ECCOP_MODULE        (0x1UL << CRYPTO_ECC_CTL_ECCOP_Pos)
-#define ECCOP_POINT_ADD     (0x2UL << CRYPTO_ECC_CTL_ECCOP_Pos)
-#define ECCOP_POINT_DOUBLE  (0x0UL << CRYPTO_ECC_CTL_ECCOP_Pos)
 
-#define MODOP_DIV           (0x0UL << CRYPTO_ECC_CTL_MODOP_Pos)
-#define MODOP_MUL           (0x1UL << CRYPTO_ECC_CTL_MODOP_Pos)
-#define MODOP_ADD           (0x2UL << CRYPTO_ECC_CTL_MODOP_Pos)
-#define MODOP_SUB           (0x3UL << CRYPTO_ECC_CTL_MODOP_Pos)
 
 
 /*-----------------------------------------------------*/
 /*  Define elliptic curve (EC):                        */
 /*-----------------------------------------------------*/
-const ECC_CURVE _Curve[] =
-{
-    {
-        /* NIST: Curve P-192 : y^2=x^3-ax+b (mod p) */
-        CURVE_P_192,
-        48,     /* Echar */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFC",   /* "000000000000000000000000000000000000000000000003" */
-        "64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",
-        "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012",
-        "07192b95ffc8da78631011ed6b24cdd573f977a11e794811",
-        58,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFF",   /* "6277101735386680763835789423207666416083908700390324961279" */
-        58,     /* Eol */
-        "FFFFFFFFFFFFFFFFFFFFFFFF99DEF836146BC9B1B4D22831",   /* "6277101735386680763835789423176059013767194773182842284081" */
-        192,    /* key_len */
-        7,
-        2,
-        1,
-        CURVE_GF_P
-    },
-    {
-        /* NIST: Curve P-224 : y^2=x^3-ax+b (mod p) */
-        CURVE_P_224,
-        56,     /* Echar */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFE",  /* "00000000000000000000000000000000000000000000000000000003" */
-        "b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
-        "b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21",
-        "bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34",
-        70,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "0026959946667150639794667015087019630673557916260026308143510066298881" */
-        70,     /* Eol */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFF16A2E0B8F03E13DD29455C5C2A3D",  /* "0026959946667150639794667015087019625940457807714424391721682722368061" */
-        224,    /* key_len */
-        9,
-        8,
-        3,
-        CURVE_GF_P
-    },
-    {
-        /* NIST: Curve P-256 : y^2=x^3-ax+b (mod p) */
-        CURVE_P_256,
-        64,     /* Echar */
-        "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC",  /* "0000000000000000000000000000000000000000000000000000000000000003" */
-        "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
-        "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
-        "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
-        78,     /* Epl */
-        "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF",  /* "115792089210356248762697446949407573530086143415290314195533631308867097853951" */
-        78,     /* Eol */
-        "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551",  /* "115792089210356248762697446949407573529996955224135760342422259061068512044369" */
-        256,    /* key_len */
-        10,
-        5,
-        2,
-        CURVE_GF_P
-    },
-    {
-        /* NIST: Curve P-384 : y^2=x^3-ax+b (mod p) */
-        CURVE_P_384,
-        96,     /* Echar */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFC",  /* "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003" */
-        "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
-        "aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7",
-        "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f",
-        116,    /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF",  /* "39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112319" */
-        116,    /* Eol */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973",  /* "39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643" */
-        384,    /* key_len */
-        12,
-        3,
-        2,
-        CURVE_GF_P
-    },
-    {
-        /* NIST: Curve P-521 : y^2=x^3-ax+b (mod p)*/
-        CURVE_P_521,
-        131,    /* Echar */
-        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC",  /* "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003" */
-        "051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
-        "0c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66",
-        "11839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650",
-        157,    /* Epl */
-        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",  /* "6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151" */
-        157,    /* Eol */
-        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409",  /* "6864797660130609714981900799081393217269435300143305409394463459185543183397655394245057746333217197532963996371363321113864768612440380340372808892707005449" */
-        521,    /* key_len */
-        32,
-        32,
-        32,
-        CURVE_GF_P
-    },
-    {
-        /* NIST: Curve B-163 : y^2+xy=x^3+ax^2+b */
-        CURVE_B_163,
-        41,     /* Echar */
-        "00000000000000000000000000000000000000001",
-        "20a601907b8c953ca1481eb10512f78744a3205fd",
-        "3f0eba16286a2d57ea0991168d4994637e8343e36",
-        "0d51fbc6c71a0094fa2cdd545b11c5c0c797324f1",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        49,     /* Eol */
-        "40000000000000000000292FE77E70C12A4234C33",   /* "5846006549323611672814742442876390689256843201587" */
-        163,    /* key_len */
-        7,
-        6,
-        3,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve B-233 : y^2+xy=x^3+ax^2+b */
-        CURVE_B_233,
-        59,     /* Echar 59 */
-        "00000000000000000000000000000000000000000000000000000000001",
-        "066647ede6c332c7f8c0923bb58213b333b20e9ce4281fe115f7d8f90ad",
-        "0fac9dfcbac8313bb2139f1bb755fef65bc391f8b36f8f8eb7371fd558b",
-        "1006a08a41903350678e58528bebf8a0beff867a7ca36716f7e01f81052",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        70,     /* Eol */
-        "1000000000000000000000000000013E974E72F8A6922031D2603CFE0D7",  /* "6901746346790563787434755862277025555839812737345013555379383634485463" */
-        233,    /* key_len */
-        74,
-        74,
-        74,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve B-283 : y^2+xy=x^3+ax^2+b */
-        CURVE_B_283,
-        71,     /* Echar */
-        "00000000000000000000000000000000000000000000000000000000000000000000001",
-        "27b680ac8b8596da5a4af8a19a0303fca97fd7645309fa2a581485af6263e313b79a2f5",
-        "5f939258db7dd90e1934f8c70b0dfec2eed25b8557eac9c80e2e198f8cdbecd86b12053",
-        "3676854fe24141cb98fe6d4b20d02b4516ff702350eddb0826779c813f0df45be8112f4",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        85,     /* Eol */
-        "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEF90399660FC938A90165B042A7CEFADB307",  /* "7770675568902916283677847627294075626569625924376904889109196526770044277787378692871" */
-        283,    /* key_len */
-        12,
-        7,
-        5,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve B-409 : y^2+xy=x^3+ax^2+b */
-        CURVE_B_409,
-        103,    /* Echar */
-        "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
-        "021a5c2c8ee9feb5c4b9a753b7b476b7fd6422ef1f3dd674761fa99d6ac27c8a9a197b272822f6cd57a55aa4f50ae317b13545f",
-        "15d4860d088ddb3496b0c6064756260441cde4af1771d4db01ffe5b34e59703dc255a868a1180515603aeab60794e54bb7996a7",
-        "061b1cfab6be5f32bbfa78324ed106a7636b9c5a7bd198d0158aa4f5488d08f38514f1fdf4b4f40d2181b3681c364ba0273c706",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        123,    /* Eol */
-        "10000000000000000000000000000000000000000000000000001E2AAD6A612F33307BE5FA47C3C9E052F838164CD37D9A21173",  /* "661055968790248598951915308032771039828404682964281219284648798304157774827374805208143723762179110965979867288366567526771" */
-        409,    /* key_len */
-        87,
-        87,
-        87,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve B-571 : y^2+xy=x^3+ax^2+b */
-        CURVE_B_571,
-        143,    /* Echar */
-        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
-        "2f40e7e2221f295de297117b7f3d62f5c6a97ffcb8ceff1cd6ba8ce4a9a18ad84ffabbd8efa59332be7ad6756a66e294afd185a78ff12aa520e4de739baca0c7ffeff7f2955727a",
-        "303001d34b856296c16c0d40d3cd7750a93d1d2955fa80aa5f40fc8db7b2abdbde53950f4c0d293cdd711a35b67fb1499ae60038614f1394abfa3b4c850d927e1e7769c8eec2d19",
-        "37bf27342da639b6dccfffeb73d69d78c6c27a6009cbbca1980f8533921e8a684423e43bab08a576291af8f461bb2a8b3531d2f0485c19b16e2f1516e23dd3c1a4827af1b8ac15b",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        172,    /* Eol */
-        "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE661CE18FF55987308059B186823851EC7DD9CA1161DE93D5174D66E8382E9BB2FE84E47",  /* "3864537523017258344695351890931987344298927329706434998657235251451519142289560424536143999389415773083133881121926944486246872462816813070234528288303332411393191105285703" */
-        571,    /* key_len */
-        10,
-        5,
-        2,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve K-163 : y^2+xy=x^3+ax^2+b */
-        CURVE_K_163,
-        41,     /* Echar */
-        "00000000000000000000000000000000000000001",
-        "00000000000000000000000000000000000000001",
-        "2fe13c0537bbc11acaa07d793de4e6d5e5c94eee8",
-        "289070fb05d38ff58321f2e800536d538ccdaa3d9",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        49,     /* Eol */
-        "4000000000000000000020108A2E0CC0D99F8A5EF",  /* "5846006549323611672814741753598448348329118574063" */
-        163,    /* key_len */
-        7,
-        6,
-        3,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve K-233 : y^2+xy=x^3+ax^2+b */
-        CURVE_K_233,
-        59,     /* Echar 59 */
-        "00000000000000000000000000000000000000000000000000000000000",
-        "00000000000000000000000000000000000000000000000000000000001",
-        "17232ba853a7e731af129f22ff4149563a419c26bf50a4c9d6eefad6126",
-        "1db537dece819b7f70f555a67c427a8cd9bf18aeb9b56e0c11056fae6a3",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",    /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        70,     /* Eol */
-        "8000000000000000000000000000069D5BB915BCD46EFB1AD5F173ABDF",  /* "3450873173395281893717377931138512760570940988862252126328087024741343" */
-        233,    /* key_len */
-        74,
-        74,
-        74,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve K-283 : y^2+xy=x^3+ax^2+b */
-        CURVE_K_283,
-        71,     /* Echar */
-        "00000000000000000000000000000000000000000000000000000000000000000000000",
-        "00000000000000000000000000000000000000000000000000000000000000000000001",
-        "503213f78ca44883f1a3b8162f188e553cd265f23c1567a16876913b0c2ac2458492836",
-        "1ccda380f1c9e318d90f95d07e5426fe87e45c0e8184698e45962364e34116177dd2259",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        85,     /* Eol */
-        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE9AE2ED07577265DFF7F94451E061E163C61",  /* "3885337784451458141838923813647037813284811733793061324295874997529815829704422603873" */
-        283,    /* key_len */
-        12,
-        7,
-        5,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve K-409 : y^2+xy=x^3+ax^2+b */
-        CURVE_K_409,
-        103,    /* Echar */
-        "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
-        "060f05f658f49c1ad3ab1890f7184210efd0987e307c84c27accfb8f9f67cc2c460189eb5aaaa62ee222eb1b35540cfe9023746",
-        "1e369050b7c4e42acba1dacbf04299c3460782f918ea427e6325165e9ea10e3da5f6c42e9c55215aa9ca27a5863ec48d8e0286b",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        123,    /* Eol */
-        "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE5F83B2D4EA20400EC4557D5ED3E3E7CA5B4B5C83B8E01E5FCF",  /* "330527984395124299475957654016385519914202341482140609642324395022880711289249191050673258457777458014096366590617731358671" */
-        409,    /* key_len */
-        87,
-        87,
-        87,
-        CURVE_GF_2M
-    },
-    {
-        /* NIST: Curve K-571 : y^2+xy=x^3+ax^2+b */
-        CURVE_K_571,
-        143,    /* Echar */
-        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
-        "26eb7a859923fbc82189631f8103fe4ac9ca2970012d5d46024804801841ca44370958493b205e647da304db4ceb08cbbd1ba39494776fb988b47174dca88c7e2945283a01c8972",
-        "349dc807f4fbf374f4aeade3bca95314dd58cec9f307a54ffc61efc006d8a2c9d4979c0ac44aea74fbebbb9f772aedcb620b01a7ba7af1b320430c8591984f601cd4c143ef1c7a3",
-        68,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */
-        172,    /* Eol */
-        "20000000000000000000000000000000000000000000000000000000000000000000000131850E1F19A63E4B391A8DB917F4138B630D84BE5D639381E91DEB45CFE778F637C1001",  /* "1932268761508629172347675945465993672149463664853217499328617625725759571144780212268133978522706711834706712800825351461273674974066617311929682421617092503555733685276673" */
-        571,    /* key_len */
-        10,
-        5,
-        2,
-        CURVE_GF_2M
-    },
-    {
-        /* Koblitz: Curve secp192k1 : y2 = x3+ax+b over Fp */
-        CURVE_KO_192,
-        48,     /* Echar */
-        "00000000000000000000000000000000000000000",
-        "00000000000000000000000000000000000000003",
-        "DB4FF10EC057E9AE26B07D0280B7F4341DA5D1B1EAE06C7D",
-        "9B2F2F6D9C5628A7844163D015BE86344082AA88D95E2F9D",
-        58,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFEE37",  /* p */
-        58,     /* Eol */
-        "FFFFFFFFFFFFFFFFFFFFFFFE26F2FC170F69466A74DEFD8D",  /* n */
-        192,    /* key_len */
-        7,
-        2,
-        1,
-        CURVE_GF_P
-    },
-    {
-        /* Koblitz: Curve secp224k1 : y2 = x3+ax+b over Fp */
-        CURVE_KO_224,
-        56,     /* Echar */
-        "00000000000000000000000000000000000000000000000000000000",
-        "00000000000000000000000000000000000000000000000000000005",
-        "A1455B334DF099DF30FC28A169A467E9E47075A90F7E650EB6B7A45C",
-        "7E089FED7FBA344282CAFBD6F7E319F7C0B0BD59E2CA4BDB556D61A5",
-        70,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFE56D",  /* p */
-        70,     /* Eol */
-        "0000000000000000000000000001DCE8D2EC6184CAF0A971769FB1F7",  /* n */
-        224,    /* key_len */
-        7,
-        2,
-        1,
-        CURVE_GF_P
-    },
-    {
-        /* Koblitz: Curve secp256k1 : y2 = x3+ax+b over Fp */
-        CURVE_KO_256,
-        64,     /* Echar */
-        "0000000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000007",
-        "79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798",
-        "483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8",
-        78,     /* Epl */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F",  /* p */
-        78,     /* Eol */
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",  /* n */
-        256,    /* key_len */
-        7,
-        2,
-        1,
-        CURVE_GF_P
-    },
-    {
-        /* Brainpool: Curve brainpoolP256r1 */
-        CURVE_BP_256,
-        64,     /* Echar */
-        "7D5A0975FC2C3057EEF67530417AFFE7FB8055C126DC5C6CE94A4B44F330B5D9",  /* A */
-        "26DC5C6CE94A4B44F330B5D9BBD77CBF958416295CF7E1CE6BCCDC18FF8C07B6",  /* B */
-        "8BD2AEB9CB7E57CB2C4B482FFC81B7AFB9DE27E1E3BD23C23A4453BD9ACE3262",  /* x */
-        "547EF835C3DAC4FD97F8461A14611DC9C27745132DED8E545C1D54C72F046997",  /* y */
-        78,     /* Epl */
-        "A9FB57DBA1EEA9BC3E660A909D838D726E3BF623D52620282013481D1F6E5377",  /* p */
-        78,     /* Eol */
-        "A9FB57DBA1EEA9BC3E660A909D838D718C397AA3B561A6F7901E0E82974856A7",  /* q */
-        256,    /* key_len */
-        7,
-        2,
-        1,
-        CURVE_GF_P
-    },
-    {
-        /* Brainpool: Curve brainpoolP384r1 */
-        CURVE_BP_384,
-        96,     /* Echar */
-        "7BC382C63D8C150C3C72080ACE05AFA0C2BEA28E4FB22787139165EFBA91F90F8AA5814A503AD4EB04A8C7DD22CE2826",  /* A */
-        "04A8C7DD22CE28268B39B55416F0447C2FB77DE107DCD2A62E880EA53EEB62D57CB4390295DBC9943AB78696FA504C11",  /* B */
-        "1D1C64F068CF45FFA2A63A81B7C13F6B8847A3E77EF14FE3DB7FCAFE0CBD10E8E826E03436D646AAEF87B2E247D4AF1E",  /* x */
-        "8ABE1D7520F9C2A45CB1EB8E95CFD55262B70B29FEEC5864E19C054FF99129280E4646217791811142820341263C5315",  /* y */
-        116,     /* Epl */
-        "8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B412B1DA197FB71123ACD3A729901D1A71874700133107EC53",  /* p */
-        116,     /* Eol */
-        "8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B31F166E6CAC0425A7CF3AB6AF6B7FC3103B883202E9046565",  /* q */
-        384,    /* key_len */
-        7,
-        2,
-        1,
-        CURVE_GF_P
-    },
-    {
-        /* Brainpool: Curve brainpoolP512r1 */
-        CURVE_BP_512,
-        128,     /* Echar */
-        "7830A3318B603B89E2327145AC234CC594CBDD8D3DF91610A83441CAEA9863BC2DED5D5AA8253AA10A2EF1C98B9AC8B57F1117A72BF2C7B9E7C1AC4D77FC94CA",  /* A */
-        "3DF91610A83441CAEA9863BC2DED5D5AA8253AA10A2EF1C98B9AC8B57F1117A72BF2C7B9E7C1AC4D77FC94CADC083E67984050B75EBAE5DD2809BD638016F723",  /* B */
-        "81AEE4BDD82ED9645A21322E9C4C6A9385ED9F70B5D916C1B43B62EEF4D0098EFF3B1F78E2D0D48D50D1687B93B97D5F7C6D5047406A5E688B352209BCB9F822",  /* x */
-        "7DDE385D566332ECC0EABFA9CF7822FDF209F70024A57B1AA000C55B881F8111B2DCDE494A5F485E5BCA4BD88A2763AED1CA2B2FA8F0540678CD1E0F3AD80892",  /* y */
-        156,     /* Epl */
-        "AADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA703308717D4D9B009BC66842AECDA12AE6A380E62881FF2F2D82C68528AA6056583A48F3",  /* p */
-        156,     /* Eol */
-        "AADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA70330870553E5C414CA92619418661197FAC10471DB1D381085DDADDB58796829CA90069",  /* q */
-        512,    /* key_len */
-        7,
-        2,
-        1,
-        CURVE_GF_P
-    },
-    {
-        /* NIST: Curve P-256 : y^2=x^3-ax+b (mod p) */
-        CURVE_SM2_256,
-        64,     /* Echar */
-        "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC",  /* a */
-        "28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93",  /* b */
-        "32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7",  /* x */
-        "BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0",  /* y */
-        78,     /* Epl */
-        "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF",  /* p */
-        78,     /* Eol */
-        "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123",  /* n */
-        256,    /* key_len */
-        10,
-        5,
-        2,
-        CURVE_GF_P
-    },
-    {
-        CURVE_25519,
-        64,     // Echar
-        "0000000000000000000000000000000000000000000000000000000000076D06",  /* a */
-        "0000000000000000000000000000000000000000000000000000000000000001",  /* b */
-        "0000000000000000000000000000000000000000000000000000000000000009",  /* x */
-        "20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9",  /* y */
-        78,     // Epl
-        "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED",  /* p */
-        78,     // Eol
-        "1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed",  /* n */
-        255,    // key_len
-        10,
-        5,
-        2,
-        CURVE_GF_P
-    },
-};
+#define CURVE_DATA_P192 \
+    {\
+        /* NIST: Curve P-192 : y^2=x^3-ax+b (mod p) */                                                                       \
+        CURVE_P_192,                                                                                                         \
+        48,     /* Echar */                                                                                                  \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFC",   /* "000000000000000000000000000000000000000000000003" */        \
+        "64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1",                                                                  \
+        "188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012",                                                                  \
+        "07192b95ffc8da78631011ed6b24cdd573f977a11e794811",                                                                  \
+        58,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFF",   /* "6277101735386680763835789423207666416083908700390324961279" */ \
+        58,     /* Eol */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFF99DEF836146BC9B1B4D22831",   /* "6277101735386680763835789423176059013767194773182842284081" */ \
+        192,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        2,                                                                                                                   \
+        1,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
 
-static ECC_CURVE  *pCurve;
-static ECC_CURVE  Curve_Copy;
-static ECC_CURVE *get_curve(E_ECC_CURVE ecc_curve);
-static void run_ecc_codec(CRYPTO_T *crypto, uint32_t mode, int enable_scap);
-static char  temp_hex_str[160];
-int32_t ecc_init_curve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve);
+#define CURVE_DATA_P224 \
+    {\
+        /* NIST: Curve P-224 : y^2=x^3-ax+b (mod p) */                                                                       \
+        CURVE_P_224,                                                                                                         \
+        56,     /* Echar */                                                                                                  \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFE",  /* "00000000000000000000000000000000000000000000000000000003" */ \
+        "b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",                                                          \
+        "b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21",                                                          \
+        "bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34",                                                          \
+        70,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "0026959946667150639794667015087019630673557916260026308143510066298881" */ \
+        70,     /* Eol */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFF16A2E0B8F03E13DD29455C5C2A3D",  /* "0026959946667150639794667015087019625940457807714424391721682722368061" */ \
+        224,    /* key_len */                                                                                                \
+        9,                                                                                                                   \
+        8,                                                                                                                   \
+        3,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
 
-#if ENABLE_DEBUG
+#define CURVE_DATA_P256 \
+    {\
+        /* NIST: Curve P-256 : y^2=x^3-ax+b (mod p) */                                                                       \
+        CURVE_P_256,                                                                                                         \
+        64,     /* Echar */                                                                                                  \
+        "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC",  /* "0000000000000000000000000000000000000000000000000000000000000003" */ \
+        "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",                                                  \
+        "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",                                                  \
+        "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",                                                  \
+        78,     /* Epl */                                                                                                    \
+        "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF",  /* "115792089210356248762697446949407573530086143415290314195533631308867097853951" */ \
+        78,     /* Eol */                                                                                                    \
+        "FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551",  /* "115792089210356248762697446949407573529996955224135760342422259061068512044369" */ \
+        256,    /* key_len */                                                                                                \
+        10,                                                                                                                  \
+        5,                                                                                                                   \
+        2,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_P384 \
+    {\
+        /* NIST: Curve P-384 : y^2=x^3-ax+b (mod p) */                                                                       \
+        CURVE_P_384,                                                                                                         \
+        96,     /* Echar */                                                                                                  \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFC",  /* "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003" */ \
+        "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",                  \
+        "aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7",                  \
+        "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f",                  \
+        116,    /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFFFF0000000000000000FFFFFFFF",  /* "39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112319" */ \
+        116,    /* Eol */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC7634D81F4372DDF581A0DB248B0A77AECEC196ACCC52973",  /* "39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643" */ \
+        384,    /* key_len */                                                                                                \
+        12,                                                                                                                  \
+        3,                                                                                                                   \
+        2,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_P521 \
+    {\
+        /* NIST: Curve P-521 : y^2=x^3-ax+b (mod p)*/                                                                        \
+        CURVE_P_521,                                                                                                         \
+        131,    /* Echar */                                                                                                  \
+        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC",  /* "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003" */ \
+        "051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00", \
+        "0c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66", \
+        "11839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650", \
+        157,    /* Epl */                                                                                                    \
+        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",  /* "6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151" */ \
+        157,    /* Eol */                                                                                                    \
+        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFA51868783BF2F966B7FCC0148F709A5D03BB5C9B8899C47AEBB6FB71E91386409",  /* "6864797660130609714981900799081393217269435300143305409394463459185543183397655394245057746333217197532963996371363321113864768612440380340372808892707005449" */ \
+        521,    /* key_len */                                                                                                \
+        32,                                                                                                                  \
+        32,                                                                                                                  \
+        32,                                                                                                                  \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_B163 \
+    {\
+        /* NIST: Curve B-163 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_B_163,                                                                                                         \
+        41,     /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000001",                                                                         \
+        "20a601907b8c953ca1481eb10512f78744a3205fd",                                                                         \
+        "3f0eba16286a2d57ea0991168d4994637e8343e36",                                                                         \
+        "0d51fbc6c71a0094fa2cdd545b11c5c0c797324f1",                                                                         \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        49,     /* Eol */                                                                                                    \
+        "40000000000000000000292FE77E70C12A4234C33",   /* "5846006549323611672814742442876390689256843201587" */              \
+        163,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        6,                                                                                                                   \
+        3,                                                                                                                   \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_B233 \
+    {\
+        /* NIST: Curve B-233 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_B_233,                                                                                                         \
+        59,     /* Echar 59 */                                                                                               \
+        "00000000000000000000000000000000000000000000000000000000001",                                                       \
+        "066647ede6c332c7f8c0923bb58213b333b20e9ce4281fe115f7d8f90ad",                                                       \
+        "0fac9dfcbac8313bb2139f1bb755fef65bc391f8b36f8f8eb7371fd558b",                                                       \
+        "1006a08a41903350678e58528bebf8a0beff867a7ca36716f7e01f81052",                                                       \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        70,     /* Eol */                                                                                                    \
+        "1000000000000000000000000000013E974E72F8A6922031D2603CFE0D7",  /* "6901746346790563787434755862277025555839812737345013555379383634485463" */ \
+        233,    /* key_len */                                                                                                \
+        74,                                                                                                                  \
+        74,                                                                                                                  \
+        74,                                                                                                                  \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_B283 \
+    {\
+        /* NIST: Curve B-283 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_B_283,                                                                                                         \
+        71,     /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000000000000000000000000000000000001",                                           \
+        "27b680ac8b8596da5a4af8a19a0303fca97fd7645309fa2a581485af6263e313b79a2f5",                                           \
+        "5f939258db7dd90e1934f8c70b0dfec2eed25b8557eac9c80e2e198f8cdbecd86b12053",                                           \
+        "3676854fe24141cb98fe6d4b20d02b4516ff702350eddb0826779c813f0df45be8112f4",                                           \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        85,     /* Eol */                                                                                                    \
+        "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEF90399660FC938A90165B042A7CEFADB307",  /* "7770675568902916283677847627294075626569625924376904889109196526770044277787378692871" */ \
+        283,    /* key_len */                                                                                                \
+        12,                                                                                                                  \
+        7,                                                                                                                   \
+        5,                                                                                                                   \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_B409 \
+    {\
+        /* NIST: Curve B-409 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_B_409,                                                                                                         \
+        103,    /* Echar */                                                                                                  \
+        "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",           \
+        "021a5c2c8ee9feb5c4b9a753b7b476b7fd6422ef1f3dd674761fa99d6ac27c8a9a197b272822f6cd57a55aa4f50ae317b13545f",           \
+        "15d4860d088ddb3496b0c6064756260441cde4af1771d4db01ffe5b34e59703dc255a868a1180515603aeab60794e54bb7996a7",           \
+        "061b1cfab6be5f32bbfa78324ed106a7636b9c5a7bd198d0158aa4f5488d08f38514f1fdf4b4f40d2181b3681c364ba0273c706",           \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        123,    /* Eol */                                                                                                    \
+        "10000000000000000000000000000000000000000000000000001E2AAD6A612F33307BE5FA47C3C9E052F838164CD37D9A21173",  /* "661055968790248598951915308032771039828404682964281219284648798304157774827374805208143723762179110965979867288366567526771" */ \
+        409,    /* key_len */                                                                                                \
+        87,                                                                                                                  \
+        87,                                                                                                                  \
+        87,                                                                                                                  \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_B571 \
+    {\
+        /* NIST: Curve B-571 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_B_571,                                                                                                         \
+        143,    /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", \
+        "2f40e7e2221f295de297117b7f3d62f5c6a97ffcb8ceff1cd6ba8ce4a9a18ad84ffabbd8efa59332be7ad6756a66e294afd185a78ff12aa520e4de739baca0c7ffeff7f2955727a", \
+        "303001d34b856296c16c0d40d3cd7750a93d1d2955fa80aa5f40fc8db7b2abdbde53950f4c0d293cdd711a35b67fb1499ae60038614f1394abfa3b4c850d927e1e7769c8eec2d19", \
+        "37bf27342da639b6dccfffeb73d69d78c6c27a6009cbbca1980f8533921e8a684423e43bab08a576291af8f461bb2a8b3531d2f0485c19b16e2f1516e23dd3c1a4827af1b8ac15b", \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        172,    /* Eol */                                                                                                    \
+        "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE661CE18FF55987308059B186823851EC7DD9CA1161DE93D5174D66E8382E9BB2FE84E47",  /* "3864537523017258344695351890931987344298927329706434998657235251451519142289560424536143999389415773083133881121926944486246872462816813070234528288303332411393191105285703" */ \
+        571,    /* key_len */                                                                                                \
+        10,                                                                                                                  \
+        5,                                                                                                                   \
+        2,                                                                                                                   \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_K163 \
+    {\
+        /* NIST: Curve K-163 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_K_163,                                                                                                         \
+        41,     /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000001",                                                                         \
+        "00000000000000000000000000000000000000001",                                                                         \
+        "2fe13c0537bbc11acaa07d793de4e6d5e5c94eee8",                                                                         \
+        "289070fb05d38ff58321f2e800536d538ccdaa3d9",                                                                         \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        49,     /* Eol */                                                                                                    \
+        "4000000000000000000020108A2E0CC0D99F8A5EF",  /* "5846006549323611672814741753598448348329118574063" */               \
+        163,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        6,                                                                                                                   \
+        3,                                                                                                                   \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_K233 \
+    {\
+        /* NIST: Curve K-233 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_K_233,                                                                                                         \
+        59,     /* Echar 59 */                                                                                               \
+        "00000000000000000000000000000000000000000000000000000000000",                                                       \
+        "00000000000000000000000000000000000000000000000000000000001",                                                       \
+        "17232ba853a7e731af129f22ff4149563a419c26bf50a4c9d6eefad6126",                                                       \
+        "1db537dece819b7f70f555a67c427a8cd9bf18aeb9b56e0c11056fae6a3",                                                       \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",    /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        70,     /* Eol */                                                                                                    \
+        "8000000000000000000000000000069D5BB915BCD46EFB1AD5F173ABDF",  /* "3450873173395281893717377931138512760570940988862252126328087024741343" */ \
+        233,    /* key_len */                                                                                                \
+        74,                                                                                                                  \
+        74,                                                                                                                  \
+        74,                                                                                                                  \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_K283 \
+    {\
+        /* NIST: Curve K-283 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_K_283,                                                                                                         \
+        71,     /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000000000000000000000000000000000000",                                           \
+        "00000000000000000000000000000000000000000000000000000000000000000000001",                                           \
+        "503213f78ca44883f1a3b8162f188e553cd265f23c1567a16876913b0c2ac2458492836",                                           \
+        "1ccda380f1c9e318d90f95d07e5426fe87e45c0e8184698e45962364e34116177dd2259",                                           \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        85,     /* Eol */                                                                                                    \
+        "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE9AE2ED07577265DFF7F94451E061E163C61",  /* "3885337784451458141838923813647037813284811733793061324295874997529815829704422603873" */ \
+        283,    /* key_len */                                                                                                \
+        12,                                                                                                                  \
+        7,                                                                                                                   \
+        5,                                                                                                                   \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_K409 \
+    {\
+        /* NIST: Curve K-409 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_K_409,                                                                                                         \
+        103,    /* Echar */                                                                                                  \
+        "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",           \
+        "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",           \
+        "060f05f658f49c1ad3ab1890f7184210efd0987e307c84c27accfb8f9f67cc2c460189eb5aaaa62ee222eb1b35540cfe9023746",           \
+        "1e369050b7c4e42acba1dacbf04299c3460782f918ea427e6325165e9ea10e3da5f6c42e9c55215aa9ca27a5863ec48d8e0286b",           \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        123,    /* Eol */                                                                                                    \
+        "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE5F83B2D4EA20400EC4557D5ED3E3E7CA5B4B5C83B8E01E5FCF",  /* "330527984395124299475957654016385519914202341482140609642324395022880711289249191050673258457777458014096366590617731358671" */ \
+        409,    /* key_len */                                                                                                \
+        87,                                                                                                                  \
+        87,                                                                                                                  \
+        87,                                                                                                                  \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_K571 \
+    {\
+        /* NIST: Curve K-571 : y^2+xy=x^3+ax^2+b */                                                                          \
+        CURVE_K_571,                                                                                                         \
+        143,    /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", \
+        "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", \
+        "26eb7a859923fbc82189631f8103fe4ac9ca2970012d5d46024804801841ca44370958493b205e647da304db4ceb08cbbd1ba39494776fb988b47174dca88c7e2945283a01c8972", \
+        "349dc807f4fbf374f4aeade3bca95314dd58cec9f307a54ffc61efc006d8a2c9d4979c0ac44aea74fbebbb9f772aedcb620b01a7ba7af1b320430c8591984f601cd4c143ef1c7a3", \
+        68,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000001",  /* "26959946667150639794667015087019630673557916260026308143510066298881" */ \
+        172,    /* Eol */                                                                                                    \
+        "20000000000000000000000000000000000000000000000000000000000000000000000131850E1F19A63E4B391A8DB917F4138B630D84BE5D639381E91DEB45CFE778F637C1001",  /* "1932268761508629172347675945465993672149463664853217499328617625725759571144780212268133978522706711834706712800825351461273674974066617311929682421617092503555733685276673" */ \
+        571,    /* key_len */                                                                                                \
+        10,                                                                                                                  \
+        5,                                                                                                                   \
+        2,                                                                                                                   \
+        CURVE_GF_2M                                                                                                          \
+    }
+
+#define CURVE_DATA_KO192 \
+    {\
+        /* Koblitz: Curve secp192k1 : y2 = x3+ax+b over Fp */                                                                \
+        CURVE_KO_192,                                                                                                        \
+        48,     /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000000",                                                                         \
+        "00000000000000000000000000000000000000003",                                                                         \
+        "DB4FF10EC057E9AE26B07D0280B7F4341DA5D1B1EAE06C7D",                                                                  \
+        "9B2F2F6D9C5628A7844163D015BE86344082AA88D95E2F9D",                                                                  \
+        58,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFEE37",  /* p */                                                         \
+        58,     /* Eol */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFE26F2FC170F69466A74DEFD8D",  /* n */                                                         \
+        192,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        2,                                                                                                                   \
+        1,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_KO224 \
+    {\
+        /* Koblitz: Curve secp224k1 : y2 = x3+ax+b over Fp */                                                                \
+        CURVE_KO_224,                                                                                                        \
+        56,     /* Echar */                                                                                                  \
+        "00000000000000000000000000000000000000000000000000000000",                                                          \
+        "00000000000000000000000000000000000000000000000000000005",                                                          \
+        "A1455B334DF099DF30FC28A169A467E9E47075A90F7E650EB6B7A45C",                                                          \
+        "7E089FED7FBA344282CAFBD6F7E319F7C0B0BD59E2CA4BDB556D61A5",                                                          \
+        70,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFE56D",  /* p */                                                 \
+        70,     /* Eol */                                                                                                    \
+        "0000000000000000000000000001DCE8D2EC6184CAF0A971769FB1F7",  /* n */                                                 \
+        224,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        2,                                                                                                                   \
+        1,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_KO256 \
+    {\
+        /* Koblitz: Curve secp256k1 : y2 = x3+ax+b over Fp */                                                                \
+        CURVE_KO_256,                                                                                                        \
+        64,     /* Echar */                                                                                                  \
+        "0000000000000000000000000000000000000000000000000000000000000000",                                                  \
+        "0000000000000000000000000000000000000000000000000000000000000007",                                                  \
+        "79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798",                                                  \
+        "483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8",                                                  \
+        78,     /* Epl */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F",  /* p */                                         \
+        78,     /* Eol */                                                                                                    \
+        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",  /* n */                                         \
+        256,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        2,                                                                                                                   \
+        1,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_BP256 \
+    {\
+        /* Brainpool: Curve brainpoolP256r1 */                                                                               \
+        CURVE_BP_256,                                                                                                        \
+        64,     /* Echar */                                                                                                  \
+        "7D5A0975FC2C3057EEF67530417AFFE7FB8055C126DC5C6CE94A4B44F330B5D9",  /* A */                                         \
+        "26DC5C6CE94A4B44F330B5D9BBD77CBF958416295CF7E1CE6BCCDC18FF8C07B6",  /* B */                                         \
+        "8BD2AEB9CB7E57CB2C4B482FFC81B7AFB9DE27E1E3BD23C23A4453BD9ACE3262",  /* x */                                         \
+        "547EF835C3DAC4FD97F8461A14611DC9C27745132DED8E545C1D54C72F046997",  /* y */                                         \
+        78,     /* Epl */                                                                                                    \
+        "A9FB57DBA1EEA9BC3E660A909D838D726E3BF623D52620282013481D1F6E5377",  /* p */                                         \
+        78,     /* Eol */                                                                                                    \
+        "A9FB57DBA1EEA9BC3E660A909D838D718C397AA3B561A6F7901E0E82974856A7",  /* q */                                         \
+        256,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        2,                                                                                                                   \
+        1,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_BP384 \
+    {\
+        /* Brainpool: Curve brainpoolP384r1 */                                                                               \
+        CURVE_BP_384,                                                                                                        \
+        96,     /* Echar */                                                                                                  \
+        "7BC382C63D8C150C3C72080ACE05AFA0C2BEA28E4FB22787139165EFBA91F90F8AA5814A503AD4EB04A8C7DD22CE2826",  /* A */         \
+        "04A8C7DD22CE28268B39B55416F0447C2FB77DE107DCD2A62E880EA53EEB62D57CB4390295DBC9943AB78696FA504C11",  /* B */         \
+        "1D1C64F068CF45FFA2A63A81B7C13F6B8847A3E77EF14FE3DB7FCAFE0CBD10E8E826E03436D646AAEF87B2E247D4AF1E",  /* x */         \
+        "8ABE1D7520F9C2A45CB1EB8E95CFD55262B70B29FEEC5864E19C054FF99129280E4646217791811142820341263C5315",  /* y */         \
+        116,     /* Epl */                                                                                                   \
+        "8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B412B1DA197FB71123ACD3A729901D1A71874700133107EC53",  /* p */         \
+        116,     /* Eol */                                                                                                   \
+        "8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B31F166E6CAC0425A7CF3AB6AF6B7FC3103B883202E9046565",  /* q */         \
+        384,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        2,                                                                                                                   \
+        1,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_BP512 \
+    {\
+        /* Brainpool: Curve brainpoolP512r1 */                                                                               \
+        CURVE_BP_512,                                                                                                        \
+        128,     /* Echar */                                                                                                 \
+        "7830A3318B603B89E2327145AC234CC594CBDD8D3DF91610A83441CAEA9863BC2DED5D5AA8253AA10A2EF1C98B9AC8B57F1117A72BF2C7B9E7C1AC4D77FC94CA",  /* A */ \
+        "3DF91610A83441CAEA9863BC2DED5D5AA8253AA10A2EF1C98B9AC8B57F1117A72BF2C7B9E7C1AC4D77FC94CADC083E67984050B75EBAE5DD2809BD638016F723",  /* B */ \
+        "81AEE4BDD82ED9645A21322E9C4C6A9385ED9F70B5D916C1B43B62EEF4D0098EFF3B1F78E2D0D48D50D1687B93B97D5F7C6D5047406A5E688B352209BCB9F822",  /* x */ \
+        "7DDE385D566332ECC0EABFA9CF7822FDF209F70024A57B1AA000C55B881F8111B2DCDE494A5F485E5BCA4BD88A2763AED1CA2B2FA8F0540678CD1E0F3AD80892",  /* y */ \
+        156,     /* Epl */                                                                                                   \
+        "AADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA703308717D4D9B009BC66842AECDA12AE6A380E62881FF2F2D82C68528AA6056583A48F3",  /* p */ \
+        156,     /* Eol */                                                                                                   \
+        "AADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA70330870553E5C414CA92619418661197FAC10471DB1D381085DDADDB58796829CA90069",  /* q */ \
+        512,    /* key_len */                                                                                                \
+        7,                                                                                                                   \
+        2,                                                                                                                   \
+        1,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_25519 \
+    {\
+        CURVE_25519,                                                                                                         \
+        64,     /* Echar */                                                                                                  \
+        "0000000000000000000000000000000000000000000000000000000000076D06",  /* "0000000000000000000000000000000000000000000000000000000000000003" */ \
+        "0000000000000000000000000000000000000000000000000000000000000001",                                                  \
+        "0000000000000000000000000000000000000000000000000000000000000009",                                                  \
+        "20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9",                                                  \
+        78,     /* Epl */                                                                                                    \
+        "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFED",  /* "115792089210356248762697446949407573530086143415290314195533631308867097853951" */ \
+        78,     /* Eol */                                                                                                    \
+        "1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed",  /* "115792089210356248762697446949407573529996955224135760342422259061068512044369" */ \
+        255,    /* key_len */                                                                                                \
+        10,                                                                                                                  \
+        5,                                                                                                                   \
+        2,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#define CURVE_DATA_SM2_256 \
+    {\
+        /* SM2 sugguestion Curve P-256 : y^2=x^3+ax+b  */                                                                    \
+        CURVE_SM2_256,                                                                                                       \
+        64,     /* Echar */                                                                                                  \
+        "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC",  /* a */                                         \
+        "28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93",  /* b */                                         \
+        "32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7",  /* x */                                         \
+        "BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0",  /* y */                                         \
+        78,     /* Epl */                                                                                                    \
+        "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF",  /* p */                                         \
+        78,     /* Eol */                                                                                                    \
+        "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123",  /* n */                                         \
+        256,    /* key_len */                                                                                                \
+        10,                                                                                                                  \
+        5,                                                                                                                   \
+        2,                                                                                                                   \
+        CURVE_GF_P                                                                                                           \
+    }
+
+#if defined(ENABLE_DEBUG)
 static void dump_ecc_reg(char *str, uint32_t volatile regs[], int32_t count)
 {
-
     int32_t  i;
 
     printf("%s => ", str);
@@ -841,26 +886,28 @@ static void dump_ecc_reg(char *str, uint32_t volatile regs[], int32_t count)
 
 static char  ch2hex(char ch)
 {
-    if (ch <= '9')
+    char value = ch;
+
+    if (value <= '9')
     {
-        ch = ch - '0';
+        value = value - '0';
     }
-    else if ((ch <= 'z') && (ch >= 'a'))
+    else if ((value <= 'z') && (value >= 'a'))
     {
-        ch = ch - 'a' + 10U;
+        value = value - 'a' + 10U;
     }
     else
     {
-        ch = ch - 'A' + 10U;
+        value = value - 'A' + 10U;
     }
 
-    return ch;
+    return value;
 }
 
 
-static int  __strlen(char *str)
+static int  __strlen(const char *str)
 {
-    char  *p = str;
+    const char  *p = str;
     int   len = 0;
 
     while (*p != 0)
@@ -869,18 +916,20 @@ static int  __strlen(char *str)
         len++;
 
         if (len > 1024)   /* max. 4096 bits */
+        {
             break;
+        }
     }
 
     // printf("< %d >\n", len);
     return len;
 }
 
-void Hex2Reg(char input[], uint32_t volatile reg[])
+void Hex2Reg(const char input[], uint32_t volatile reg[])
 {
-    char      hex;
-    int       si, ri;
-    uint32_t  i, val32;
+    int       si;
+    int       ri;
+    uint32_t  i;
 
     si = (int)__strlen(input) - 1;
     ri = 0;
@@ -889,24 +938,28 @@ void Hex2Reg(char input[], uint32_t volatile reg[])
 
     while (si >= 0)
     {
-        val32 = 0UL;
+        uint32_t  val32 = 0UL;
 
         for (i = 0UL; (i < 8UL) && (si >= 0); i++)
         {
+            char      hex;
+
             hex = ch2hex(input[si]);
             val32 |= (uint32_t)hex << (i * 4UL);
             si--;
         }
 
-        reg[ri++] = val32;
+        reg[ri] = val32;
+        ri++;
     }
 }
 
-void Hex2RegEx(char input[], uint32_t volatile reg[], int shift)
+void Hex2RegEx(const char input[], uint32_t volatile reg[], int shift)
 {
-    uint32_t  hex, carry;
-    int       si, ri;
-    uint32_t  i, val32;
+    uint32_t  carry;
+    int       si;
+    int       ri;
+    uint32_t  i;
 
     si = (int)__strlen(input) - 1;
     ri = 0L;
@@ -914,10 +967,12 @@ void Hex2RegEx(char input[], uint32_t volatile reg[], int shift)
 
     while (si >= 0)
     {
-        val32 = 0UL;
+        uint32_t  val32 = 0UL;
 
         for (i = 0UL; (i < 8UL) && (si >= 0L); i++)
         {
+            uint32_t  hex;
+
             hex = (uint32_t)ch2hex(input[si]);
             hex <<= shift;
 
@@ -926,7 +981,8 @@ void Hex2RegEx(char input[], uint32_t volatile reg[], int shift)
             si--;
         }
 
-        reg[ri++] = val32;
+        reg[ri] = val32;
+        ri++;
     }
 
     if (carry != 0UL)
@@ -945,42 +1001,78 @@ void Hex2RegEx(char input[], uint32_t volatile reg[], int shift)
   */
 static char get_Nth_nibble_char(uint32_t val32, uint32_t idx)
 {
+    static const char hex_char_tbl[] = "0123456789abcdef";
+
     return hex_char_tbl[(val32 >> (idx * 4U)) & 0xfU ];
 }
 
 
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[])
+void Reg2Hex(int32_t count, const uint32_t volatile reg[], char output[])
 {
-    int32_t    idx, ri;
+    int32_t    idx;
+    int32_t    ri;
     uint32_t   i;
 
     output[count] = 0U;
     idx = count - 1;
 
-    for (ri = 0; idx >= 0; ri++)
+    ri = 0;
+
+    while (idx >= 0)
     {
         for (i = 0UL; (i < 8UL) && (idx >= 0); i++)
         {
             output[idx] = get_Nth_nibble_char(reg[ri], i);
             idx--;
         }
+
+        ri++;
     }
 }
+
 
 static ECC_CURVE *get_curve(E_ECC_CURVE ecc_curve)
 {
     uint32_t   i;
-    ECC_CURVE  *ret = NULL;
+    ECC_CURVE *ret = (ECC_CURVE *)NULL;
+    static ECC_CURVE  Curve_Copy;
 
-    for (i = 0UL; i < sizeof(_Curve) / sizeof(ECC_CURVE); i++)
+    static const ECC_CURVE _Curve[] =
+    {
+        CURVE_DATA_P192,
+        CURVE_DATA_P224,
+        CURVE_DATA_P256,
+        CURVE_DATA_P384,
+        CURVE_DATA_P521,
+        CURVE_DATA_B163,
+        CURVE_DATA_B233,
+        CURVE_DATA_B283,
+        CURVE_DATA_B409,
+        CURVE_DATA_B571,
+        CURVE_DATA_K163,
+        CURVE_DATA_K233,
+        CURVE_DATA_K283,
+        CURVE_DATA_K409,
+        CURVE_DATA_K571,
+        CURVE_DATA_KO192,
+        CURVE_DATA_KO224,
+        CURVE_DATA_KO256,
+        CURVE_DATA_BP256,
+        CURVE_DATA_BP384,
+        CURVE_DATA_BP512,
+        CURVE_DATA_25519,
+        CURVE_DATA_SM2_256
+    };
+
+    for (i = 0UL; i < (uint32_t)(sizeof(_Curve) / sizeof(ECC_CURVE)); i++)
     {
         if (ecc_curve == _Curve[i].curve_id)
         {
-            memcpy((char *)&Curve_Copy, &_Curve[i], sizeof(ECC_CURVE));
-            ret = &Curve_Copy;   /* (ECC_CURVE *)&_Curve[i]; */
+            Curve_Copy = _Curve[i];
+            ret = &Curve_Copy;
         }
 
-        if (ret != NULL)
+        if (ret != (ECC_CURVE *)NULL)
         {
             break;
         }
@@ -989,13 +1081,13 @@ static ECC_CURVE *get_curve(E_ECC_CURVE ecc_curve)
     return ret;
 }
 
-int32_t ecc_init_curve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve)
+static int32_t ecc_init_curve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve)
 {
-    int32_t  i, ret = 0;
-
+    int32_t  i;
+    int32_t  ret = 0;
     pCurve = get_curve(ecc_curve);
 
-    if (pCurve == NULL)
+    if (pCurve == (ECC_CURVE *)NULL)
     {
         CRYPTO_DBGMSG("Cannot find curve %d!!\n", ecc_curve);
         ret = -1;
@@ -1020,7 +1112,7 @@ int32_t ecc_init_curve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve)
         Hex2Reg(pCurve->Py, crypto->ECC_Y1);
 
         CRYPTO_DBGMSG("Key length = %d\n", pCurve->key_len);
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         dump_ecc_reg("CRYPTO_ECC_CURVE_A", crypto->ECC_A, 10);
         dump_ecc_reg("CRYPTO_ECC_CURVE_B", crypto->ECC_B, 10);
         dump_ecc_reg("CRYPTO_ECC_POINT_X1", crypto->ECC_X1, 10);
@@ -1029,11 +1121,29 @@ int32_t ecc_init_curve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve)
 
         if (pCurve->GF == (int)CURVE_GF_2M)
         {
+            uint32_t key_len_word;
+            uint32_t key_len_bit;
+            uint32_t irreducible_k1_word;
+            uint32_t irreducible_k1_bit;
+            uint32_t irreducible_k2_word;
+            uint32_t irreducible_k2_bit;
+            uint32_t irreducible_k3_word;
+            uint32_t irreducible_k3_bit;
+
+            key_len_word = (uint32_t)pCurve->key_len / 32UL;
+            key_len_bit = (uint32_t)pCurve->key_len % 32UL;
+            irreducible_k1_word = (uint32_t)pCurve->irreducible_k1 / 32UL;
+            irreducible_k1_bit = (uint32_t)pCurve->irreducible_k1 % 32UL;
+            irreducible_k2_word = (uint32_t)pCurve->irreducible_k2 / 32UL;
+            irreducible_k2_bit = (uint32_t)pCurve->irreducible_k2 % 32UL;
+            irreducible_k3_word = (uint32_t)pCurve->irreducible_k3 / 32UL;
+            irreducible_k3_bit = (uint32_t)pCurve->irreducible_k3 % 32UL;
+
             crypto->ECC_N[0] = 0x1UL;
-            crypto->ECC_N[(pCurve->key_len) / 32] |= (1UL << ((pCurve->key_len) % 32));
-            crypto->ECC_N[(pCurve->irreducible_k1) / 32] |= (1UL << ((pCurve->irreducible_k1) % 32));
-            crypto->ECC_N[(pCurve->irreducible_k2) / 32] |= (1UL << ((pCurve->irreducible_k2) % 32));
-            crypto->ECC_N[(pCurve->irreducible_k3) / 32] |= (1UL << ((pCurve->irreducible_k3) % 32));
+            crypto->ECC_N[key_len_word] |= (1UL << key_len_bit);
+            crypto->ECC_N[irreducible_k1_word] |= (1UL << irreducible_k1_bit);
+            crypto->ECC_N[irreducible_k2_word] |= (1UL << irreducible_k2_bit);
+            crypto->ECC_N[irreducible_k3_word] |= (1UL << irreducible_k3_bit);
         }
         else
         {
@@ -1041,7 +1151,7 @@ int32_t ecc_init_curve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve)
         }
     }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
     dump_ecc_reg("Init N:", crypto->ECC_N, 18);
     dump_ecc_reg("CRYPTO_ECC_CURVE_N", crypto->ECC_N, 10);
 #endif
@@ -1058,7 +1168,7 @@ int32_t ECC_GetCurve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, ECC_CURVE *curve)
     if (err == 0)
     {
         /* get curve */
-        memcpy(curve, pCurve, sizeof(ECC_CURVE));
+        *curve = *pCurve;
     }
 
     return err;
@@ -1066,52 +1176,77 @@ int32_t ECC_GetCurve(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, ECC_CURVE *curve)
 
 static int  get_nibble_value(char c)
 {
-    if ((c >= '0') && (c <= '9'))
+    char value = c;
+
+    if ((value >= '0') && (value <= '9'))
     {
-        c = c - '0';
+        value = value - '0';
     }
 
-    if ((c >= 'a') && (c <= 'f'))
+    if ((value >= 'a') && (value <= 'f'))
     {
-        c = c - 'a' + (char)10;
+        value = value - 'a' + (char)10;
     }
 
-    if ((c >= 'A') && (c <= 'F'))
+    if ((value >= 'A') && (value <= 'F'))
     {
-        c = c - 'A' + (char)10;
+        value = value - 'A' + (char)10;
     }
 
-    return (int)c;
+    return (int)value;
 }
 
-int ecc_strcmp(char *s1, char *s2)
+int ecc_strcmp(const char *s1, const char *s2)
 {
-    char  c1, c2;
+    char  c1;
+    char  c2;
+    const char  *lhs = s1;
+    const char  *rhs = s2;
 
-    while (*s1 == '0') s1++;
-
-    while (*s2 == '0') s2++;
-
-    for (; *s1 || *s2; s1++, s2++)
+    while (*lhs == '0')
     {
-        if ((*s1 >= 'A') && (*s1 <= 'Z'))
-            c1 = *s1 + 32;
-        else
-            c1 = *s1;
+        lhs++;
+    }
 
-        if ((*s2 >= 'A') && (*s2 <= 'Z'))
-            c2 = *s2 + 32;
+    while (*rhs == '0')
+    {
+        rhs++;
+    }
+
+    while ((*lhs != '\0') || (*rhs != '\0'))
+    {
+        if ((*lhs >= 'A') && (*lhs <= 'Z'))
+        {
+            c1 = *lhs + 32;
+        }
         else
-            c2 = *s2;
+        {
+            c1 = *lhs;
+        }
+
+        if ((*rhs >= 'A') && (*rhs <= 'Z'))
+        {
+            c2 = *rhs + 32;
+        }
+        else
+        {
+            c2 = *rhs;
+        }
 
         if (c1 != c2)
+        {
             return 1;
+        }
+
+        lhs++;
+        rhs++;
     }
 
     return 0;
 }
 
-volatile uint32_t g_ECC_done, g_ECCERR_done;
+volatile uint32_t g_ECC_done;
+volatile uint32_t g_ECCERR_done;
 
 /** @endcond HIDDEN_SYMBOLS */
 
@@ -1134,23 +1269,9 @@ void ECC_Complete(CRYPTO_T *crypto)
         g_ECCERR_done = 1UL;
         crypto->INTSTS = CRYPTO_INTSTS_ECCEIF_Msk;
 
-        while (1);
-    }
-}
-
-/**
-  * @brief  ECC start execute function.
-  * @param[in]  ecc_ctl     Setting of ECC_CTL register.
-  * @return   none
-  */
-void ECC_Start(uint32_t ecc_ctl)
-{
-    g_ECC_done = g_ECCERR_done = 0UL;
-    CRYPTO->ECC_CTL |= ecc_ctl;
-
-    while ((g_ECC_done == 0UL) && (g_ECCERR_done == 0UL))
-    {
-        CRYPTO_DBGMSG("ECC_start\n");
+        while (1)
+        {
+        }
     }
 }
 
@@ -1163,42 +1284,60 @@ void ECC_Start(uint32_t ecc_ctl)
   * @return  0    Is not valid.
   * @return  -1   Invalid curve.
   */
-int ECC_IsPrivateKeyValid(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char private_k[])
+int ECC_IsPrivateKeyValid(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, const char private_k[])
 {
-    int  i;
-    int       ret = -1;
+    int32_t  i;
+    int      ret;
+    const char *key = private_k;
 
     (void)(crypto);
-
     pCurve = get_curve(ecc_curve);
 
-    if (pCurve == NULL)
+    if (pCurve == (ECC_CURVE *)NULL)
     {
-        ret = -1;
+        return -1;
     }
 
-    if (__strlen(private_k) < __strlen(pCurve->Eorder))
+    while (*key == '0')
     {
-        ret = 1;
+        key++;
     }
 
-    if (__strlen(private_k) > __strlen(pCurve->Eorder))
+    if (*key == '\0')
     {
-        ret = 0;
+        return 0;
     }
 
-    for (i = 0UL; i < __strlen(private_k); i++)
+    if (__strlen(key) < __strlen(pCurve->Eorder))
     {
-        if (get_nibble_value(private_k[i]) < get_nibble_value(pCurve->Eorder[i]))
+        return 1;
+    }
+
+    if (__strlen(key) > __strlen(pCurve->Eorder))
+    {
+        return 0;
+    }
+
+    ret = 0;
+
+    for (i = 0; (i < __strlen(key)) && (ret == 0); i++)
+    {
+        int key_value;
+        int order_value;
+
+        key_value = get_nibble_value(key[i]);
+        order_value = get_nibble_value(pCurve->Eorder[i]);
+
+        if (key_value < order_value)
         {
             ret = 1;
-            break;
         }
-
-        if (get_nibble_value(private_k[i]) > get_nibble_value(pCurve->Eorder[i]))
+        else if (key_value > order_value)
         {
             ret = 0;
-            break;
+        }
+        else
+        {
         }
     }
 
@@ -1217,7 +1356,7 @@ int ECC_IsPrivateKeyValid(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char private_
   */
 int32_t  ECC_GeneratePublicKey(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *private_k, char public_k1[], char public_k2[])
 {
-    int32_t  i, ret = 0;
+    int32_t  ret = 0;
 
     if (ecc_init_curve(crypto, ecc_curve) != 0)
     {
@@ -1226,6 +1365,8 @@ int32_t  ECC_GeneratePublicKey(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *pr
 
     if (ret == 0)
     {
+        int32_t  i;
+
         for (i = 0; i < 18; i++)
         {
             crypto->ECC_K[i] = 0UL;
@@ -1261,7 +1402,8 @@ int32_t  ECC_GeneratePublicKey(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *pr
         /* enable side-channel attack protection */
         crypto->ECC_CTL |= CRYPTO_ECC_CTL_SCAP_Msk | CRYPTO_ECC_CTL_ASCAP_Msk;
 
-        g_ECC_done = g_ECCERR_done = 0UL;
+        g_ECC_done = 0UL;
+        g_ECCERR_done = 0UL;
         crypto->ECC_CTL |= ((uint32_t)pCurve->key_len << CRYPTO_ECC_CTL_CURVEM_Pos) |
                            ECCOP_POINT_MUL | CRYPTO_ECC_CTL_PFA2C_Msk | CRYPTO_ECC_CTL_START_Msk;
 
@@ -1291,7 +1433,7 @@ int32_t  ECC_GeneratePublicKey(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *pr
   */
 int32_t  ECC_GeneratePublicKey_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k_ksnum, int is_ecdh, char public_k1[], char public_k2[])
 {
-    int32_t  i, ret = 0;
+    int32_t  ret = 0;
 
     if (ecc_init_curve(crypto, ecc_curve) != 0)
     {
@@ -1300,6 +1442,8 @@ int32_t  ECC_GeneratePublicKey_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k
 
     if (ret == 0)
     {
+        int32_t  i;
+
         for (i = 0; i < 18; i++)
         {
             crypto->ECC_K[i] = 0UL;
@@ -1308,20 +1452,28 @@ int32_t  ECC_GeneratePublicKey_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k
         if (k_ksnum >= 0x80)
         {
             if (is_ecdh)
+            {
                 crypto->ECC_KSCTL = (0x2UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) | CRYPTO_ECC_KSCTL_ECDH_Msk |
-                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum - 0x80);
+                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | ((uint32_t)k_ksnum - 0x80UL);
+            }
             else
+            {
                 crypto->ECC_KSCTL = (0x2UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum - 0x80);
+                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | ((uint32_t)k_ksnum - 0x80UL);
+            }
         }
         else
         {
             if (is_ecdh)
-                crypto->ECC_KSCTL = (0 << CRYPTO_ECC_KSCTL_RSSRCK_Pos) | CRYPTO_ECC_KSCTL_ECDH_Msk |
-                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum);
+            {
+                crypto->ECC_KSCTL = (0UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) | CRYPTO_ECC_KSCTL_ECDH_Msk |
+                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | (uint32_t)k_ksnum;
+            }
             else
-                crypto->ECC_KSCTL = (0 << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum);
+            {
+                crypto->ECC_KSCTL = (0UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
+                                    CRYPTO_ECC_KSCTL_RSRCK_Msk | (uint32_t)k_ksnum;
+            }
         }
 
         /* set FSEL (Field selection) */
@@ -1342,7 +1494,8 @@ int32_t  ECC_GeneratePublicKey_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k
 
         Hex2Reg(pCurve->Eorder, crypto->ECC_X2);
 
-        g_ECC_done = g_ECCERR_done = 0UL;
+        g_ECC_done = 0UL;
+        g_ECCERR_done = 0UL;
         crypto->ECC_CTL |= ((uint32_t)pCurve->key_len << CRYPTO_ECC_CTL_CURVEM_Pos) |
                            ECCOP_POINT_MUL | CRYPTO_ECC_CTL_START_Msk;
 
@@ -1373,7 +1526,7 @@ int32_t  ECC_GeneratePublicKey_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k
   */
 int32_t  ECC_Mutiply(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char x1[], char y1[], char *k, char x2[], char y2[])
 {
-    int32_t  i, ret = 0;
+    int32_t  ret = 0;
 
     if (ecc_init_curve(crypto, ecc_curve) != 0)
     {
@@ -1382,6 +1535,8 @@ int32_t  ECC_Mutiply(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char x1[], char y1
 
     if (ret == 0)
     {
+        int32_t  i;
+
         for (i = 0; i < 18; i++)
         {
             crypto->ECC_X1[i] = 0UL;
@@ -1404,7 +1559,8 @@ int32_t  ECC_Mutiply(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char x1[], char y1
             crypto->ECC_CTL = CRYPTO_ECC_CTL_FSEL_Msk;
         }
 
-        g_ECC_done = g_ECCERR_done = 0UL;
+        g_ECC_done = 0UL;
+        g_ECCERR_done = 0UL;
         crypto->ECC_CTL |= ((uint32_t)pCurve->key_len << CRYPTO_ECC_CTL_CURVEM_Pos) |
                            ECCOP_POINT_MUL | CRYPTO_ECC_CTL_START_Msk;
 
@@ -1443,8 +1599,7 @@ int32_t  ECC_Mutiply(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char x1[], char y1
 int32_t  ECC_Mutiply_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int x1_ksnum, char x1[], int y1_ksnum, char y1[],
                         int k_ksnum, char *k, char x2[], char y2[])
 {
-    int32_t    i, ret = 0;
-    uint32_t   ecc_ksxy = 0;
+    int32_t    ret = 0;
 
     if (ecc_init_curve(crypto, ecc_curve) != 0)
     {
@@ -1453,6 +1608,9 @@ int32_t  ECC_Mutiply_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int x1_ksnum, c
 
     if (ret == 0)
     {
+        int32_t    i;
+        uint32_t   ecc_ksxy = 0;
+
         for (i = 0; i < 18; i++)
         {
             crypto->ECC_X1[i] = 0UL;
@@ -1462,11 +1620,11 @@ int32_t  ECC_Mutiply_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int x1_ksnum, c
 
         if (x1_ksnum >= 0x80)
         {
-            ecc_ksxy |= (2 << CRYPTO_ECC_KSXY_RSSRCX_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | (x1_ksnum - 0x80);
+            ecc_ksxy |= (2UL << CRYPTO_ECC_KSXY_RSSRCX_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | ((uint32_t)x1_ksnum - 0x80UL);
         }
         else if (x1_ksnum >= 0)
         {
-            ecc_ksxy |= (0 << CRYPTO_ECC_KSXY_RSSRCX_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | (x1_ksnum);
+            ecc_ksxy |= (0UL << CRYPTO_ECC_KSXY_RSSRCX_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | (uint32_t)x1_ksnum;
         }
         else
         {
@@ -1475,11 +1633,11 @@ int32_t  ECC_Mutiply_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int x1_ksnum, c
 
         if (y1_ksnum >= 0x80)
         {
-            ecc_ksxy |= (2 << CRYPTO_ECC_KSXY_RSSRCY_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | (y1_ksnum - 0x80);
+            ecc_ksxy |= (2UL << CRYPTO_ECC_KSXY_RSSRCY_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | ((uint32_t)y1_ksnum - 0x80UL);
         }
         else if (x1_ksnum >= 0)
         {
-            ecc_ksxy |= (0 << CRYPTO_ECC_KSXY_RSSRCY_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | (y1_ksnum);
+            ecc_ksxy |= (0UL << CRYPTO_ECC_KSXY_RSSRCY_Pos) | CRYPTO_ECC_KSXY_RSRCXY_Msk | (uint32_t)y1_ksnum;
         }
         else
         {
@@ -1490,13 +1648,13 @@ int32_t  ECC_Mutiply_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int x1_ksnum, c
 
         if (k_ksnum >= 0x80)
         {
-            crypto->ECC_KSCTL = (2 << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                                CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum - 0x80);
+            crypto->ECC_KSCTL = (2UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
+                                CRYPTO_ECC_KSCTL_RSRCK_Msk | ((uint32_t)k_ksnum - 0x80UL);
         }
         else if (k_ksnum >= 0)
         {
-            crypto->ECC_KSCTL = (0 << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                                CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum);
+            crypto->ECC_KSCTL = (0UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
+                                CRYPTO_ECC_KSCTL_RSRCK_Msk | (uint32_t)k_ksnum;
         }
         else
         {
@@ -1514,7 +1672,8 @@ int32_t  ECC_Mutiply_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int x1_ksnum, c
             crypto->ECC_CTL = CRYPTO_ECC_CTL_FSEL_Msk;
         }
 
-        g_ECC_done = g_ECCERR_done = 0UL;
+        g_ECC_done = 0UL;
+        g_ECCERR_done = 0UL;
         crypto->ECC_CTL |= ((uint32_t)pCurve->key_len << CRYPTO_ECC_CTL_CURVEM_Pos) |
                            ECCOP_POINT_MUL | CRYPTO_ECC_CTL_START_Msk;
 
@@ -1545,7 +1704,7 @@ int32_t  ECC_Mutiply_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int x1_ksnum, c
   */
 int32_t  ECC_GenerateSecretZ(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *private_k, char public_k1[], char public_k2[], char secret_z[])
 {
-    int32_t  i, ret = 0;
+    int32_t  ret = 0;
 
     if (ecc_init_curve(crypto, ecc_curve) != 0)
     {
@@ -1554,6 +1713,8 @@ int32_t  ECC_GenerateSecretZ(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *priv
 
     if (ret == 0)
     {
+        int32_t  i;
+
         for (i = 0; i < 18; i++)
         {
             crypto->ECC_K[i] = 0UL;
@@ -1591,7 +1752,8 @@ int32_t  ECC_GenerateSecretZ(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *priv
             crypto->ECC_CTL = CRYPTO_ECC_CTL_FSEL_Msk;
         }
 
-        g_ECC_done = g_ECCERR_done = 0UL;
+        g_ECC_done = 0UL;
+        g_ECCERR_done = 0UL;
         crypto->ECC_CTL |= ((uint32_t)pCurve->key_len << CRYPTO_ECC_CTL_CURVEM_Pos) |
                            ECCOP_POINT_MUL | CRYPTO_ECC_CTL_START_Msk;
 
@@ -1653,28 +1815,14 @@ int32_t  ECC_GenerateSecretZ_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k_k
 
     if (k_ksnum >= 0x80)
     {
-        ecc_ksctl |= (0x2 << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                     CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum - 0x80);
+        ecc_ksctl |= (0x2UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
+                     CRYPTO_ECC_KSCTL_RSRCK_Msk | ((uint32_t)k_ksnum - 0x80UL);
     }
     else if (k_ksnum >= 0)
     {
-        ecc_ksctl |= (0 << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                     CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum);
+        ecc_ksctl |= (0UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
+                     CRYPTO_ECC_KSCTL_RSRCK_Msk | (uint32_t)k_ksnum;
     }
-
-#if 0
-    else if ((ecc_curve == CURVE_B_163) || (ecc_curve == CURVE_B_233) || (ecc_curve == CURVE_B_283) ||
-             (ecc_curve == CURVE_B_409) || (ecc_curve == CURVE_B_571) || (ecc_curve == CURVE_K_163))
-    {
-        Hex2RegEx(private_k, crypto->ECC_K, 1);
-    }
-    else if ((ecc_curve == CURVE_K_233) || (ecc_curve == CURVE_K_283) ||
-             (ecc_curve == CURVE_K_409) || (ecc_curve == CURVE_K_571))
-    {
-        Hex2RegEx(private_k, crypto->ECC_K, 2);
-    }
-
-#endif
     else
     {
         Hex2Reg(private_k, crypto->ECC_K);
@@ -1685,7 +1833,7 @@ int32_t  ECC_GenerateSecretZ_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k_k
 
     if (z_to_ks)
     {
-        ecc_ksctl |= (z_owner << CRYPTO_ECC_KSCTL_OWNER_Pos) | CRYPTO_ECC_KSCTL_WDST_Msk;
+        ecc_ksctl |= ((uint32_t)z_owner << CRYPTO_ECC_KSCTL_OWNER_Pos) | CRYPTO_ECC_KSCTL_WDST_Msk;
     }
 
     crypto->ECC_KSCTL = ecc_ksctl;
@@ -1702,12 +1850,13 @@ int32_t  ECC_GenerateSecretZ_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k_k
     }
 
     CRYPTO_DBGMSG("ECC_KSCTL = 0x%x\n", ecc_ksctl);
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
     dump_ecc_reg("CRYPTO_ECC_POINT_X1", crypto->ECC_X1, 10);
     dump_ecc_reg("CRYPTO_ECC_POINT_Y1", crypto->ECC_Y1, 10);
     dump_ecc_reg("CRYPTO_ECC_CURVE_K", crypto->ECC_K, 10);
 #endif
-    g_ECC_done = g_ECCERR_done = 0UL;
+    g_ECC_done = 0UL;
+    g_ECCERR_done = 0UL;
     crypto->ECC_CTL |= ((uint32_t)pCurve->key_len << CRYPTO_ECC_CTL_CURVEM_Pos) |
                        ECCOP_POINT_MUL | CRYPTO_ECC_CTL_START_Msk;
 
@@ -1720,7 +1869,12 @@ int32_t  ECC_GenerateSecretZ_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, int k_k
     crypto->ECC_KSXY = 0;
 
     if (z_to_ks)
-        return crypto->ECC_KSSTS & 0x1f;
+    {
+        uint32_t u32KsStatus;
+
+        u32KsStatus = crypto->ECC_KSSTS & 0x1FUL;
+        return (int32_t)u32KsStatus;
+    }
     else
     {
         Reg2Hex(pCurve->Echar, crypto->ECC_X1, secret_z);
@@ -1751,7 +1905,8 @@ static void run_ecc_codec(CRYPTO_T *crypto, uint32_t mode, int enable_scap)
         }
     }
 
-    g_ECC_done = g_ECCERR_done = 0UL;
+    g_ECC_done = 0UL;
+    g_ECCERR_done = 0UL;
 
     if (enable_scap)
     {
@@ -1772,7 +1927,7 @@ static void run_ecc_codec(CRYPTO_T *crypto, uint32_t mode, int enable_scap)
 /** @endcond HIDDEN_SYMBOLS */
 
 
-#if 1  // use H/W ECDSAS and ECDSAR
+//Use H/W ECDSAS and ECDSAR
 /**
   * @brief  ECDSA digital signature generation.
   * @param[in]  crypto        Reference to Crypto module.
@@ -1788,8 +1943,8 @@ static void run_ecc_codec(CRYPTO_T *crypto, uint32_t mode, int enable_scap)
 int32_t  ECC_GenerateSignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *message,
                                char *d, char *k, char *R, char *S)
 {
-    uint32_t volatile temp_result1[18], temp_result2[18];
-    int32_t  i, ret = 0;
+    uint32_t volatile temp_result1[18];
+    int32_t  ret = 0;
 
     if (ecc_init_curve(crypto, ecc_curve) != 0)
     {
@@ -1798,6 +1953,9 @@ int32_t  ECC_GenerateSignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *me
 
     if (ret == 0)
     {
+        uint32_t volatile temp_result2[18];
+        int32_t  i;
+
         /*
          *   1. Calculate e = HASH(m), where HASH is a cryptographic hashing algorithm, (i.e. SHA-1)
          *      (1) Use SHA to calculate e
@@ -1868,7 +2026,7 @@ int32_t  ECC_GenerateSignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *me
         Reg2Hex(pCurve->Echar, temp_result1, R);
 
         /*
-         *   4. Compute s = k^-1 �� (e + d �� r)(mod n). If s = 0, go to step 2
+         *   4. Compute s = k^-1 * (e + d * r)(mod n). If s = 0, go to step 2
          *      (1) Write the curve order to N registers
          *      (2) Write the random integer k to X1 and d to Y1
          *      (3) Write the r to X2 and e to Y2
@@ -1942,275 +2100,7 @@ int32_t  ECC_GenerateSignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *me
 
     return ret;
 }
-#else
-/**
-  * @brief  ECDSA digital signature generation.
-  * @param[in]  crypto        Reference to Crypto module.
-  * @param[in]  ecc_curve   The pre-defined ECC curve.
-  * @param[in]  message     The hash value of source context.
-  * @param[in]  d           The private key.
-  * @param[in]  k           The selected random integer.
-  * @param[out] R           R of the (R,S) pair digital signature
-  * @param[out] S           S of the (R,S) pair digital signature
-  * @return  0    Success.
-  * @return  -1   "ecc_curve" value is invalid.
-  */
-int32_t  ECC_GenerateSignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *message,
-                               char *d, char *k, char *R, char *S)
-{
-    uint32_t volatile temp_result1[18], temp_result2[18];
-    int32_t  i, ret = 0;
 
-    if (ecc_init_curve(crypto, ecc_curve) != 0)
-    {
-        ret = -1;
-    }
-
-    if (ret == 0)
-    {
-        /*
-         *   1. Calculate e = HASH(m), where HASH is a cryptographic hashing algorithm, (i.e. SHA-1)
-         *      (1) Use SHA to calculate e
-         */
-
-        /*   2. Select a random integer k form [1, n-1]
-         *      (1) Notice that n is order, not prime modulus or irreducible polynomial function
-         */
-
-        /*
-         *   3. Compute r = x1 (mod n), where (x1, y1) = k * G. If r = 0, go to step 2
-         *      (1) Write the curve parameter A, B, and curve length M to corresponding registers
-         *      (2) Write the prime modulus or irreducible polynomial function to N registers according
-         *      (3) Write the point G(x, y) to X1, Y1 registers
-         *      (4) Write the random integer k to K register
-         *      (5) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 00
-         *      (6) Set FSEL(CRYPTO_ECC_CTL[8]) according to used curve of prime field or binary field
-         *      (7) Set START(CRYPTO_ECC_CTL[0]) to 1
-         *      (8) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (9) Write the curve order and curve length to N ,M registers according
-         *      (10) Write 0x0 to Y1 registers
-         *      (11) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
-         *      (12) Set MOPOP(CRYPTO_ECC_CTL[12:11]) to 10
-         *      (13) Set START(CRYPTO_ECC_CTL[0]) to 1         *
-         *      (14) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (15) Read X1 registers to get r
-         */
-
-        /* 3-(4) Write the random integer k to K register */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_K[i] = 0UL;
-        }
-
-        Hex2Reg(k, crypto->ECC_K);
-
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_X2[i] = 0UL;
-        }
-
-        Hex2Reg(pCurve->Eorder, crypto->ECC_X2);
-
-        run_ecc_codec(crypto, ECCOP_POINT_MUL, 1);
-
-        /*  3-(9) Write the curve order to N registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_N[i] = 0UL;
-        }
-
-        Hex2Reg(pCurve->Eorder, crypto->ECC_N);
-
-        /* 3-(10) Write 0x0 to Y1 registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_Y1[i] = 0UL;
-        }
-
-        run_ecc_codec(crypto, ECCOP_MODULE | MODOP_ADD, 0);
-
-        /* 3-(15) Read X1 registers to get r */
-        for (i = 0; i < 18; i++)
-        {
-            temp_result1[i] = crypto->ECC_X1[i];
-        }
-
-        Reg2Hex(pCurve->Echar, temp_result1, R);
-
-        /*
-         *   4. Compute s = k ? 1 �� (e + d �� r)(mod n). If s = 0, go to step 2
-         *      (1) Write the curve order to N registers according
-         *      (2) Write 0x1 to Y1 registers
-         *      (3) Write the random integer k to X1 registers according
-         *      (4) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
-         *      (5) Set MOPOP(CRYPTO_ECC_CTL[12:11]) to 00
-         *      (6) Set START(CRYPTO_ECC_CTL[0]) to 1
-         *      (7) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (8) Read X1 registers to get k^-1
-         *      (9) Write the curve order and curve length to N ,M registers
-         *      (10) Write r, d to X1, Y1 registers
-         *      (11) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
-         *      (12) Set MOPOP(CRYPTO_ECC_CTL[12:11]) to 01
-         *      (13) Set START(CRYPTO_ECC_CTL[0]) to 1
-         *      (14) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (15) Write the curve order to N registers
-         *      (16) Write e to Y1 registers
-         *      (17) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
-         *      (18) Set MOPOP(CRYPTO_ECC_CTL[12:11]) to 10
-         *      (19) Set START(CRYPTO_ECC_CTL[0]) to 1
-         *      (20) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (21) Write the curve order and curve length to N ,M registers
-         *      (22) Write k^-1 to Y1 registers
-         *      (23) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
-         *      (24) Set MOPOP(CRYPTO_ECC_CTL[12:11]) to 01
-         *      (25) Set START(CRYPTO_ECC_CTL[0]) to 1
-         *      (26) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (27) Read X1 registers to get s
-         */
-
-        /* S/W: GFp_add_mod_order(pCurve->key_len+2, 0, x1, a, R); */
-
-        /*  4-(1) Write the curve order to N registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_N[i] = 0UL;
-        }
-
-        Hex2Reg(pCurve->Eorder, crypto->ECC_N);
-
-        /*  4-(2) Write 0x1 to Y1 registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_Y1[i] = 0UL;
-        }
-
-        crypto->ECC_Y1[0] = 0x1UL;
-
-        /*  4-(3) Write the random integer k to X1 registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_X1[i] = 0UL;
-        }
-
-        Hex2Reg(k, crypto->ECC_X1);
-
-        run_ecc_codec(crypto, ECCOP_MODULE | MODOP_DIV, 0);
-
-#if ENABLE_DEBUG
-        Reg2Hex(pCurve->Echar, crypto->ECC_X1, temp_hex_str);
-        CRYPTO_DBGMSG("(7) output = %s\n", temp_hex_str);
-#endif
-
-        /*  4-(8) Read X1 registers to get k^-1 */
-
-        for (i = 0; i < 18; i++)
-        {
-            temp_result2[i] = crypto->ECC_X1[i];
-        }
-
-#if ENABLE_DEBUG
-        Reg2Hex(pCurve->Echar, temp_result2, temp_hex_str);
-        CRYPTO_DBGMSG("k^-1 = %s\n", temp_hex_str);
-#endif
-
-        /*  4-(9) Write the curve order and curve length to N ,M registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_N[i] = 0UL;
-        }
-
-        Hex2Reg(pCurve->Eorder, crypto->ECC_N);
-
-        /*  4-(10) Write r, d to X1, Y1 registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_X1[i] = temp_result1[i];
-        }
-
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_Y1[i] = 0UL;
-        }
-
-        Hex2Reg(d, crypto->ECC_Y1);
-
-        run_ecc_codec(crypto, ECCOP_MODULE | MODOP_MUL, 0);
-
-#if ENABLE_DEBUG
-        Reg2Hex(pCurve->Echar, crypto->ECC_X1, temp_hex_str);
-        CRYPTO_DBGMSG("(14) output = %s\n", temp_hex_str);
-#endif
-
-        /*  4-(15) Write the curve order to N registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_N[i] = 0UL;
-        }
-
-        Hex2Reg(pCurve->Eorder, crypto->ECC_N);
-
-        /*  4-(16) Write e to Y1 registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_Y1[i] = 0UL;
-        }
-
-        Hex2Reg(message, crypto->ECC_Y1);
-
-        run_ecc_codec(crypto, ECCOP_MODULE | MODOP_ADD, 0);
-
-#if ENABLE_DEBUG
-        Reg2Hex(pCurve->Echar, crypto->ECC_X1, temp_hex_str);
-        CRYPTO_DBGMSG("(20) output = %s\n", temp_hex_str);
-#endif
-
-        /*  4-(21) Write the curve order and curve length to N ,M registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_N[i] = 0UL;
-        }
-
-        Hex2Reg(pCurve->Eorder, crypto->ECC_N);
-
-        /*  4-(22) Write k^-1 to Y1 registers */
-        for (i = 0; i < 18; i++)
-        {
-            crypto->ECC_Y1[i] = temp_result2[i];
-        }
-
-        run_ecc_codec(crypto, ECCOP_MODULE | MODOP_MUL, 0);
-
-        /*  4-(27) Read X1 registers to get s */
-        for (i = 0; i < 18; i++)
-        {
-            temp_result2[i] = crypto->ECC_X1[i];
-        }
-
-        Reg2Hex(pCurve->Echar, temp_result2, S);
-
-    }  /* ret == 0 */
-
-    return ret;
-}
-
-int32_t  ECC_Write_N(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve)
-{
-    int   i;
-
-    if (ecc_init_curve(crypto, ecc_curve) != 0)
-    {
-        return -1;
-    }
-
-    for (i = 0; i < 18; i++)
-    {
-        crypto->ECC_N[i] = 0UL;
-    }
-
-    Hex2Reg(pCurve->Eorder, crypto->ECC_N);
-    return 0;
-}
-#endif
 
 /**
   * @brief  ECDSA digital signature generation.
@@ -2230,9 +2120,11 @@ int32_t  ECC_Write_N(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve)
 int32_t  ECC_GenerateSignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *message,
                                   int d_ksnum, int k_ksnum, char *R, char *S)
 {
-    uint32_t volatile temp_result1[18], temp_result2[18];
+    uint32_t volatile temp_result1[18];
+    uint32_t volatile temp_result2[18];
     uint32_t   ksxy;
-    int32_t     i, ret = 0;
+    int32_t     i;
+    int32_t     ret = 0;
 
     if (ecc_init_curve(crypto, ecc_curve) != 0)
     {
@@ -2278,12 +2170,12 @@ int32_t  ECC_GenerateSignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char 
         if (k_ksnum >= 0x80)
         {
             crypto->ECC_KSCTL = (0x2UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                                CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum - 0x80);
+                                CRYPTO_ECC_KSCTL_RSRCK_Msk | ((uint32_t)k_ksnum - 0x80UL);
         }
         else
         {
-            crypto->ECC_KSCTL = (0 << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
-                                CRYPTO_ECC_KSCTL_RSRCK_Msk | (k_ksnum);
+            crypto->ECC_KSCTL = (0UL << CRYPTO_ECC_KSCTL_RSSRCK_Pos) |
+                                CRYPTO_ECC_KSCTL_RSRCK_Msk | (uint32_t)k_ksnum;
         }
 
         for (i = 0; i < 18; i++)
@@ -2321,12 +2213,12 @@ int32_t  ECC_GenerateSignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char 
 
         Reg2Hex(pCurve->Echar, temp_result1, R);
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         CRYPTO_DBGMSG("3-(15) R = %s\n", R);
 #endif
 
         /*
-         *   4. Compute s = k^-1 �� (e + d �� r)(mod n). If s = 0, go to step 2
+         *   4. Compute s = k^-1 * (e + d * r)(mod n). If s = 0, go to step 2
          *      (1) Write the curve order to N registers
          *      (2) Write the random integer k to X1 and d to Y1
          *      (3) Write the r to X2 and e to Y2
@@ -2354,22 +2246,24 @@ int32_t  ECC_GenerateSignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char 
 
         if (k_ksnum >= 0x80)
         {
-            ksxy |= (2 << CRYPTO_ECC_KSXY_RSSRCX_Pos) | (k_ksnum - 0x80);
+            ksxy |= (2UL << CRYPTO_ECC_KSXY_RSSRCX_Pos) | ((uint32_t)k_ksnum - 0x80UL);
         }
         else if (k_ksnum >= 0)
         {
-            ksxy |= (0 << CRYPTO_ECC_KSXY_RSSRCX_Pos) | (k_ksnum);
+            ksxy |= (0UL << CRYPTO_ECC_KSXY_RSSRCX_Pos) | (uint32_t)k_ksnum;
         }
         else
+        {
             return -3;
+        }
 
         if (d_ksnum >= 0x80)
         {
-            ksxy |= (2 << CRYPTO_ECC_KSXY_RSSRCY_Pos) | ((d_ksnum - 0x80) << 8);
+            ksxy |= (2UL << CRYPTO_ECC_KSXY_RSSRCY_Pos) | (((uint32_t)d_ksnum - 0x80UL) << 8U);
         }
         else if (d_ksnum >= 0)
         {
-            ksxy |= (0 << CRYPTO_ECC_KSXY_RSSRCY_Pos) | (d_ksnum << 8);
+            ksxy |= (0UL << CRYPTO_ECC_KSXY_RSSRCY_Pos) | ((uint32_t)d_ksnum << 8U);
         }
         else
         {
@@ -2434,9 +2328,14 @@ int32_t  ECC_GenerateSignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char 
 int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *message,
                              char *public_k1, char *public_k2, char *R, char *S)
 {
-    uint32_t  temp_result1[18], temp_result2[18];
-    uint32_t  temp_x[18], temp_y[18];
-    int32_t   i, ret = 0;
+    uint32_t  temp_result1[18];
+    uint32_t  temp_result2[18];
+    uint32_t  temp_x[18];
+    char      temp_hex_str[160];
+    uint32_t  temp_y[18];
+
+    int32_t   i;
+    int32_t   ret = 0;
 
     /*
      *   1. Verify that r and s are integers in the interval [1, n-1]. If not, the signature is invalid
@@ -2495,7 +2394,7 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
             temp_result2[i] = crypto->ECC_X1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         CRYPTO_DBGMSG("e = %s\n", message);
         Reg2Hex(pCurve->Echar, temp_result2, temp_hex_str);
         CRYPTO_DBGMSG("w = %s\n", temp_hex_str);
@@ -2503,7 +2402,7 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
 #endif
 
         /*
-         *   4. Compute u1 = e �� w (mod n) and u2 = r �� w (mod n)
+         *   4. Compute u1 = e * w (mod n) and u2 = r * w (mod n)
          *      (1) Write the curve order and curve length to N ,M registers
          *      (2) Write e, w to X1, Y1 registers
          *      (3) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
@@ -2549,7 +2448,7 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
             temp_result1[i] = crypto->ECC_X1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_result1, temp_hex_str);
         CRYPTO_DBGMSG("u1 = %s\n", temp_hex_str);
 #endif
@@ -2583,13 +2482,13 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
             temp_result2[i] = crypto->ECC_X1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_result2, temp_hex_str);
         CRYPTO_DBGMSG("u2 = %s\n", temp_hex_str);
 #endif
 
         /*
-         *   5. Compute X�� (x1��, y1��) = u1 * G + u2 * Q
+         *   5. Compute X' (x1', y1') = u1 * G + u2 * Q
          *      (1) Write the curve parameter A, B, N, and curve length M to corresponding registers
          *      (2) Write the point G(x, y) to X1, Y1 registers
          *      (3) Write u1 to K registers
@@ -2608,24 +2507,27 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
          *      (16) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 10
          *      (17) Set START(CRYPTO_ECC_CTL[0]) to 1
          *      (18) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (19) Read X1, Y1 registers to get X��(x1��, y1��)
+         *      (19) Read X1, Y1 registers to get X'(x1', y1')
          *      (20) Write the curve order and curve length to N ,M registers
-         *      (21) Write x1�� to X1 registers
+         *      (21) Write x1' to X1 registers
          *      (22) Write 0x0 to Y1 registers
          *      (23) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
          *      (24) Set MOPOP(CRYPTO_ECC_CTL[12:11]) to 10
          *      (25) Set START(CRYPTO_ECC_CTL[0]) to 1
          *      (26) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (27) Read X1 registers to get x1�� (mod n)
+         *      (27) Read X1 registers to get x1' (mod n)
          *
-         *   6. The signature is valid if x1�� = r, otherwise it is invalid
+         *   6. The signature is valid if x1' = r, otherwise it is invalid
          */
 
         /*
          *  (1) Write the curve parameter A, B, N, and curve length M to corresponding registers
          *  (2) Write the point G(x, y) to X1, Y1 registers
          */
-        ecc_init_curve(crypto, ecc_curve);
+        if (ecc_init_curve(crypto, ecc_curve) != 0)
+        {
+            return -1;
+        }
 
         /* (3) Write u1 to K registers */
         for (i = 0; i < 18; i++)
@@ -2649,7 +2551,7 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
             temp_y[i] = crypto->ECC_Y1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_x, temp_hex_str);
         CRYPTO_DBGMSG("5-(7) u1*G, x = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, temp_y, temp_hex_str);
@@ -2657,7 +2559,10 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
 #endif
 
         /* (8) Write the curve parameter A, B, N, and curve length M to corresponding registers */
-        ecc_init_curve(crypto, ecc_curve);
+        if (ecc_init_curve(crypto, ecc_curve) != 0)
+        {
+            return -1;
+        }
 
         /* (9) Write the public key Q(x,y) to X1, Y1 registers */
         for (i = 0; i < 18; i++)
@@ -2690,7 +2595,7 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
             temp_result2[i] = crypto->ECC_Y1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_result1, temp_hex_str);
         CRYPTO_DBGMSG("5-(13) u2*Q, x = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, temp_result2, temp_hex_str);
@@ -2698,7 +2603,10 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
 #endif
 
         /* (14) Write the curve parameter A, B, N, and curve length M to corresponding registers */
-        ecc_init_curve(crypto, ecc_curve);
+        if (ecc_init_curve(crypto, ecc_curve) != 0)
+        {
+            return -1;
+        }
 
         /* Write the result data u2*Q to X1, Y1 registers */
         for (i = 0; i < 18; i++)
@@ -2716,14 +2624,16 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
 
         run_ecc_codec(crypto, ECCOP_POINT_ADD, 0);
 
-        /* (19) Read X1, Y1 registers to get X��(x1��, y1��) */
+        /* (19) Read X1, Y1 registers to get X'(x1', y1') */
         for (i = 0; i < 18; i++)
         {
             temp_x[i] = crypto->ECC_X1[i];
+#if defined(ENABLE_DEBUG)
             temp_y[i] = crypto->ECC_Y1[i];
+#endif
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_x, temp_hex_str);
         CRYPTO_DBGMSG("5-(19) x' = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, temp_y, temp_hex_str);
@@ -2739,7 +2649,7 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
         Hex2Reg(pCurve->Eorder, crypto->ECC_N);
 
         /*
-         *  (21) Write x1�� to X1 registers
+         *  (21) Write x1' to X1 registers
          *  (22) Write 0x0 to Y1 registers
          */
         for (i = 0; i < 18; i++)
@@ -2748,7 +2658,7 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
             crypto->ECC_Y1[i] = 0UL;
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, crypto->ECC_X1, temp_hex_str);
         CRYPTO_DBGMSG("5-(21) x' = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, crypto->ECC_Y1, temp_hex_str);
@@ -2757,11 +2667,11 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
 
         run_ecc_codec(crypto, ECCOP_MODULE | MODOP_ADD, 0);
 
-        /*  (27) Read X1 registers to get x1�� (mod n) */
+        /*  (27) Read X1 registers to get x1' (mod n) */
         Reg2Hex(pCurve->Echar, crypto->ECC_X1, temp_hex_str);
         CRYPTO_DBGMSG("5-(27) x1' (mod n) = %s\n", temp_hex_str);
 
-        /* 6. The signature is valid if x1�� = r, otherwise it is invalid */
+        /* 6. The signature is valid if x1' = r, otherwise it is invalid */
 
         /* Compare with test pattern to check if r is correct or not */
         if (ecc_strcmp(temp_hex_str, R) != 0)
@@ -2797,10 +2707,14 @@ int32_t  ECC_VerifySignature(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *mess
 int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *message,
                                 int x_ksnum, int y_ksnum, char *R, char *S)
 {
-    uint32_t  temp_result1[18], temp_result2[18];
-    uint32_t  temp_x[18], temp_y[18];
+    uint32_t  temp_result1[18];
+    uint32_t  temp_result2[18];
+    uint32_t  temp_x[18];
+    uint32_t  temp_y[18];
+    char      temp_hex_str[160];
     uint32_t  ksxy;
-    int32_t   i, ret = 0;
+    int32_t   i;
+    int32_t   ret = 0;
 
     /*
      *   1. Verify that r and s are integers in the interval [1, n-1]. If not, the signature is invalid
@@ -2860,7 +2774,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
             temp_result2[i] = crypto->ECC_X1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         CRYPTO_DBGMSG("e = %s\n", message);
         Reg2Hex(pCurve->Echar, temp_result2, temp_hex_str);
         CRYPTO_DBGMSG("w = %s\n", temp_hex_str);
@@ -2868,7 +2782,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
 #endif
 
         /*
-         *   4. Compute u1 = e �� w (mod n) and u2 = r �� w (mod n)
+         *   4. Compute u1 = e * w (mod n) and u2 = r * w (mod n)
          *      (1) Write the curve order and curve length to N ,M registers
          *      (2) Write e, w to X1, Y1 registers
          *      (3) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
@@ -2914,7 +2828,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
             temp_result1[i] = crypto->ECC_X1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_result1, temp_hex_str);
         CRYPTO_DBGMSG("u1 = %s\n", temp_hex_str);
 #endif
@@ -2948,13 +2862,13 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
             temp_result2[i] = crypto->ECC_X1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_result2, temp_hex_str);
         CRYPTO_DBGMSG("u2 = %s\n", temp_hex_str);
 #endif
 
         /*
-         *   5. Compute X�� (x1��, y1��) = u1 * G + u2 * Q
+         *   5. Compute X' (x1', y1') = u1 * G + u2 * Q
          *      (1) Write the curve parameter A, B, N, and curve length M to corresponding registers
          *      (2) Write the point G(x, y) to X1, Y1 registers
          *      (3) Write u1 to K registers
@@ -2973,24 +2887,27 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
          *      (16) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 10
          *      (17) Set START(CRYPTO_ECC_CTL[0]) to 1
          *      (18) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (19) Read X1, Y1 registers to get X��(x1��, y1��)
+         *      (19) Read X1, Y1 registers to get X'(x1', y1')
          *      (20) Write the curve order and curve length to N ,M registers
-         *      (21) Write x1�� to X1 registers
+         *      (21) Write x1' to X1 registers
          *      (22) Write 0x0 to Y1 registers
          *      (23) Set ECCOP(CRYPTO_ECC_CTL[10:9]) to 01
          *      (24) Set MOPOP(CRYPTO_ECC_CTL[12:11]) to 10
          *      (25) Set START(CRYPTO_ECC_CTL[0]) to 1
          *      (26) Wait for BUSY(CRYPTO_ECC_STS[0]) be cleared
-         *      (27) Read X1 registers to get x1�� (mod n)
+         *      (27) Read X1 registers to get x1' (mod n)
          *
-         *   6. The signature is valid if x1�� = r, otherwise it is invalid
+         *   6. The signature is valid if x1' = r, otherwise it is invalid
          */
 
         /*
          *  (1) Write the curve parameter A, B, N, and curve length M to corresponding registers
          *  (2) Write the point G(x, y) to X1, Y1 registers
          */
-        ecc_init_curve(crypto, ecc_curve);
+        if (ecc_init_curve(crypto, ecc_curve) != 0)
+        {
+            return -1;
+        }
 
         /* (3) Write u1 to K registers */
         for (i = 0; i < 18; i++)
@@ -3007,7 +2924,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
             temp_y[i] = crypto->ECC_Y1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_x, temp_hex_str);
         CRYPTO_DBGMSG("5-(7) u1*G, x = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, temp_y, temp_hex_str);
@@ -3015,7 +2932,10 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
 #endif
 
         /* (8) Write the curve parameter A, B, N, and curve length M to corresponding registers */
-        ecc_init_curve(crypto, ecc_curve);
+        if (ecc_init_curve(crypto, ecc_curve) != 0)
+        {
+            return -1;
+        }
 
         /* (9) Write the public key Q(x,y) to X1, Y1 registers */
         for (i = 0; i < 18; i++)
@@ -3031,22 +2951,24 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
 
         if (x_ksnum >= 0x80)
         {
-            ksxy |= (2 << CRYPTO_ECC_KSXY_RSSRCX_Pos) | (x_ksnum - 0x80);
+            ksxy |= (2UL << CRYPTO_ECC_KSXY_RSSRCX_Pos) | ((uint32_t)x_ksnum - 0x80UL);
         }
         else if (x_ksnum >= 0)
         {
-            ksxy |= (0 << CRYPTO_ECC_KSXY_RSSRCX_Pos) | (x_ksnum);
+            ksxy |= (0UL << CRYPTO_ECC_KSXY_RSSRCX_Pos) | (uint32_t)x_ksnum;
         }
         else
+        {
             return -3;
+        }
 
         if (y_ksnum >= 0x80)
         {
-            ksxy |= (2 << CRYPTO_ECC_KSXY_RSSRCY_Pos) | ((y_ksnum - 0x80) << 8);
+            ksxy |= (2UL << CRYPTO_ECC_KSXY_RSSRCY_Pos) | (((uint32_t)y_ksnum - 0x80UL) << 8U);
         }
         else if (y_ksnum >= 0)
         {
-            ksxy |= (0 << CRYPTO_ECC_KSXY_RSSRCY_Pos) | (y_ksnum << 8);
+            ksxy |= (0UL << CRYPTO_ECC_KSXY_RSSRCY_Pos) | ((uint32_t)y_ksnum << 8U);
         }
         else
         {
@@ -3071,7 +2993,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
             temp_result2[i] = crypto->ECC_Y1[i];
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_result1, temp_hex_str);
         CRYPTO_DBGMSG("5-(13) u2*Q, x = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, temp_result2, temp_hex_str);
@@ -3079,7 +3001,10 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
 #endif
 
         /* (14) Write the curve parameter A, B, N, and curve length M to corresponding registers */
-        ecc_init_curve(crypto, ecc_curve);
+        if (ecc_init_curve(crypto, ecc_curve) != 0)
+        {
+            return -1;
+        }
 
         /* Write the result data u2*Q to X1, Y1 registers */
         for (i = 0; i < 18; i++)
@@ -3097,14 +3022,16 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
 
         run_ecc_codec(crypto, ECCOP_POINT_ADD, 0);
 
-        /* (19) Read X1, Y1 registers to get X��(x1��, y1��) */
+        /* (19) Read X1, Y1 registers to get X'(x1', y1') */
         for (i = 0; i < 18; i++)
         {
             temp_x[i] = crypto->ECC_X1[i];
+#if defined(ENABLE_DEBUG)
             temp_y[i] = crypto->ECC_Y1[i];
+#endif
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, temp_x, temp_hex_str);
         CRYPTO_DBGMSG("5-(19) x' = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, temp_y, temp_hex_str);
@@ -3120,7 +3047,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
         Hex2Reg(pCurve->Eorder, crypto->ECC_N);
 
         /*
-         *  (21) Write x1�� to X1 registers
+         *  (21) Write x1' to X1 registers
          *  (22) Write 0x0 to Y1 registers
          */
         for (i = 0; i < 18; i++)
@@ -3129,7 +3056,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
             crypto->ECC_Y1[i] = 0UL;
         }
 
-#if ENABLE_DEBUG
+#if defined(ENABLE_DEBUG)
         Reg2Hex(pCurve->Echar, crypto->ECC_X1, temp_hex_str);
         CRYPTO_DBGMSG("5-(21) x' = %s\n", temp_hex_str);
         Reg2Hex(pCurve->Echar, crypto->ECC_Y1, temp_hex_str);
@@ -3138,11 +3065,11 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
 
         run_ecc_codec(crypto, ECCOP_MODULE | MODOP_ADD, 0);
 
-        /*  (27) Read X1 registers to get x1�� (mod n) */
+        /*  (27) Read X1 registers to get x1' (mod n) */
         Reg2Hex(pCurve->Echar, crypto->ECC_X1, temp_hex_str);
         CRYPTO_DBGMSG("5-(27) x1' (mod n) = %s\n", temp_hex_str);
 
-        /* 6. The signature is valid if x1�� = r, otherwise it is invalid */
+        /* 6. The signature is valid if x1' = r, otherwise it is invalid */
 
         /* Compare with test pattern to check if r is correct or not */
         if (ecc_strcmp(temp_hex_str, R) != 0)
@@ -3157,7 +3084,7 @@ int32_t  ECC_VerifySignature_KS(CRYPTO_T *crypto, E_ECC_CURVE ecc_curve, char *m
 }
 
 /** @cond HIDDEN_SYMBOLS */
-static void *s_pRSABuf;
+static uintptr_t s_u32RSABufAddr;
 static uint32_t s_u32RsaOpMode;
 typedef enum
 {
@@ -3170,6 +3097,16 @@ typedef enum
     BUF_KS
 } E_RSA_BUF_SEL;
 static int32_t CheckRsaBufferSize(uint32_t u32OpMode, uint32_t u32BufSize, uint32_t u32UseKS);
+
+static uint32_t *RSA_BufWordPtr(size_t u32Offset)
+{
+    return (uint32_t *)(s_u32RSABufAddr + (uintptr_t)u32Offset);
+}
+
+static uint32_t RSA_BufAddr(size_t u32Offset)
+{
+    return (uint32_t)(s_u32RSABufAddr + (uintptr_t)u32Offset);
+}
 /** @endcond HIDDEN_SYMBOLS */
 
 /**
@@ -3183,20 +3120,22 @@ static int32_t CheckRsaBufferSize(uint32_t u32OpMode, uint32_t u32BufSize, uint3
   * @param[in]  u32BufSize         RSA buffer size
   * @param[in]  u32UseKS           If RSA uses KeyStore(KS)
   * @return  0    Success.
-  * @return  -1   The value of pointer of RSA buffer struct is null.
+  * @return  -1   The value of pointer of RSA buffer struct is NULL.
   */
 static int32_t CheckRsaBufferSize(uint32_t u32OpMode, uint32_t u32BufSize, uint32_t u32UseKS)
 {
     /* RSA buffer size for MODE_NORMAL, MODE_CRT, MODE_CRTBYPASS, MODE_SCAP, MODE_CRT_SCAP, MODE_CRTBYPASS_SCAP */
-    uint32_t s_au32RsaBufSizeTbl[] = {sizeof(RSA_BUF_NORMAL_T), sizeof(RSA_BUF_CRT_T), sizeof(RSA_BUF_CRT_T), \
-                                      sizeof(RSA_BUF_SCAP_T), sizeof(RSA_BUF_CRT_SCAP_T), sizeof(RSA_BUF_CRT_SCAP_T), \
-                                      sizeof(RSA_BUF_KS_T)
-                                     };
+    const uint32_t s_au32RsaBufSizeTbl[] = {sizeof(RSA_BUF_NORMAL_T), sizeof(RSA_BUF_CRT_T), sizeof(RSA_BUF_CRT_T), \
+                                            sizeof(RSA_BUF_SCAP_T), sizeof(RSA_BUF_CRT_SCAP_T), sizeof(RSA_BUF_CRT_SCAP_T), \
+                                            sizeof(RSA_BUF_KS_T)
+                                           };
 
     if (u32UseKS)
     {
         if (u32BufSize != s_au32RsaBufSizeTbl[BUF_KS])
+        {
             return (-1);
+        }
     }
     else
     {
@@ -3204,37 +3143,49 @@ static int32_t CheckRsaBufferSize(uint32_t u32OpMode, uint32_t u32BufSize, uint3
         {
             case RSA_MODE_NORMAL:
                 if (u32BufSize != s_au32RsaBufSizeTbl[BUF_NORMAL])
+                {
                     return (-1);
+                }
 
                 break;
 
             case RSA_MODE_CRT:
                 if (u32BufSize != s_au32RsaBufSizeTbl[BUF_CRT])
+                {
                     return (-1);
+                }
 
                 break;
 
             case RSA_MODE_CRTBYPASS:
                 if (u32BufSize != s_au32RsaBufSizeTbl[BUF_CRTBYPASS])
+                {
                     return (-1);
+                }
 
                 break;
 
             case RSA_MODE_SCAP:
                 if (u32BufSize != s_au32RsaBufSizeTbl[BUF_SCAP])
+                {
                     return (-1);
+                }
 
                 break;
 
             case RSA_MODE_CRT_SCAP:
                 if (u32BufSize != s_au32RsaBufSizeTbl[BUF_CRT_SCAP])
+                {
                     return (-1);
+                }
 
                 break;
 
             case RSA_MODE_CRTBYPASS_SCAP:
                 if (u32BufSize != s_au32RsaBufSizeTbl[BUF_CRTBYPASS_SCAP])
+                {
                     return (-1);
+                }
 
                 break;
 
@@ -3271,12 +3222,12 @@ static int32_t CheckRsaBufferSize(uint32_t u32OpMode, uint32_t u32BufSize, uint3
   *         - \ref RSA_NOT_KS    No use key store function
   *         - \ref RSA_USE_KS    Use key store function
   * @return  0    Success.
-  * @return  -1   The value of pointer of RSA buffer struct is null.
+  * @return  -1   The value of pointer of RSA buffer struct is NULL.
   */
 int32_t RSA_Open(CRYPTO_T *crypto, uint32_t u32OpMode, uint32_t u32KeySize, \
-                 void *psRSA_Buf, uint32_t u32BufSize, uint32_t u32UseKS)
+                 const void *psRSA_Buf, uint32_t u32BufSize, uint32_t u32UseKS)
 {
-    if (psRSA_Buf == 0)
+    if (psRSA_Buf == (void *)NULL)
     {
         return (-1);
     }
@@ -3287,7 +3238,7 @@ int32_t RSA_Open(CRYPTO_T *crypto, uint32_t u32OpMode, uint32_t u32KeySize, \
     }
 
     s_u32RsaOpMode = u32OpMode;
-    s_pRSABuf = psRSA_Buf;
+    s_u32RSABufAddr = (uintptr_t)psRSA_Buf;
     crypto->RSA_CTL = (u32OpMode) | (u32KeySize << CRYPTO_RSA_CTL_KEYLENG_Pos);
     return 0;
 }
@@ -3296,17 +3247,17 @@ int32_t RSA_Open(CRYPTO_T *crypto, uint32_t u32OpMode, uint32_t u32KeySize, \
   * @param[in]  crypto        The pointer of CRYPTO module
   * @param[in]  Key         The private or public key.
   * @return  0    Success.
-  * @return  -1   The value of pointer of RSA buffer struct is null.
+  * @return  -1   The value of pointer of RSA buffer struct is NULL.
   */
 int32_t RSA_SetKey(CRYPTO_T *crypto, char *Key)
 {
-    if (s_pRSABuf == 0)
+    if (s_u32RSABufAddr == 0UL)
     {
         return (-1);
     }
 
-    Hex2Reg(Key, ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaE);
-    crypto->RSA_SADDR[2] = (uint32_t) & ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaE; /* the public key or private key */
+    Hex2Reg(Key, RSA_BufWordPtr(offsetof(RSA_BUF_NORMAL_T, au32RsaE)));
+    crypto->RSA_SADDR[2] = RSA_BufAddr(offsetof(RSA_BUF_NORMAL_T, au32RsaE)); /* the public key or private key */
     return 0;
 }
 /**
@@ -3317,61 +3268,65 @@ int32_t RSA_SetKey(CRYPTO_T *crypto, char *Key)
   * @param[in]  P     The factor of modulus operation(P) for CRT/SCAP mode
   * @param[in]  Q     The factor of modulus operation(Q) for CRT/SCAP mode
   * @return  0    Success.
-  * @return  -1   The value of pointer of RSA buffer struct is null.
+  * @return  -1   The value of pointer of RSA buffer struct is NULL.
   */
 int32_t RSA_SetDMATransfer(CRYPTO_T *crypto, char *Src, char *n, char *P, char *Q)
 {
-    if (s_pRSABuf == 0)
+    if (s_u32RSABufAddr == 0UL)
     {
         return (-1);
     }
 
-    Hex2Reg(Src, ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaM);
-    Hex2Reg(n, ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaN);
+    Hex2Reg(Src, RSA_BufWordPtr(offsetof(RSA_BUF_NORMAL_T, au32RsaM)));
+    Hex2Reg(n, RSA_BufWordPtr(offsetof(RSA_BUF_NORMAL_T, au32RsaN)));
     /* Assign the data to DMA */
-    crypto->RSA_SADDR[0] = (uint32_t) & ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaM; /* plaintext / encrypt data */
-    crypto->RSA_SADDR[1] = (uint32_t) & ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaN; /* the base of modulus operation */
-    crypto->RSA_DADDR    = (uint32_t) & ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaOutput; /* encrypt data / decrypt data */
+    crypto->RSA_SADDR[0] = RSA_BufAddr(offsetof(RSA_BUF_NORMAL_T, au32RsaM)); /* plaintext / encrypt data */
+    crypto->RSA_SADDR[1] = RSA_BufAddr(offsetof(RSA_BUF_NORMAL_T, au32RsaN)); /* the base of modulus operation */
+    crypto->RSA_DADDR    = RSA_BufAddr(offsetof(RSA_BUF_NORMAL_T, au32RsaOutput)); /* encrypt data / decrypt data */
 
     if ((s_u32RsaOpMode & CRYPTO_RSA_CTL_CRT_Msk) && (s_u32RsaOpMode & CRYPTO_RSA_CTL_SCAP_Msk))
     {
         /* For RSA CRT/SCAP mode, two primes of private key */
-        Hex2Reg(P, ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaP);
-        Hex2Reg(Q, ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaQ);
-        crypto->RSA_SADDR[3] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaP; /* prime P */
-        crypto->RSA_SADDR[4] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaQ; /* prime Q */
-        crypto->RSA_MADDR[0] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaTmpCp; /* for storing the intermediate temporary value(Cp) */
-        crypto->RSA_MADDR[1] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaTmpCq; /* for storing the intermediate temporary value(Cq) */
-        crypto->RSA_MADDR[2] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaTmpDp; /* for storing the intermediate temporary value(Dp) */
-        crypto->RSA_MADDR[3] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaTmpDq; /* for storing the intermediate temporary value(Dq) */
-        crypto->RSA_MADDR[4] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaTmpRp; /* for storing the intermediate temporary value(Rp) */
-        crypto->RSA_MADDR[5] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaTmpRq; /* for storing the intermediate temporary value(Rq) */
+        Hex2Reg(P, RSA_BufWordPtr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaP)));
+        Hex2Reg(Q, RSA_BufWordPtr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaQ)));
+        crypto->RSA_SADDR[3] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaP)); /* prime P */
+        crypto->RSA_SADDR[4] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaQ)); /* prime Q */
+        crypto->RSA_MADDR[0] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaTmpCp)); /* for storing the intermediate temporary value(Cp) */
+        crypto->RSA_MADDR[1] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaTmpCq)); /* for storing the intermediate temporary value(Cq) */
+        crypto->RSA_MADDR[2] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaTmpDp)); /* for storing the intermediate temporary value(Dp) */
+        crypto->RSA_MADDR[3] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaTmpDq)); /* for storing the intermediate temporary value(Dq) */
+        crypto->RSA_MADDR[4] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaTmpRp)); /* for storing the intermediate temporary value(Rp) */
+        crypto->RSA_MADDR[5] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaTmpRq)); /* for storing the intermediate temporary value(Rq) */
         /* For SCAP mode to store the intermediate temporary value(blind key) */
-        crypto->RSA_MADDR[6] = (uint32_t) & ((RSA_BUF_CRT_SCAP_T *)s_pRSABuf)->au32RsaTmpBlindKey;
+        crypto->RSA_MADDR[6] = RSA_BufAddr(offsetof(RSA_BUF_CRT_SCAP_T, au32RsaTmpBlindKey));
     }
     else if (s_u32RsaOpMode & CRYPTO_RSA_CTL_CRT_Msk)
     {
         /* For RSA CRT/SCAP mode, two primes of private key */
-        Hex2Reg(P, ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaP);
-        Hex2Reg(Q, ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaQ);
-        crypto->RSA_SADDR[3] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaP; /* prime P */
-        crypto->RSA_SADDR[4] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaQ; /* prime Q */
-        crypto->RSA_MADDR[0] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaTmpCp; /* for storing the intermediate temporary value(Cp) */
-        crypto->RSA_MADDR[1] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaTmpCq; /* for storing the intermediate temporary value(Cq) */
-        crypto->RSA_MADDR[2] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaTmpDp; /* for storing the intermediate temporary value(Dp) */
-        crypto->RSA_MADDR[3] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaTmpDq; /* for storing the intermediate temporary value(Dq) */
-        crypto->RSA_MADDR[4] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaTmpRp; /* for storing the intermediate temporary value(Rp) */
-        crypto->RSA_MADDR[5] = (uint32_t) & ((RSA_BUF_CRT_T *)s_pRSABuf)->au32RsaTmpRq; /* for storing the intermediate temporary value(Rq) */
+        Hex2Reg(P, RSA_BufWordPtr(offsetof(RSA_BUF_CRT_T, au32RsaP)));
+        Hex2Reg(Q, RSA_BufWordPtr(offsetof(RSA_BUF_CRT_T, au32RsaQ)));
+        crypto->RSA_SADDR[3] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaP)); /* prime P */
+        crypto->RSA_SADDR[4] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaQ)); /* prime Q */
+        crypto->RSA_MADDR[0] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaTmpCp)); /* for storing the intermediate temporary value(Cp) */
+        crypto->RSA_MADDR[1] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaTmpCq)); /* for storing the intermediate temporary value(Cq) */
+        crypto->RSA_MADDR[2] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaTmpDp)); /* for storing the intermediate temporary value(Dp) */
+        crypto->RSA_MADDR[3] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaTmpDq)); /* for storing the intermediate temporary value(Dq) */
+        crypto->RSA_MADDR[4] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaTmpRp)); /* for storing the intermediate temporary value(Rp) */
+        crypto->RSA_MADDR[5] = RSA_BufAddr(offsetof(RSA_BUF_CRT_T, au32RsaTmpRq)); /* for storing the intermediate temporary value(Rq) */
     }
     else if (s_u32RsaOpMode & CRYPTO_RSA_CTL_SCAP_Msk)
     {
         /* For RSA CRT/SCAP mode, two primes of private key */
-        Hex2Reg(P, ((RSA_BUF_SCAP_T *)s_pRSABuf)->au32RsaP);
-        Hex2Reg(Q, ((RSA_BUF_SCAP_T *)s_pRSABuf)->au32RsaQ);
-        crypto->RSA_SADDR[3] = (uint32_t) & ((RSA_BUF_SCAP_T *)s_pRSABuf)->au32RsaP; /* prime P */
-        crypto->RSA_SADDR[4] = (uint32_t) & ((RSA_BUF_SCAP_T *)s_pRSABuf)->au32RsaQ; /* prime Q */
+        Hex2Reg(P, RSA_BufWordPtr(offsetof(RSA_BUF_SCAP_T, au32RsaP)));
+        Hex2Reg(Q, RSA_BufWordPtr(offsetof(RSA_BUF_SCAP_T, au32RsaQ)));
+        crypto->RSA_SADDR[3] = RSA_BufAddr(offsetof(RSA_BUF_SCAP_T, au32RsaP)); /* prime P */
+        crypto->RSA_SADDR[4] = RSA_BufAddr(offsetof(RSA_BUF_SCAP_T, au32RsaQ)); /* prime Q */
         /* For SCAP mode to store the intermediate temporary value(blind key) */
-        crypto->RSA_MADDR[6] = (uint32_t) & ((RSA_BUF_SCAP_T *)s_pRSABuf)->au32RsaTmpBlindKey;
+        crypto->RSA_MADDR[6] = RSA_BufAddr(offsetof(RSA_BUF_SCAP_T, au32RsaTmpBlindKey));
+    }
+    else
+    {
+        /* No extra DMA buffers are required for normal RSA mode. */
     }
 
     return 0;
@@ -3390,19 +3345,19 @@ void RSA_Start(CRYPTO_T *crypto)
   * @param[in]   crypto       The pointer of CRYPTO module
   * @param[out]  Output     The RSA operation output data.
   * @return  0    Success.
-  * @return  -1   The value of pointer of RSA buffer struct is null.
+  * @return  -1   The value of pointer of RSA buffer struct is NULL.
   */
-int32_t RSA_Read(CRYPTO_T *crypto, char *Output)
+int32_t RSA_Read(const CRYPTO_T *crypto, char *Output)
 {
-    if (s_pRSABuf == 0)
+    if (s_u32RSABufAddr == 0UL)
     {
         return (-1);
     }
 
-    uint32_t au32CntTbl[4] = {256, 512, 768, 1024}; /* count is key length divided by 4 */
+    const uint32_t au32CntTbl[4] = {256, 512, 768, 1024}; /* count is key length divided by 4 */
     uint32_t u32CntIdx = 0;
     u32CntIdx = (crypto->RSA_CTL & CRYPTO_RSA_CTL_KEYLENG_Msk) >> CRYPTO_RSA_CTL_KEYLENG_Pos;
-    Reg2Hex((int32_t)au32CntTbl[u32CntIdx], ((RSA_BUF_NORMAL_T *)s_pRSABuf)->au32RsaOutput, Output);
+    Reg2Hex((int32_t)au32CntTbl[u32CntIdx], RSA_BufWordPtr(offsetof(RSA_BUF_NORMAL_T, au32RsaOutput)), Output);
     return 0;
 }
 /**
@@ -3415,7 +3370,7 @@ int32_t RSA_Read(CRYPTO_T *crypto, char *Output)
                             \ref KS_OTP
   * @param[in]  u32BlindKeyNum  The number of blind key in SRAM of key store for SCAP mode. This key is un-readable.
   * @return  0    Success.
-  * @return  -1   The value of pointer of RSA buffer struct is null.
+  * @return  -1   The value of pointer of RSA buffer struct is NULL.
   */
 int32_t RSA_SetKey_KS(CRYPTO_T *crypto, uint32_t u32KeyNum, uint32_t u32KSMemType, uint32_t u32BlindKeyNum)
 {
@@ -3444,24 +3399,24 @@ int32_t RSA_SetKey_KS(CRYPTO_T *crypto, uint32_t u32KeyNum, uint32_t u32KSMemTyp
   * @param[in]  u32RpNum        The number of Rp in SRAM of key store for CRT mode
   * @param[in]  u32RqNum        The number of Rq in SRAM of key store for CRT mode
   * @return  0    Success.
-  * @return  -1   The value of pointer of RSA buffer struct is null.
+  * @return  -1   The value of pointer of RSA buffer struct is NULL.
   * @note P, Q, Dp, Dq are equal to half key length. Cp, Cq, Rp, Rq, Blind key are equal to key length.
   */
 int32_t RSA_SetDMATransfer_KS(CRYPTO_T *crypto, char *Src, char *n, uint32_t u32PNum,
                               uint32_t u32QNum, uint32_t u32CpNum, uint32_t u32CqNum, uint32_t u32DpNum,
                               uint32_t u32DqNum, uint32_t u32RpNum, uint32_t u32RqNum)
 {
-    if (s_pRSABuf == 0)
+    if (s_u32RSABufAddr == 0UL)
     {
         return (-1);
     }
 
-    Hex2Reg(Src, ((RSA_BUF_KS_T *)s_pRSABuf)->au32RsaM);
-    Hex2Reg(n, ((RSA_BUF_KS_T *)s_pRSABuf)->au32RsaN);
+    Hex2Reg(Src, RSA_BufWordPtr(offsetof(RSA_BUF_KS_T, au32RsaM)));
+    Hex2Reg(n, RSA_BufWordPtr(offsetof(RSA_BUF_KS_T, au32RsaN)));
     /* Assign the data to DMA */
-    crypto->RSA_SADDR[0] = (uint32_t) & ((RSA_BUF_KS_T *)s_pRSABuf)->au32RsaM; /* plaintext / encrypt data */
-    crypto->RSA_SADDR[1] = (uint32_t) & ((RSA_BUF_KS_T *)s_pRSABuf)->au32RsaN; /* the base of modulus operation */
-    crypto->RSA_DADDR    = (uint32_t) & ((RSA_BUF_KS_T *)s_pRSABuf)->au32RsaOutput; /* encrypt data / decrypt data */
+    crypto->RSA_SADDR[0] = RSA_BufAddr(offsetof(RSA_BUF_KS_T, au32RsaM)); /* plaintext / encrypt data */
+    crypto->RSA_SADDR[1] = RSA_BufAddr(offsetof(RSA_BUF_KS_T, au32RsaN)); /* the base of modulus operation */
+    crypto->RSA_DADDR    = RSA_BufAddr(offsetof(RSA_BUF_KS_T, au32RsaOutput)); /* encrypt data / decrypt data */
 
     if ((s_u32RsaOpMode & CRYPTO_RSA_CTL_CRT_Msk) || (s_u32RsaOpMode & CRYPTO_RSA_CTL_SCAP_Msk))
     {

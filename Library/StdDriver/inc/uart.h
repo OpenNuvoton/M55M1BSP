@@ -401,8 +401,8 @@ extern "C"
 /* static inline functions                                                                                 */
 /*---------------------------------------------------------------------------------------------------------*/
 
-static __INLINE void UART_CLEAR_RTS(UART_T *uart);
-static __INLINE void UART_SET_RTS(UART_T *uart);
+__STATIC_INLINE void UART_CLEAR_RTS(UART_T *uart);
+__STATIC_INLINE void UART_SET_RTS(UART_T *uart);
 __STATIC_INLINE void UART_RESET_RXFIFO(UART_T *uart);
 __STATIC_INLINE void UART_RESET_TXFIFO(UART_T *uart);
 

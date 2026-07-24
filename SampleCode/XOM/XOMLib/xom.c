@@ -1,11 +1,11 @@
 /**************************************************************************//**
  * @file     main.c
  * @version  V3.00
- * @brief    XOM library  --  Add function
+ * @brief    XOM library  --  Custom XOM function
  *
  * SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2019 Nuvoton Technology Corp. All rights reserved.
-*****************************************************************************/
+ * @copyright (C) 2025 Nuvoton Technology Corp. All rights reserved.
+ *****************************************************************************/
 
 #include <stdio.h>
 #include "NuMicro.h"
@@ -60,3 +60,5 @@ int32_t XOM_Sum(int32_t *pi32buf, int32_t i32n)
 
     return i32Sum;
 }
+
+/*** (C) COPYRIGHT 2025 Nuvoton Technology Corp. ***/

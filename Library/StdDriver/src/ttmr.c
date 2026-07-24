@@ -41,10 +41,13 @@
 uint32_t TTMR_Open(TTMR_T *ttmr, uint32_t u32Mode, uint32_t u32Freq)
 {
     uint32_t u32Clk = TTMR_GetModuleClock(ttmr);
-    uint32_t u32Cmpr = 0UL, u32Prescale = 0UL;
+    uint32_t u32Cmpr = 0UL;
+    uint32_t u32Prescale = 0UL;
 
-    if (u32Freq == 0)
-        return 0 ;
+    if (u32Freq == 0UL)
+    {
+        return 0UL;
+    }
 
     /* Fastest possible ttmr working freq is (u32Clk / 2). While cmpr = 2, prescaler = 0. */
     if (u32Freq > (u32Clk / 2UL))
@@ -57,7 +60,9 @@ uint32_t TTMR_Open(TTMR_T *ttmr, uint32_t u32Mode, uint32_t u32Freq)
         u32Prescale = (u32Cmpr >> 24);  /* for 24 bits CMPDAT */
 
         if (u32Prescale > 0UL)
+        {
             u32Cmpr = u32Cmpr / (u32Prescale + 1UL);
+        }
     }
 
     ttmr->CTL = (u32Mode | u32Prescale);
@@ -98,50 +103,57 @@ void TTMR_Close(TTMR_T *ttmr)
 int32_t TTMR_Delay(TTMR_T *ttmr, uint32_t u32Usec)
 {
     uint32_t u32Clk = TTMR_GetModuleClock(ttmr);
-    uint32_t u32Prescale = 0UL, u32Delay;
-    uint32_t u32Cmpr, u32Cntr, u32NsecPerTick, i = 0UL;
+    uint32_t u32Prescale = 0UL;
+    uint32_t u32Delay;
+    uint32_t u32Cmpr;
+    uint32_t u32Cntr;
+    uint32_t i = 0UL;
+    uint32_t u32UsecLocal = u32Usec;
 
     /* Clear current ttmr configuration */
     ttmr->CTL = 0UL;
 
     if (u32Clk <= 1000000UL)  /* min delay is 1000 us if ttmr clock source is <= 1 MHz */
     {
-        if (u32Usec < 1000UL)
+        if (u32UsecLocal < 1000UL)
         {
-            u32Usec = 1000UL;
+            u32UsecLocal = 1000UL;
         }
 
-        if (u32Usec > 1000000UL)
+        if (u32UsecLocal > 1000000UL)
         {
-            u32Usec = 1000000UL;
+            u32UsecLocal = 1000000UL;
         }
     }
     else
     {
-        if (u32Usec < 100UL)
+        if (u32UsecLocal < 100UL)
         {
-            u32Usec = 100UL;
+            u32UsecLocal = 100UL;
         }
 
-        if (u32Usec > 1000000UL)
+        if (u32UsecLocal > 1000000UL)
         {
-            u32Usec = 1000000UL;
+            u32UsecLocal = 1000000UL;
         }
     }
 
     if (u32Clk <= 1000000UL)
     {
+        uint32_t u32NsecPerTick;
         u32Prescale = 0UL;
         u32NsecPerTick = 1000000000UL / u32Clk;
-        u32Cmpr = (u32Usec * 1000UL) / u32NsecPerTick;
+        u32Cmpr = (u32UsecLocal * 1000UL) / u32NsecPerTick;
     }
     else
     {
-        u32Cmpr = u32Usec * (u32Clk / 1000000UL);
+        u32Cmpr = u32UsecLocal * (u32Clk / 1000000UL);
         u32Prescale = (u32Cmpr >> 24);  /* for 24 bits CMPDAT */
 
         if (u32Prescale > 0UL)
+        {
             u32Cmpr = u32Cmpr / (u32Prescale + 1UL);
+        }
     }
 
     ttmr->CMP = u32Cmpr;
@@ -151,16 +163,15 @@ int32_t TTMR_Delay(TTMR_T *ttmr, uint32_t u32Usec)
        And the while loop below return immediately, so put a tiny delay here allowing TTMR start counting and raise active flag. */
     for (u32Delay = (SystemCoreClock / u32Clk) + 1UL; u32Delay > 0UL; u32Delay--)
     {
-        __NOP();
     }
 
     /* Add a bail out counter here in case timer clock source is disabled accidentally.
        Prescale counter reset every ECLK * (prescale value + 1).
        The u32Delay here is to make sure timer counter value changed when prescale counter reset */
-    u32Delay = (SystemCoreClock / TTMR_GetModuleClock(ttmr)) * (u32Prescale + 1);
+    u32Delay = (SystemCoreClock / TTMR_GetModuleClock(ttmr)) * (u32Prescale + 1UL);
     u32Cntr = ttmr->CNT;
 
-    while (ttmr->CTL & TTMR_CTL_ACTSTS_Msk)
+    while ((ttmr->CTL & TTMR_CTL_ACTSTS_Msk) != 0UL)
     {
         /* Bailed out if timer stop counting e.g. Some interrupt handler close timer clock source. */
         if (u32Cntr == ttmr->CNT)
@@ -190,9 +201,10 @@ int32_t TTMR_Delay(TTMR_T *ttmr, uint32_t u32Usec)
   * @details    This API is used to get the TTMR clock frequency.
   * @note       This API cannot return correct clock rate if TTMR source is from external clock input.
   */
-uint32_t TTMR_GetModuleClock(TTMR_T *ttmr)
+uint32_t TTMR_GetModuleClock(const TTMR_T *ttmr)
 {
-    uint32_t u32Src = 0UL, u32Clk;
+    uint32_t u32Src = 0UL;
+    uint32_t u32Clk = 0UL;
     const uint32_t au32Clk[] = {0UL, __LXT, __LIRC, __MIRC, __HIRC};
 
     if (ttmr == TTMR0)
@@ -202,6 +214,10 @@ uint32_t TTMR_GetModuleClock(TTMR_T *ttmr)
     else if (ttmr == TTMR1)
     {
         u32Src = (CLK->TTMRSEL & CLK_TTMRSEL_TTMR1SEL_Msk) >> CLK_TTMRSEL_TTMR1SEL_Pos;
+    }
+    else
+    {
+        /* keep default source index for unexpected instance */
     }
 
     if (u32Src == 0UL)
@@ -249,14 +265,13 @@ int32_t TTMR_ResetCounter(TTMR_T *ttmr)
 
     ttmr->CNT = 0UL;
     /* Takes 2~3 ECLKs to reset timer counter */
-    u32Delay = (SystemCoreClock / TTMR_GetModuleClock(ttmr)) * 3;
+    u32Delay = (SystemCoreClock / TTMR_GetModuleClock(ttmr)) * 3UL;
 
-    while (((ttmr->CNT & TTMR_CNT_RSTACT_Msk) == TTMR_CNT_RSTACT_Msk) && (--u32Delay))
+    while ((((ttmr->CNT & TTMR_CNT_RSTACT_Msk) == TTMR_CNT_RSTACT_Msk) && ((--u32Delay) > 0UL)))
     {
-        __NOP();
     }
 
-    return ((u32Delay > 0) ? TTMR_OK : TTMR_ERR_TIMEOUT);
+    return ((u32Delay > 0UL) ? TTMR_OK : TTMR_ERR_TIMEOUT);
 }
 
 /** @} end of group TTMR_EXPORTED_FUNCTIONS */

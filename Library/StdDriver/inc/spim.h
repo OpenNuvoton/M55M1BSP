@@ -789,7 +789,7 @@ E_MFGID;
 #define SPIM_SET_DMADMM_ACTSCLKT(spim, x)                                   \
     do {                                                                    \
         (spim)->DMMCTL = (((spim)->DMMCTL & ~SPIM_DMMCTL_ACTSCLKT_Msk) |    \
-                          ((((x) & 0xFUL) << SPIM_DMMCTL_ACTSCLKT_Pos) |    \
+                          ((((x) & 0xFFUL) << SPIM_DMMCTL_ACTSCLKT_Pos) |   \
                            SPIM_DMMCTL_UACTSCLK_Msk));                      \
     }while(0)
 
@@ -811,7 +811,7 @@ E_MFGID;
 #define SPIM_SET_DMM_DESELTIM(spim, x)                                      \
     do {                                                                    \
         (spim)->DMMCTL = (((spim)->DMMCTL & ~SPIM_DMMCTL_DESELTIM_Msk) |    \
-                          (((x) & 0x1FUL) << SPIM_DMMCTL_DESELTIM_Pos));    \
+                          (((x) & 0xFFUL) << SPIM_DMMCTL_DESELTIM_Pos));    \
     }while(0)
 
 /**
@@ -2000,7 +2000,7 @@ void SPIM_IO_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint3
                   uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat, uint32_t u32NDummy);
 
 void SPIM_DMA_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NTx, uint8_t *pu8TxBuf, uint32_t u8WrCmd);
-int32_t SPIM_DMA_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NRx, uint8_t *pu8RxBuf, uint8_t u8RdCmd, uint32_t u32IsSync);
+int32_t SPIM_DMA_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NRx, const uint8_t *pu8RxBuf, uint8_t u8RdCmd, uint32_t u32IsSync);
 
 void SPIM_EnterDirectMapMode(SPIM_T *spim, uint32_t u32Is4ByteAddr, uint8_t u8RdCmd, uint32_t u32IdleIntvl);
 void SPIM_ExitDirectMapMode(SPIM_T *spim);

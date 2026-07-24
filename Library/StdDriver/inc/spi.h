@@ -65,12 +65,12 @@ extern "C"
 #define SPI_SLVBENUM_MASK                 (0x01U)                           /*!< Effective bit number of uncompleted RX data status mask \hideinitializer */
 
 /* SPI Clock Source */
-#define SPI_CLKSEL_HXT                    (0x0UL)
-#define SPI_CLKSEL_APLL1_DIV2             (0x1UL)
-#define SPI_CLKSEL_APLL0_DIV2             (0x2UL)
-#define SPI_CLKSEL_PCLK2                  (0x3UL)
-#define SPI_CLKSEL_HIRC                   (0x4UL)
-#define SPI_CLKSEL_HIRC48M                (0x5UL)
+#define SPI_CLKSRC_HXT                    (0x0UL)
+#define SPI_CLKSRC_PLL1                   (0x1UL)
+#define SPI_CLKSRC_PLL0                   (0x2UL)
+#define SPI_CLKSRC_PCLK                   (0x3UL)
+#define SPI_CLKSRC_HIRC                   (0x4UL)
+#define SPI_CLKSRC_HIRC48M                (0x5UL)
 
 /* SPI Run Time Status */
 #define SPI_OK                            0
@@ -143,7 +143,7 @@ extern "C"
   * @details    Write 1 to UNITIF bit of SPI_STATUS register to clear the unit transfer interrupt flag.
   * \hideinitializer
   */
-#define SPI_CLR_UNIT_TRANS_INT_FLAG(spi)    ((spi)->STATUS |= SPI_STATUS_UNITIF_Msk)
+#define SPI_CLR_UNIT_TRANS_INT_FLAG(spi)    ((spi)->STATUS = SPI_STATUS_UNITIF_Msk)
 
 /**
   * @brief      Disable Slave 3-wire mode.
@@ -287,9 +287,20 @@ extern "C"
   * @details    Disable automatic slave selection function and set SPIx_SS pin to high state.
   * \hideinitializer
   */
-#define SPI_SET_SS_HIGH(spi)    \
-    ((spi)->SSCTL = ((spi)->SSCTL & ~(SPI_SSCTL_AUTOSS_Msk)) | \
-                    (SPI_SSCTL_SSACTPOL_Msk | SPI_SSCTL_SS_Msk))
+static inline void SPI_SET_SS_HIGH(SPI_T *spi)
+{
+    uint32_t u32SSCtl = spi->SSCTL & ~SPI_SSCTL_AUTOSS_Msk;
+    uint32_t u32ActivePol = u32SSCtl & SPI_SSCTL_SSACTPOL_Msk;
+
+    if (u32ActivePol != 0UL)
+    {
+        spi->SSCTL = u32SSCtl | SPI_SSCTL_SS_Msk;
+    }
+    else
+    {
+        spi->SSCTL = u32SSCtl & ~SPI_SSCTL_SS_Msk;
+    }
+}
 
 /**
   * @brief      Set SPIx_SS pin to low state.
@@ -298,9 +309,20 @@ extern "C"
   * @details    Disable automatic slave selection function and set SPIx_SS pin to low state.
   * \hideinitializer
   */
-#define SPI_SET_SS_LOW(spi) \
-    ((spi)->SSCTL = ((spi)->SSCTL & ~(SPI_SSCTL_AUTOSS_Msk | SPI_SSCTL_SSACTPOL_Msk)) | \
-                    (SPI_SSCTL_SS_Msk))
+static inline void SPI_SET_SS_LOW(SPI_T *spi)
+{
+    uint32_t u32SSCtl = spi->SSCTL & ~SPI_SSCTL_AUTOSS_Msk;
+    uint32_t u32ActivePol = u32SSCtl & SPI_SSCTL_SSACTPOL_Msk;
+
+    if (u32ActivePol != 0UL)
+    {
+        spi->SSCTL = u32SSCtl & ~SPI_SSCTL_SS_Msk;
+    }
+    else
+    {
+        spi->SSCTL = u32SSCtl | SPI_SSCTL_SS_Msk;
+    }
+}
 
 /**
   * @brief      Enable Byte Reorder function.
@@ -329,8 +351,11 @@ extern "C"
   *             The length of suspend interval is ((u32SuspCycle + 0.5) * the length of one SPI bus clock cycle).
   * \hideinitializer
   */
-#define SPI_SET_SUSPEND_CYCLE(spi, u32SuspCycle)    \
-    ((spi)->CTL = ((spi)->CTL & ~(SPI_CTL_SUSPITV_Msk)) | ((u32SuspCycle) << SPI_CTL_SUSPITV_Pos))
+static inline void SPI_SET_SUSPEND_CYCLE(SPI_T *spi, uint32_t u32SuspCycle)
+{
+    spi->CTL = (spi->CTL & ~SPI_CTL_SUSPITV_Msk) |
+               ((u32SuspCycle & 0xFUL) << SPI_CTL_SUSPITV_Pos);
+}
 
 /**
   * @brief      Set the SPI transfer sequence with LSB first.
@@ -358,9 +383,26 @@ extern "C"
   * @details    The data width can be 8 ~ 32 bits.
   * \hideinitializer
   */
-#define SPI_SET_DATA_WIDTH(spi, u32Width)               \
-    ((spi)->CTL = ((spi)->CTL & ~(SPI_CTL_DWIDTH_Msk)) |    \
-                  (((u32Width) & 0x1F) << SPI_CTL_DWIDTH_Pos))
+static inline void SPI_SET_DATA_WIDTH(SPI_T *spi, uint32_t u32Width)
+{
+    uint32_t u32WidthTmp = u32Width;
+
+    if ((u32WidthTmp > 0UL) && (u32WidthTmp < 4UL))
+    {
+        u32WidthTmp = 4UL;
+    }
+    else if (u32WidthTmp >= 32UL)
+    {
+        u32WidthTmp = 0UL;
+    }
+    else
+    {
+        u32WidthTmp &= 0x1FUL;
+    }
+
+    spi->CTL = (spi->CTL & ~SPI_CTL_DWIDTH_Msk) |
+               (u32WidthTmp << SPI_CTL_DWIDTH_Pos);
+}
 
 /**
   * @brief      Get the SPI busy state.
@@ -391,9 +433,9 @@ extern "C"
 #define SPI_DISABLE(spi)    ((spi)->CTL &= ~(SPI_CTL_SPIEN_Msk))
 
 /* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
-__STATIC_INLINE void SPII2S_ENABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask);
-__STATIC_INLINE void SPII2S_DISABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask);
-__STATIC_INLINE void SPII2S_SET_MONO_RX_CHANNEL(SPI_T *i2s, uint32_t u32Ch);
+static inline void SPII2S_ENABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask);
+static inline void SPII2S_DISABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask);
+static inline void SPII2S_SET_MONO_RX_CHANNEL(SPI_T *i2s, uint32_t u32Ch);
 
 /**
   * @brief  Enable zero cross detection function.
@@ -403,7 +445,7 @@ __STATIC_INLINE void SPII2S_SET_MONO_RX_CHANNEL(SPI_T *i2s, uint32_t u32Ch);
   *                    - \ref SPII2S_LEFT
   * @details This function will set RZCEN or LZCEN bit of SPI_I2SCTL register to enable zero cross detection function.
   */
-__STATIC_INLINE void SPII2S_ENABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask)
+static inline void SPII2S_ENABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask)
 {
     if (u32ChMask == SPII2S_RIGHT)
     {
@@ -423,7 +465,7 @@ __STATIC_INLINE void SPII2S_ENABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask)
   *                    - \ref SPII2S_LEFT
   * @details This function will clear RZCEN or LZCEN bit of SPI_I2SCTL register to disable zero cross detection function.
   */
-__STATIC_INLINE void SPII2S_DISABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask)
+static inline void SPII2S_DISABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask)
 {
     if (u32ChMask == SPII2S_RIGHT)
     {
@@ -530,15 +572,15 @@ __STATIC_INLINE void SPII2S_DISABLE_TX_ZCD(SPI_T *i2s, uint32_t u32ChMask)
 #define SPII2S_CLR_RX_FIFO(i2s) ((i2s)->FIFOCTL |= SPI_FIFOCTL_RXFBCLR_Msk)
 
 /**
-  * @brief  This function sets the recording source channel when mono mode is used.
+  * @brief  Set the recording source channel when mono mode is used.
   * @param[in] i2s The pointer of the specified I2S module.
-  * @param[in] u32Ch left or right channel. Valid values are:
-  *                - \ref SPII2S_MONO_LEFT
-  *                - \ref SPII2S_MONO_RIGHT
-  * @details This function selects the recording source channel of monaural mode.
+  * @param[in] u32Ch The recording source channel. Valid values are
+  *                 - \ref SPII2S_MONO_LEFT
+  *                 - \ref SPII2S_MONO_RIGHT
+  * @return None.
   * \hideinitializer
   */
-__STATIC_INLINE void SPII2S_SET_MONO_RX_CHANNEL(SPI_T *i2s, uint32_t u32Ch)
+static inline void SPII2S_SET_MONO_RX_CHANNEL(SPI_T *i2s, uint32_t u32Ch)
 {
     if (u32Ch == SPII2S_MONO_LEFT)
     {

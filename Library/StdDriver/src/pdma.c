@@ -37,7 +37,7 @@ void PDMA_Open(PDMA_T *pdma, uint32_t u32Mask)
 
     for (i = 0UL; i < PDMA_CH_MAX; i++)
     {
-        if ((1 << i) & u32Mask)
+        if ((1UL << i) & u32Mask)
         {
             pdma->DSCT[i].CTL = 0UL;
             u32ChSelect[i] = PDMA_MEM;
@@ -208,67 +208,67 @@ void PDMA_SetTransferMode(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32Peripheral, 
 
     switch (u32Ch)
     {
-        case 0ul:
+        case 0UL:
             pdma->REQSEL0_3 = (pdma->REQSEL0_3 & ~PDMA_REQSEL0_3_REQSRC0_Msk) | u32Peripheral;
             break;
 
-        case 1ul:
+        case 1UL:
             pdma->REQSEL0_3 = (pdma->REQSEL0_3 & ~PDMA_REQSEL0_3_REQSRC1_Msk) | (u32Peripheral << PDMA_REQSEL0_3_REQSRC1_Pos);
             break;
 
-        case 2ul:
+        case 2UL:
             pdma->REQSEL0_3 = (pdma->REQSEL0_3 & ~PDMA_REQSEL0_3_REQSRC2_Msk) | (u32Peripheral << PDMA_REQSEL0_3_REQSRC2_Pos);
             break;
 
-        case 3ul:
+        case 3UL:
             pdma->REQSEL0_3 = (pdma->REQSEL0_3 & ~PDMA_REQSEL0_3_REQSRC3_Msk) | (u32Peripheral << PDMA_REQSEL0_3_REQSRC3_Pos);
             break;
 
-        case 4ul:
+        case 4UL:
             pdma->REQSEL4_7 = (pdma->REQSEL4_7 & ~PDMA_REQSEL4_7_REQSRC4_Msk) | u32Peripheral;
             break;
 
-        case 5ul:
+        case 5UL:
             pdma->REQSEL4_7 = (pdma->REQSEL4_7 & ~PDMA_REQSEL4_7_REQSRC5_Msk) | (u32Peripheral << PDMA_REQSEL4_7_REQSRC5_Pos);
             break;
 
-        case 6ul:
+        case 6UL:
             pdma->REQSEL4_7 = (pdma->REQSEL4_7 & ~PDMA_REQSEL4_7_REQSRC6_Msk) | (u32Peripheral << PDMA_REQSEL4_7_REQSRC6_Pos);
             break;
 
-        case 7ul:
+        case 7UL:
             pdma->REQSEL4_7 = (pdma->REQSEL4_7 & ~PDMA_REQSEL4_7_REQSRC7_Msk) | (u32Peripheral << PDMA_REQSEL4_7_REQSRC7_Pos);
             break;
 
-        case 8ul:
+        case 8UL:
             pdma->REQSEL8_11 = (pdma->REQSEL8_11 & ~PDMA_REQSEL8_11_REQSRC8_Msk) | u32Peripheral;
             break;
 
-        case 9ul:
+        case 9UL:
             pdma->REQSEL8_11 = (pdma->REQSEL8_11 & ~PDMA_REQSEL8_11_REQSRC9_Msk) | (u32Peripheral << PDMA_REQSEL8_11_REQSRC9_Pos);
             break;
 
-        case 10ul:
+        case 10UL:
             pdma->REQSEL8_11 = (pdma->REQSEL8_11 & ~PDMA_REQSEL8_11_REQSRC10_Msk) | (u32Peripheral << PDMA_REQSEL8_11_REQSRC10_Pos);
             break;
 
-        case 11ul:
+        case 11UL:
             pdma->REQSEL8_11 = (pdma->REQSEL8_11 & ~PDMA_REQSEL8_11_REQSRC11_Msk) | (u32Peripheral << PDMA_REQSEL8_11_REQSRC11_Pos);
             break;
 
-        case 12ul:
+        case 12UL:
             pdma->REQSEL12_15 = (pdma->REQSEL12_15 & ~PDMA_REQSEL12_15_REQSRC12_Msk) | u32Peripheral;
             break;
 
-        case 13ul:
+        case 13UL:
             pdma->REQSEL12_15 = (pdma->REQSEL12_15 & ~PDMA_REQSEL12_15_REQSRC13_Msk) | (u32Peripheral << PDMA_REQSEL12_15_REQSRC13_Pos);
             break;
 
-        case 14ul:
+        case 14UL:
             pdma->REQSEL12_15 = (pdma->REQSEL12_15 & ~PDMA_REQSEL12_15_REQSRC14_Msk) | (u32Peripheral << PDMA_REQSEL12_15_REQSRC14_Pos);
             break;
 
-        case 15ul:
+        case 15UL:
             pdma->REQSEL12_15 = (pdma->REQSEL12_15 & ~PDMA_REQSEL12_15_REQSRC15_Msk) | (u32Peripheral << PDMA_REQSEL12_15_REQSRC15_Pos);
             break;
 
@@ -422,9 +422,13 @@ void PDMA_SetTimeOut(PDMA_T *pdma, uint32_t u32Ch, uint32_t u32OnOff, uint32_t u
     }
 
     if (u32OnOff)
-        pdma->TOUTEN |= (1 << u32Ch);
+    {
+        pdma->TOUTEN |= (1UL << u32Ch);
+    }
     else
-        pdma->TOUTEN &= ~(1 << u32Ch);
+    {
+        pdma->TOUTEN &= ~(1UL << u32Ch);
+    }
 }
 
 /**
@@ -441,7 +445,7 @@ void PDMA_Trigger(PDMA_T *pdma, uint32_t u32Ch)
     {
         /* Ensure completion of memory access */
         __DSB();
-        pdma->SWREQ = (1ul << u32Ch);
+        pdma->SWREQ = (1UL << u32Ch);
     }
     else {}
 }

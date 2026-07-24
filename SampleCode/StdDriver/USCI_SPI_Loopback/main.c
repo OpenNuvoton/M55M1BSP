@@ -84,11 +84,27 @@ int main()
 
         while (1)
         {
+            uint32_t u32TimeOutCount = SystemCoreClock;
+
             /* Write to TX register */
             USPI_WRITE_TX(USPI0, g_au32SourceData[u32DataCount]);
 
             /* Check USPI0 busy status */
-            while (USPI_IS_BUSY(USPI0));
+            while (USPI_IS_BUSY(USPI0))
+            {
+                if (u32TimeOutCount == 0U)
+                {
+                    u32Err = 1U;
+                    break;
+                }
+
+                u32TimeOutCount--;
+            }
+
+            if (u32Err != 0U)
+            {
+                break;
+            }
 
             /* Read received data */
             g_au32DestinationData[u32DataCount] = USPI_READ_RX(USPI0);
@@ -175,7 +191,14 @@ void USCI_SPI_Init(void)
 {
     /* Configure USCI_SPI0 as a master, clock idle low, 16-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Set USCI_SPI0 clock rate = 2MHz */
-    USPI_Open(USPI0, USPI_MASTER, USPI_MODE_0, 16, 2000000);
+    if (USPI_Open(USPI0, USPI_MASTER, USPI_MODE_0, 16, 2000000) == 0U)
+    {
+        printf("USPI_Open failed!\n");
+
+        while (1)
+        {
+        }
+    }
 }
 
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

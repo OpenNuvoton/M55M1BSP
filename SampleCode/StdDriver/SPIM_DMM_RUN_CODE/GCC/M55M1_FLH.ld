@@ -55,12 +55,16 @@ __HEAP_SIZE  = 0x00000800;
 /* System memory brief */
 MEMORY
 {
-  ITCM   (rx)  : ORIGIN = 0x00000010, LENGTH = 0x00010000
+  ITCM   (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00010000
   FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x00200000
   DTCM   (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00020000
-  SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00150000
+  SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00130000
+  /* Start address and size of NonCacheable region must be 32 byte alignment */
+  SRAM_NONCACHEABLE (rw) : ORIGIN = (ORIGIN(SRAM) + LENGTH(SRAM)), LENGTH = (0x00150000 - LENGTH(SRAM))
   LPSRAM (rwx) : ORIGIN = 0x20310000, LENGTH = 0x00002000
-  SPIM0  (rwx) : ORIGIN = 0x82000000, LENGTH = 0x00200000
+
+  /* SPIM0 memory region; Read, Write, Execute permissions; 32 MiB */
+  SPIM0 (rwx) : ORIGIN = 0x82000000, LENGTH = 0x00200000
 }
 
 
@@ -102,8 +106,9 @@ SECTIONS
   .text :
   {
     KEEP(*(.vectors))
+    *startup_*.o(.text*)
 
-    *(EXCLUDE_FILE(./User/spim_code.o) .text*)
+    *(.text*)
 
     KEEP(*(.init))
     KEEP(*(.fini))
@@ -122,10 +127,32 @@ SECTIONS
     *(SORT(.dtors.*))
     *(.dtors)
 
-    *(EXCLUDE_FILE(./User/spim_code.o) .rodata*)
+    *(EXCLUDE_FILE(*spim_code.o) .rodata*)
 
     KEEP(*(.eh_frame*))
   } > FLASH
+
+  .rodata : {
+    . = ALIGN(8);
+    *(.rodata*)
+    . = ALIGN(8);
+  } >FLASH
+
+  .rel.dyn : {
+    . = ALIGN(8);
+    __rel_dyn_start = .;
+    *(.rel*)
+    __rel_dyn_end = .;
+    . = ALIGN(8);
+   } > FLASH
+
+   .dynsym : {
+     . = ALIGN(8);
+     __dynsym_start = .;
+     *(.dynsym)
+     __dynsym_end = .;
+     . = ALIGN(8);
+    } > FLASH
 
   .ARM.extab :
   {
@@ -147,6 +174,8 @@ SECTIONS
     LONG ((__bss_end__ - __bss_start__) / 4)
     LONG (__dtcm_zi_start__)
     LONG ((__dtcm_zi_end__ - __dtcm_zi_start__) / 4)
+    LONG (__sram_noncacheable_zi_start__)
+    LONG ((__sram_noncacheable_zi_end__ - __sram_noncacheable_zi_start__) / 4)
     LONG (__lpsram_zi_start__)
     LONG ((__lpsram_zi_end__ - __lpsram_zi_start__) / 4)
     __zero_table_end__ = .;
@@ -171,6 +200,11 @@ SECTIONS
     LONG (__esram_data)
     LONG (__dtcm_init_start__)
     LONG ((__dtcm_init_end__ - __dtcm_init_start__ ) / 4)
+
+    /* Section to be copied - part 4: RW data for SRAM NonCacheable */
+    LONG (__edtcm_init_data)
+    LONG (__sram_noncacheable_init_start__)
+    LONG ((__sram_noncacheable_init_end__ - __sram_noncacheable_init_start__) / 4)
 
     __copy_table_end__ = .;
   } > FLASH
@@ -259,24 +293,34 @@ SECTIONS
   {
     . = ALIGN(4);
     __dtcm_zi_start__ = .;
-    *(.bss.DTCM.ZeroInit)
+    *(.DTCM.ZeroInit)
     . = ALIGN(4);
     __dtcm_zi_end__ = .;
   } > DTCM AT > DTCM
 
   __edtcm_init_data = __esram_data + (__dtcm_init_end__ - __dtcm_init_start__);
 
-  __etext = .;
-
-  . = 0x80000000;
-  __espi_start = .;
-
-  .spim_code : AT (__espi_start)
+  .NonCacheable.Init : AT (__edtcm_init_data)
   {
-    ./User/spim_code.o (.text*)
-    ./User/spim_code.o (.rodata*)
-  } > SPIM0
-    .lpsram (NOLOAD) :
+    . = ALIGN(4);
+    __sram_noncacheable_start__ = .;
+    __sram_noncacheable_init_start__ = .;
+    *(NonCacheable.Init)
+    . = ALIGN(4);
+    __sram_noncacheable_init_end__ = .;
+  } > SRAM_NONCACHEABLE
+
+  .NonCacheable.zi (NOLOAD) :
+  {
+    . = ALIGN(4);
+    __sram_noncacheable_zi_start__ = .;
+    *(.NonCacheable.ZeroInit)
+    . = ALIGN(4);
+    __sram_noncacheable_zi_end__ = .;
+    __sram_noncacheable_end__ = (ORIGIN(SRAM_NONCACHEABLE) + LENGTH(SRAM_NONCACHEABLE));
+  } > SRAM_NONCACHEABLE AT > SRAM_NONCACHEABLE
+
+  .lpsram (NOLOAD) :
   {
     . = ALIGN(4);
     __lpsram_zi_start__ = .;
@@ -284,6 +328,12 @@ SECTIONS
     . = ALIGN(4);
     __lpsram_zi_end__ = .;
   } > LPSRAM AT > LPSRAM
+
+  . = ORIGIN(SPIM0);
+  .spim_code :
+  {
+    *spim_code.o (.rodata*)
+  } > SPIM0
 
   .heap (NOLOAD) :
   {

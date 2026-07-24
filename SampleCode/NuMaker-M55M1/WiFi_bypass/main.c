@@ -6,6 +6,8 @@
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2024 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
+#include <stdio.h>
+
 #include "NuMicro.h"
 
 #define WIFI_PORT       UART8        // Used to connect to Wi-Fi module

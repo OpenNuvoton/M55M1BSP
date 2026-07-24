@@ -99,22 +99,32 @@ void SYS_Init(void)
 
 void QSPI_Init(void)
 {
+    uint32_t u32BusClock;
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init SPI                                                                                                */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Configure QSPI0 */
     /* Enable QSPI0 Quad input mode */
     QSPI_ENABLE_QUAD_INPUT_MODE(QSPI0);
+
     /* Configure QSPI0 as a slave, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Configure QSPI0 as a low level active device. SPI peripheral clock rate = f_PCLK0 */
-    QSPI_Open(QSPI0, QSPI_SLAVE, QSPI_MODE_0, 32, (uint32_t)NULL);
+    u32BusClock = QSPI_Open(QSPI0, QSPI_SLAVE, QSPI_MODE_0, 32, 0U);
+
+    if (u32BusClock == 0U)
+    {
+        printf("QSPI_Open failed.\n");
+
+        while (1);
+    }
 }
 
 void QSPI_Slave_Receive(void)
 {
     volatile uint32_t u32DataCount;
     uint32_t u32TempDataCnt = 0;
-    uint32_t u32RegValue, u32Abort;
+    uint32_t u32RegValue, u32Abort, u32TimeOutCnt;
     int32_t i32Err;
 
     printf("\nQSPI0 Quad mode test with PDMA \r\n");
@@ -154,6 +164,7 @@ void QSPI_Slave_Receive(void)
     QSPI_TRIGGER_RX_PDMA(QSPI0);
 
     i32Err = 0;
+    u32TimeOutCnt = SystemCoreClock;
 
     while (1)
     {
@@ -208,7 +219,18 @@ void QSPI_Slave_Receive(void)
             i32Err = 1;
             break;
         }
+
+        if (u32TimeOutCnt == 0U)
+        {
+            i32Err = 1;
+            break;
+        }
+
+        u32TimeOutCnt--;
     }
+
+    /* Disable QSPI slave's PDMA transfer function on every exit path. */
+    QSPI_DISABLE_RX_PDMA(QSPI0);
 
     /* Disable all PDMA channels */
     PDMA_Close(PDMA0);

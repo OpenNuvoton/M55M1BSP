@@ -79,12 +79,21 @@ void SYS_Init(void)
 
 void SPI_Init(void)
 {
+    uint32_t u32BusClock;
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init SPI                                                                                                */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Configure as a slave, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Configure SPI0 as a low level active device. */
-    SPI_Open(SPI0, SPI_SLAVE, SPI_MODE_0, 32, (uint32_t) NULL);
+    u32BusClock = SPI_Open(SPI0, SPI_SLAVE, SPI_MODE_0, 32, 0U);
+
+    if (u32BusClock == 0U)
+    {
+        printf("SPI_Open failed.\n");
+
+        while (1);
+    }
 }
 
 /* ------------- */

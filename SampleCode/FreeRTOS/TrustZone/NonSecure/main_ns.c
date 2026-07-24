@@ -7,6 +7,8 @@
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 #include <arm_cmse.h>
+#include <stdio.h>
+
 #include "NuMicro.h"        /* Device header */
 
 /* FreeRTOS includes. */

@@ -343,12 +343,18 @@ int32_t main(void)
 #endif
 
 #ifdef INPUT_IS_LIN
+
     /* Open I2S0 interface and set to slave mode, stereo channel, I2S format */
-    I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_STEREO, I2S_FORMAT_I2S);
+    if (I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_STEREO, I2S_FORMAT_I2S) == 0UL)
 #else
+
     /* Open I2S0 interface and set to slave mode, mono channel, I2S format */
-    I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_MONO, I2S_FORMAT_I2S);
+    if (I2S_Open(I2S0, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_MONO, I2S_FORMAT_I2S) == 0UL)
 #endif
+    {
+        printf("Open I2S0 failed!\n");
+        return -1;
+    }
 
     NVIC_EnableIRQ(I2S0_IRQn);
 
@@ -361,7 +367,11 @@ int32_t main(void)
     CLK_SetModuleClock(I2S0_MODULE, CLK_I2SSEL_I2S0SEL_HIRC, MODULE_NoMsk);
 
     /* Set MCLK and enable MCLK */
-    I2S_EnableMCLK(I2S0, 12000000);
+    if (I2S_EnableMCLK(I2S0, 12000000) == 0UL)
+    {
+        printf("Enable I2S0 MCLK failed!\n");
+        return -1;
+    }
 
 #ifndef INPUT_IS_LIN
     /* NAU8822 will store data in left channel */

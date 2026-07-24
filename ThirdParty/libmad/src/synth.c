@@ -739,7 +739,8 @@ void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
 		unsigned int nch, unsigned int ns)
 {
   unsigned int phase, ch, s, sb, pe, po;
-  mad_fixed_t *pcm1, *pcm2, (*filter)[2][2][16][8];
+  short *pcm1, *pcm2;
+  mad_fixed_t (*filter)[2][2][16][8];
   mad_fixed_t const (*sbsample)[36][32];
   register mad_fixed_t (*fe)[8], (*fx)[8], (*fo)[8];
   register mad_fixed_t const (*Dptr)[32], *ptr;
@@ -750,7 +751,7 @@ void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
     sbsample = &frame->sbsample[ch];
     filter   = &synth->filter[ch];
     phase    = synth->phase;
-//    pcm1     = synth->pcm.samples[ch];
+    pcm1     = synth->pcm.samples[ch];
 
     for (s = 0; s < ns; ++s) {
       dct32((*sbsample)[s], phase >> 1,

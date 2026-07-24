@@ -284,7 +284,7 @@ static void SAI_PDMA_RX_CB(void *ptr_priv, uint32_t event)
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)ptr_priv;
     SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
     uint32_t u32DataBits = ((phi2s->I2SCTL & SPI_I2SCTL_WDWIDTH_Msk) >> SPI_I2SCTL_WDWIDTH_Pos);
-    uint32_t item_size = ((u32DataBits + 1U) * 8U);
+    uint32_t u32ItemSize = (u32DataBits + 1U);
 
     if (event & NU_PDMA_EVENT_TRANSFER_DONE)
     {
@@ -292,8 +292,8 @@ static void SAI_PDMA_RX_CB(void *ptr_priv, uint32_t event)
     }
     else
     {
-        uint32_t bytes = nu_pdma_transferred_byte_get(pI2Sn->spdma.i32RxChnId, pI2Sn->sInfo.sRx.u32Num * item_size);
-        pI2Sn->sInfo.sRx.u32Cnt = bytes / item_size;
+        uint32_t u32Bytes = nu_pdma_transferred_byte_get(pI2Sn->spdma.i32RxChnId, pI2Sn->sInfo.sRx.u32Num * u32ItemSize);
+        pI2Sn->sInfo.sRx.u32Cnt = u32Bytes / u32ItemSize;
     }
 
     if ((pI2Sn->sInfo.sRx.u32Cnt >= pI2Sn->sInfo.sRx.u32Num ||
@@ -315,7 +315,7 @@ static void SAI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)ptr_priv;
     SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
     uint32_t u32DataBits = ((phi2s->I2SCTL & SPI_I2SCTL_WDWIDTH_Msk) >> SPI_I2SCTL_WDWIDTH_Pos);
-    uint32_t item_size = ((u32DataBits + 1U) * 8U);
+    uint32_t u32ItemSize = (u32DataBits + 1U);
 
     if (event & NU_PDMA_EVENT_TRANSFER_DONE)
     {
@@ -323,8 +323,8 @@ static void SAI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
     }
     else
     {
-        uint32_t bytes = nu_pdma_transferred_byte_get(pI2Sn->spdma.i32TxChnId, pI2Sn->sInfo.sTx.u32Num * item_size);
-        pI2Sn->sInfo.sTx.u32Cnt = bytes / item_size;
+        uint32_t u32Bytes = nu_pdma_transferred_byte_get(pI2Sn->spdma.i32TxChnId, pI2Sn->sInfo.sTx.u32Num * u32ItemSize);
+        pI2Sn->sInfo.sTx.u32Cnt = u32Bytes / u32ItemSize;
     }
 
     if ((pI2Sn->sInfo.sTx.u32Cnt >= pI2Sn->sInfo.sTx.u32Num ||
@@ -886,6 +886,9 @@ static int32_t SAIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 static uint32_t SAIn_GetTxDataCount(uint32_t u32Inst)
 {
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_SPI_INSTANCE(u32Inst)];
+    SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
+    uint32_t u32DataBits = ((phi2s->I2SCTL & SPI_I2SCTL_WDWIDTH_Msk) >> SPI_I2SCTL_WDWIDTH_Pos);
+    uint32_t u32ItemSize = (u32DataBits + 1U);
 
     // Check if the SPI has an associated DMA channel for receiving data
     if (pI2Sn->spdma.i32TxChnId != -1)
@@ -893,7 +896,7 @@ static uint32_t SAIn_GetTxDataCount(uint32_t u32Inst)
         // Check if the received data count is not equal to the expected count
         if (pI2Sn->sInfo.sTx.u32Cnt != pI2Sn->sInfo.sTx.u32Num)
             pI2Sn->sInfo.sTx.u32Cnt = nu_pdma_transferred_byte_get(
-                                          pI2Sn->spdma.i32TxChnId, pI2Sn->sInfo.sTx.u32Num);
+                                          pI2Sn->spdma.i32TxChnId, pI2Sn->sInfo.sTx.u32Num * u32ItemSize) / u32ItemSize;
     }
 
     return (pI2Sn->sInfo.sTx.u32Cnt);
@@ -908,6 +911,9 @@ static uint32_t SAIn_GetTxDataCount(uint32_t u32Inst)
 static uint32_t SAIn_GetRxDataCount(uint32_t u32Inst)
 {
     I2S_RESOURCES *pI2Sn = (I2S_RESOURCES *)i2s_res_list[SAI_TO_SPI_INSTANCE(u32Inst)];
+    SPI_T *phi2s = (SPI_T *)pI2Sn->phi2s;
+    uint32_t u32DataBits = ((phi2s->I2SCTL & SPI_I2SCTL_WDWIDTH_Msk) >> SPI_I2SCTL_WDWIDTH_Pos);
+    uint32_t u32ItemSize = (u32DataBits + 1U);
 
     // Check if the SPI has an associated DMA channel for receiving data
     if (pI2Sn->spdma.i32RxChnId != -1)
@@ -915,7 +921,7 @@ static uint32_t SAIn_GetRxDataCount(uint32_t u32Inst)
         // Check if the received data count is not equal to the expected count
         if (pI2Sn->sInfo.sRx.u32Cnt != pI2Sn->sInfo.sRx.u32Num)
             pI2Sn->sInfo.sRx.u32Cnt = nu_pdma_transferred_byte_get(
-                                          pI2Sn->spdma.i32RxChnId, pI2Sn->sInfo.sRx.u32Num);
+                                          pI2Sn->spdma.i32RxChnId, pI2Sn->sInfo.sRx.u32Num * u32ItemSize) / u32ItemSize;
     }
 
     return (pI2Sn->sInfo.sRx.u32Cnt);

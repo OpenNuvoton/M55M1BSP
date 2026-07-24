@@ -683,13 +683,14 @@ extern const S_USBD_INFO_T gsInfo;
   * @details    This function will copy the number of data specified by size and src parameters to the address specified by dest parameter.
   *
   */
-__STATIC_INLINE void USBD_MemCopy(uint8_t dest[], uint8_t src[], uint32_t size)
+__STATIC_INLINE void USBD_MemCopy(uint8_t dest[], const uint8_t src[], uint32_t size)
 {
+    volatile uint8_t *d = (volatile uint8_t *)dest;
+    volatile const uint8_t *s = (volatile const uint8_t *)src;
+
     for (uint32_t i = 0ul; i < size; i++)
     {
-        // Prevent this code from being optimized.
-        __asm volatile("" : : : "memory");
-        dest[i] = src[i];
+        d[i] = s[i];
     }
 }
 

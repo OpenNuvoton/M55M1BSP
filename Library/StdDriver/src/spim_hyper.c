@@ -109,7 +109,7 @@ static int32_t SPIM_HYPER_WaitSPIMENDone(SPIM_T *spim, uint32_t u32IsSync)
 
     if (u32IsSync)  /* Wait SPIM Busy status if u32IsSync is set */
     {
-        while ((SPIM_HYPER_GET_INT(spim) ? SPIM_HYPER_GET_INTSTS(spim) : SPIM_HYPER_IS_BUSY(spim)))
+        while (SPIM_HYPER_GET_INT(spim) ? (SPIM_HYPER_GET_INTSTS(spim) == 0U) : (SPIM_HYPER_IS_BUSY(spim) != 0U))
         {
             if (--i32TimeOutCount <= 0)
             {
@@ -136,10 +136,20 @@ int32_t SPIM_HYPER_WAIT_DMMDONE(SPIM_T *spim)
 
     while ((SPIM_HYPER_GET_DMMDONE(spim) != 0U) && (--i32TimeOutCount > 0)) {}
 
+    if (i32TimeOutCount <= 0)
+    {
+        return SPIM_HYPER_ERR_TIMEOUT;
+    }
+
     i32TimeOutCount = (int32_t)SPIM_HYPER_TIMEOUT;
 
     /* Wait for DMM mode to be idle */
     while ((SPIM_HYPER_GET_DMM_IDLE(spim) == SPIM_HYPER_OP_DISABLE) && (--i32TimeOutCount > 0)) {}
+
+    if (i32TimeOutCount <= 0)
+    {
+        return SPIM_HYPER_ERR_TIMEOUT;
+    }
 
     return SPIM_HYPER_OK;
 }
@@ -226,6 +236,8 @@ int32_t SPIM_HYPER_ExitHSAndDPD(SPIM_T *spim)
   */
 int32_t SPIM_HYPER_ReadHyperRAMReg(SPIM_T *spim, uint32_t u32Addr)
 {
+    int32_t i32Ret;
+
     if ((u32Addr != SPIM_HYPER_HRAM_ID_REG0) &&
             (u32Addr != SPIM_HYPER_HRAM_ID_REG1) &&
             (u32Addr != SPIM_HYPER_HRAM_CONFIG_REG0) &&
@@ -238,7 +250,12 @@ int32_t SPIM_HYPER_ReadHyperRAMReg(SPIM_T *spim, uint32_t u32Addr)
 
     spim->HYPER_CMD = SPIM_HYPER_CMD_READ_HRAM_REGISTER;
 
-    (void)spim_hyper_wait_cmdidle(spim);
+    i32Ret = spim_hyper_wait_cmdidle(spim);
+
+    if (i32Ret != SPIM_HYPER_OK)
+    {
+        return i32Ret;
+    }
 
     return (spim->HYPER_RDATA & 0xFFFFUL); // Return 16-bit value
 }
@@ -259,6 +276,8 @@ int32_t SPIM_HYPER_ReadHyperRAMReg(SPIM_T *spim, uint32_t u32Addr)
   */
 int32_t SPIM_HYPER_WriteHyperRAMReg(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Value)
 {
+    int32_t i32Ret;
+
     if ((u32Addr != SPIM_HYPER_HRAM_ID_REG0) &&
             (u32Addr != SPIM_HYPER_HRAM_ID_REG1) &&
             (u32Addr != SPIM_HYPER_HRAM_CONFIG_REG0) &&
@@ -272,7 +291,12 @@ int32_t SPIM_HYPER_WriteHyperRAMReg(SPIM_T *spim, uint32_t u32Addr, uint32_t u32
 
     spim->HYPER_CMD = SPIM_HYPER_CMD_WRITE_HRAM_REGISTER;
 
-    (void)spim_hyper_wait_cmdidle(spim);
+    i32Ret = spim_hyper_wait_cmdidle(spim);
+
+    if (i32Ret != SPIM_HYPER_OK)
+    {
+        return i32Ret;
+    }
 
     return SPIM_HYPER_OK;
 }
@@ -399,8 +423,15 @@ int32_t SPIM_HYPER_Write4Byte(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Data)
   * @note   This function returns SPIM_HYPER_ERR_TIMEOUT if the HyperBus device times out.
   *         The number of bytes to write must be a multiple of 8 (for DMA alignment).
   */
-int32_t SPIM_HYPER_DMAWrite(SPIM_T *spim, uint32_t u32Addr, uint8_t *pu8WrBuf, uint32_t u32NTx)
+int32_t SPIM_HYPER_DMAWrite(SPIM_T *spim, uint32_t u32Addr, const uint8_t *pu8WrBuf, uint32_t u32NTx)
 {
+    int32_t i32Ret = SPIM_HYPER_WAIT_DMMDONE(spim);
+
+    if (i32Ret != SPIM_HYPER_OK)
+    {
+        return i32Ret;
+    }
+
     SPIM_HYPER_SET_OPMODE(spim, SPIM_HYPER_OPMODE_PAGEWRITE);  /* Switch to DMA write mode. */
 
     spim->SRAMADDR = (uint32_t)pu8WrBuf;  /* Set the SRAM buffer address. */
@@ -421,8 +452,15 @@ int32_t SPIM_HYPER_DMAWrite(SPIM_T *spim, uint32_t u32Addr, uint8_t *pu8WrBuf, u
   * @note   This function returns SPIM_HYPER_ERR_TIMEOUT if the HyperBus device times out.
   *         The number of bytes to read must be a multiple of 8 (for DMA alignment).
   */
-int32_t SPIM_HYPER_DMARead(SPIM_T *spim, uint32_t u32Addr, uint8_t *pu8RdBuf, uint32_t u32NRx)
+int32_t SPIM_HYPER_DMARead(SPIM_T *spim, uint32_t u32Addr, const uint8_t *pu8RdBuf, uint32_t u32NRx)
 {
+    int32_t i32Ret = SPIM_HYPER_WAIT_DMMDONE(spim);
+
+    if (i32Ret != SPIM_HYPER_OK)
+    {
+        return i32Ret;
+    }
+
     SPIM_HYPER_SET_OPMODE(spim, SPIM_HYPER_OPMODE_PAGEREAD);  /* Switch to DMA read mode. */
     spim->SRAMADDR = (uint32_t)pu8RdBuf;                      /* Set the SRAM buffer address. */
     spim->DMACNT   = u32NRx;                                  /* Set the transfer length. */

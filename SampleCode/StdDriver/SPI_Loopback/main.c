@@ -15,7 +15,7 @@
 
 #define TEST_CYCLE                  (10)
 #define DATA_COUNT                  (64)
-#define SPI_CLK_FREQ                (2000000)
+#define SPI_CLK_FREQ                (144000000)
 
 #define SPI_TEST_PORT               SPI0
 
@@ -52,7 +52,7 @@ void SYS_Init(void)
     SystemCoreClockUpdate();
 
     /* Select PCLK0 as the clock source of SPI0 */
-    CLK_SetModuleClock(SPI0_MODULE, CLK_SPISEL_SPI0SEL_PCLK0, MODULE_NoMsk);
+    CLK_SetModuleClock(SPI0_MODULE, CLK_SPISEL_SPI0SEL_APLL0_DIV2, MODULE_NoMsk);
 
     /* Enable SPI0 peripheral clock */
     CLK_EnableModuleClock(SPI0_MODULE);
@@ -84,12 +84,21 @@ void SYS_Init(void)
 
 void SPI_Init(void)
 {
+    uint32_t u32BusClock;
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init SPI                                                                                                */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Configure as a master, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Set IP clock divider. SPI clock rate = 2MHz */
-    SPI_Open(SPI_TEST_PORT, SPI_MASTER, SPI_MODE_0, 32, SPI_CLK_FREQ);
+    u32BusClock = SPI_Open(SPI_TEST_PORT, SPI_MASTER, SPI_MODE_0, 32, SPI_CLK_FREQ);
+
+    if (u32BusClock == 0U)
+    {
+        printf("SPI_Open failed.\n");
+
+        while (1);
+    }
 
     /* Enable the automatic hardware slave select function. Select the SS pin and configure as low-active. */
     SPI_EnableAutoSS(SPI_TEST_PORT, SPI_SS, SPI_SS_ACTIVE_LOW);

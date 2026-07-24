@@ -413,7 +413,8 @@ void lbk_interrupt_out_stop(void)
 
 static void iso_in_done(UTR_T *utr)
 {
-    int i, ret;
+    unsigned int i;
+    int  ret;
 
     //printf("SF=%d, 0x%x\n", utr->iso_sf, (int)utr);
     if (!s_lbk_dev.iso_in_func)
@@ -456,7 +457,8 @@ int lbk_isochronous_in_start(ISO_CB_FUNC *func)
     UTR_T *utr;
     EP_INFO_T *ep;
     uint8_t *buff;
-    int i, j, ret;
+    unsigned i, j;
+    int  ret;
 
     s_lbk_dev.iso_in_func = func;
     ep = s_lbk_dev.ep_iso_in;
@@ -575,7 +577,8 @@ void lbk_isochronous_in_stop(void)
 
 static void iso_out_done(UTR_T *utr)
 {
-    int i, ret;
+    unsigned i;
+    int ret;
     //printf("SF=%d, 0x%x\n", utr->iso_sf, (int)utr);
 
     if (!s_lbk_dev.iso_out_func)
@@ -611,7 +614,9 @@ int lbk_isochronous_out_start(ISO_CB_FUNC *func)
     EP_INFO_T *ep;
     UTR_T *utr;
     uint8_t *buff;
-    int i, j, ret;
+    unsigned int i;
+    unsigned int j;
+    int  ret;
 
     s_lbk_dev.iso_out_func = func;
     ep = s_lbk_dev.ep_iso_out;

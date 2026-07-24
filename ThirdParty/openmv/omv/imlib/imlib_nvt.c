@@ -46,7 +46,7 @@ void imlib_nvt_RGB565toRGB888_SIMD(image_t *src, image_t *dst)
 	uint8x16_t offset_8_16_b;
 
 	//create offset Q
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 	offset_8_16_r5g3 = vcreateq_u8(OFFSET_R5G3_HIGH, OFFSET_R5G3_LOW);
 	offset_8_16_g3b5 = vcreateq_u8(OFFSET_G3B5_HIGH, OFFSET_G3B5_LOW);
 #else
@@ -54,7 +54,7 @@ void imlib_nvt_RGB565toRGB888_SIMD(image_t *src, image_t *dst)
 	offset_8_16_g3b5 = vcreateq_u8(OFFSET_G3B5_LOW, OFFSET_G3B5_HIGH);
 #endif
 
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 	offset_8_16_r = vcreateq_u8(OFFSET_R_HIGH, OFFSET_R_LOW);
 	offset_8_16_g = vcreateq_u8(OFFSET_G_HIGH, OFFSET_G_LOW);
 	offset_8_16_b = vcreateq_u8(OFFSET_B_HIGH, OFFSET_B_LOW);
@@ -133,7 +133,7 @@ void imlib_nvt_RGB888toRGB565_SIMD(image_t *src, image_t *dst)
 	uint8x16_t offset_8_16_b;
 	
 	//create offset Q
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 	offset_8_16_r = vcreateq_u8(OFFSET_R_HIGH, OFFSET_R_LOW);
 	offset_8_16_g = vcreateq_u8(OFFSET_G_HIGH, OFFSET_G_LOW);
 	offset_8_16_b = vcreateq_u8(OFFSET_B_HIGH, OFFSET_B_LOW);
@@ -156,7 +156,7 @@ void imlib_nvt_RGB888toRGB565_SIMD(image_t *src, image_t *dst)
 		vsrc_8_16_g = vldrbq_gather_offset(pu8SrcData, offset_8_16_g);
 		vsrc_8_16_b = vldrbq_gather_offset(pu8SrcData, offset_8_16_b);
 
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 		uint16x8_t vsrc_16_8_r;
 		uint16x8_t vsrc_16_8_g;
 
@@ -175,7 +175,7 @@ void imlib_nvt_RGB888toRGB565_SIMD(image_t *src, image_t *dst)
 		vdst_16_8_2.val[0] = vsriq(vdst_16_8_2.val[0], vshllbq(vsrc_8_16_b, 8), 11);
 #endif
 
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 		vsrc_16_8_r = vmovltq(vsrc_8_16_r);
 		vsrc_16_8_r = vshrq(vsrc_16_8_r, 3);
 		vsrc_16_8_g = vmovltq(vsrc_8_16_g);
@@ -282,7 +282,7 @@ static void RGB565toRGB888_16Pixels_SIMD(
 	}
 
 	//create offset Q
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 	offset_8_16_r5g3 = vcreateq_u8(u64Offset_R5G3_Hi, u64Offset_R5G3_Lo);
 	offset_8_16_g3b5 = vcreateq_u8(u64Offset_G3B5_Hi, u64Offset_G3B5_Lo);
 #else
@@ -290,7 +290,7 @@ static void RGB565toRGB888_16Pixels_SIMD(
 	offset_8_16_g3b5 = vcreateq_u8(u64Offset_G3B5_Lo, u64Offset_G3B5_Hi);
 #endif
 
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 	offset_8_16_r = vcreateq_u8(OFFSET_R_HIGH, OFFSET_R_LOW);
 	offset_8_16_g = vcreateq_u8(OFFSET_G_HIGH, OFFSET_G_LOW);
 	offset_8_16_b = vcreateq_u8(OFFSET_B_HIGH, OFFSET_B_LOW);
@@ -380,7 +380,7 @@ static void RGB888toRGB565_16Pixels_SIMD(
 	}
 
 	//create offset Q
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 	offset_8_16_r = vcreateq_u8(u64Offset_R_Hi, u64Offset_R_Lo);
 	offset_8_16_g = vcreateq_u8(u64Offset_G_Hi, u64Offset_G_Lo);
 	offset_8_16_b = vcreateq_u8(u64Offset_B_Hi, u64Offset_B_Lo);
@@ -401,7 +401,7 @@ static void RGB888toRGB565_16Pixels_SIMD(
 	vsrc_8_16_g = vldrbq_gather_offset(pu8SrcData, offset_8_16_g);
 	vsrc_8_16_b = vldrbq_gather_offset(pu8SrcData, offset_8_16_b);
 
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 	uint16x8_t vsrc_16_8_r;
 	uint16x8_t vsrc_16_8_g;
 
@@ -420,7 +420,7 @@ static void RGB888toRGB565_16Pixels_SIMD(
 	vdst_16_8_2.val[0] = vsriq(vdst_16_8_2.val[0], vshllbq(vsrc_8_16_b, 8), 11);
 #endif
 
-#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+#if (__GNUC__ < 13) && !defined(__ARMCC_VERSION)
 
 	vsrc_16_8_r = vmovltq(vsrc_8_16_r);
 	vsrc_16_8_r = vshrq(vsrc_16_8_r, 3);
@@ -897,7 +897,7 @@ void imlib_nvt_scale(image_t *src, image_t *dst, rectangle_t *roi)
 					}
 			
 					u16RepeatIndex = 0;
-					u16RepeatPosX = u16CropWinXPos;
+					u16RepeatPosX = u16CropWinXPos + 1;
 					u16DestWinXPos += PIXELS_LOOP;
 				}
 			}		

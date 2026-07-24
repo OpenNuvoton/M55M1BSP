@@ -7,6 +7,7 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  *****************************************************************************/
 
+#include <stdint.h>
 #include <string.h>
 #include "NuMicro.h"
 
@@ -49,7 +50,9 @@ int32_t KDF_GetKeyBitSize(uint32_t u32KeySizeSel)
     uint32_t au32KeyBitLenTbl[] = { 128, 163, 192, 224, 233, 255, 256, 283, 384, 409, 512, 521, 571 };
 
     if (u32KeySizeSel >= (sizeof(au32KeyBitLenTbl) / sizeof(au32KeyBitLenTbl[0])))
+    {
         return eKDF_ERRCODE_INVALID_PARAM;
+    }
 
     return au32KeyBitLenTbl[u32KeySizeSel];
 }
@@ -62,10 +65,14 @@ int32_t KDF_GetKeyBitSize(uint32_t u32KeySizeSel)
   */
 void KDF_SetKeyInput(const uint8_t pu8KeyInput[], uint32_t u32ByteCnt)
 {
-    if (u32ByteCnt > sizeof(KDF->KEYIN))
-        u32ByteCnt = sizeof(KDF->KEYIN);
+    uint32_t u32WriteByteCnt = u32ByteCnt;
 
-    memcpy((void *)KDF->KEYIN, (void *)pu8KeyInput, u32ByteCnt);
+    if (u32WriteByteCnt > sizeof(KDF->KEYIN))
+    {
+        u32WriteByteCnt = sizeof(KDF->KEYIN);
+    }
+
+    (void)memcpy((void *)KDF->KEYIN, (const void *)pu8KeyInput, u32WriteByteCnt);
 }
 
 /**
@@ -76,10 +83,14 @@ void KDF_SetKeyInput(const uint8_t pu8KeyInput[], uint32_t u32ByteCnt)
   */
 void KDF_SetSalt(const uint8_t pu8Salt[], uint32_t u32ByteCnt)
 {
-    if (u32ByteCnt > sizeof(KDF->SALT))
-        u32ByteCnt = sizeof(KDF->SALT);
+    uint32_t u32WriteByteCnt = u32ByteCnt;
 
-    memcpy((void *)KDF->SALT, (void *)pu8Salt, u32ByteCnt);
+    if (u32WriteByteCnt > sizeof(KDF->SALT))
+    {
+        u32WriteByteCnt = sizeof(KDF->SALT);
+    }
+
+    (void)memcpy((void *)KDF->SALT, (const void *)pu8Salt, u32WriteByteCnt);
 }
 
 /**
@@ -90,10 +101,14 @@ void KDF_SetSalt(const uint8_t pu8Salt[], uint32_t u32ByteCnt)
   */
 void KDF_SetLabel(const uint8_t pu8Label[], uint32_t u32ByteCnt)
 {
-    if (u32ByteCnt > sizeof(KDF->LABEL))
-        u32ByteCnt = sizeof(KDF->LABEL);
+    uint32_t u32WriteByteCnt = u32ByteCnt;
 
-    memcpy((void *)KDF->LABEL, (void *)pu8Label, u32ByteCnt);
+    if (u32WriteByteCnt > sizeof(KDF->LABEL))
+    {
+        u32WriteByteCnt = sizeof(KDF->LABEL);
+    }
+
+    (void)memcpy((void *)KDF->LABEL, (const void *)pu8Label, u32WriteByteCnt);
 }
 
 /**
@@ -104,10 +119,14 @@ void KDF_SetLabel(const uint8_t pu8Label[], uint32_t u32ByteCnt)
   */
 void KDF_SetContext(const uint8_t pu8Context[], uint32_t u32ByteCnt)
 {
-    if (u32ByteCnt > sizeof(KDF->CTXT))
-        u32ByteCnt = sizeof(KDF->CTXT);
+    uint32_t u32WriteByteCnt = u32ByteCnt;
 
-    memcpy((void *)KDF->CTXT, (void *)pu8Context, u32ByteCnt);
+    if (u32WriteByteCnt > sizeof(KDF->CTXT))
+    {
+        u32WriteByteCnt = sizeof(KDF->CTXT);
+    }
+
+    (void)memcpy((void *)KDF->CTXT, (const void *)pu8Context, u32WriteByteCnt);
 }
 
 /**
@@ -135,21 +154,27 @@ void KDF_SetContext(const uint8_t pu8Context[], uint32_t u32ByteCnt)
   */
 int32_t KDF_DeriveKey(E_KDF_MODE eMode, uint32_t u32DeriveKeyParam, uint32_t u32KeyBitSize, uint32_t *pu32KeyOut)
 {
-    int32_t  i;
+    uint32_t i;
     uint32_t u32Idx = 0;
     int32_t  i32LeftKeyBitSize = u32KeyBitSize;
-    uint32_t u32TimeOutCount, u32ByteCnt;
+    uint32_t u32TimeOutCount;
 
-    KDF->CTL   = eMode | u32DeriveKeyParam;
+    KDF->CTL   = ((uint32_t)eMode | u32DeriveKeyParam);
     KDF->KLEN  = u32KeyBitSize;
     KDF->KSCTL = KDF_KEYOUT_TO_REG;
 
     while (i32LeftKeyBitSize > 0)
     {
+        uint32_t u32ByteCnt;
+
         if (i32LeftKeyBitSize == (int32_t)u32KeyBitSize)
+        {
             KDF->CTL |= KDF_CTL_START_Msk;  /* Trigger to start key derive operation */
+        }
         else
+        {
             KDF->CTL |= KDF_CTL_NEXT_Msk;   /* Trigger to derive next partial key output */
+        }
 
         /* Wait until KDF HMAC engine become idle */
         u32TimeOutCount = KDF_TIMEOUT;
@@ -164,22 +189,26 @@ int32_t KDF_DeriveKey(E_KDF_MODE eMode, uint32_t u32DeriveKeyParam, uint32_t u32
 
         /* Check status */
         if (KDF->STS & (KDF_STS_NEXTERR_Msk | KDF_STS_KSERR_Msk))
+        {
             return eKDF_ERRCODE_FAIL;
+        }
 
         /* Store output key to pu32KeyOut */
         u32ByteCnt = (i32LeftKeyBitSize / 8) + ((i32LeftKeyBitSize % 8) > 0);
 
         /* Maximum byte count of derived key is 32 bytes per derivation */
-        if (u32ByteCnt > 32)
-            u32ByteCnt = 32;
-
-        for (i = 0; i < (int32_t)u32ByteCnt; i += 4)
+        if (u32ByteCnt > 32U)
         {
-            pu32KeyOut[(u32Idx + i) / 4] = KDF->KEYOUT[i / 4];
+            u32ByteCnt = 32;
+        }
+
+        for (i = 0U; i < u32ByteCnt; i += 4U)
+        {
+            pu32KeyOut[(u32Idx + i) / 4U] = KDF->KEYOUT[i / 4U];
         }
 
         u32Idx += i;
-        i32LeftKeyBitSize -= (u32ByteCnt * 8);
+        i32LeftKeyBitSize -= ((int32_t)u32ByteCnt * 8);
     }
 
     /* Stop KDF derive opeation */
@@ -240,8 +269,8 @@ int32_t KDF_DeriveKeyToKS(KS_MEM_Type eMemType, E_KDF_MODE eMode, uint32_t u32De
 {
     uint32_t u32TimeOutCount;
 
-    KDF->CTL    = eMode | u32DeriveKeyParam;
-    KDF->KSCTL  = (eMemType << KDF_KSCTL_WSDST_Pos) | KDF_KEYOUT_TO_KS | u32KeyMeta;
+    KDF->CTL    = ((uint32_t)eMode | u32DeriveKeyParam);
+    KDF->KSCTL  = (((uint32_t)eMemType << KDF_KSCTL_WSDST_Pos) | KDF_KEYOUT_TO_KS | u32KeyMeta);
     KDF->KSSIZE = u32KeySizeSel;
     KDF->CTL    = KDF->CTL | KDF_CTL_START_Msk;
 
@@ -257,7 +286,9 @@ int32_t KDF_DeriveKeyToKS(KS_MEM_Type eMemType, E_KDF_MODE eMode, uint32_t u32De
     }
 
     if (KDF->STS & (KDF_STS_NEXTERR_Msk | KDF_STS_KSERR_Msk))
+    {
         return eKDF_ERRCODE_FAIL;
+    }
 
     return (KDF->KSSTS & KDF_KSSTS_NUM_Msk);
 }

@@ -6,24 +6,37 @@
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
+#if defined (__ARMCC_VERSION)
 
 #include <rt_misc.h>
 #include <rt_sys.h>
+#include "NuMicro.h"
 
+/* Add dummy definition to suppress cppcheck unknownMacro error. */
+#ifndef __ALIGNED
+    #define __ALIGNED(x)    __attribute__((aligned(x)))
+#endif
+
+#ifndef   __WEAK
+    #define __WEAK          __attribute__((weak))
+#endif
+
+#ifndef STDIN_ECHO
+    #define STDIN_ECHO      0
+#endif
 
 /* Standard IO device handles. */
-#define STDIN  0x8001
-#define STDOUT 0x8002
-#define STDERR 0x8003
+#define STDIN               0x8001
+#define STDOUT              0x8002
+#define STDERR              0x8003
 
-#define RETARGET(fun)  _sys##fun
-#define IO_OUTPUT(len) 0
-
+#define RETARGET(fun)       _sys##fun
+#define IO_OUTPUT(len)      0
 
 /* Standard IO device name defines. */
-const __WEAK __ALIGNED(4) char __stdin_name [] = "STDIN";
-const __WEAK __ALIGNED(4) char __stdout_name[] = "STDOUT";
-const __WEAK __ALIGNED(4) char __stderr_name[] = "STDERR";
+__WEAK __ALIGNED(4) const char __stdin_name [] = "STDIN";
+__WEAK __ALIGNED(4) const char __stdout_name[] = "STDOUT";
+__WEAK __ALIGNED(4) const char __stderr_name[] = "STDERR";
 
 FILEHANDLE RETARGET(_open)(const char *name, int openmode)
 {
@@ -60,7 +73,7 @@ int RETARGET(_write)(FILEHANDLE fh, const unsigned char *buf, unsigned int len, 
 
             for (i = 0; i < len; i++)
             {
-                SendChar(buf[i]);
+                stdout_putchar(buf[i]);
             }
 
             return IO_OUTPUT(len);
@@ -75,18 +88,20 @@ int RETARGET(_read)(FILEHANDLE fh, unsigned char *buf, unsigned int len, int mod
 {
     (void)mode;
 
-    memset(buf, 0, len);
+    (void)memset(buf, 0, len);
 
     switch (fh)
     {
         case STDIN:
         {
             int c;
-            unsigned int i;
+            unsigned int i = 0U;
+            unsigned int remaining;
+            int done = 0;
 
-            for (i = 0; i < len; i++)
+            while ((i < len) && (done == 0))
             {
-                c = GetChar();
+                c = stdin_getchar();
 
                 if (c == EOF)
                 {
@@ -95,25 +110,28 @@ int RETARGET(_read)(FILEHANDLE fh, unsigned char *buf, unsigned int len, int mod
 
                 buf[i] = (unsigned char)c;
 #if (STDIN_ECHO != 0)
-                SendChar(c);
+                stdout_putchar(c);
 #endif
 
-                if (c == '\r')
+                if ((char)c == '\r')
                 {
                     buf[i] = '\n';
-                    i++;
-                    break;
+                    done = 1;
                 }
-
-                if (c == '\n')
+                else if ((char)c == '\n')
                 {
-                    i++;
-                    break;
+                    done = 1;
+                }
+                else
+                {
+                    /* normal character */
                 }
 
+                i++;
             }
 
-            return (len - i);
+            remaining = len - i;
+            return (int)remaining;
         }
 
         default:
@@ -201,18 +219,18 @@ void RETARGET(_exit)(int return_code)
     const char *p             = exit_code_buffer;
 
     // Print out the exit code on the uart so any reader know how we exit.
-    snprintf(exit_code_buffer,
-             sizeof(exit_code_buffer),
-             "Exit code: %d.\n"      // Let the readers know how we exit
-             "\04\n",                // end-of-transmission
-             return_code);
+    (void)snprintf(exit_code_buffer,
+                   sizeof(exit_code_buffer),
+                   "Exit code: %d.\n"      // Let the readers know how we exit
+                   "\04\n",                // end-of-transmission
+                   return_code);
 
     while (*p != '\0')
     {
-        SendChar(*p++);
+        stdout_putchar(*p++);
     }
 
-    while (1) {}
+    for (;;) {}
 }
 
 /**
@@ -226,7 +244,7 @@ void RETARGET(_exit)(int return_code)
 
 void _ttywrch(int ch)
 {
-    SendChar(ch);
+    stdout_putchar(ch);
     return;
 }
 
@@ -235,13 +253,15 @@ void _ttywrch(int ch)
 __attribute__((weak))
 void abort(void)
 {
-    for (;;);
+    for (;;) {}
 }
 
 __attribute__((weak, noreturn))
 void __aeabi_assert(const char *expr, const char *file, int line)
 {
-    char str[12], *p;
+    char   str[12];
+    size_t idx;
+    int    line_num = line;
 
     fputs("*** assertion failed: ", stderr);
     fputs(expr, stderr);
@@ -249,43 +269,44 @@ void __aeabi_assert(const char *expr, const char *file, int line)
     fputs(file, stderr);
     fputs(", line ", stderr);
 
-    p = str + sizeof(str);
-    *--p = '\0';
-    *--p = '\n';
+    idx = sizeof(str) - 1U;
+    str[idx] = '\0';
+    idx--;
+    str[idx] = '\n';
 
-    while (line > 0)
+    while (line_num > 0)
     {
-        *--p = '0' + (line % 10);
-        line /= 10;
+        idx--;
+        str[idx] = '0' + (line_num % 10);
+        line_num /= 10;
     }
 
-    fputs(p, stderr);
+    fputs(&str[idx], stderr);
 
-    abort();
-
-    while (1) {}
+    for (;;) {}
 }
 
 __attribute__((weak))
 int fputc(int ch, FILE *f)
 {
-    NVT_UNUSED(f);
+    (void)f;
 
-    SendChar(ch);
+    stdout_putchar(ch);
     return ch;
 }
 
 __attribute__((weak))
 int fgetc(FILE *f)
 {
-    char ch = GetChar();
+    char ch = stdin_getchar();
 
-    NVT_UNUSED(f);
+    (void)f;
 
 #if (STDIN_ECHO != 0)
-    SendChar(ch);
+    stdout_putchar(ch);
 #endif
     return (int)ch;
 }
 
-#endif
+#endif  // __MICROLIB
+#endif  // defined (__ARMCC_VERSION)

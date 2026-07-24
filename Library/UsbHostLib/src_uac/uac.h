@@ -16,9 +16,9 @@
 /*
  * Debug message
  */
-#define UAC_ERRMSG     printf
+#define UAC_ERRMSG     (void)usbh_printf
 #ifdef UAC_DEBUG
-    #define UAC_DBGMSG      printf
+    #define UAC_DBGMSG      (void)usbh_printf
 #else
     #define UAC_DBGMSG(...)
 #endif
@@ -31,6 +31,10 @@ typedef enum
     UAC_STATE_DISCONNECTING,
 }  UAC_STATE_E;
 
+/* UAC Version Constants                              */
+#define UAC_VERSION_1                 0x0100U /* UAC 1.0 */
+#define UAC_VERSION_2                 0x0200U /* UAC 2.0 */
+
 /* Audio Interface Subclass Codes (A.2)               */
 #define SUBCLS_UNDEFINED              0x00
 #define SUBCLS_AUDIOCONTROL           0x01
@@ -39,6 +43,7 @@ typedef enum
 
 /* Audio Interface Protocol Code (A.3)                */
 #define PR_PROTOCOL_UNDEFINED         0x00
+#define PR_PROTOCOL_IP_VERSION_02_00  0x20  /* UAC 2.0 IP version */
 
 /* Audio Class-specific descritpor types (A.4)        */
 #define CS_UNDEFINED                  0x20
@@ -58,6 +63,15 @@ typedef enum
 #define FEATURE_UNIT                  0x06
 #define PROCESSING_UNIT               0x07
 #define EXTENSION_UNIT                0x08
+
+/* UAC 2.0 Audio Class-Specific AC Interface Descriptor Subtypes (A.9, UAC2) */
+#define UAC2_EFFECT_UNIT              0x07
+#define UAC2_PROCESSING_UNIT          0x08
+#define UAC2_EXTENSION_UNIT           0x09
+#define UAC2_CLOCK_SOURCE             0x0A
+#define UAC2_CLOCK_SELECTOR           0x0B
+#define UAC2_CLOCK_MULTIPLIER         0x0C
+#define UAC2_SAMPLE_RATE_CONVERTER    0x0D
 
 /* Audio Class-Specific AS Interface Descriptor Subtypes (A.6) */
 #define AS_DESCRIPTOR_UNDEFINED       0x00
@@ -155,6 +169,48 @@ typedef enum
 #define EP_CONTROL_UNDEFINED          0x00
 #define SAMPLING_FREQ_CONTROL         0x01
 #define PITCH_CONTROL                 0x02
+
+/*====================================================================================*/
+/*  UAC 2.0 Specific Definitions                                                      */
+/*====================================================================================*/
+
+/* UAC 2.0 Audio Class-Specific Request Codes (A.14, UAC2)  */
+#define UAC2_CUR                      0x01  /* Current setting attribute                  */
+#define UAC2_RANGE                    0x02  /* Range attribute                            */
+#define UAC2_MEM                      0x03  /* Memory attribute                           */
+
+/* UAC 2.0 Clock Source Control Selectors (A.17.1, UAC2) */
+#define UAC2_CS_CONTROL_UNDEFINED     0x00
+#define UAC2_CS_SAM_FREQ_CONTROL      0x01  /* Sampling Frequency Control                 */
+#define UAC2_CS_CLOCK_VALID_CONTROL   0x02  /* Clock Validity Control                     */
+
+/* UAC 2.0 Clock Selector Control Selectors (A.17.2, UAC2) */
+#define UAC2_CX_CONTROL_UNDEFINED     0x00
+#define UAC2_CX_CLOCK_SELECTOR_CONTROL 0x01 /* Clock Selector Control                    */
+
+/* UAC 2.0 Clock Multiplier Control Selectors (A.17.3, UAC2) */
+#define UAC2_CM_CONTROL_UNDEFINED     0x00
+#define UAC2_CM_NUMERATOR_CONTROL     0x01  /* Numerator Control                          */
+#define UAC2_CM_DENOMINATOR_CONTROL   0x02  /* Denominator Control                        */
+
+/* UAC 2.0 Feature Unit Control Selectors (A.17.7, UAC2) */
+#define UAC2_FU_CONTROL_UNDEFINED     0x00
+#define UAC2_FU_MUTE_CONTROL          0x01
+#define UAC2_FU_VOLUME_CONTROL        0x02
+#define UAC2_FU_BASS_CONTROL          0x03
+#define UAC2_FU_MID_CONTROL           0x04
+#define UAC2_FU_TREBLE_CONTROL        0x05
+#define UAC2_FU_GRAPHIC_EQ_CONTROL    0x06
+#define UAC2_FU_AGC_CONTROL           0x07
+#define UAC2_FU_DELAY_CONTROL         0x08
+#define UAC2_FU_BASS_BOOST_CONTROL    0x09
+#define UAC2_FU_LOUDNESS_CONTROL      0x0A
+#define UAC2_FU_INPUT_GAIN_CONTROL    0x0B
+#define UAC2_FU_INPUT_GAIN_PAD_CONTROL 0x0C
+#define UAC2_FU_PHASE_INVERTER_CONTROL 0x0D
+#define UAC2_FU_UNDERFLOW_CONTROL     0x0E
+#define UAC2_FU_OVERFLOW_CONTROL      0x0F
+#define UAC2_FU_LATENCY_CONTROL       0x10
 
 /* Format Type Codes of Format Type Descriptor bFormatType field */
 #define FORMAT_TYPE_UNDEFINED         0x00
@@ -569,6 +625,345 @@ typedef struct __attribute__((__packed__)) ac_ft3_t
     uint8_t  tLowerSamFreq[3];
     uint8_t  tUpperSamFreq[3];
 } AS_FT3_T;
+#endif
+
+/*====================================================================================*/
+/*  UAC 2.0 Descriptor Structures                                                     */
+/*====================================================================================*/
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Class-Specific AC Interface Header Descriptor (4.7.2, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct ac2_if_header
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* HEADER                                     */
+    __packed uint16_t bcdADC;               /* 0x0200 for UAC 2.0                         */
+    __packed uint8_t  bCategory;            /* Primary use of the audio function           */
+    __packed uint16_t wTotalLength;         /* Total number of bytes                       */
+    __packed uint8_t  bmControls;           /* D1..0: Latency Control                     */
+} AC2_IF_HDR_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_if_header
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint16_t bcdADC;
+    uint8_t  bCategory;
+    uint16_t wTotalLength;
+    uint8_t  bmControls;
+} AC2_IF_HDR_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Clock Source Descriptor (4.7.2.1, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct ac2_clk_src_t
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* CLOCK_SOURCE (0x0A)                        */
+    __packed uint8_t  bClockID;             /* Unique Clock Source ID                      */
+    __packed uint8_t  bmAttributes;         /* D1..0: Clock type
+                                               00: External Clock
+                                               01: Internal fixed Clock
+                                               10: Internal variable Clock
+                                               11: Internal programmable Clock
+                                               D2: Clock synchronized to SOF             */
+    __packed uint8_t  bmControls;           /* D1..0: Clock Frequency Control
+                                               D3..2: Clock Validity Control             */
+    __packed uint8_t  bAssocTerminal;       /* Terminal ID of associated Terminal          */
+    __packed uint8_t  iClockSource;         /* String descriptor index                     */
+} AC2_CLK_SRC_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_clk_src_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bClockID;
+    uint8_t  bmAttributes;
+    uint8_t  bmControls;
+    uint8_t  bAssocTerminal;
+    uint8_t  iClockSource;
+} AC2_CLK_SRC_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Clock Selector Descriptor (4.7.2.2, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct ac2_clk_sel_t
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* CLOCK_SELECTOR (0x0B)                      */
+    __packed uint8_t  bClockID;             /* Unique Clock Selector ID                    */
+    __packed uint8_t  bNrInPins;            /* Number of Input Pins                        */
+    __packed uint8_t  baCSourceID[1];       /* Variable length: ID of Clock Entities       */
+} AC2_CLK_SEL_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_clk_sel_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bClockID;
+    uint8_t  bNrInPins;
+    uint8_t  baCSourceID[1];
+} AC2_CLK_SEL_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Clock Multiplier Descriptor (4.7.2.3, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct ac2_clk_mul_t
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* CLOCK_MULTIPLIER (0x0C)                    */
+    __packed uint8_t  bClockID;             /* Unique Clock Multiplier ID                  */
+    __packed uint8_t  bCSourceID;           /* ID of Clock Entity                          */
+    __packed uint8_t  bmControls;           /* D1..0: Clock Numerator Control
+                                               D3..2: Clock Denominator Control           */
+    __packed uint8_t  iClockMultiplier;     /* String descriptor index                     */
+} AC2_CLK_MUL_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_clk_mul_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bClockID;
+    uint8_t  bCSourceID;
+    uint8_t  bmControls;
+    uint8_t  iClockMultiplier;
+} AC2_CLK_MUL_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Input Terminal Descriptor (4.7.2.4, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct ac2_itd_t
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* INPUT_TERMINAL                             */
+    __packed uint8_t  bTerminalID;
+    __packed uint16_t wTerminalType;
+    __packed uint8_t  bAssocTerminal;
+    __packed uint8_t  bCSourceID;           /* ID of the Clock Entity                      */
+    __packed uint8_t  bNrChannels;
+    __packed uint32_t bmChannelConfig;      /* Spatial location of logical channels        */
+    __packed uint8_t  iChannelNames;
+    __packed uint16_t bmControls;           /* D1..0: Copy Protect Control
+                                               D3..2: Connector Control
+                                               D5..4: Overload Control
+                                               D7..6: Cluster Control
+                                               D9..8: Underflow Control
+                                               D11..10: Overflow Control                 */
+    __packed uint8_t  iTerminal;
+} AC2_IT_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_itd_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bTerminalID;
+    uint16_t wTerminalType;
+    uint8_t  bAssocTerminal;
+    uint8_t  bCSourceID;
+    uint8_t  bNrChannels;
+    uint32_t bmChannelConfig;
+    uint8_t  iChannelNames;
+    uint16_t bmControls;
+    uint8_t  iTerminal;
+} AC2_IT_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Output Terminal Descriptor (4.7.2.5, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct ac2_otd_t
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* OUTPUT_TERMINAL                            */
+    __packed uint8_t  bTerminalID;
+    __packed uint16_t wTerminalType;
+    __packed uint8_t  bAssocTerminal;
+    __packed uint8_t  bSourceID;
+    __packed uint8_t  bCSourceID;           /* ID of the Clock Entity                      */
+    __packed uint16_t bmControls;           /* D1..0: Copy Protect Control
+                                               D3..2: Connector Control
+                                               D5..4: Overload Control
+                                               D7..6: Underflow Control
+                                               D9..8: Overflow Control                   */
+    __packed uint8_t  iTerminal;
+} AC2_OT_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_otd_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bTerminalID;
+    uint16_t wTerminalType;
+    uint8_t  bAssocTerminal;
+    uint8_t  bSourceID;
+    uint8_t  bCSourceID;
+    uint16_t bmControls;
+    uint8_t  iTerminal;
+} AC2_OT_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Feature Unit Descriptor (4.7.2.8, UAC2)
+ *  Note: bmaControls is 4 bytes per channel in UAC 2.0 (vs variable in UAC 1.0)
+ */
+#ifdef __ICCARM__
+typedef struct ac2_fu_t
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* FEATURE_UNIT                               */
+    __packed uint8_t  bUnitID;
+    __packed uint8_t  bSourceID;
+    __packed uint32_t bmaControls[1];       /* Variable length: 4 bytes per channel
+                                               bmaControls[0] = master channel
+                                               D1..0: Mute Control
+                                               D3..2: Volume Control
+                                               D5..4: Bass Control
+                                               ...                                       */
+} AC2_FU_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_fu_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bUnitID;
+    uint8_t  bSourceID;
+    uint32_t bmaControls[1];
+} AC2_FU_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Class-Specific AS Interface Descriptor (4.9.2, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct as2_gen_t
+{
+    __packed uint8_t  bLength;
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* AS_GENERAL                                 */
+    __packed uint8_t  bTerminalLink;        /* Terminal ID of associated Terminal           */
+    __packed uint8_t  bmControls;           /* D1..0: Active Alternate Setting Control
+                                               D3..2: Valid Alternate Settings Control    */
+    __packed uint8_t  bFormatType;          /* Format Type (from Format Type Descriptor)   */
+    __packed uint32_t bmFormats;            /* Audio data formats supported                */
+    __packed uint8_t  bNrChannels;          /* Number of physical channels in the cluster  */
+    __packed uint32_t bmChannelConfig;      /* Spatial location of logical channels        */
+    __packed uint8_t  iChannelNames;        /* String descriptor index                     */
+} AS2_GEN_T;
+#else
+typedef struct __attribute__((__packed__)) as2_gen_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bTerminalLink;
+    uint8_t  bmControls;
+    uint8_t  bFormatType;
+    uint32_t bmFormats;
+    uint8_t  bNrChannels;
+    uint32_t bmChannelConfig;
+    uint8_t  iChannelNames;
+} AS2_GEN_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Type I Format Type Descriptor (2.3.1.6, Format Type)
+ *  Note: UAC 2.0 does not embed sampling rates; they are managed by Clock Source.
+ */
+#ifdef __ICCARM__
+typedef struct ac2_ft1_t
+{
+    __packed uint8_t  bLength;              /* 6                                           */
+    __packed uint8_t  bDescriptorType;      /* CS_INTERFACE                               */
+    __packed uint8_t  bDescriptorSubtype;   /* FORMAT_TYPE                                */
+    __packed uint8_t  bFormatType;          /* FORMAT_TYPE_I                              */
+    __packed uint8_t  bSubslotSize;         /* Bytes per subslot (1, 2, 3, or 4)          */
+    __packed uint8_t  bBitResolution;       /* Effectively used bits in the subslot        */
+} AS2_FT1_T;
+#else
+typedef struct __attribute__((__packed__)) ac2_ft1_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bFormatType;
+    uint8_t  bSubslotSize;
+    uint8_t  bBitResolution;
+} AS2_FT1_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Class-Specific AS Isochronous Audio Data Endpoint Descriptor (4.10.1.2, UAC2)
+ */
+#ifdef __ICCARM__
+typedef struct cs2_ep_t
+{
+    __packed uint8_t  bLength;              /* 8                                           */
+    __packed uint8_t  bDescriptorType;      /* CS_ENDPOINT                                */
+    __packed uint8_t  bDescriptorSubtype;   /* EP_GENERAL                                 */
+    __packed uint8_t  bmAttributes;         /* D0: Sampling Frequency
+                                               D1: Pitch
+                                               D7: MaxPacketsOnly                         */
+    __packed uint8_t  bmControls;           /* D1..0: Pitch Control
+                                               D3..2: Data Overrun Control
+                                               D5..4: Data Underrun Control               */
+    __packed uint8_t  bLockDelayUnits;      /* 0: Undefined, 1: Milliseconds, 2: PCM samples */
+    __packed uint16_t wLockDelay;
+} CS2_EP_T;
+#else
+typedef struct __attribute__((__packed__)) cs2_ep_t
+{
+    uint8_t  bLength;
+    uint8_t  bDescriptorType;
+    uint8_t  bDescriptorSubtype;
+    uint8_t  bmAttributes;
+    uint8_t  bmControls;
+    uint8_t  bLockDelayUnits;
+    uint16_t wLockDelay;
+} CS2_EP_T;
+#endif
+
+/*-----------------------------------------------------------------------------------
+ *  UAC 2.0 Frequency Range layout (for RANGE request response)
+ */
+#ifdef __ICCARM__
+typedef struct uac2_freq_subrange_t
+{
+    __packed uint32_t dMIN;                 /* Minimum sampling frequency                  */
+    __packed uint32_t dMAX;                 /* Maximum sampling frequency                  */
+    __packed uint32_t dRES;                 /* Sampling frequency resolution               */
+} UAC2_FREQ_SUBRANGE_T;
+#else
+typedef struct __attribute__((__packed__)) uac2_freq_subrange_t
+{
+    uint32_t dMIN;
+    uint32_t dMAX;
+    uint32_t dRES;
+} UAC2_FREQ_SUBRANGE_T;
 #endif
 
 /// @endcond HIDDEN_SYMBOLS

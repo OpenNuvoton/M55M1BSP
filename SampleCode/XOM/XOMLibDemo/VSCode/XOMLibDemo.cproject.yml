@@ -4,7 +4,7 @@ project:
   setups:
     - output:
         # bin, elf, hex, lib
-        type: bin
+        type: ["elf", "bin"]
     - setup: Options for XOMLibDemo
       processor:
         fpu: dp
@@ -24,6 +24,7 @@ project:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
             - -Wconditional-uninitialized
+            - -mno-unaligned-access
           CPP:
             - -xc++
             - -std=c++11
@@ -39,10 +40,23 @@ project:
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
             - -Wmaybe-uninitialized
+            - -mno-unaligned-access
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
             - -Wl,--no-warn-rwx-segments
+    - setup: Options for Bank0
+      for-context: .Bank0
+      output:
+        base-name: XOMLibDemo_Bank0
+      define:
+        - DL_BANK: 0
+    - setup: Options for Bank1
+      for-context: .Bank1
+      output:
+        base-name: XOMLibDemo_Bank1
+      define:
+        - DL_BANK: 1
   linker:
     - script: ./XOMLibDemo.scf
       for-compiler: AC6
@@ -60,7 +74,6 @@ project:
         - file: ../../../../Library/StdDriver/src/clk.c
         - file: ../../../../Library/StdDriver/src/sys.c
         - file: ../../../../Library/StdDriver/src/uart.c
-        - file: ../../../../Library/StdDriver/src/fmc.c
     - group: User
       files:
         - file: ../main.c

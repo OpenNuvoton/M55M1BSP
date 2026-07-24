@@ -36,6 +36,8 @@
  */
 
 #ifdef MBEDTLS_ALLOW_PRIVATE_ACCESS
+    /* Deviation: MISRA C:2012 Rule 20.5 - #undef is required to revoke MBEDTLS_ALLOW_PRIVATE_ACCESS and enforce private struct member encapsulation in this compilation unit. */
+    // cppcheck-suppress misra-c2012-20.5
     #undef MBEDTLS_ALLOW_PRIVATE_ACCESS
 #endif
 
@@ -166,7 +168,9 @@ uint32_t heap_cache_aligned_32_handler(void *ptr, uint32_t len, nvt_heap_aligned
 #ifdef DBG_RSA_CACHEALIGNMENT
 
             for (int ii = 0; ii < len; ii++)
+            {
                 printf("%x,\r\n", *((uint32_t *)(ptr++)));
+            }
 
 #endif
 
@@ -174,10 +178,14 @@ uint32_t heap_cache_aligned_32_handler(void *ptr, uint32_t len, nvt_heap_aligned
 #ifdef DBG_RSA_CACHEALIGNMENT
 
             for (int jj = 0; jj < * (rdesp->uplen_aligned) * 4; jj++)
+            {
                 *(uint8_t *)(rdesp->vptr_aligned++) = *((uint8_t *)(ptr++));
+            }
 
             for (int jj = 0; jj < * (rdesp->uplen_aligned); jj++)
+            {
                 printf("%x, \r\n", *(uint32_t *)(rdesp->vptr_aligned++));
+            }
 
 #endif
         }
@@ -249,7 +257,9 @@ int RSA_Run(void)
     while ((CRYPTO->INTSTS & CRYPTO_INTSTS_RSAIF_Msk) == 0)
     {
         if (timeout-- == 0)
+        {
             return (-1);
+        }
     }
 
     return (0);
@@ -284,8 +294,25 @@ void rsa_dma_buf_init(mbedtls_rsa_context *ctx, mbedtls_mpi *ed)
 #ifdef MANUAL_ALIGNMENT
 
     res = heap_cache_aligned_32_handler((void *)(ctx->M.MBEDTLS_PRIVATE(p)), (ctx->M.MBEDTLS_PRIVATE(n)), &heap_sr_0);
+
+    if (res)
+    {
+        printf("heap_cache_aligned_32 error: %d\r\n", res);
+    }
+
     res = heap_cache_aligned_32_handler((void *)(ctx->MBEDTLS_PRIVATE(N).MBEDTLS_PRIVATE(p)), (ctx->MBEDTLS_PRIVATE(N).MBEDTLS_PRIVATE(n)), &heap_sr_1);
+
+    if (res)
+    {
+        printf("heap_cache_aligned_32 error: %d\r\n", res);
+    }
+
     res = heap_cache_aligned_32_handler((void *)(ed->MBEDTLS_PRIVATE(p)), (ed->MBEDTLS_PRIVATE(n)), &heap_sr_2);
+
+    if (res)
+    {
+        printf("heap_cache_aligned_32 error: %d\r\n", res);
+    }
 
     SCB_CleanDCache_by_Addr((void *)(heap_sr_0.vptr_aligned), *(heap_sr_0.uplen_aligned));
     SCB_CleanDCache_by_Addr((void *)(heap_sr_1.vptr_aligned), *(heap_sr_1.uplen_aligned));
@@ -349,7 +376,9 @@ static inline int mbedtls_safer_memcmp(const void *a, const void *b, size_t n)
     unsigned char diff = 0;
 
     for (i = 0; i < n; i++)
+    {
         diff |= A[i] ^ B[i];
+    }
 
     return (diff);
 }
@@ -373,7 +402,9 @@ int mbedtls_rsa_import(mbedtls_rsa_context *ctx,
     }
 
     if (N != NULL)
+    {
         ctx->len = mbedtls_mpi_size(&ctx->N);
+    }
 
     return (0);
 }
@@ -395,21 +426,31 @@ int mbedtls_rsa_import_raw(mbedtls_rsa_context *ctx,
     }
 
     if (P != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(&ctx->P, P, P_len));
+    }
 
     if (Q != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(&ctx->Q, Q, Q_len));
+    }
 
     if (D != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(&ctx->D, D, D_len));
+    }
 
     if (E != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(&ctx->E, E, E_len));
+    }
 
 cleanup:
 
     if (ret != 0)
+    {
         return (MBEDTLS_ERROR_ADD(MBEDTLS_ERR_RSA_BAD_INPUT_DATA, ret));
+    }
 
     return (0);
 }
@@ -468,14 +509,18 @@ static int rsa_check_context(mbedtls_rsa_context const *ctx, int is_priv,
 
     /* Always need E for public key operations */
     if (mbedtls_mpi_cmp_int(&ctx->E, 0) <= 0)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
 #if defined(MBEDTLS_RSA_NO_CRT)
 
     /* For private key operations, use D or DP & DQ
      * as (unblinded) exponents. */
     if (is_priv && mbedtls_mpi_cmp_int(&ctx->D, 0) <= 0)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
 #else
 
@@ -559,7 +604,9 @@ int mbedtls_rsa_complete(mbedtls_rsa_context *ctx)
     is_priv = n_missing || pq_missing || d_missing;
 
     if (!is_priv && !is_pub)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     /*
      * Step 1: Deduce N if P, Q are provided.
@@ -586,7 +633,9 @@ int mbedtls_rsa_complete(mbedtls_rsa_context *ctx)
                                         &ctx->P, &ctx->Q);
 
         if (ret != 0)
+        {
             return (MBEDTLS_ERROR_ADD(MBEDTLS_ERR_RSA_BAD_INPUT_DATA, ret));
+        }
 
     }
     else if (d_missing)
@@ -613,7 +662,9 @@ int mbedtls_rsa_complete(mbedtls_rsa_context *ctx)
                                      &ctx->DP, &ctx->DQ, &ctx->QP);
 
         if (ret != 0)
+        {
             return (MBEDTLS_ERROR_ADD(MBEDTLS_ERR_RSA_BAD_INPUT_DATA, ret));
+        }
     }
 
 #endif /* MBEDTLS_RSA_NO_CRT */
@@ -649,24 +700,36 @@ int mbedtls_rsa_export_raw(const mbedtls_rsa_context *ctx,
         /* If we're trying to export private parameters for a public key,
          * something must be wrong. */
         if (P != NULL || Q != NULL || D != NULL)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
     }
 
     if (N != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&ctx->N, N, N_len));
+    }
 
     if (P != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&ctx->P, P, P_len));
+    }
 
     if (Q != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&ctx->Q, Q, Q_len));
+    }
 
     if (D != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&ctx->D, D, D_len));
+    }
 
     if (E != NULL)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&ctx->E, E, E_len));
+    }
 
 cleanup:
 
@@ -694,7 +757,9 @@ int mbedtls_rsa_export(const mbedtls_rsa_context *ctx,
         /* If we're trying to export private parameters for a public key,
          * something must be wrong. */
         if (P != NULL || Q != NULL || D != NULL)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
     }
 
@@ -734,7 +799,9 @@ int mbedtls_rsa_export_crt(const mbedtls_rsa_context *ctx,
         mbedtls_mpi_cmp_int(&ctx->E, 0) != 0;
 
     if (!is_priv)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
 #if !defined(MBEDTLS_RSA_NO_CRT)
 
@@ -858,7 +925,9 @@ int mbedtls_rsa_gen_key(mbedtls_rsa_context *ctx,
      * rate of 2^-80 is sufficient.
      */
     if (nbits > 1024)
+    {
         prime_quality = MBEDTLS_MPI_GEN_PRIME_FLAG_LOW_ERR;
+    }
 
     mbedtls_mpi_init(&H);
     mbedtls_mpi_init(&G);
@@ -890,11 +959,15 @@ int mbedtls_rsa_gen_key(mbedtls_rsa_context *ctx,
         MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(&H, &ctx->P, &ctx->Q));
 
         if (mbedtls_mpi_bitlen(&H) <= ((nbits >= 200) ? ((nbits >> 1) - 99) : 0))
+        {
             continue;
+        }
 
         /* not required by any standards, but some users rely on the fact that P > Q */
         if (H.s < 0)
+        {
             mbedtls_mpi_swap(&ctx->P, &ctx->Q);
+        }
 
         /* Temporarily replace P,Q by P-1, Q-1 */
         MBEDTLS_MPI_CHK(mbedtls_mpi_sub_int(&ctx->P, &ctx->P, 1));
@@ -905,7 +978,9 @@ int mbedtls_rsa_gen_key(mbedtls_rsa_context *ctx,
         MBEDTLS_MPI_CHK(mbedtls_mpi_gcd(&G, &ctx->E, &H));
 
         if (mbedtls_mpi_cmp_int(&G, 1) != 0)
+        {
             continue;
+        }
 
         /* compute smallest possible D = E^-1 mod LCM(P-1, Q-1) (FIPS 186-4 §B.3.1 criterion 3(b)) */
         MBEDTLS_MPI_CHK(mbedtls_mpi_gcd(&G, &ctx->P, &ctx->Q));
@@ -913,7 +988,9 @@ int mbedtls_rsa_gen_key(mbedtls_rsa_context *ctx,
         MBEDTLS_MPI_CHK(mbedtls_mpi_inv_mod(&ctx->D, &ctx->E, &L));
 
         if (mbedtls_mpi_bitlen(&ctx->D) <= ((nbits + 1) / 2))        // (FIPS 186-4 §B.3.1 criterion 3(a))
+        {
             continue;
+        }
 
         break;
     } while (1);
@@ -950,7 +1027,9 @@ cleanup:
         mbedtls_rsa_free(ctx);
 
         if ((-ret & ~0x7f) == 0)
+        {
             ret = MBEDTLS_ERROR_ADD(MBEDTLS_ERR_RSA_KEY_GEN_FAILED, ret);
+        }
 
         return (ret);
     }
@@ -968,7 +1047,9 @@ int mbedtls_rsa_check_pubkey(const mbedtls_rsa_context *ctx)
     RSA_VALIDATE_RET(ctx != NULL);
 
     if (rsa_check_context(ctx, 0 /* public */, 0 /* no blinding */) != 0)
+    {
         return (MBEDTLS_ERR_RSA_KEY_CHECK_FAILED);
+    }
 
     if (mbedtls_mpi_bitlen(&ctx->N) < 128)
     {
@@ -1056,7 +1137,9 @@ int mbedtls_rsa_public(mbedtls_rsa_context *ctx,
     printf("mbedtls_rsa_public \n");
 
     if ((ctx->MBEDTLS_PRIVATE(len) != 128) && (ctx->MBEDTLS_PRIVATE(len) != 256) && (ctx->MBEDTLS_PRIVATE(len) != 384) && (ctx->MBEDTLS_PRIVATE(len) != 512))
+    {
         return MBEDTLS_ERR_RSA_BAD_INPUT_DATA;
+    }
 
     printf("Reset Crypto \n");
 
@@ -1202,22 +1285,34 @@ static int mgf_mask(unsigned char *dst, size_t dlen, unsigned char *src,
         use_len = hlen;
 
         if (dlen < hlen)
+        {
             use_len = dlen;
+        }
 
         if ((ret = mbedtls_md_starts(md_ctx)) != 0)
+        {
             goto exit;
+        }
 
         if ((ret = mbedtls_md_update(md_ctx, src, slen)) != 0)
+        {
             goto exit;
+        }
 
         if ((ret = mbedtls_md_update(md_ctx, counter, 4)) != 0)
+        {
             goto exit;
+        }
 
         if ((ret = mbedtls_md_finish(md_ctx, mask)) != 0)
+        {
             goto exit;
+        }
 
         for (i = 0; i < use_len; ++i)
+        {
             *p++ ^= mask[i];
+        }
 
         counter[3]++;
 
@@ -1256,19 +1351,25 @@ int mbedtls_rsa_rsaes_oaep_encrypt(mbedtls_rsa_context *ctx,
     RSA_VALIDATE_RET(label_len == 0 || label != NULL);
 
     if (f_rng == NULL)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     md_info = mbedtls_md_info_from_type((mbedtls_md_type_t) ctx->hash_id);
 
     if (md_info == NULL)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     olen = ctx->len;
     hlen = mbedtls_md_get_size(md_info);
 
     /* first comparison checks for overflow */
     if (ilen + 2 * hlen + 2 < ilen || olen < ilen + 2 * hlen + 2)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     memset(output, 0, olen);
 
@@ -1276,41 +1377,55 @@ int mbedtls_rsa_rsaes_oaep_encrypt(mbedtls_rsa_context *ctx,
 
     /* Generate a random octet string seed */
     if ((ret = f_rng(p_rng, p, hlen)) != 0)
+    {
         return (MBEDTLS_ERROR_ADD(MBEDTLS_ERR_RSA_RNG_FAILED, ret));
+    }
 
     p += hlen;
 
     /* Construct DB */
     if ((ret = mbedtls_md(md_info, label, label_len, p)) != 0)
+    {
         return (ret);
+    }
 
     p += hlen;
     p += olen - 2 * hlen - 2 - ilen;
     *p++ = 1;
 
     if (ilen != 0)
+    {
         memcpy(p, input, ilen);
+    }
 
     mbedtls_md_init(&md_ctx);
 
     if ((ret = mbedtls_md_setup(&md_ctx, md_info, 0)) != 0)
+    {
         goto exit;
+    }
 
     /* maskedDB: Apply dbMask to DB */
     if ((ret = mgf_mask(output + hlen + 1, olen - hlen - 1, output + 1, hlen,
                         &md_ctx)) != 0)
+    {
         goto exit;
+    }
 
     /* maskedSeed: Apply seedMask to seed */
     if ((ret = mgf_mask(output + 1, hlen, output + hlen + 1, olen - hlen - 1,
                         &md_ctx)) != 0)
+    {
         goto exit;
+    }
 
 exit:
     mbedtls_md_free(&md_ctx);
 
     if (ret != 0)
+    {
         return (ret);
+    }
 
     return (mbedtls_rsa_public(ctx, output, output));
 }
@@ -1338,14 +1453,18 @@ int mbedtls_rsa_rsaes_pkcs1_v15_encrypt(mbedtls_rsa_context *ctx,
 
     /* first comparison checks for overflow */
     if (ilen + 11 < ilen || olen < ilen + 11)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     nb_pad = olen - 3 - ilen;
 
     *p++ = 0;
 
     if (f_rng == NULL)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     *p++ = MBEDTLS_RSA_CRYPT;
 
@@ -1360,7 +1479,9 @@ int mbedtls_rsa_rsaes_pkcs1_v15_encrypt(mbedtls_rsa_context *ctx,
 
         /* Check if RNG failed to generate data */
         if (rng_dl == 0 || ret != 0)
+        {
             return (MBEDTLS_ERROR_ADD(MBEDTLS_ERR_RSA_RNG_FAILED, ret));
+        }
 
         p++;
     }
@@ -1368,7 +1489,9 @@ int mbedtls_rsa_rsaes_pkcs1_v15_encrypt(mbedtls_rsa_context *ctx,
     *p++ = 0;
 
     if (ilen != 0)
+    {
         memcpy(p, input, ilen);
+    }
 
     printf("run mbedtls_rsa_public\n");
     return (mbedtls_rsa_public(ctx, output, output));
@@ -1442,23 +1565,31 @@ int mbedtls_rsa_rsaes_oaep_decrypt(mbedtls_rsa_context *ctx,
      * Parameters sanity checks
      */
     if (ctx->padding != MBEDTLS_RSA_PKCS_V21)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     ilen = ctx->len;
 
     if (ilen < 16 || ilen > sizeof(buf))
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     md_info = mbedtls_md_info_from_type((mbedtls_md_type_t) ctx->hash_id);
 
     if (md_info == NULL)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     hlen = mbedtls_md_get_size(md_info);
 
     // checking for integer underflow
     if (2 * hlen + 2 > ilen)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     /*
      * RSA operation
@@ -1466,7 +1597,9 @@ int mbedtls_rsa_rsaes_oaep_decrypt(mbedtls_rsa_context *ctx,
     ret = mbedtls_rsa_private(ctx, f_rng, p_rng, input, buf);
 
     if (ret != 0)
+    {
         goto cleanup;
+    }
 
     /*
      * Unmask data and generate lHash
@@ -1494,7 +1627,9 @@ int mbedtls_rsa_rsaes_oaep_decrypt(mbedtls_rsa_context *ctx,
 
     /* Generate lHash */
     if ((ret = mbedtls_md(md_info, label, label_len, lhash)) != 0)
+    {
         goto cleanup;
+    }
 
     /*
      * Check contents, in "constant-time"
@@ -1508,7 +1643,9 @@ int mbedtls_rsa_rsaes_oaep_decrypt(mbedtls_rsa_context *ctx,
 
     /* Check lHash */
     for (i = 0; i < hlen; i++)
+    {
         bad |= lhash[i] ^ *p++;
+    }
 
     /* Get zero-padding len, but always read till end of buffer
      * (minus one, for the 01 byte) */
@@ -1545,7 +1682,9 @@ int mbedtls_rsa_rsaes_oaep_decrypt(mbedtls_rsa_context *ctx,
     *olen = ilen - (p - buf);
 
     if (*olen != 0)
+    {
         memcpy(output, p, *olen);
+    }
 
     ret = 0;
 
@@ -1633,7 +1772,9 @@ static void mem_move_to_left(void *start,
     size_t i, n;
 
     if (total == 0)
+    {
         return;
+    }
 
     for (i = 0; i < total; i++)
     {
@@ -1694,17 +1835,23 @@ int mbedtls_rsa_rsaes_pkcs1_v15_decrypt(mbedtls_rsa_context *ctx,
                           output_max_len);
 
     if (ctx->padding != MBEDTLS_RSA_PKCS_V15)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     if (ilen < 16 || ilen > sizeof(buf))
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     printf("mbedtls_rsa_private \n");
 
     ret = mbedtls_rsa_private(ctx, f_rng, p_rng, input, buf);
 
     if (ret != 0)
+    {
         goto cleanup;
+    }
 
     /* Check and get padding length in constant time and constant
      * memory trace. The first byte must be 0. */
@@ -1764,7 +1911,9 @@ int mbedtls_rsa_rsaes_pkcs1_v15_decrypt(mbedtls_rsa_context *ctx,
     bad = all_or_nothing_int(bad | output_too_large);
 
     for (i = 11; i < ilen; i++)
+    {
         buf[i] &= ~bad;
+    }
 
     /* If the plaintext is too large, truncate it to the buffer size.
      * Copy anyway to avoid revealing the length through timing, because
@@ -1792,7 +1941,9 @@ int mbedtls_rsa_rsaes_pkcs1_v15_decrypt(mbedtls_rsa_context *ctx,
      * length, validity of padding, success of the decryption, and other
      * secrets. */
     if (output_max_len != 0)
+    {
         memcpy(output, buf + ilen - plaintext_max_size, plaintext_max_size);
+    }
 
     /* Report the amount of data we copied to the output buffer. In case
      * of errors (bad padding or output too large), the value of *olen
@@ -1870,10 +2021,14 @@ static int rsa_rsassa_pss_sign(mbedtls_rsa_context *ctx,
     RSA_VALIDATE_RET(sig != NULL);
 
     if (ctx->padding != MBEDTLS_RSA_PKCS_V21)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     if (f_rng == NULL)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     olen = ctx->len;
 
@@ -1883,16 +2038,22 @@ static int rsa_rsassa_pss_sign(mbedtls_rsa_context *ctx,
         md_info = mbedtls_md_info_from_type(md_alg);
 
         if (md_info == NULL)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         if (hashlen != mbedtls_md_get_size(md_info))
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
     }
 
     md_info = mbedtls_md_info_from_type((mbedtls_md_type_t) ctx->hash_id);
 
     if (md_info == NULL)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     hlen = mbedtls_md_get_size(md_info);
 
@@ -1908,11 +2069,17 @@ static int rsa_rsassa_pss_sign(mbedtls_rsa_context *ctx,
         min_slen = hlen - 2;
 
         if (olen < hlen + min_slen + 2)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
         else if (olen >= hlen + hlen + 2)
+        {
             slen = hlen;
+        }
         else
+        {
             slen = olen - hlen - 2;
+        }
     }
     else if ((saltlen < 0) || (saltlen + hlen + 2 > olen))
     {
@@ -1934,39 +2101,57 @@ static int rsa_rsassa_pss_sign(mbedtls_rsa_context *ctx,
     salt = p;
 
     if ((ret = f_rng(p_rng, salt, slen)) != 0)
+    {
         return (MBEDTLS_ERROR_ADD(MBEDTLS_ERR_RSA_RNG_FAILED, ret));
+    }
 
     p += slen;
 
     mbedtls_md_init(&md_ctx);
 
     if ((ret = mbedtls_md_setup(&md_ctx, md_info, 0)) != 0)
+    {
         goto exit;
+    }
 
     /* Generate H = Hash( M' ) */
     if ((ret = mbedtls_md_starts(&md_ctx)) != 0)
+    {
         goto exit;
+    }
 
     if ((ret = mbedtls_md_update(&md_ctx, p, 8)) != 0)
+    {
         goto exit;
+    }
 
     if ((ret = mbedtls_md_update(&md_ctx, hash, hashlen)) != 0)
+    {
         goto exit;
+    }
 
     if ((ret = mbedtls_md_update(&md_ctx, salt, slen)) != 0)
+    {
         goto exit;
+    }
 
     if ((ret = mbedtls_md_finish(&md_ctx, p)) != 0)
+    {
         goto exit;
+    }
 
     /* Compensate for boundary condition when applying mask */
     if (msb % 8 == 0)
+    {
         offset = 1;
+    }
 
     /* maskedDB: Apply dbMask to DB */
     if ((ret = mgf_mask(sig + offset, olen - hlen - 1 - offset, p, hlen,
                         &md_ctx)) != 0)
+    {
         goto exit;
+    }
 
     msb = mbedtls_mpi_bitlen(&ctx->N) - 1;
     sig[0] &= 0xFF >> (olen * 8 - msb);
@@ -1978,7 +2163,9 @@ exit:
     mbedtls_md_free(&md_ctx);
 
     if (ret != 0)
+    {
         return (ret);
+    }
 
     return mbedtls_rsa_private(ctx, f_rng, p_rng, sig, sig);
 }
@@ -2056,20 +2243,28 @@ static int rsa_rsassa_pkcs1_v15_encode(mbedtls_md_type_t md_alg,
         const mbedtls_md_info_t *md_info = mbedtls_md_info_from_type(md_alg);
 
         if (md_info == NULL)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         if (mbedtls_oid_get_oid_by_md(md_alg, &oid, &oid_size) != 0)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         if (hashlen != mbedtls_md_get_size(md_info))
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         /* Double-check that 8 + hashlen + oid_size can be used as a
          * 1-byte ASN.1 length encoding and that there's no overflow. */
         if (8 + hashlen + oid_size  >= 0x80         ||
                 10 + hashlen            <  hashlen      ||
                 10 + hashlen + oid_size <  10 + hashlen)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         /*
          * Static bounds check:
@@ -2080,14 +2275,18 @@ static int rsa_rsassa_pkcs1_v15_encode(mbedtls_md_type_t md_alg,
          * - Need oid_size bytes for hash alg OID.
          */
         if (nb_pad < 10 + hashlen + oid_size)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         nb_pad -= 10 + hashlen + oid_size;
     }
     else
     {
         if (nb_pad < hashlen)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         nb_pad -= hashlen;
     }
@@ -2095,7 +2294,9 @@ static int rsa_rsassa_pkcs1_v15_encode(mbedtls_md_type_t md_alg,
     /* Need space for signature header and padding delimiter (3 bytes),
      * and 8 bytes for the minimal padding */
     if (nb_pad < 3 + 8)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     nb_pad -= 3;
 
@@ -2130,7 +2331,9 @@ static int rsa_rsassa_pkcs1_v15_encode(mbedtls_md_type_t md_alg,
      *                 TAG-OCTET + LEN [ HASH ] ]
      */
     if (0x08 + oid_size + hashlen >= 0x80)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     *p++ = MBEDTLS_ASN1_SEQUENCE | MBEDTLS_ASN1_CONSTRUCTED;
     *p++ = (unsigned char)(0x08 + oid_size + hashlen);
@@ -2179,7 +2382,9 @@ int mbedtls_rsa_rsassa_pkcs1_v15_sign(mbedtls_rsa_context *ctx,
     RSA_VALIDATE_RET(sig != NULL);
 
     if (ctx->padding != MBEDTLS_RSA_PKCS_V15)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     /*
      * Prepare PKCS1-v1.5 encoding (padding and hash identifier)
@@ -2187,7 +2392,9 @@ int mbedtls_rsa_rsassa_pkcs1_v15_sign(mbedtls_rsa_context *ctx,
 
     if ((ret = rsa_rsassa_pkcs1_v15_encode(md_alg, hashlen, hash,
                                            ctx->len, sig)) != 0)
+    {
         return (ret);
+    }
 
     /* Private key operation
      *
@@ -2198,7 +2405,9 @@ int mbedtls_rsa_rsassa_pkcs1_v15_sign(mbedtls_rsa_context *ctx,
     sig_try = mbedtls_calloc(1, ctx->len);
 
     if (sig_try == NULL)
+    {
         return (MBEDTLS_ERR_MPI_ALLOC_FAILED);
+    }
 
     verif = mbedtls_calloc(1, ctx->len);
 
@@ -2298,17 +2507,23 @@ int mbedtls_rsa_rsassa_pss_verify_ext(mbedtls_rsa_context *ctx,
     siglen = ctx->len;
 
     if (siglen < 16 || siglen > sizeof(buf))
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     ret = mbedtls_rsa_public(ctx, sig, buf);
 
     if (ret != 0)
+    {
         return (ret);
+    }
 
     p = buf;
 
     if (buf[siglen - 1] != 0xBC)
+    {
         return (MBEDTLS_ERR_RSA_INVALID_PADDING);
+    }
 
     if (md_alg != MBEDTLS_MD_NONE)
     {
@@ -2316,16 +2531,22 @@ int mbedtls_rsa_rsassa_pss_verify_ext(mbedtls_rsa_context *ctx,
         md_info = mbedtls_md_info_from_type(md_alg);
 
         if (md_info == NULL)
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
 
         if (hashlen != mbedtls_md_get_size(md_info))
+        {
             return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+        }
     }
 
     md_info = mbedtls_md_info_from_type(mgf1_hash_id);
 
     if (md_info == NULL)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     hlen = mbedtls_md_get_size(md_info);
 
@@ -2337,7 +2558,9 @@ int mbedtls_rsa_rsassa_pss_verify_ext(mbedtls_rsa_context *ctx,
     msb = mbedtls_mpi_bitlen(&ctx->N) - 1;
 
     if (buf[0] >> (8 - siglen * 8 + msb))
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     /* Compensate for boundary condition when applying mask */
     if (msb % 8 == 0)
@@ -2347,24 +2570,32 @@ int mbedtls_rsa_rsassa_pss_verify_ext(mbedtls_rsa_context *ctx,
     }
 
     if (siglen < hlen + 2)
+    {
         return (MBEDTLS_ERR_RSA_BAD_INPUT_DATA);
+    }
 
     hash_start = p + siglen - hlen - 1;
 
     mbedtls_md_init(&md_ctx);
 
     if ((ret = mbedtls_md_setup(&md_ctx, md_info, 0)) != 0)
+    {
         goto exit;
+    }
 
     ret = mgf_mask(p, siglen - hlen - 1, hash_start, hlen, &md_ctx);
 
     if (ret != 0)
+    {
         goto exit;
+    }
 
     buf[0] &= 0xFF >> (siglen * 8 - msb);
 
     while (p < hash_start - 1 && *p == 0)
+    {
         p++;
+    }
 
     if (*p++ != 0x01)
     {
@@ -2387,27 +2618,37 @@ int mbedtls_rsa_rsassa_pss_verify_ext(mbedtls_rsa_context *ctx,
     ret = mbedtls_md_starts(&md_ctx);
 
     if (ret != 0)
+    {
         goto exit;
+    }
 
     ret = mbedtls_md_update(&md_ctx, zeros, 8);
 
     if (ret != 0)
+    {
         goto exit;
+    }
 
     ret = mbedtls_md_update(&md_ctx, hash, hashlen);
 
     if (ret != 0)
+    {
         goto exit;
+    }
 
     ret = mbedtls_md_update(&md_ctx, p, observed_salt_len);
 
     if (ret != 0)
+    {
         goto exit;
+    }
 
     ret = mbedtls_md_finish(&md_ctx, result);
 
     if (ret != 0)
+    {
         goto exit;
+    }
 
     if (memcmp(hash_start, result, hlen) != 0)
     {
@@ -2485,7 +2726,9 @@ int mbedtls_rsa_rsassa_pkcs1_v15_verify(mbedtls_rsa_context *ctx,
 
     if ((ret = rsa_rsassa_pkcs1_v15_encode(md_alg, hashlen, hash, sig_len,
                                            encoded_expected)) != 0)
+    {
         goto cleanup;
+    }
 
     /*
      * Apply RSA primitive to get what should be PKCS1 encoded hash.
@@ -2494,7 +2737,9 @@ int mbedtls_rsa_rsassa_pkcs1_v15_verify(mbedtls_rsa_context *ctx,
     ret = mbedtls_rsa_public(ctx, sig, encoded);
 
     if (ret != 0)
+    {
         goto cleanup;
+    }
 
     /*
      * Compare
@@ -2598,7 +2843,9 @@ int mbedtls_rsa_copy(mbedtls_rsa_context *dst, const mbedtls_rsa_context *src)
 cleanup:
 
     if (ret != 0)
+    {
         mbedtls_rsa_free(dst);
+    }
 
     return (ret);
 }
@@ -2609,7 +2856,9 @@ cleanup:
 void mbedtls_rsa_free(mbedtls_rsa_context *ctx)
 {
     if (ctx == NULL)
+    {
         return;
+    }
 
     mbedtls_mpi_free(&ctx->Vi);
     mbedtls_mpi_free(&ctx->Vf);

@@ -44,6 +44,7 @@ static struct CSW s_sCSW;
 
 uint32_t g_au32MassBlock[MASS_BUFFER_SIZE / 4];
 uint32_t g_au32StorageBlock[STORAGE_BUFFER_SIZE / 4];
+uint32_t g_au32Storage[DATA_FLASH_STORAGE_SIZE / 4];
 
 /*--------------------------------------------------------------------------*/
 static uint8_t s_au8InquiryID[36] =
@@ -511,7 +512,7 @@ void HID_MSC_ClassRequest(void)
 #define HID_CMD_WRITE    0xC3
 #define HID_CMD_TEST     0xB4
 
-#define PAGE_SIZE        2048
+#define PAGE_SIZE        4096
 #define TEST_PAGES       4
 #define SECTOR_SIZE      4096
 #define START_SECTOR     0x10
@@ -1120,7 +1121,7 @@ void MSC_Write(void)
         /* Buffer full. Writer it to storage first. */
         if (s_u32Address >= (STORAGE_DATA_BUF + STORAGE_BUFFER_SIZE))
         {
-            DataFlashWrite(s_u32DataFlashStartAddr, STORAGE_BUFFER_SIZE, (uint32_t)STORAGE_DATA_BUF);
+            MSC_WriteMedia(s_u32DataFlashStartAddr, STORAGE_BUFFER_SIZE, (uint8_t *)STORAGE_DATA_BUF);
 
             s_u32Address = STORAGE_DATA_BUF;
             s_u32DataFlashStartAddr += STORAGE_BUFFER_SIZE;
@@ -1145,7 +1146,7 @@ void MSC_Write(void)
             u32Len = u32Lba * UDC_SECTOR_SIZE + s_sCBW.dCBWDataTransferLength - s_u32DataFlashStartAddr;
 
             if (u32Len)
-                DataFlashWrite(s_u32DataFlashStartAddr, u32Len, (uint32_t)STORAGE_DATA_BUF);
+                MSC_WriteMedia(s_u32DataFlashStartAddr, u32Len, (uint8_t *)STORAGE_DATA_BUF);
         }
 
         s_u8BulkState = BULK_IN;
@@ -1739,24 +1740,10 @@ void MSC_AckCmd(void)
 
 void MSC_ReadMedia(uint32_t u32Addr, uint32_t u32Size, uint8_t *pu8Buffer)
 {
-    DataFlashRead(u32Addr, u32Size, (uint32_t)pu8Buffer);
+    memcpy((uint8_t *)pu8Buffer, (uint8_t *)(u32Addr + STORAGE_BASE), u32Size);
 }
 
 void MSC_WriteMedia(uint32_t u32Addr, uint32_t u32Size, uint8_t *pu8Buffer)
 {
-    (void)u32Addr;
-    (void)u32Size;
-    (void)pu8Buffer;
-}
-
-void DataFlashRead(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer)
-{
-    //DataFlashRead(u32Addr, u32Size, (uint32_t)u32Buffer);
-    USBD_MemCopy((uint8_t *)u32Buffer, (uint8_t *)(u32Addr + 0x20004000), u32Size);
-}
-
-
-void DataFlashWrite(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer)
-{
-    USBD_MemCopy((uint8_t *)(u32Addr + 0x20004000), (uint8_t *)u32Buffer, u32Size);
+    memcpy((uint8_t *)(u32Addr + STORAGE_BASE), (uint8_t *)pu8Buffer, u32Size);
 }

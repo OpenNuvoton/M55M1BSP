@@ -265,6 +265,8 @@ void I2C1_Init(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
+    uint32_t u32I2SClock;
+
     /* Unlock protected registers */
     SYS_UnlockReg();
 
@@ -289,15 +291,50 @@ int32_t main(void)
 #ifdef OPT_I2S_SLAVE_MODE
     /* Set I2S in slave mode and let NAU8822 provide the exact WS/BCLK */
 #ifdef INPUT_IS_LIN
-    SPII2S_Open(SPI0, SPII2S_MODE_SLAVE, 16000, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+    u32I2SClock = SPII2S_Open(SPI0, SPII2S_MODE_SLAVE, 16000, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+
+    if (u32I2SClock == 0U)
+    {
+        printf("SPII2S_Open failed.\n");
+
+        while (1);
+    }
+
 #else
-    SPII2S_Open(SPI0, SPII2S_MODE_SLAVE, 16000, SPII2S_DATABIT_16, SPII2S_MONO, SPII2S_FORMAT_I2S);
+
+    u32I2SClock = SPII2S_Open(SPI0, SPII2S_MODE_SLAVE, 16000, SPII2S_DATABIT_16, SPII2S_MONO, SPII2S_FORMAT_I2S);
+
+    if (u32I2SClock == 0U)
+    {
+        printf("SPII2S_Open failed.\n");
+
+        while (1);
+    }
+
 #endif
 #else
 #ifdef INPUT_IS_LIN
-    SPII2S_Open(SPI0, SPII2S_MODE_MASTER, 16000, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+
+    u32I2SClock = SPII2S_Open(SPI0, SPII2S_MODE_MASTER, 16000, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+
+    if (u32I2SClock == 0U)
+    {
+        printf("SPII2S_Open failed.\n");
+
+        while (1);
+    }
+
 #else
-    SPII2S_Open(SPI0, SPII2S_MODE_MASTER, 16000, SPII2S_DATABIT_16, SPII2S_MONO, SPII2S_FORMAT_I2S);
+
+    u32I2SClock = SPII2S_Open(SPI0, SPII2S_MODE_MASTER, 16000, SPII2S_DATABIT_16, SPII2S_MONO, SPII2S_FORMAT_I2S);
+
+    if (u32I2SClock == 0U)
+    {
+        printf("SPII2S_Open failed.\n");
+
+        while (1);
+    }
+
 #endif
 #endif  // OPT_I2S_SLAVE_MODE
 

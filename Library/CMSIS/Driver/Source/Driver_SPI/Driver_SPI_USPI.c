@@ -198,7 +198,7 @@ static const ARM_SPI_CAPABILITIES DriverCapabilities =
     1U,  // Simplex Mode (Master and Slave)
     0U,  // TI Synchronous Serial Interface
     0U,  // Microwire Interface
-    1U,  // Signal Mode Fault event: \ref ARM_SPI_EVENT_MODE_FAULT
+    0U,  // Signal Mode Fault event: \ref ARM_SPI_EVENT_MODE_FAULT
     0U   // Reserved
 };
 
@@ -208,6 +208,8 @@ static void SPI_PDMA_CB_Handler(void *ptr_priv, uint32_t u32Event)
     // Wait for SPI to become idle
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)ptr_priv;
     USPI_T *phspi = (USPI_T *)pSPIn->phspi;
+    uint32_t u32DataBits = ((phspi->LINECTL & USPI_LINECTL_DWIDTH_Msk) >> USPI_LINECTL_DWIDTH_Pos);
+    uint32_t u32ItemSize = ((u32DataBits == 0U) || (u32DataBits > 8U)) ? 2U : 1U;
     volatile int32_t i32TimeoutCnt = SystemCoreClock / 1000;
 
     while ((USPI_IS_BUSY(phspi) != 0) && (--i32TimeoutCnt >= 0)) {}
@@ -236,13 +238,15 @@ static void SPI_PDMA_CB_Handler(void *ptr_priv, uint32_t u32Event)
             if (pSPIn->sXfer.pu8RxBuf != NULL)
             {
                 // Partial transfer completed
-                pSPIn->sXfer.u32RxCnt = nu_pdma_transferred_byte_get(pSPIn->spdma.i32RxChnId,
-                                                                     pSPIn->sXfer.u32Num);
+                uint32_t u32Bytes = nu_pdma_transferred_byte_get(pSPIn->spdma.i32RxChnId,
+                                                                 pSPIn->sXfer.u32Num * u32ItemSize);
+                pSPIn->sXfer.u32RxCnt = u32Bytes / u32ItemSize;
             }
             else
             {
-                pSPIn->sXfer.u32TxCnt = nu_pdma_transferred_byte_get(pSPIn->spdma.i32TxChnId,
-                                                                     pSPIn->sXfer.u32Num);
+                uint32_t u32Bytes = nu_pdma_transferred_byte_get(pSPIn->spdma.i32TxChnId,
+                                                                 pSPIn->sXfer.u32Num * u32ItemSize);
+                pSPIn->sXfer.u32TxCnt = u32Bytes / u32ItemSize;
             }
         }
 
@@ -970,6 +974,9 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
 static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_USPI_INSTANCE(u32Inst)];
+    USPI_T *phspi = (USPI_T *)pSPIn->phspi;
+    uint32_t u32DataBits;
+    uint32_t u32ItemSize;
 
     // Check if the SPI is configured
     if (!(pSPIn->sState.u8State & SPI_CONFIGURED))
@@ -977,13 +984,17 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
         return 0U;
     }
 
+    u32DataBits = ((phspi->LINECTL & USPI_LINECTL_DWIDTH_Msk) >> USPI_LINECTL_DWIDTH_Pos);
+    u32ItemSize = ((u32DataBits == 0U) || (u32DataBits > 8U)) ? 2U : 1U;
+
     // If Rx buffer is used → Return RxCnt
     if (pSPIn->sXfer.pu8RxBuf != NULL)
     {
         if (pSPIn->spdma.i32RxChnId != -1)
         {
-            pSPIn->sXfer.u32RxCnt = nu_pdma_transferred_byte_get(
-                                        pSPIn->spdma.i32RxChnId, pSPIn->sXfer.u32Num);
+            uint32_t u32Bytes = nu_pdma_transferred_byte_get(
+                                    pSPIn->spdma.i32RxChnId, pSPIn->sXfer.u32Num * u32ItemSize);
+            pSPIn->sXfer.u32RxCnt = u32Bytes / u32ItemSize;
         }
 
         return pSPIn->sXfer.u32RxCnt;
@@ -992,8 +1003,9 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
     {
         if (pSPIn->spdma.i32TxChnId != -1)
         {
-            pSPIn->sXfer.u32TxCnt = nu_pdma_transferred_byte_get(
-                                        pSPIn->spdma.i32TxChnId, pSPIn->sXfer.u32Num);
+            uint32_t u32Bytes = nu_pdma_transferred_byte_get(
+                                    pSPIn->spdma.i32TxChnId, pSPIn->sXfer.u32Num * u32ItemSize);
+            pSPIn->sXfer.u32TxCnt = u32Bytes / u32ItemSize;
         }
 
         return pSPIn->sXfer.u32TxCnt;

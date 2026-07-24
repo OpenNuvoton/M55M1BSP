@@ -7,7 +7,6 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -18,10 +17,7 @@
 #include "usbh_cdc.h"
 
 /// @cond HIDDEN_SYMBOLS
-
-extern int  cdc_config_parser(CDC_DEV_T *cdev);
-
-static CDC_DEV_T *g_cdev_list = NULL;
+static CDC_DEV_T *g_cdev_list = USBNULL;
 
 static CDC_DEV_T *alloc_cdc_device(void)
 {
@@ -29,24 +25,26 @@ static CDC_DEV_T *alloc_cdc_device(void)
 
     cdev = (CDC_DEV_T *)usbh_alloc_mem(sizeof(CDC_DEV_T));
 
-    if (cdev == NULL)
-        return NULL;
+    if (cdev == USBNULL)
+    {
+        return USBNULL;
+    }
 
-    memset((char *)cdev, 0, sizeof(CDC_DEV_T));
+    (void)memset((char *)cdev, 0, sizeof(CDC_DEV_T));
     cdev->ifnum_data = -1;
     return cdev;
 }
 
-void  free_cdc_device(CDC_DEV_T *cdev)
+static void  free_cdc_device(const CDC_DEV_T *cdev)
 {
-    usbh_free_mem(cdev, sizeof(CDC_DEV_T));
+    (void)usbh_free_mem(cdev, sizeof(CDC_DEV_T));
 }
 
 static void add_new_cdc_device(CDC_DEV_T *cdev)
 {
-    if (g_cdev_list == NULL)
+    if (g_cdev_list == USBNULL)
     {
-        cdev->next = NULL;
+        cdev->next = USBNULL;
         g_cdev_list = cdev;
     }
     else
@@ -68,7 +66,7 @@ static void remove_cdc_device(CDC_DEV_T *cdev)
 
     p = g_cdev_list;
 
-    while (p != NULL)
+    while (p != USBNULL)
     {
         if (p->next == cdev)
         {
@@ -85,15 +83,16 @@ static void remove_cdc_device(CDC_DEV_T *cdev)
 /*
  *  Try to find the companion CDC interface of a DATA interface.
  */
-static CDC_DEV_T *find_cdc_com_iface(IFACE_T *iface_data)
+static CDC_DEV_T *find_cdc_com_iface(const IFACE_T *iface_data)
 {
     CDC_DEV_T  *p;
+    int        if_num = iface_data->if_num;
 
     p = g_cdev_list;
 
-    while (p != NULL)
+    while (p != USBNULL)
     {
-        if (p->ifnum_data == iface_data->if_num)
+        if (p->ifnum_data == if_num)
         {
             return p;
         }
@@ -101,7 +100,7 @@ static CDC_DEV_T *find_cdc_com_iface(IFACE_T *iface_data)
         p = p->next;
     }
 
-    return NULL;
+    return USBNULL;
 }
 
 /*
@@ -113,9 +112,9 @@ static CDC_DEV_T *find_cdc_data_iface(int ifnum)
 
     p = g_cdev_list;
 
-    while (p != NULL)
+    while (p != USBNULL)
     {
-        if ((p->iface_cdc == NULL) && (p->iface_data != NULL) &&
+        if ((p->iface_cdc == USBNULL) && (p->iface_data != USBNULL) &&
                 (p->ifnum_data == ifnum))
         {
             return p;
@@ -124,7 +123,7 @@ static CDC_DEV_T *find_cdc_data_iface(int ifnum)
         p = p->next;
     }
 
-    return NULL;
+    return USBNULL;
 }
 
 static int  cdc_probe(IFACE_T *iface)
@@ -132,14 +131,17 @@ static int  cdc_probe(IFACE_T *iface)
     UDEV_T       *udev = iface->udev;
     ALT_IFACE_T  *aif = iface->aif;
     DESC_IF_T    *ifd;
-    CDC_DEV_T    *cdev, *d;
+    CDC_DEV_T    *cdev;
+    CDC_DEV_T    *d;
     int          ret;
 
     ifd = aif->ifd;
 
     /* Is this interface CDC class? */
     if ((ifd->bInterfaceClass != USB_CLASS_COMM) && (ifd->bInterfaceClass != USB_CLASS_DATA))
+    {
         return USBH_ERR_NOT_MATCHED;
+    }
 
     CDC_DBGMSG("cdc_probe %s - device (vid=0x%x, pid=0x%x), interface %d.\n",
                (ifd->bInterfaceClass == USB_CLASS_COMM) ? "COMM" : "DATA",
@@ -149,18 +151,20 @@ static int  cdc_probe(IFACE_T *iface)
     {
         cdev = find_cdc_com_iface(iface);      /* If this CDC device may have been created in the previous inetrface probing? */
 
-        if (cdev == NULL)
+        if (cdev == USBNULL)
         {
             CDC_DBGMSG("Warning! CDC device DTAT interface %d cannot find COMM interface!\n", iface->if_num);
 
             /* create a temporary CDC device holder */
             cdev = alloc_cdc_device();
 
-            if (cdev == NULL)
+            if (cdev == USBNULL)
+            {
                 return USBH_ERR_NOT_FOUND;
+            }
 
             cdev->udev = udev;
-            add_new_cdc_device(cdev);
+            (void)add_new_cdc_device(cdev);
             cdev->ifnum_data = iface->if_num;
         }
 
@@ -173,8 +177,10 @@ static int  cdc_probe(IFACE_T *iface)
 
     cdev = alloc_cdc_device();
 
-    if (cdev == NULL)
+    if (cdev == USBNULL)
+    {
         return USBH_ERR_NOT_FOUND;
+    }
 
     cdev->udev = udev;
     cdev->iface_cdc = iface;
@@ -207,7 +213,8 @@ static int  cdc_probe(IFACE_T *iface)
 
 static void  cdc_disconnect(IFACE_T *iface)
 {
-    IFACE_T     *if_cdc, *if_data;
+    IFACE_T     *if_cdc;
+    IFACE_T     *if_data;
     CDC_DEV_T   *cdev;
     int         i;
 
@@ -215,8 +222,10 @@ static void  cdc_disconnect(IFACE_T *iface)
 
     cdev = (CDC_DEV_T *)(iface->context);
 
-    if (cdev == NULL)
+    if (cdev == USBNULL)
+    {
         return;              /* should have been disconnected. */
+    }
 
     if_cdc = cdev->iface_cdc;
     if_data = cdev->iface_data;
@@ -228,7 +237,7 @@ static void  cdc_disconnect(IFACE_T *iface)
     {
         for (i = 0; i < if_cdc->aif->ifd->bNumEndpoints; i++)
         {
-            if_cdc->udev->hc_driver->quit_xfer(NULL, &(if_cdc->aif->ep[i]));
+            if_cdc->udev->hc_driver->quit_xfer(USBNULL, &(if_cdc->aif->ep[i]));
         }
     }
 
@@ -236,40 +245,32 @@ static void  cdc_disconnect(IFACE_T *iface)
     {
         for (i = 0; i < if_data->aif->ifd->bNumEndpoints; i++)
         {
-            if_data->udev->hc_driver->quit_xfer(NULL, &(if_data->aif->ep[i]));
+            if_data->udev->hc_driver->quit_xfer(USBNULL, &(if_data->aif->ep[i]));
         }
     }
 
     if (cdev->utr_sts)
     {
-        usbh_quit_utr(cdev->utr_sts);             /* Quit the UTR                               */
+        (void)usbh_quit_utr(cdev->utr_sts);             /* Quit the UTR                               */
         free_utr(cdev->utr_sts);
-        cdev->utr_sts = NULL;
+        cdev->utr_sts = USBNULL;
     }
 
     if (cdev->utr_rx)
     {
-        usbh_quit_utr(cdev->utr_rx);             /* Quit the UTR                               */
+        (void)usbh_quit_utr(cdev->utr_rx);             /* Quit the UTR                               */
         free_utr(cdev->utr_rx);
-        cdev->utr_rx = NULL;
+        cdev->utr_rx = USBNULL;
     }
 
-    if_cdc->context = NULL;
-    if_data->context = NULL;
+    if_cdc->context = USBNULL;
+    if_data->context = USBNULL;
 
     remove_cdc_device(cdev);
     free_cdc_device(cdev);
 }
 
-static UDEV_DRV_T  cdc_driver =
-{
-    cdc_probe,
-    cdc_disconnect,
-    NULL,
-    NULL,
-};
-
-/// @endcond /* HIDDEN_SYMBOLS */
+/// @endcond HIDDEN_SYMBOLS
 
 /**
   * @brief    Init USB Host CDC driver.
@@ -277,14 +278,22 @@ static UDEV_DRV_T  cdc_driver =
   */
 void usbh_cdc_init(void)
 {
-    g_cdev_list = NULL;
-    usbh_register_driver(&cdc_driver);
+    static UDEV_DRV_T  cdc_driver =
+    {
+        cdc_probe,
+        cdc_disconnect,
+        USBNULL,
+        USBNULL,
+    };
+
+    g_cdev_list = USBNULL;
+    (void)usbh_register_driver(&cdc_driver);
 }
 
 /**
  *  @brief   Get a list of currently connected USB Hid devices.
  *  @return  List of CDC devices.
- *  @retval  NULL       There's no CDC device found.
+ *  @retval  USBNULL       There's no CDC device found.
  *  @retval  Otherwise  A list of connected CDC devices.
  *
  *  The CDC devices are chained by the "next" member of CDC_DEV_T.

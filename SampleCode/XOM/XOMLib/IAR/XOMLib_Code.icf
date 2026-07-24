@@ -14,6 +14,20 @@ define symbol __region_XOM_end__                = 0x00105FFF;
 define symbol __region_Invalid_start__          = 0x0;
 define symbol __region_Invalid_end__            = 0x0;
 
+/* Validate memory ranges to avoid wrapped regions caused by end < start */
+if (__ICFEDIT_region_ROM_end__ < __ICFEDIT_region_ROM_start__) {
+    error "Invalid ROM region: __ICFEDIT_region_ROM_end__ must be >= __ICFEDIT_region_ROM_start__";
+}
+
+if (__ICFEDIT_region_RAM_end__ < __ICFEDIT_region_RAM_start__) {
+    error "Invalid RAM region: __ICFEDIT_region_RAM_end__ must be >= __ICFEDIT_region_RAM_start__";
+}
+
+/* Validate vector table location is inside ROM range */
+if ((__ICFEDIT_intvec_start__ < __ICFEDIT_region_ROM_start__) || (__ICFEDIT_intvec_start__ > __ICFEDIT_region_ROM_end__)) {
+    error "Invalid vector table location: __ICFEDIT_intvec_start__ must be inside ROM region";
+}
+
 export symbol __region_XOM_start__;
 
 /*-Sizes-*/

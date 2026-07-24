@@ -13,7 +13,7 @@
  * Note: The Cortex-M0/M0+ does Not have the Load/Store exclusive instructions, on these
  * CPUs the locking function is implemented with atomic access using disable/enable IRQs.
  */
-#include "mutex.h"
+#include "_mutex.h"
 //Modify by chchen59
 //#include "cmsis_gc.h"
 //#include "py/mphal.h"

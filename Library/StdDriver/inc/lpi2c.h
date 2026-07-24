@@ -91,7 +91,7 @@ extern int32_t g_LPI2C_i32ErrCode;
  *    @details      Set LPI2C_CTL register to control I2C bus conditions of START, STOP, SI, ACK.
  *    \hideinitializer
  */
-#define LPI2C_SET_CONTROL_REG(i2c, u8Ctrl) ((i2c)->CTL0 = ((i2c)->CTL0 & ~0x3c) | (u8Ctrl))
+#define LPI2C_SET_CONTROL_REG(i2c, u8Ctrl) ((i2c)->CTL0 = ((i2c)->CTL0 & ~0x3cUL) | (u8Ctrl))
 
 /**
  *    @brief        The macro is used to set START condition of I2C Bus
@@ -283,11 +283,11 @@ void LPI2C_Close(LPI2C_T *i2c);
 void LPI2C_Trigger(LPI2C_T *i2c, uint8_t u8Start, uint8_t u8Stop, uint8_t u8Si, uint8_t u8Ack);
 void LPI2C_DisableInt(LPI2C_T *i2c);
 void LPI2C_EnableInt(LPI2C_T *i2c);
-uint32_t LPI2C_GetBusClockFreq(LPI2C_T *i2c);
-uint32_t LPI2C_GetIntFlag(LPI2C_T *i2c);
-uint32_t LPI2C_GetStatus(LPI2C_T *i2c);
+uint32_t LPI2C_GetBusClockFreq(const LPI2C_T *i2c);
+uint32_t LPI2C_GetIntFlag(const LPI2C_T *i2c);
+uint32_t LPI2C_GetStatus(const LPI2C_T *i2c);
 uint32_t LPI2C_Open(LPI2C_T *i2c, uint32_t u32BusClock);
-uint8_t LPI2C_GetData(LPI2C_T *i2c);
+uint8_t LPI2C_GetData(const LPI2C_T *i2c);
 void LPI2C_SetSlaveAddr(LPI2C_T *i2c, uint8_t u8SlaveNo, uint8_t u8SlaveAddr, uint8_t u8GCMode);
 void LPI2C_SetSlaveAddrMask(LPI2C_T *i2c, uint8_t u8SlaveNo, uint8_t u8SlaveAddrMask);
 uint32_t LPI2C_SetBusClockFreq(LPI2C_T *i2c, uint32_t u32BusClock);
@@ -297,11 +297,11 @@ void LPI2C_EnableWakeup(LPI2C_T *i2c);
 void LPI2C_DisableWakeup(LPI2C_T *i2c);
 void LPI2C_SetData(LPI2C_T *i2c, uint8_t u8Data);
 uint8_t LPI2C_WriteByte(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t data);
-uint32_t LPI2C_WriteMultiBytes(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t data[], uint32_t u32wLen);
+uint32_t LPI2C_WriteMultiBytes(LPI2C_T *i2c, uint8_t u8SlaveAddr, const uint8_t data[], uint32_t u32wLen);
 uint8_t LPI2C_WriteByteOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr, uint8_t data);
-uint32_t LPI2C_WriteMultiBytesOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr, uint8_t data[], uint32_t u32wLen);
+uint32_t LPI2C_WriteMultiBytesOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr, const uint8_t data[], uint32_t u32wLen);
 uint8_t LPI2C_WriteByteTwoRegs(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr, uint8_t data);
-uint32_t LPI2C_WriteMultiBytesTwoRegs(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr, uint8_t data[], uint32_t u32wLen);
+uint32_t LPI2C_WriteMultiBytesTwoRegs(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint16_t u16DataAddr, const uint8_t data[], uint32_t u32wLen);
 uint8_t LPI2C_ReadByte(LPI2C_T *i2c, uint8_t u8SlaveAddr);
 uint32_t LPI2C_ReadMultiBytes(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t rdata[], uint32_t u32rLen);
 uint8_t LPI2C_ReadByteOneReg(LPI2C_T *i2c, uint8_t u8SlaveAddr, uint8_t u8DataAddr);

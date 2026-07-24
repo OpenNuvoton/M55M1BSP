@@ -40,17 +40,17 @@ extern "C"
 #define QSPI_SS_ACTIVE_LOW              (0x0UL)                           /*!< SS active low \hideinitializer */
 
 /* QSPI Interrupt Mask */
-#define QSPI_UNIT_INT_MASK              (0x001U)                          /*!< Unit transfer interrupt mask \hideinitializer */
-#define QSPI_SSACT_INT_MASK             (0x002U)                          /*!< Slave selection signal active interrupt mask \hideinitializer */
-#define QSPI_SSINACT_INT_MASK           (0x004U)                          /*!< Slave selection signal inactive interrupt mask \hideinitializer */
-#define QSPI_SLVUR_INT_MASK             (0x008U)                          /*!< Slave under run interrupt mask \hideinitializer */
-#define QSPI_SLVBE_INT_MASK             (0x010U)                          /*!< Slave bit count error interrupt mask \hideinitializer */
-#define QSPI_SLVTO_INT_MASK             (0x020U)                          /*!< Slave mode time-out interrupt mask \hideinitializer */
-#define QSPI_TXUF_INT_MASK              (0x040U)                          /*!< Slave TX underflow interrupt mask \hideinitializer */
-#define QSPI_FIFO_TXTH_INT_MASK         (0x080U)                          /*!< FIFO TX threshold interrupt mask \hideinitializer */
-#define QSPI_FIFO_RXTH_INT_MASK         (0x100U)                          /*!< FIFO RX threshold interrupt mask \hideinitializer */
-#define QSPI_FIFO_RXOV_INT_MASK         (0x200U)                          /*!< FIFO RX overrun interrupt mask \hideinitializer */
-#define QSPI_FIFO_RXTO_INT_MASK         (0x400U)                          /*!< FIFO RX time-out interrupt mask \hideinitializer */
+#define QSPI_UNIT_INT_MASK              (0x001UL)                         /*!< Unit transfer interrupt mask \hideinitializer */
+#define QSPI_SSACT_INT_MASK             (0x002UL)                         /*!< Slave selection signal active interrupt mask \hideinitializer */
+#define QSPI_SSINACT_INT_MASK           (0x004UL)                         /*!< Slave selection signal inactive interrupt mask \hideinitializer */
+#define QSPI_SLVUR_INT_MASK             (0x008UL)                         /*!< Slave under run interrupt mask \hideinitializer */
+#define QSPI_SLVBE_INT_MASK             (0x010UL)                         /*!< Slave bit count error interrupt mask \hideinitializer */
+#define QSPI_SLVTO_INT_MASK             (0x020UL)                         /*!< Slave Mode Time-out interrupt mask \hideinitializer */
+#define QSPI_TXUF_INT_MASK              (0x040UL)                         /*!< Slave TX underflow interrupt mask \hideinitializer */
+#define QSPI_FIFO_TXTH_INT_MASK         (0x080UL)                         /*!< FIFO TX threshold interrupt mask \hideinitializer */
+#define QSPI_FIFO_RXTH_INT_MASK         (0x100UL)                         /*!< FIFO RX threshold interrupt mask \hideinitializer */
+#define QSPI_FIFO_RXOV_INT_MASK         (0x200UL)                         /*!< FIFO RX overrun interrupt mask \hideinitializer */
+#define QSPI_FIFO_RXTO_INT_MASK         (0x400UL)                         /*!< FIFO RX time-out interrupt mask \hideinitializer */
 
 /* QSPI Status Mask */
 #define QSPI_BUSY_MASK                  (0x01U)                           /*!< Busy status mask \hideinitializer */
@@ -59,22 +59,24 @@ extern "C"
 #define QSPI_TX_EMPTY_MASK              (0x08U)                           /*!< TX empty status mask \hideinitializer */
 #define QSPI_TX_FULL_MASK               (0x10U)                           /*!< TX full status mask \hideinitializer */
 #define QSPI_TXRX_RESET_MASK            (0x20U)                           /*!< TX or RX reset status mask \hideinitializer */
-#define QSPI_SPIEN_STS_MASK             (0x40U)                           /*!< SPIEN status mask \hideinitializer */
+#define QSPI_QSPIEN_STS_MASK            (0x40U)                           /*!< QSPIEN status mask \hideinitializer */
 #define QSPI_SSLINE_STS_MASK            (0x80U)                           /*!< QSPIx_SS line status mask \hideinitializer */
 
 /* QSPI Status2 Mask */
 #define QSPI_SLVBENUM_MASK              (0x01U)                           /*!< Effective bit number of uncompleted RX data status mask \hideinitializer */
 
 /* QSPI Clock Source */
-#define QSPI_CLKSEL_HXT                 (0x0UL)
-#define QSPI_CLKSEL_APLL0_DIV2          (0x1UL)
-#define QSPI_CLKSEL_PCLK                (0x2UL)
-#define QSPI_CLKSEL_HIRC                (0x3UL)
-#define QSPI_CLKSEL_HIRC48M_DIV4        (0x4UL)
+#define QSPI_CLKSRC_HXT                 (0x0UL)
+#define QSPI_CLKSRC_PLL                 (0x1UL)
+#define QSPI_CLKSRC_PCLK                (0x2UL)
+#define QSPI_CLKSRC_HIRC                (0x3UL)
+#define QSPI_CLKSRC_HIRC48M             (0x4UL)
 
 #define QSPI_OK                         (0)
 #define QSPI_ERR_FAIL                   (-1)
 #define QSPI_ERR_TIMEOUT                (-2)
+
+#define QSPI_TIMEOUT                    SystemCoreClock
 
 /** @} end of group QSPI_EXPORTED_CONSTANTS */
 
@@ -90,7 +92,7 @@ extern "C"
   * @details    Write 1 to UNITIF bit of QSPI_STATUS register to clear the unit transfer interrupt flag.
   * \hideinitializer
   */
-#define QSPI_CLR_UNIT_TRANS_INT_FLAG(qspi)  ((qspi)->STATUS |= QSPI_STATUS_UNITIF_Msk)
+#define QSPI_CLR_UNIT_TRANS_INT_FLAG(qspi)  ((qspi)->STATUS = QSPI_STATUS_UNITIF_Msk)
 
 /**
   * @brief      Trigger RX PDMA function.
@@ -227,9 +229,20 @@ extern "C"
   * @details    Disable automatic slave selection function and set QSPIx_SS pin to high state.
   * \hideinitializer
   */
-#define QSPI_SET_SS_HIGH(qspi)                                  \
-    ((qspi)->SSCTL = ((qspi)->SSCTL & ~(QSPI_SSCTL_AUTOSS_Msk)) |   \
-                     (QSPI_SSCTL_SSACTPOL_Msk | QSPI_SSCTL_SS_Msk))
+static inline void QSPI_SET_SS_HIGH(QSPI_T *qspi)
+{
+    uint32_t u32SSCtl = (qspi->SSCTL & ~QSPI_SSCTL_AUTOSS_Msk);
+    uint32_t u32ActivePol = (u32SSCtl & QSPI_SSCTL_SSACTPOL_Msk);
+
+    if (u32ActivePol != 0UL)
+    {
+        qspi->SSCTL = u32SSCtl | QSPI_SSCTL_SS_Msk;
+    }
+    else
+    {
+        qspi->SSCTL = u32SSCtl & ~QSPI_SSCTL_SS_Msk;
+    }
+}
 
 /**
   * @brief      Set QSPIx_SS pin to low state.
@@ -238,9 +251,20 @@ extern "C"
   * @details    Disable automatic slave selection function and set QSPIx_SS pin to low state.
   * \hideinitializer
   */
-#define QSPI_SET_SS_LOW(qspi)   \
-    ((qspi)->SSCTL = ((qspi)->SSCTL & ~(QSPI_SSCTL_AUTOSS_Msk | QSPI_SSCTL_SSACTPOL_Msk)) | \
-                     (QSPI_SSCTL_SS_Msk))
+static inline void QSPI_SET_SS_LOW(QSPI_T *qspi)
+{
+    uint32_t u32SSCtl = (qspi->SSCTL & ~QSPI_SSCTL_AUTOSS_Msk);
+    uint32_t u32ActivePol = (u32SSCtl & QSPI_SSCTL_SSACTPOL_Msk);
+
+    if (u32ActivePol != 0UL)
+    {
+        qspi->SSCTL = u32SSCtl & ~QSPI_SSCTL_SS_Msk;
+    }
+    else
+    {
+        qspi->SSCTL = u32SSCtl | QSPI_SSCTL_SS_Msk;
+    }
+}
 
 /**
   * @brief      Enable Byte Reorder function.
@@ -269,9 +293,11 @@ extern "C"
   *             The length of suspend interval is ((u32SuspCycle + 0.5) * the length of one QSPI bus clock cycle).
   * \hideinitializer
   */
-#define QSPI_SET_SUSPEND_CYCLE(qspi, u32SuspCycle)          \
-    ((qspi)->CTL = ((qspi)->CTL & ~(QSPI_CTL_SUSPITV_Msk)) |    \
-                   ((u32SuspCycle) << QSPI_CTL_SUSPITV_Pos))
+static inline void QSPI_SET_SUSPEND_CYCLE(QSPI_T *qspi, uint32_t u32SuspCycle)
+{
+    qspi->CTL = (qspi->CTL & ~QSPI_CTL_SUSPITV_Msk) |
+                ((u32SuspCycle & (QSPI_CTL_SUSPITV_Msk >> QSPI_CTL_SUSPITV_Pos)) << QSPI_CTL_SUSPITV_Pos);
+}
 
 /**
   * @brief      Set the QSPI transfer sequence with LSB first.
@@ -284,7 +310,7 @@ extern "C"
 
 /**
   * @brief      Set the QSPI transfer sequence with MSB first.
-  * @param[in]  qspi The pointer of the specified SPI module.
+  * @param[in]  qspi The pointer of the specified QSPI module.
   * @return     None.
   * @details    Clear LSB bit of QSPI_CTL register to set the QSPI transfer sequence with MSB first.
   * \hideinitializer
@@ -299,9 +325,26 @@ extern "C"
   * @details    The data width can be 8 ~ 32 bits.
   * \hideinitializer
   */
-#define QSPI_SET_DATA_WIDTH(qspi, u32Width) \
-    ((qspi)->CTL = ((qspi)->CTL & ~(QSPI_CTL_DWIDTH_Msk)) | \
-                   (((u32Width) & 0x1F) << QSPI_CTL_DWIDTH_Pos))
+static inline void QSPI_SET_DATA_WIDTH(QSPI_T *qspi, uint32_t u32Width)
+{
+    uint32_t u32WidthTmp = u32Width;
+
+    if ((u32Width < 8UL) && (u32Width > 0UL))
+    {
+        u32WidthTmp = 8UL;
+    }
+    else if (u32Width >= 32UL)
+    {
+        u32WidthTmp = 0UL;
+    }
+    else
+    {
+        u32WidthTmp &= 0x1FUL;
+    }
+
+    qspi->CTL = (qspi->CTL & ~QSPI_CTL_DWIDTH_Msk) |
+                (u32WidthTmp << QSPI_CTL_DWIDTH_Pos);
+}
 
 /**
   * @brief      Get the QSPI busy state.
@@ -363,6 +406,7 @@ extern "C"
   * @details    Set SLV3WIRE bit of QSPI_SSCTL register to enable Slave 3-wire mode.
   */
 #define QSPI_ENABLE_3WIRE_MODE(qspi)    ((qspi)->SSCTL |= QSPI_SSCTL_SLV3WIRE_Msk)
+
 /**
   * @brief  Disable QSPI Dual IO function.
   * @param[in]  qspi is the base address of QSPI module.

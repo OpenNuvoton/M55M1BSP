@@ -47,8 +47,8 @@ extern "C"
 #define I2S_FORMAT_PCM_LSB          (6U << I2S_CTL0_FORMAT_Pos)      /*!< PCM LSB data format  \hideinitializer */
 
 /* I2S Data Format */
-#define I2S_ORDER_AT_MSB            (0U)                            /*!< Channel data is at MSB  \hideinitializer */
-#define I2S_ORDER_AT_LSB            I2S_CTL0_ORDER_Msk              /*!< Channel data is at LSB  \hideinitializer */
+#define I2S_ORDER_AT_LSB            (0U)                            /*!< Channel data is at LSB  \hideinitializer */
+#define I2S_ORDER_AT_MSB            I2S_CTL0_ORDER_Msk              /*!< Channel data is at MSB  \hideinitializer */
 
 /* I2S TDM Channel Number */
 #define I2S_TDM_2CH                 0U                              /*!< Use TDM 2 channel  \hideinitializer */
@@ -115,7 +115,7 @@ extern "C"
 /**
   * @brief  Enable zero cross detect function.
   * @param[in] i2s is the base address of I2S module.
-  * @param[in] u32ChMask is the mask for channel number (valid value is from (1~8).
+  * @param[in] u32ChMask is the channel index. Valid values are from 1 to 8.
   * \hideinitializer
   */
 __STATIC_INLINE void I2S_ENABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask)
@@ -129,7 +129,7 @@ __STATIC_INLINE void I2S_ENABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask)
 /**
   * @brief  Disable zero cross detect function.
   * @param[in] i2s is the base address of I2S module.
-  * @param[in] u32ChMask is the mask for channel number (valid value is from (1~8).
+  * @param[in] u32ChMask is the channel index. Valid values are from 1 to 8.
   * \hideinitializer
   */
 __STATIC_INLINE void I2S_DISABLE_TX_ZCD(I2S_T *i2s, uint32_t u32ChMask)
@@ -273,7 +273,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @param[in] u32Mask is the mask for the all interrupt flags.
   * \hideinitializer
   */
-#define I2S_CLR_INT_FLAG(i2s, u32Mask)  ((i2s)->STATUS0 |= (u32Mask))
+#define I2S_CLR_INT_FLAG(i2s, u32Mask)  ((i2s)->STATUS0 = (u32Mask))
 
 /**
   * @brief  This function gets the zero crossing interrupt flag according to the mask parameter.
@@ -290,7 +290,7 @@ __STATIC_INLINE void I2S_SET_MONO_RX_CHANNEL(I2S_T *i2s, uint32_t u32Ch)
   * @param[in] u32Mask is the mask for the all interrupt flags.
   * \hideinitializer
   */
-#define I2S_CLR_ZC_INT_FLAG(i2s, u32Mask)   ((i2s)->STATUS1 |= (u32Mask))
+#define I2S_CLR_ZC_INT_FLAG(i2s, u32Mask)   ((i2s)->STATUS1 = (u32Mask))
 
 /**
   * @brief  Get transmit FIFO level

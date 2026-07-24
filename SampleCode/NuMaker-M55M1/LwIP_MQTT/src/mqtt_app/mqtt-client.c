@@ -72,7 +72,7 @@ _S_MQTT_CLIENT_INFO *mqtt_client_init(uint32_t buffer_size, uint32_t tcp_send_ti
 
 uint32_t mqtt_client_is_connected(_S_MQTT_CLIENT_INFO *cinfo)
 {
-    return (cinfo->tx_control > 0);
+    return (cinfo && cinfo->tx_control && cinfo->ti);
 }
 
 MQTTPacket_connectData *mqtt_client_connect_options(char *client_id, uint32_t alive_interval,
@@ -466,6 +466,12 @@ _E_MQTT_ERRORS mqtt_client_publish(_S_MQTT_CLIENT_INFO *info, char *_topic, cons
     MQTTString topic;
     int32_t ret = 0;
     uint8_t _packet_type;
+
+    // Safety check: ensure connection is valid
+    if (!info || !info->ti || !info->tx_control)
+    {
+        return MQTT_ERROR_TCP_CONNECT;
+    }
 
     if (retry == 0)
     {
@@ -883,7 +889,6 @@ _E_MQTT_ERRORS mqtt_client_unsubscribe(_S_MQTT_CLIENT_INFO *info, char *stopic)
     return mqtt_err;
 }
 
-//const static char * const _client_error[] = {
 const static char *const _client_error[] =
 {
 #undef DEF_MQTT_ERROR
@@ -1011,7 +1016,6 @@ static void _mqtt_recv_process(void *pv)
                 TRACE("fatal error, trying to do a new network connection, ping_flag:%d", ping_transmitted);
                 ping_transmitted = 0;
                 xSemaphoreGive(info->rx_semphr);
-                xSemaphoreTake(info->tx_control, portMAX_DELAY);
 
                 mqtt_client_disconnect(info, 1);//clyu
                 TRACE("tcp delete from process");
@@ -1032,140 +1036,36 @@ static void _mqtt_recv_process(void *pv)
                     vTaskDelete(NULL);
                 }
 
-                //lwip_tls_delete_conf(info->ssl_conf);//clyu
+                // Notify main task that connection is disconnected, let main task handle reconnection
+                if (info->connection_fail_upcall)
+                {
+                    info->connection_fail_upcall(info);
+                }
+
                 TRACE("_mqtt_recv_process Heapsize:%d", xPortGetFreeHeapSize());
-                //clyu
-                retry = 0;
 
-                do
+                // Wait for main task to re-establish connection or for task to be terminated
+                while (!info->kill_recv_process && info->ti == 0)
                 {
-                    vTaskDelay(50000);
-                    mqtt_client_connect(info, info->hostname, info->port_no, info->options, info->ssl_conf);
+                    vTaskDelay(__tick_divider(1000, tick_wait_divider)); // Wait for 1 second
+                }
 
-                    if (info->mqtt_err)
+                // If connection has been re-established, update tcp_info and continue
+                if (info->ti)
+                {
+                    tcp_info = info->ti;
+
+                    if (info->keep_alive_secs)
                     {
-                        printf("re-connect info->mqtt_err:%x, retry:%d\n", info->mqtt_err, ++retry);
-                        vTaskDelay(20000);
+                        ping_tick_remaining = (xTaskGetTickCount() * tick_wait_divider) + (info->keep_alive_secs * 1000);
                     }
-                } while (info->mqtt_err);
-
-                //ends
-
-
-                TRACE("successfully re-connected from recv_process");
-                tcp_info = info->ti;
-
-                if ((info->session_present == 0) && (info->subs_info != 0))
-                {
-                    _E_MQTT_ERRORS mqtt_err = MQTT_ERROR_NONE;
-                    MQTTString topic;
-                    int32_t ret;
-                    uint32_t retry = 2;
-                    _S_MQTT_SUBSCRIBE_INFO *s = info->subs_info;
-
-                    TRACE("subscribing from recv_process");
-
-                    if (1)
+                    else
                     {
-                        while (s)
-                        {
-                            TRACE("Topic:%s", s->topic);
-                            retry = 2;
-                            __fillup_mqttstring(&topic, s->topic);
-
-                            do
-                            {
-                                int32_t qos = s->qos;
-                                ret = MQTTSerialize_subscribe(info->buffer, info->buffer_size, 0, __packet_id(&info->_packet_id), 1, &topic, &qos);
-
-                                if (ret < 1)
-                                {
-                                    mqtt_err = MQTT_ERROR_S_SUBSCRIBE;
-                                    break;
-                                }
-
-                                mqtt_err = _transmit_data(info, info->buffer, ret, 2);
-
-                                if (mqtt_err)
-                                {
-                                    if (mqtt_tcp_error_is_fatal(info->tcp_err))
-                                    {
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    buf = 0;
-                                    err = mqtt_tcp_recv(tcp_info, &buf, info->tcp_recv_wait_time_ms);
-
-                                    if (buf)
-                                    {
-                                        uint16_t pkt_id;
-                                        int32_t count;
-                                        int32_t granted_qos = 0;
-
-
-#if 1
-                                        {
-                                            int i = 0;
-                                            uint8_t *data = buf->ptr->payload;
-
-                                            for (i = 0; i < buf->ptr->len; i++)
-                                            {
-                                                printf("%02x ", data[i]);
-                                            }
-                                        }
-#endif
-
-                                        ret = MQTTDeserialize_suback(&pkt_id, 1, &count, &granted_qos, buf->ptr->payload, buf->ptr->len);
-                                        netbuf_delete(buf);
-                                        TRACE("ret:%d, granted qos:%x, rx pktid:%d, tx pktid:%d", ret, granted_qos, pkt_id, info->_packet_id);
-
-                                        if ((ret >= 0) && (pkt_id == info->_packet_id) && (granted_qos != 0x80))
-                                        {
-                                            s->granted_qos = granted_qos;
-                                            TRACE("subscription successfull from recv process");
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            if (granted_qos == 0x80)
-                                            {
-                                                mqtt_err = MQTT_ERROR_SUBACK_UNGRANTED;
-                                            }
-                                            else
-                                            {
-                                                mqtt_err = MQTT_ERROR_SUBACK_DESERIALIZE;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (--retry == 0)
-                                {
-                                    break;
-                                }
-                            } while (1);
-
-                            s = s->next;
-                        }
+                        ping_tick_remaining = 0;
                     }
 
-                    info->mqtt_err = mqtt_err;
+                    xSemaphoreGive(info->tx_control);
                 }
-
-                if (info->keep_alive_secs)
-                {
-                    //ping_tick_remaining = (xTaskGetTickCount() * tick_wait_divider) + (info->keep_alive_secs * 1000);
-                    ping_tick_remaining = (xTaskGetTickCount() * tick_wait_divider);//clyu
-                }
-                else
-                {
-                    ping_tick_remaining = 0;
-                }
-
-                tcp_info = info->ti;
-                xSemaphoreGive(info->tx_control);
             }
         }
         else
@@ -1341,7 +1241,6 @@ static void _mqtt_recv_process(void *pv)
                     }
 
                     xSemaphoreGive(info->tx_control);
-                    //}//clyu
                     ping_tick_remaining = (xTaskGetTickCount() * tick_wait_divider) + (info->keep_alive_secs * 1000);
                     recv_timeout = info->tcp_recv_wait_time_ms;
                 }
@@ -1371,18 +1270,22 @@ static _E_MQTT_ERRORS _get_transmit_control(_S_MQTT_CLIENT_INFO *info, uint32_t 
     {
         return MQTT_ERROR_INFO;
     }
-    else if (info->ti == 0)
+
+    // Additional safety check: ensure tx_control and rx_semphr are valid
+    if (!info->tx_control || !info->rx_semphr)
     {
-        if (info->tx_control)
+        return MQTT_ERROR_TCP;
+    }
+
+    if (info->ti == 0)
+    {
+        if (xSemaphoreTake(info->tx_control, __tick_divider(wait_ms, tick_wait_divider)) == 0)
         {
-            if (xSemaphoreTake(info->tx_control, __tick_divider(wait_ms, tick_wait_divider)) == 0)
-            {
-                mqtt_err = MQTT_ERROR_TX_SEMPHR;
-            }
+            mqtt_err = MQTT_ERROR_TX_SEMPHR;
         }
         else
         {
-            mqtt_err = MQTT_ERROR_TCP;
+            mqtt_err = MQTT_ERROR_TCP;  // No TCP connection
         }
     }
     else

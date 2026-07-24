@@ -12,6 +12,7 @@
 #ifndef __UTCPDLIB_H__
 #define __UTCPDLIB_H__
 
+#include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
 #include "utcpd_config.h"

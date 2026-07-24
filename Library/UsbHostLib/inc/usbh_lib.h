@@ -169,7 +169,7 @@ extern int  usbh_pooling_hubs(void);
 extern void usbh_install_conn_callback(CONN_FUNC *conn_func, CONN_FUNC *disconn_func);
 extern void usbh_suspend(void);
 extern void usbh_resume(void);
-extern struct udev_t *usbh_find_device(char *hub_id, int port);
+extern struct udev_t *usbh_find_device(const char *hub_id, int port);
 
 /**
  * @brief  A function return current tick count.
@@ -197,12 +197,8 @@ extern int32_t  usbh_cdc_set_line_coding(struct cdc_dev_t *cdev, struct line_cod
 extern int32_t  usbh_cdc_set_control_line_state(struct cdc_dev_t *cdev, int active_carrier, int DTE_present);
 extern int32_t  usbh_cdc_start_polling_status(struct cdc_dev_t *cdev, CDC_CB_FUNC *func);
 extern int32_t  usbh_cdc_start_to_receive_data(struct cdc_dev_t *cdev, CDC_CB_FUNC *func);
-#if (NVT_DCACHE_ON == 1)
-/* for DCACHE On using*/
-extern int32_t  usbh_dcache_cdc_send_data(struct cdc_dev_t *cdev, uint8_t *buff, int buff_len);
-#else
+extern int32_t  usbh_dcache_cdc_send_data(struct cdc_dev_t *cdev, uint8_t const *buff, int buff_len);
 extern int32_t  usbh_cdc_send_data(struct cdc_dev_t *cdev, uint8_t *buff, int buff_len);
-#endif
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
@@ -259,6 +255,10 @@ extern int usbh_uac_start_audio_in(struct uac_dev_t *uac, UAC_CB_FUNC *func);
 extern int usbh_uac_stop_audio_in(struct uac_dev_t *uac);
 extern int usbh_uac_start_audio_out(struct uac_dev_t *uac, UAC_CB_FUNC *func);
 extern int usbh_uac_stop_audio_out(struct uac_dev_t *uac);
+/* UAC 2.0 Clock Source Control APIs */
+extern int usbh_uac2_get_clock_source_id(struct uac_dev_t *uac, uint8_t target);
+extern int usbh_uac2_clock_set_freq(struct uac_dev_t *uac, uint8_t target, uint32_t freq);
+extern int usbh_uac2_clock_get_freq(struct uac_dev_t *uac, uint8_t target, uint32_t *freq);
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
@@ -278,9 +278,7 @@ extern int usbh_uvc_still_image_trigger_control(struct uvc_dev_t *vdev, uint8_t 
 
 /// @cond HIDDEN_SYMBOLS
 
-//extern void dump_ohci_regs(void);
 extern void dump_ehci_regs(void);
-//extern void dump_ohci_ports(void);
 extern void dump_ehci_ports(void);
 extern uint32_t  usbh_memory_used(void);
 

@@ -189,6 +189,14 @@ void DMIC_Init(void)
 void DMIC_Start(void)
 {
     DMIC_EnableChMsk(DMIC0, DMIC_CTL_CHEN0_Msk);
+
+    //Digital MIC (MP34DT01) Spec. turn on time is 10ms
+    CLK_SysTickDelay(10000);
+
+    DMIC_ClearFIFO(DMIC0);
+
+    while (!DMIC_IS_FIFOEMPTY(DMIC0)) {};
+
     DMIC_ENABLE_LPPDMA(DMIC0);
 }
 

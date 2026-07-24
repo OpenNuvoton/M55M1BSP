@@ -305,11 +305,11 @@
                 </option>
                 <option>
                     <name>IExtraOptionsCheck</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state></state>
+                    <state>--no_unaligned_access</state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -1089,7 +1089,7 @@
             <data>
                 <buildActions>
                     <buildAction>
-                        <cmdline>cmd /C "cd /D $PROJ_DIR$ &amp;&amp; ielftool.exe --bin "$PROJ_DIR$/Release/Exe/NuBL32.out" "$PROJ_DIR$/Release/Exe/NuBL32.bin" &amp;&amp; ..\..\FwSign.bat .\Release\Exe\NuBL32.bin ..\FwKey\ECC-P256.pem"</cmdline>
+                        <cmdline>cmd /C "cd /D $PROJ_DIR$ &amp;&amp; ielftool.exe --bin "$PROJ_DIR$/Release/Exe/NuBL32.out" "$PROJ_DIR$/Release/Exe/NuBL32.bin" &amp;&amp; python ..\..\FwSign.py .\Release\Exe\NuBL32.bin ..\UNSAFE_DEV_ONLY_KEY\ECC-P256.pem 0"</cmdline>
                         <workingDirectory></workingDirectory>
                         <buildSequence>postLink</buildSequence>
                     </buildAction>

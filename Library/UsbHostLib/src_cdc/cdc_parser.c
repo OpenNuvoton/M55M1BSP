@@ -7,7 +7,6 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -21,15 +20,17 @@
 
 static int  cdc_parse_cs_interface(CDC_DEV_T *cdev, uint8_t *buffer, int size)
 {
-    DESC_HDR_T      *header;
     CDC_IF_HDR_T    *cifd;
     int             parsed = 0;
+    int             size_tmp = size;
 
-    while (size > 0)
+    while (size_tmp > 0)
     {
-        while (size >= (int)sizeof(DESC_HDR_T))
+
+        while (size_tmp >= (int)sizeof(DESC_HDR_T))
         {
-            header = (DESC_HDR_T *)buffer;
+            DESC_HDR_T      *header;
+            header = (DESC_HDR_T *)&buffer[parsed];
 
             if (header->bLength < 2)
             {
@@ -38,7 +39,9 @@ static int  cdc_parse_cs_interface(CDC_DEV_T *cdev, uint8_t *buffer, int size)
             }
 
             if (header->bDescriptorType != CDC_CS_INTERFACE)
+            {
                 return parsed;
+            }
 
             cifd = (CDC_IF_HDR_T *)header;
 
@@ -78,7 +81,9 @@ static int  cdc_parse_cs_interface(CDC_DEV_T *cdev, uint8_t *buffer, int size)
                     CDC_DBGMSG("Union Functional\n");
 
                     if (cifd->bLength >= 5)
+                    {
                         cdev->ifnum_data = cifd->payload[1];
+                    }
 
                     if (cifd->bLength >= 6)
                     {
@@ -122,11 +127,14 @@ static int  cdc_parse_cs_interface(CDC_DEV_T *cdev, uint8_t *buffer, int size)
                 case CDC_DT_ATM_FUNC:
                     CDC_DBGMSG("ATM Networking Functional\n");
                     break;
+
+                default:
+                    CDC_DBGMSG("Unknown Functional Descriptor: 0x%x\n", cifd->bDescriptorSubtype);
+                    break;
             }
 
-            buffer += header->bLength;
             parsed += header->bLength;
-            size -= header->bLength;
+            size_tmp -= header->bLength;
         }
     }   /* end of while */
 
@@ -138,18 +146,18 @@ int  cdc_config_parser(CDC_DEV_T *cdev)
     UDEV_T          *udev = cdev->udev;
     DESC_CONF_T     *config;
     DESC_HDR_T      *header;
-    DESC_IF_T       *ifd;
-    uint8_t         *bptr;
-    int             size, result;
+    uint8_t         *cfg_buff;
+    int             parsed_len;
+    int             size;
 
     config = (DESC_CONF_T *)udev->cfd_buff;
-    bptr = (uint8_t *)config;
-    bptr += config->bLength;
+    cfg_buff = (uint8_t *)config;
+    parsed_len = config->bLength;
     size = config->wTotalLength - config->bLength;
 
     while (size >= (int)sizeof(DESC_HDR_T))
     {
-        header = (DESC_HDR_T *)bptr;
+        header = (DESC_HDR_T *)&cfg_buff[parsed_len];
 
         if ((header->bLength > size) || (header->bLength < 2))
         {
@@ -162,17 +170,18 @@ int  cdc_config_parser(CDC_DEV_T *cdev)
          */
         if (header->bDescriptorType == USB_DT_INTERFACE)
         {
-            ifd = (DESC_IF_T *)header;
+            const DESC_IF_T       *ifd;
+            ifd = (const DESC_IF_T *)header;
 
             if (ifd->bInterfaceNumber == cdev->iface_cdc->if_num)
             {
-                bptr += header->bLength;
+                parsed_len += header->bLength;
                 size -= header->bLength;
                 break;
             }
         }
 
-        bptr += header->bLength;
+        parsed_len += header->bLength;
         size -= header->bLength;
     }   /* end of while */
 
@@ -182,7 +191,7 @@ int  cdc_config_parser(CDC_DEV_T *cdev)
 
     while (size >= (int)sizeof(DESC_HDR_T))
     {
-        header = (DESC_HDR_T *)bptr;
+        header = (DESC_HDR_T *)&cfg_buff[parsed_len];
 
         if ((header->bLength > size) || (header->bLength < 2))
         {
@@ -194,14 +203,19 @@ int  cdc_config_parser(CDC_DEV_T *cdev)
          *  Is a class interface descriptor?
          */
         if (header->bDescriptorType != CDC_CS_INTERFACE)
+        {
             break;
+        }
 
-        result = cdc_parse_cs_interface(cdev, bptr, size);
+        int             result;
+        result = cdc_parse_cs_interface(cdev, &cfg_buff[parsed_len], size);
 
         if (result < 0)
+        {
             return result;
+        }
 
-        bptr += result;
+        parsed_len += result;
         size -= result;
     }   /* end of while */
 

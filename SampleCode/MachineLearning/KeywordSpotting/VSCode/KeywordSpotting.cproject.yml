@@ -51,6 +51,7 @@ project:
           C-CPP:
             - -fno-exceptions -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -Wconditional-uninitialized
+            - -mno-unaligned-access
           CPP:
             - -xc++
             - -std=c++14
@@ -67,6 +68,7 @@ project:
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
             - -Wmaybe-uninitialized
+            - -mno-unaligned-access
           CPP:
             - -std=c++14
           Link:

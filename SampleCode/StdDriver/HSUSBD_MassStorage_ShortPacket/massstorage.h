@@ -112,6 +112,10 @@ struct CSW
 };
 
 /*-------------------------------------------------------------*/
+#define DATA_FLASH_STORAGE_SIZE    (64*1024)   /* Configure the DATA FLASH storage size */
+#define MASS_BUFFER_SIZE           256         /* Mass Storage command buffer size */
+
+/*-------------------------------------------------------------*/
 void MSC_Init(void);
 void MSC_InitForHighSpeed(void);
 void MSC_InitForFullSpeed(void);

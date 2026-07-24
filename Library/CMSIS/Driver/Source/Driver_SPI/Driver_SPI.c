@@ -44,6 +44,9 @@
 #define RTE_SPI_SPI2                        RTE_SPI2
 #define RTE_SPI_SPI3                        RTE_SPI3
 
+#define SPI_DATA_LOST_INT_MASK             (SPI_SLVUR_INT_MASK | SPI_SLVBE_INT_MASK | SPI_TXUF_INT_MASK | SPI_FIFO_RXOV_INT_MASK)
+#define SPI_SLAVE_DATA_LOST_INT_MASK       (SPI_SLVUR_INT_MASK | SPI_SLVBE_INT_MASK | SPI_TXUF_INT_MASK)
+
 // Configuration depending on RTE_SPI.h
 // Check if at least one peripheral instance is configured in RTE_SPI.h
 #if (!(RTE_SPI_SPI0) && !(RTE_SPI_SPI1) && !(RTE_SPI_SPI2) && !(RTE_SPI_SPI3))
@@ -261,17 +264,70 @@ static const ARM_SPI_CAPABILITIES DriverCapabilities =
     1U,  // Simplex Mode (Master and Slave)
     0U,  // TI Synchronous Serial Interface
     0U,  // Microwire Interface
-    1U,  // Signal Mode Fault event: \ref ARM_SPI_EVENT_MODE_FAULT
+    0U,  // Signal Mode Fault event: \ref ARM_SPI_EVENT_MODE_FAULT
     0U   // Reserved
 };
 
 //------------------------------------------------------------------------------
+static uint32_t SPI_GetActiveDataLostMask(const SPI_RESOURCES *pSPIn)
+{
+    uint32_t u32Mask = 0U;
+
+    if ((pSPIn->sState.u32Mode & ARM_SPI_MODE_SLAVE) != 0U)
+    {
+        u32Mask |= SPI_SLAVE_DATA_LOST_INT_MASK;
+    }
+
+    if (pSPIn->sXfer.pu8RxBuf != NULL)
+    {
+        u32Mask |= SPI_FIFO_RXOV_INT_MASK;
+    }
+
+    return u32Mask;
+}
+
+static void SPI_HandleDataLost(SPI_RESOURCES *pSPIn, uint32_t u32DataLostMask)
+{
+    SPI_T *phspi = (SPI_T *)pSPIn->phspi;
+
+    SPI_ClearIntFlag(phspi, u32DataLostMask);
+    SPI_DisableInt(phspi, SPI_DATA_LOST_INT_MASK | SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
+
+    if (pSPIn->spdma.i32TxChnId != -1)
+    {
+        nu_pdma_channel_terminate(pSPIn->spdma.i32TxChnId);
+    }
+
+    if (pSPIn->spdma.i32RxChnId != -1)
+    {
+        nu_pdma_channel_terminate(pSPIn->spdma.i32RxChnId);
+    }
+
+    SPI_DISABLE_TX_RX_PDMA(phspi);
+    SPI_ReleaseDefaultTxBuffer(pSPIn);
+
+    if (pSPIn->sState.sDrvStatus.u8Busy == 0U)
+    {
+        return;
+    }
+
+    pSPIn->sState.sDrvStatus.u8Busy = 0U;
+    pSPIn->sState.sDrvStatus.u8DataLost = 1U;
+
+    if (pSPIn->sState.cb_event)
+    {
+        pSPIn->sState.cb_event(ARM_SPI_EVENT_DATA_LOST);
+    }
+}
+
 static void SPI_PDMA_RX_CB(void *ptr_priv, uint32_t event)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)ptr_priv;
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
+    uint32_t u32ActiveDataLostMask = SPI_GetActiveDataLostMask(pSPIn);
     uint32_t u32DataBits = ((phspi->CTL & SPI_CTL_DWIDTH_Msk) >> SPI_CTL_DWIDTH_Pos);
     uint32_t item_size = (u32DataBits == 0) ? 4 : ((u32DataBits + 7U) / 8U);
+    uint32_t u32DataLostMask = 0U;
     volatile int32_t u32TimeoutCnt = SystemCoreClock / 1000;
 
     while ((SPI_IS_BUSY(phspi) || ((phspi->STATUS & SPI_STATUS_RXCNT_Msk) != 0)) && (--u32TimeoutCnt > 0)) {}
@@ -286,12 +342,39 @@ static void SPI_PDMA_RX_CB(void *ptr_priv, uint32_t event)
         pSPIn->sXfer.u32RxCnt = bytes / item_size;
     }
 
+    if ((u32ActiveDataLostMask & SPI_SLVUR_INT_MASK) && SPI_GetIntFlag(phspi, SPI_SLVUR_INT_MASK))
+    {
+        u32DataLostMask |= SPI_SLVUR_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_SLVBE_INT_MASK) && SPI_GetIntFlag(phspi, SPI_SLVBE_INT_MASK))
+    {
+        u32DataLostMask |= SPI_SLVBE_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_TXUF_INT_MASK) && SPI_GetIntFlag(phspi, SPI_TXUF_INT_MASK))
+    {
+        u32DataLostMask |= SPI_TXUF_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_FIFO_RXOV_INT_MASK) && SPI_GetIntFlag(phspi, SPI_FIFO_RXOV_INT_MASK))
+    {
+        u32DataLostMask |= SPI_FIFO_RXOV_INT_MASK;
+    }
+
+    if (u32DataLostMask != 0U)
+    {
+        SPI_HandleDataLost(pSPIn, u32DataLostMask);
+        return;
+    }
+
     if ((pSPIn->sXfer.u32TxCnt >= pSPIn->sXfer.u32Num ||
             pSPIn->sXfer.pu8TxBuf == NULL) &&
             (pSPIn->sXfer.u32RxCnt >= pSPIn->sXfer.u32Num ||
              pSPIn->sXfer.pu8RxBuf == NULL) &&
             pSPIn->sState.sDrvStatus.u8Busy)
     {
+        SPI_DisableInt(phspi, u32ActiveDataLostMask);
         SPI_DISABLE_TX_RX_PDMA(phspi);
 
         SPI_ReleaseDefaultTxBuffer(pSPIn);
@@ -307,8 +390,10 @@ static void SPI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)ptr_priv;
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
+    uint32_t u32ActiveDataLostMask = SPI_GetActiveDataLostMask(pSPIn);
     uint32_t u32DataBits = ((phspi->CTL & SPI_CTL_DWIDTH_Msk) >> SPI_CTL_DWIDTH_Pos);
     uint32_t item_size = (u32DataBits == 0) ? 4 : ((u32DataBits + 7U) / 8U);
+    uint32_t u32DataLostMask = 0U;
     volatile int32_t u32TimeoutCnt = SystemCoreClock / 1000;
 
     while ((SPI_IS_BUSY(phspi) || ((phspi->STATUS & SPI_STATUS_TXCNT_Msk) != 0)) && (--u32TimeoutCnt > 0)) {}
@@ -323,6 +408,32 @@ static void SPI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
         pSPIn->sXfer.u32TxCnt = bytes / item_size;
     }
 
+    if ((u32ActiveDataLostMask & SPI_SLVUR_INT_MASK) && SPI_GetIntFlag(phspi, SPI_SLVUR_INT_MASK))
+    {
+        u32DataLostMask |= SPI_SLVUR_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_SLVBE_INT_MASK) && SPI_GetIntFlag(phspi, SPI_SLVBE_INT_MASK))
+    {
+        u32DataLostMask |= SPI_SLVBE_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_TXUF_INT_MASK) && SPI_GetIntFlag(phspi, SPI_TXUF_INT_MASK))
+    {
+        u32DataLostMask |= SPI_TXUF_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_FIFO_RXOV_INT_MASK) && SPI_GetIntFlag(phspi, SPI_FIFO_RXOV_INT_MASK))
+    {
+        u32DataLostMask |= SPI_FIFO_RXOV_INT_MASK;
+    }
+
+    if (u32DataLostMask != 0U)
+    {
+        SPI_HandleDataLost(pSPIn, u32DataLostMask);
+        return;
+    }
+
     if ((pSPIn->sXfer.u32TxCnt >= pSPIn->sXfer.u32Num ||
             pSPIn->sXfer.pu8TxBuf == NULL) &&
             (pSPIn->sXfer.u32RxCnt >= pSPIn->sXfer.u32Num ||
@@ -331,6 +442,7 @@ static void SPI_PDMA_TX_CB(void *ptr_priv, uint32_t event)
     {
         //SPI_ClearIntFlag(phspi, SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
         //SPI_DisableInt(phspi, SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK); // Disable TX FIFO threshold interrupt
+        SPI_DisableInt(phspi, u32ActiveDataLostMask);
         SPI_DISABLE_TX_RX_PDMA(phspi);
         SPI_ReleaseDefaultTxBuffer(pSPIn);
         pSPIn->sState.sDrvStatus.u8Busy = 0U;
@@ -442,12 +554,49 @@ static void SPI_IRQHandler(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
     SPI_T *phspi = (SPI_T *)pSPIn->phspi;
+    uint32_t u32ActiveDataLostMask = SPI_GetActiveDataLostMask(pSPIn);
     uint32_t u32DataBits = ((phspi->CTL & SPI_CTL_DWIDTH_Msk) >> SPI_CTL_DWIDTH_Pos);
     uint32_t u32PatternMask = (0xFFFFFFFF >> (32 - ((u32DataBits == 0) ? 32 : u32DataBits)));
+    uint32_t u32DataLostMask = 0U;
 
     if (SPI_GetIntFlag(phspi, SPI_SSINACT_INT_MASK))
     {
         SPI_ClearIntFlag(phspi, SPI_SSINACT_INT_MASK);
+    }
+
+    if ((u32ActiveDataLostMask & SPI_SLVUR_INT_MASK) && SPI_GetIntFlag(phspi, SPI_SLVUR_INT_MASK))
+    {
+        u32DataLostMask |= SPI_SLVUR_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_SLVBE_INT_MASK) && SPI_GetIntFlag(phspi, SPI_SLVBE_INT_MASK))
+    {
+        u32DataLostMask |= SPI_SLVBE_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_TXUF_INT_MASK) && SPI_GetIntFlag(phspi, SPI_TXUF_INT_MASK))
+    {
+        u32DataLostMask |= SPI_TXUF_INT_MASK;
+    }
+
+    if ((u32ActiveDataLostMask & SPI_FIFO_RXOV_INT_MASK) && SPI_GetIntFlag(phspi, SPI_FIFO_RXOV_INT_MASK))
+    {
+        u32DataLostMask |= SPI_FIFO_RXOV_INT_MASK;
+    }
+
+    if (u32DataLostMask != 0U)
+    {
+        SPI_ClearIntFlag(phspi, u32DataLostMask);
+        SPI_DisableInt(phspi, SPI_DATA_LOST_INT_MASK | SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
+        pSPIn->sState.sDrvStatus.u8Busy = 0U;
+        pSPIn->sState.sDrvStatus.u8DataLost = 1U;
+
+        if (pSPIn->sState.cb_event)
+        {
+            pSPIn->sState.cb_event(ARM_SPI_EVENT_DATA_LOST);
+        }
+
+        return;
     }
 
     if (SPI_GetIntFlag(phspi, SPI_FIFO_RXTO_INT_MASK))
@@ -743,8 +892,9 @@ static int32_t SPIn_PowerControl(uint32_t u32Inst, ARM_POWER_STATE state)
                     pSPIn->spdma.i32TxChnId = -1;
                 }
 
-                SPI_InterruptConfig(u32Inst, SPI_OP_ENABLE); // Enable SPI interrupts
             }
+
+            SPI_InterruptConfig(u32Inst, SPI_OP_ENABLE); // Enable SPI interrupts
 
             SPI_ENABLE(phspi);
 
@@ -825,17 +975,20 @@ static int32_t SPIn_Send(uint32_t u32Inst, const void *data, uint32_t num)
 
         SPI_PDMA_RXInit(pSPIn);
         SPI_PDMA_TXInit(pSPIn);
+        SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn));
+        SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn));
         /* Enable SPI master DMA function */
         SPI_TRIGGER_TX_RX_PDMA(phspi);
     }
     else
     {
-        SPI_ClearIntFlag(phspi, SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
+        SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn) | SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
 
         /* Set TX FIFO threshold, enable TX FIFO threshold interrupt and RX FIFO time-out interrupt */
-        SPI_EnableInt(phspi, ((pSPIn->sConfig.u32XferMode == RTE_SPI_HALF_XFER_MODE) ?
-                              SPI_FIFO_TXTH_INT_MASK :
-                              (SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK)));
+        SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn) |
+                  ((pSPIn->sConfig.u32XferMode == RTE_SPI_HALF_XFER_MODE) ?
+                   SPI_FIFO_TXTH_INT_MASK :
+                   (SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK)));
     }
 
     return ARM_DRIVER_OK;
@@ -900,18 +1053,21 @@ static int32_t SPIn_Receive(uint32_t u32Inst, void *data, uint32_t num)
 
         SPI_PDMA_TXInit(pSPIn);
         SPI_PDMA_RXInit(pSPIn);
+        SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn));
+        SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn));
         /* Enable SPI master DMA function */
         SPI_TRIGGER_TX_RX_PDMA(phspi);
     }
     else
     {
-        SPI_ClearIntFlag(phspi, SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
+        SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn) | SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
 
         /* Set TX FIFO threshold, enable TX FIFO threshold interrupt and RX FIFO time-out interrupt */
         SPI_EnableInt(phspi,
-                      ((pSPIn->sConfig.u32XferMode == RTE_SPI_HALF_XFER_MODE) ?
-                       SPI_FIFO_RXTO_INT_MASK :
-                       (SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK)));
+              SPI_GetActiveDataLostMask(pSPIn) |
+                  ((pSPIn->sConfig.u32XferMode == RTE_SPI_HALF_XFER_MODE) ?
+                   SPI_FIFO_RXTO_INT_MASK :
+                   (SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK)));
     }
 
     return ARM_DRIVER_OK;
@@ -987,39 +1143,45 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
         if (data_in && !data_out)  // **Half-Duplex RX Mode**
         {
             SPI_PDMA_RXInit(pSPIn);
+            SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn));
+            SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn));
             SPI_TRIGGER_RX_PDMA(phspi);
         }
         else if (data_out && !data_in)  // **Half-Duplex TX Mode**
         {
             SPI_PDMA_TXInit(pSPIn);
+            SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn));
+            SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn));
             SPI_TRIGGER_TX_PDMA(phspi);
         }
         else  // **Full-Duplex Mode**
         {
             SPI_PDMA_RXInit(pSPIn);
             SPI_PDMA_TXInit(pSPIn);
+            SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn));
+            SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn));
             SPI_TRIGGER_TX_RX_PDMA(phspi);
         }
     }
     else
     {
-        SPI_ClearIntFlag(phspi, SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
+        SPI_ClearIntFlag(phspi, SPI_GetActiveDataLostMask(pSPIn) | SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
 
         // Set TX FIFO threshold, enable TX FIFO threshold interrupt and RX FIFO time-out interrupt
         if (pSPIn->sConfig.u32XferMode == RTE_SPI_HALF_XFER_MODE)
         {
             if (data_out && !data_in)  // **Half-Duplex TX Mode**
             {
-                SPI_EnableInt(phspi, SPI_FIFO_TXTH_INT_MASK);
+                SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn) | SPI_FIFO_TXTH_INT_MASK);
             }
             else if (data_in && !data_out)  // **Half-Duplex RX Mode**
             {
-                SPI_EnableInt(phspi, SPI_FIFO_RXTO_INT_MASK);
+                SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn) | SPI_FIFO_RXTO_INT_MASK);
             }
         }
         else  // **Full-Duplex Mode**
         {
-            SPI_EnableInt(phspi, SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
+            SPI_EnableInt(phspi, SPI_GetActiveDataLostMask(pSPIn) | SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
         }
     }
 
@@ -1034,6 +1196,9 @@ static int32_t SPIn_Transfer(uint32_t u32Inst, const void *data_out, void *data_
 static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
 {
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_SPI_INSTANCE(u32Inst)];
+    SPI_T *phspi = (SPI_T *)pSPIn->phspi;
+    uint32_t u32DataBits = ((phspi->CTL & SPI_CTL_DWIDTH_Msk) >> SPI_CTL_DWIDTH_Pos);
+    uint32_t u32ItemSize = (u32DataBits == 0U) ? 4U : ((u32DataBits + 7U) / 8U);
 
     // Check if the SPI is configured
     if (!(pSPIn->sState.u8State & SPI_CONFIGURED))
@@ -1047,7 +1212,7 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
         if (pSPIn->spdma.i32RxChnId != -1)
         {
             pSPIn->sXfer.u32RxCnt = nu_pdma_transferred_byte_get(
-                                        pSPIn->spdma.i32RxChnId, pSPIn->sXfer.u32Num);
+                                        pSPIn->spdma.i32RxChnId, pSPIn->sXfer.u32Num * u32ItemSize) / u32ItemSize;
         }
 
         return pSPIn->sXfer.u32RxCnt;
@@ -1057,7 +1222,7 @@ static uint32_t SPIn_GetDataCount(uint32_t u32Inst)
         if (pSPIn->spdma.i32TxChnId != -1)
         {
             pSPIn->sXfer.u32TxCnt = nu_pdma_transferred_byte_get(
-                                        pSPIn->spdma.i32TxChnId, pSPIn->sXfer.u32Num);
+                                        pSPIn->spdma.i32TxChnId, pSPIn->sXfer.u32Num * u32ItemSize) / u32ItemSize;
         }
 
     return pSPIn->sXfer.u32TxCnt;
@@ -1089,8 +1254,8 @@ static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
         // Disable TX and RX DMA
         SPI_DISABLE_TX_RX_PDMA(phspi);
 
-        // Disable TX FIFO threshold interrupt and RX timeout interrupt
-        SPI_DisableInt(phspi, SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
+        // Disable TX FIFO threshold, RX timeout, and data-lost related interrupts
+        SPI_DisableInt(phspi, SPI_DATA_LOST_INT_MASK | SPI_FIFO_TXTH_INT_MASK | SPI_FIFO_RXTO_INT_MASK);
 
         // Clear the transfer information
         memset(&pSPIn->sXfer, 0, sizeof(SPI_TRANSFER_INFO));

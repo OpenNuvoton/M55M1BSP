@@ -30,6 +30,7 @@
 #include "mad.h"
 
 #define MP3_FILE    "0:\\test.mp3"
+#define MP3_BUFFER_WAIT_TIMEOUT_COUNT      ((SystemCoreClock != 0UL) ? SystemCoreClock : __HXT)
 
 /*
  * This is perhaps the simplest example use of the MAD high-level API.
@@ -69,49 +70,75 @@ volatile uint8_t aPCMBuffer_Full[2] = {0, 0};
 struct AudioInfoObject audioInfo;
 
 // Parse MP3 header and get some informations
-void MP3_ParseHeaderInfo(uint8_t *pFileName)
+static uint32_t MP3_ParseHeaderInfo(uint8_t *pFileName)
 {
     FRESULT res;
     uint32_t fptr = 0;
 
     res = f_open(&mp3FileObject, (void *)pFileName, FA_OPEN_EXISTING | FA_READ);
 
-    if (res == FR_OK)
+    if (res != FR_OK)
     {
-        printf("file is opened!!\r\n");
-        f_stat((void *)pFileName, &Finfo);
-        audioInfo.playFileSize = Finfo.fsize;
+        return 0UL;
+    }
 
-        while (1)
+    printf("file is opened!!\r\n");
+
+    res = f_stat((void *)pFileName, &Finfo);
+
+    if (res != FR_OK)
+    {
+        goto cleanup;
+    }
+
+    audioInfo.playFileSize = Finfo.fsize;
+
+    while (1)
+    {
+        res = f_read(&mp3FileObject, (char *)(&MadInputBuffer[0]), FILE_IO_BUFFER_SIZE, &ReturnSize);
+
+        if (res != FR_OK)
         {
-            res = f_read(&mp3FileObject, (char *)(&MadInputBuffer[0]), FILE_IO_BUFFER_SIZE, &ReturnSize);
+            goto cleanup;
+        }
 
-            //parsing MP3 header
-            mp3CountV1L3Headers((unsigned char *)(&MadInputBuffer[0]), ReturnSize);
+        //parsing MP3 header
+        mp3CountV1L3Headers((unsigned char *)(&MadInputBuffer[0]), ReturnSize);
 
-            if (audioInfo.mp3SampleRate != 0)
-                // Got the header and sampling rate
-                break;
+        if (audioInfo.mp3SampleRate != 0)
+        {
+            break;
+        }
 
-            // ID3 may too long, try to parse following data
-            // but only forward file point to half of buffer to prevent the header is
-            // just right at the boundry of buffer
-            fptr += FILE_IO_BUFFER_SIZE / 2;
+        // ID3 may too long, try to parse following data
+        // but only forward file point to half of buffer to prevent the header is
+        // just right at the boundry of buffer
+        fptr += FILE_IO_BUFFER_SIZE / 2;
 
-            if (fptr >= audioInfo.playFileSize)
-                // Fail to find header
-                break;
+        if (fptr >= audioInfo.playFileSize)
+        {
+            break;
+        }
 
-            f_lseek(&mp3FileObject, fptr);
+        res = f_lseek(&mp3FileObject, fptr);
+
+        if (res != FR_OK)
+        {
+            goto cleanup;
         }
     }
-    else
+
+cleanup:
+
+    if (f_close(&mp3FileObject) != FR_OK)
     {
-        //printf("Open File Error\r\n");
-        return;
+        return 0UL;
     }
 
-    f_close(&mp3FileObject);
+    if (audioInfo.mp3SampleRate == 0U)
+    {
+        return 0UL;
+    }
 
     printf("====[MP3 Info]======\r\n");
     printf("FileSize = %d\r\n", audioInfo.playFileSize);
@@ -119,6 +146,8 @@ void MP3_ParseHeaderInfo(uint8_t *pFileName)
     printf("BitRate = %d\r\n", audioInfo.mp3BitRate);
     printf("Channel = %d\r\n", audioInfo.mp3Channel);
     printf("=====================\r\n");
+
+    return 1UL;
 }
 
 // Enable I2S TX with PDMA function
@@ -157,6 +186,7 @@ void MP3Player(void)
     volatile uint32_t pcmbuf_idx, i;
     volatile unsigned int Mp3FileOffset = 0;
     uint16_t sampleL, sampleR;
+    uint32_t u32TimeOutCnt;
 
     pcmbuf_idx = 0;
     u8PCMBuffer_Playing = 0;
@@ -166,7 +196,10 @@ void MP3Player(void)
     memset((void *)aPCMBuffer_Full, 0, sizeof(aPCMBuffer_Full));
 
     /* Parse MP3 header */
-    MP3_ParseHeaderInfo((uint8_t *)MP3_FILE);
+    if (MP3_ParseHeaderInfo((uint8_t *)MP3_FILE) == 0UL)
+    {
+        return;
+    }
 
     /* First the structures used by libmad must be initialized. */
     mad_stream_init(&Stream);
@@ -188,7 +221,11 @@ void MP3Player(void)
 #endif
 
     /* Open I2S0 interface and set to slave mode, stereo channel, I2S format */
-    I2S_Open(I2S_PORT, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_DISABLE_MONO, I2S_FORMAT_I2S);
+    if (I2S_Open(I2S_PORT, I2S_MODE_SLAVE, 48000, I2S_DATABIT_16, I2S_DISABLE_MONO, I2S_FORMAT_I2S) == 0UL)
+    {
+        printf("Open I2S interface failed!\n");
+        goto stop;
+    }
 
     /* Set JK-EN low to enable phone jack on NuMaker board. */
     SET_GPIO_PD1();
@@ -196,7 +233,12 @@ void MP3Player(void)
     PD1 = 0;
 
     /* Set MCLK and enable MCLK */
-    I2S_EnableMCLK(I2S_PORT, 12000000);
+    if (I2S_EnableMCLK(I2S_PORT, 12000000) == 0UL)
+    {
+        printf("Enable I2S MCLK failed!\n");
+        goto stop;
+    }
+
     I2S_PORT->CTL0 |= I2S_CTL0_ORDER_Msk;
 
 #if NAU8822
@@ -314,7 +356,18 @@ void MP3Player(void)
         {
             //if next buffer is still full (playing), wait until it's empty
             if (aPCMBuffer_Full[u8PCMBufferTargetIdx] == 1)
-                while (aPCMBuffer_Full[u8PCMBufferTargetIdx]);
+            {
+                u32TimeOutCnt = MP3_BUFFER_WAIT_TIMEOUT_COUNT;
+
+                while (aPCMBuffer_Full[u8PCMBufferTargetIdx] == 1)
+                {
+                    if (--u32TimeOutCnt == 0UL)
+                    {
+                        printf("Wait for MP3 buffer timeout!\n");
+                        goto stop;
+                    }
+                }
+            }
         }
         else
         {
@@ -345,7 +398,18 @@ void MP3Player(void)
                 //printf("change to ==>%d ..\n", u8PCMBufferTargetIdx);
                 /* if next buffer is still full (playing), wait until it's empty */
                 if ((aPCMBuffer_Full[u8PCMBufferTargetIdx] == 1) && (audioInfo.mp3Playing))
-                    while (aPCMBuffer_Full[u8PCMBufferTargetIdx]);
+                {
+                    u32TimeOutCnt = MP3_BUFFER_WAIT_TIMEOUT_COUNT;
+
+                    while (aPCMBuffer_Full[u8PCMBufferTargetIdx] == 1)
+                    {
+                        if (--u32TimeOutCnt == 0UL)
+                        {
+                            printf("Wait for MP3 buffer timeout!\n");
+                            goto stop;
+                        }
+                    }
+                }
             }
         }
     }
@@ -358,6 +422,10 @@ stop:
     mad_frame_finish(&Frame);
     mad_stream_finish(&Stream);
 
-    f_close(&mp3FileObject);
+    if (f_close(&mp3FileObject) != FR_OK)
+    {
+        printf("Close file error!\n");
+    }
+
     StopPlay();
 }

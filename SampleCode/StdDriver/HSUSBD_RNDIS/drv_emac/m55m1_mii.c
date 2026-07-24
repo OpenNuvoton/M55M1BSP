@@ -145,33 +145,38 @@ int32_t mii_ethtool_gset(synopGMACdevice *gmacdev, uint8_t reset)
         printf("mii:: 100M FULLDUPLEX\n");
         gmacdev->DuplexMode = FULLDUPLEX;
         gmacdev->Speed      = SPEED100;
+        val = LPA_100FULL;
     }
     else if (val & LPA_100HALF)
     {
         printf("mii:: 100M HALFDUPLEX\n");
         gmacdev->DuplexMode = HALFDUPLEX;
         gmacdev->Speed      = SPEED100;
+        val = LPA_100HALF;
     }
     else if (val & LPA_10FULL)
     {
         printf("mii:: 10M FULLDUPLEX\n");
         gmacdev->DuplexMode = FULLDUPLEX;
         gmacdev->Speed      = SPEED10;
+        val = LPA_10FULL;
     }
     else if (val & LPA_10HALF)
     {
         printf("mii:: 10M HALFDUPLEX\n");
         gmacdev->DuplexMode = HALFDUPLEX;
         gmacdev->Speed      = SPEED10;
+        val = LPA_10HALF;
     }
     else
     {
         printf("mii:: 100M FULLDUPLEX (Default: LPA 0x%x)\n", val);
         gmacdev->DuplexMode = FULLDUPLEX;
         gmacdev->Speed      = SPEED100;
+        val = LPA_100FULL;
     }
 
-    return 0;
+    return val;
 }
 
 int32_t mii_link_ok(synopGMACdevice *gmacdev)

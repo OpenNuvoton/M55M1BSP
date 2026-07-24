@@ -6361,7 +6361,7 @@ struct ec_response_pd_chip_info
     uint16_t vendor_id;
     uint16_t product_id;
     uint16_t device_id;
-    union
+    union __ec_align2
     {
         uint8_t fw_version_string[8];
         uint64_t fw_version_number;
@@ -6373,12 +6373,12 @@ struct ec_response_pd_chip_info_v1
     uint16_t vendor_id;
     uint16_t product_id;
     uint16_t device_id;
-    union
+    union __ec_align2
     {
         uint8_t fw_version_string[8];
         uint64_t fw_version_number;
     };
-    union
+    union __ec_align2
     {
         uint8_t min_req_fw_version_string[8];
         uint64_t min_req_fw_version_number;

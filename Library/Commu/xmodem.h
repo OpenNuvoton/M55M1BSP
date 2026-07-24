@@ -23,16 +23,23 @@
 #define XMD_MAX_TIMEOUT         0x600
 
 /* Xmodem Status */
-#define XMD_STS_SUCCESS         0
-#define XMD_STS_USER_CANCEL     -1
-#define XMD_STS_NAK             -2
-#define XMD_STS_TIMEOUT         -3
-#define XMD_STS_PACKET_NUM_ERR  -4
-#define XMD_STS_WRITE_FAIL      -5
+#define XMD_STS_SUCCESS             0
+#define XMD_STS_USER_CANCEL         -1
+#define XMD_STS_NAK                 -2
+#define XMD_STS_TIMEOUT             -3
+#define XMD_STS_PACKET_NUM_ERR      -4
+#define XMD_STS_WRITE_FAIL          -5
+#define XMD_STS_BUF_OP_FAIL         -6
 
-#define MAXRETRANS              25
+/* Error status Code for XmodemSend */
+#define XMD_STS_SEND_USER_CANCEL    -7
+#define XMD_STS_SEND_NO_SYNC        -8
+#define XMD_STS_SEND_XMIT_ERR       -9
+#define XMD_STS_SEND_EOT_ACK_FAIL   -10
+
+#define MAXRETRANS                  25
 
 int32_t XmodemRecv(uint32_t u32DestAddr);
-int32_t XmodemSend(uint8_t *pu8Src, int32_t i32SrcSize);
+int32_t XmodemSend(const uint8_t *pu8SrcBuf, int32_t i32SrcSize);
 
 #endif

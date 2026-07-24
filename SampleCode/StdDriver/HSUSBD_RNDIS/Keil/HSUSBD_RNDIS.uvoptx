@@ -357,7 +357,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Library\StdDriver\src\emac\synopGMAC_Dev.c</PathWithFileName>
+      <PathWithFileName>..\drv_emac\synopGMAC_Dev.c</PathWithFileName>
       <FilenameWithoutPath>synopGMAC_Dev.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -369,7 +369,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Library\StdDriver\src\emac\synopGMAC_network_interface.c</PathWithFileName>
+      <PathWithFileName>..\drv_emac\synopGMAC_network_interface.c</PathWithFileName>
       <FilenameWithoutPath>synopGMAC_network_interface.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -381,7 +381,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\..\Library\StdDriver\src\emac\synopGMAC_plat.c</PathWithFileName>
+      <PathWithFileName>..\drv_emac\synopGMAC_plat.c</PathWithFileName>
       <FilenameWithoutPath>synopGMAC_plat.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>

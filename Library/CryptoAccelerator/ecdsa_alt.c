@@ -83,11 +83,15 @@ int derive_mpi(const mbedtls_ecp_group *grp, mbedtls_mpi *x,
     MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(x, buf, use_size));
 
     if (use_size * 8 > grp->nbits)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_shift_r(x, use_size * 8 - grp->nbits));
+    }
 
     /* While at it, reduce modulo N */
     if (mbedtls_mpi_cmp_mpi(x, &grp->N) >= 0)
+    {
         MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(x, x, &grp->N));
+    }
 
 cleanup:
     return (ret);
@@ -250,7 +254,9 @@ static int run_ecc_codec(mbedtls_ecp_group *grp, uint32_t mode)
     while ((crpt->INTSTS & CRYPTO_INTSTS_ECCIF_Msk) == 0)
     {
         if (timeout-- <= 0)
+        {
             return MBEDTLS_ERR_ECP_HW_ACCEL_FAILED; /* Check ECC STS for detail*/
+        }
     }
 
     return 0;
@@ -294,11 +300,15 @@ int32_t  ECC_Sign(mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
 
     /* Fail cleanly on curves such as Curve25519 that can't be used for ECDSA */
     if (!mbedtls_ecdsa_can_do(grp->id) || grp->N.MBEDTLS_PRIVATE(p) == NULL)
+    {
         return (MBEDTLS_ERR_ECP_BAD_INPUT_DATA);
+    }
 
     /* Make sure d is in range 1..n-1 */
     if (mbedtls_mpi_cmp_int(d, 1) < 0 || mbedtls_mpi_cmp_mpi(d, &grp->N) >= 0)
+    {
         return (MBEDTLS_ERR_ECP_INVALID_KEY);
+    }
 
 
     pk = &k;
@@ -654,7 +664,9 @@ int  ECC_Verify(mbedtls_ecp_group *grp,
     for (i = 0; i < 18; i++)
     {
         if (temp_result1[i])
+        {
             break;
+        }
     }
 
     // if e != 0

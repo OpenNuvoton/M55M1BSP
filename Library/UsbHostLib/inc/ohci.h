@@ -42,26 +42,26 @@ typedef struct ed_t
     struct ed_t *next;            /* point to the next ED in remove list                  */
 } ED_T;
 
-#define ED_CTRL_FA_Pos            0         /* Info[6:0]   - Function address             */
-#define ED_CTRL_EN_Pos            7         /* Info[10:7]  - Endpoint number              */
-#define ED_CTRL_DIR_Pos           11        /* Info[12:11] - Direction                    */
-#define ED_CTRL_MPS_Pos           16        /* Info[26:16] - Maximum packet size          */
+#define ED_CTRL_FA_Pos            0U        /* Info[6:0]   - Function address             */
+#define ED_CTRL_EN_Pos            7U        /* Info[10:7]  - Endpoint number              */
+#define ED_CTRL_DIR_Pos           11U       /* Info[12:11] - Direction                    */
+#define ED_CTRL_MPS_Pos           16U       /* Info[26:16] - Maximum packet size          */
 
-#define ED_FUNC_ADDR_Msk          (0x7f)
-#define ED_EP_ADDR_Msk            (0xf<<7)
-#define ED_DIR_Msk                (0x3<<11)
-#define ED_SPEED_Msk              (1<<13)
-#define ED_MAX_PK_SIZE_Msk        (0x7ff<<16)
+#define ED_FUNC_ADDR_Msk          (0x7fU)
+#define ED_EP_ADDR_Msk            ((uint32_t)0xfU<<7U)
+#define ED_DIR_Msk                ((uint32_t)0x3U<<11U)
+#define ED_SPEED_Msk              ((uint32_t)1U<<13U)
+#define ED_MAX_PK_SIZE_Msk        ((uint32_t)0x7ffU<<16U)
 
-#define ED_DIR_BY_TD              (0<<ED_CTRL_DIR_Pos)
-#define ED_DIR_OUT                (1<<ED_CTRL_DIR_Pos)
-#define ED_DIR_IN                 (2<<ED_CTRL_DIR_Pos)
-#define ED_SPEED_FULL             (0<<13)   /* Info[13] - 0: is full speed device         */
-#define ED_SPEED_LOW              (1<<13)   /* Info[13] - 1: is low speed device          */
-#define ED_SKIP                   (1<<14)   /* Info[14] - 1: HC skip this ED              */
-#define ED_FORMAT_GENERAL         (0<<15)   /* Info[15] - 0: is a general TD              */
-#define ED_FORMAT_ISO             (1<<15)   /* Info[15] - 1: is an isochronous TD         */
-#define ED_HEADP_HALT             (1<<0)    /* HeadP[0] - 1: Halt; 0: Not                 */
+#define ED_DIR_BY_TD              ((uint32_t)0U<<ED_CTRL_DIR_Pos)
+#define ED_DIR_OUT                ((uint32_t)1U<<ED_CTRL_DIR_Pos)
+#define ED_DIR_IN                 ((uint32_t)2U<<ED_CTRL_DIR_Pos)
+#define ED_SPEED_FULL             ((uint32_t)0U<<13U)  /* Info[13] - 0: is full speed device         */
+#define ED_SPEED_LOW              ((uint32_t)1U<<13U)  /* Info[13] - 1: is low speed device          */
+#define ED_SKIP                   ((uint32_t)1U<<14U)  /* Info[14] - 1: HC skip this ED              */
+#define ED_FORMAT_GENERAL         ((uint32_t)0U<<15U)  /* Info[15] - 0: is a general TD              */
+#define ED_FORMAT_ISO             ((uint32_t)1U<<15U)  /* Info[15] - 1: is an isochronous TD         */
+#define ED_HEADP_HALT             ((uint32_t)1U<<0U)   /* HeadP[0] - 1: Halt; 0: Not                 */
 
 /*----------------------------------------------------------------------------------------*/
 /*   Transfer descriptor                                                                  */
@@ -81,7 +81,7 @@ typedef struct td_t
     struct td_t *next;                      /* point to next TD of the same UTR           */
 } TD_T;
 
-#define TD_ADDR_MASK              0xFFFFFFFC
+#define TD_ADDR_MASK              0xFFFFFFFCU
 
 /* Completion codes */
 enum OCHI_CC_CODE
@@ -105,24 +105,24 @@ enum OCHI_CC_CODE
 };
 
 /* TD control field */
-#define TD_CC                     0xF0000000
-#define TD_CC_GET(td)             ((td >>28) & 0x0F)
-#define TD_CC_SET(td, cc)         (td) = ((td) & 0x0FFFFFFF) | (((cc) & 0x0F) << 28)
-#define TD_T_DATA0                0x02000000
-#define TD_T_DATA1                0x03000000
-#define TD_R                      0x00040000
-#define TD_DP                     0x00180000
-#define TD_DP_IN                  0x00100000
-#define TD_DP_OUT                 0x00080000
+#define TD_CC                     0xF0000000U
+#define TD_CC_GET(td)             (((td) >> 28) & 0x0FU)
+#define TD_CC_SET(td, cc)         (td) = ((td) & 0x0FFFFFFFU) | (((uint32_t)(cc) & 0x0FU) << 28U)
+#define TD_T_DATA0                0x02000000U
+#define TD_T_DATA1                0x03000000U
+#define TD_R                      0x00040000U
+#define TD_DP                     0x00180000U
+#define TD_DP_IN                  0x00100000U
+#define TD_DP_OUT                 0x00080000U
 #define MAXPSW                    8
 /* steel TD reserved bits to keep driver data */
-#define TD_TYPE_Msk               (0x3<<16)
-#define TD_TYPE_CTRL              (0x0<<16)
-#define TD_TYPE_BULK              (0x1<<16)
-#define TD_TYPE_INT               (0x2<<16)
-#define TD_TYPE_ISO               (0x3<<16)
-#define TD_CTRL_Msk               (0x7<<15)
-#define TD_CTRL_DATA              (1<<15)
+#define TD_TYPE_Msk               ((uint32_t)0x3U<<16U)
+#define TD_TYPE_CTRL              ((uint32_t)0x0U<<16U)
+#define TD_TYPE_BULK              ((uint32_t)0x1U<<16U)
+#define TD_TYPE_INT               ((uint32_t)0x2U<<16U)
+#define TD_TYPE_ISO               ((uint32_t)0x3U<<16U)
+#define TD_CTRL_Msk               ((uint32_t)0x7U<<15U)
+#define TD_CTRL_DATA              ((uint32_t)1U<<15U)
 
 /*
  * The HCCA (Host Controller Communications Area) is a 256 byte

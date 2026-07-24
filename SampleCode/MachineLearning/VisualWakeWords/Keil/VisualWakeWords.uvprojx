@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define>NVT_VECTOR_ON_FLASH, TF_LITE_STATIC_MEMORY, ARM_MATH_DSP, ARM_NPU, ACTIVATION_BUF_SZ=0x00080000</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\CMSIS\DSP\Include;..\..\..\..\Library\StdDriver\inc;..\..\..\..\Library\StdDriver\inc\npu;..\..\..\..\ThirdParty\openmv\omv\imlib;..\..\..\..\ThirdParty\openmv\omv\alloc;..\..\..\..\ThirdParty\openmv\omv\common;..\..\..\..\ThirdParty\openmv\omv\Lib;..\..\..\..\ThirdParty\tflite_micro;..\..\..\..\ThirdParty\tflite_micro\_deps\tensorflow-flatbuffers-src\include;..\..\..\..\ThirdParty\tflite_micro\_deps\tensorflow-gemlowp-src;..\..\..\..\ThirdParty\ml-embedded-evaluation-kit\source\application\api\common\include;..\..\..\..\ThirdParty\ml-embedded-evaluation-kit\source\log\include;..\..\..\..\ThirdParty\ml-embedded-evaluation-kit\source\math\include;..\..\..\..\ThirdParty\ml-embedded-evaluation-kit\source\application\main\include;..\..\..\..\ThirdParty\ml-embedded-evaluation-kit\source\profiler\include;..\Device\include;..\Model\include;..\NPU\include;..\Pattern\include;..\ProfilerCounter\include;..\</IncludePath>

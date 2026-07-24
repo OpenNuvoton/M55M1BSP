@@ -18,8 +18,8 @@ static volatile uint32_t s_u32SysTicks = 0;
 /* Alignment for DMA */
 __ALIGNED(4) static const char sc_strMsg[] = "This is a message. It could be encypted.";
 
-void Hex2Reg(char input[], uint32_t volatile reg[]);
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
+//void Hex2Reg(char input[], uint32_t volatile reg[]);
+//void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
 void DumpBuf(uint8_t *pu8Buf, uint32_t u32BufByteSize);
 void SYS_Init(void);
 void UART_Init(void);

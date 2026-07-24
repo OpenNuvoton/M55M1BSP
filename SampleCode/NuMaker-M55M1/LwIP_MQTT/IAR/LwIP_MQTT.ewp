@@ -308,11 +308,11 @@
                 </option>
                 <option>
                     <name>IExtraOptionsCheck</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state></state>
+                    <state>--no_unaligned_access</state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -1104,7 +1104,7 @@
         <settings>
             <name>BUILDACTION</name>
             <archiveVersion>2</archiveVersion>
-            <data />
+            <data></data>
         </settings>
     </configuration>
     <group>
@@ -1187,6 +1187,9 @@
         <file>
             <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\uart.c</name>
         </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\StdDriver\src\fmc.c</name>
+        </file>		
     </group>
     <group>
         <name>lwIP</name>

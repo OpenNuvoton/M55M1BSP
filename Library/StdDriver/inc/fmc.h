@@ -35,7 +35,7 @@ extern "C"
 #define FMC_APROM_BANK0_END     (FMC_APROM_BASE + FMC_APROM_BANK_SIZE)  /*!< APROM bank0 end address            \hideinitializer */
 #define FMC_APROM_BANK0_BASE    FMC_APROM_BASE                          /*!< APROM bank0 base address           \hideinitializer */
 #define FMC_APROM_BANK1_BASE    FMC_APROM_BANK0_END                     /*!< APROM bank1 base address           \hideinitializer */
-#define FMC_APROM_SIZE          (FMC_APROM_BANK_SIZE * 2)               /*!< APROM Size                         \hideinitializer */
+#define FMC_APROM_SIZE          (FMC_APROM_BANK_SIZE * 2UL)             /*!< APROM Size                         \hideinitializer */
 #define FMC_APROM_END           (FMC_APROM_BASE + FMC_APROM_SIZE)       /*!< APROM end address                  \hideinitializer */
 
 #define FMC_LDROM_BASE          0x0F100000UL                            /*!< LDROM base address                 \hideinitializer */
@@ -68,7 +68,7 @@ extern "C"
 #define FMC_OTP_BASE            0x0F310000UL                            /*!< OTP flash base address             \hideinitializer */
 #define FMC_FLASH_PAGE_SIZE     0x2000UL                                /*!< Flash Page Size (8K bytes)         \hideinitializer */
 #define FMC_VECMAP_SIZE         0x400UL                                 /*!< VECMAP Size (1024 bytes)           \hideinitializer */
-#define FMC_PAGE_ADDR_MASK      0xFFFFE000UL                            /*!< Flash page address mask            \hideinitializer */
+#define FMC_PAGE_ADDR_MASK      (~(FMC_FLASH_PAGE_SIZE - 1))            /*!< Flash page address mask            \hideinitializer */
 #define FMC_MULTI_WORD_PROG_LEN 512UL                                   /*!< Length of multi-word program.      \hideinitializer */
 #define FMC_APWPROT_BLOCK_SIZE  0x8000UL                                /*!< APWPROT block size (32K bytes)     \hideinitializer */
 #define FMC_OTP_ENTRY_CNT       256UL                                   /*!< OTP entry number                   \hideinitializer */
@@ -128,15 +128,16 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /* FMC Error Code Constant Definitions                                                                     */
 /*---------------------------------------------------------------------------------------------------------*/
-#define FMC_OK                      (0UL)   /*!< FMC operation OK                         */
-#define FMC_ERR_TIMEOUT             (-1UL)  /*!< FMC operation timeout                    */
-#define FMC_ERR_READ_FAILED         (-2UL)  /*!< FMC read error                           */
-#define FMC_ERR_PROG_FAILED         (-2UL)  /*!< FMC program error                        */
-#define FMC_ERR_ERASE_FAILED        (-2UL)  /*!< FMC erase error                          */
-#define FMC_ERR_INVALID_PARAM       (-3UL)  /*!< FMC operation timeout                    */
-#define FMC_ERR_SC_ENABLED          (-4UL)  /*!< FMC secure conceal is enabled            */
-#define FMC_ERR_SC_INVALID_BASE     (-5UL)  /*!< FMC invalid secure conceal base address (Must be page alignment and cannot set first page of APROM */
-#define FMC_ERR_SC_INVALID_PAGECNT  (-6UL)  /*!< FMC invalid secure conceal page count    */
+#define FMC_OK                      ((int32_t)0)   /*!< FMC operation OK                         */
+#define FMC_ERR_TIMEOUT             ((int32_t)-1)  /*!< FMC operation timeout                    */
+#define FMC_ERR_READ_FAILED         ((int32_t)-2)  /*!< FMC read error                           */
+#define FMC_ERR_PROG_FAILED         ((int32_t)-2)  /*!< FMC program error                        */
+#define FMC_ERR_ERASE_FAILED        ((int32_t)-2)  /*!< FMC erase error                          */
+#define FMC_ERR_INVALID_PARAM       ((int32_t)-3)  /*!< FMC operation timeout                    */
+#define FMC_ERR_SC_ENABLED          ((int32_t)-4)  /*!< FMC secure conceal is enabled            */
+#define FMC_ERR_SC_INVALID_BASE     ((int32_t)-5)  /*!< FMC invalid secure conceal base address (Must be page alignment and cannot set first page of APROM */
+#define FMC_ERR_SC_INVALID_PAGECNT  ((int32_t)-6)  /*!< FMC invalid secure conceal page count    */
+#define FMC_ERR_PROG_INTERRUPTED    ((int32_t)-7)  /*!< FMC multi-word program interrupted       */
 /** @} end of group FMC_EXPORTED_CONSTANTS */
 
 
@@ -234,7 +235,7 @@ __STATIC_INLINE uint32_t FMC_ReadCID(void)
         if (i32TimeOutCnt-- <= 0)
         {
             g_FMC_i32ErrCode = FMC_ERR_TIMEOUT;
-            return 0xFFFFFFFF;
+            return 0xFFFFFFFFU;
         }
     }
 
@@ -265,7 +266,7 @@ __STATIC_INLINE uint32_t FMC_ReadPID(void)
         if (i32TimeOutCnt-- <= 0)
         {
             g_FMC_i32ErrCode = FMC_ERR_TIMEOUT;
-            return 0xFFFFFFFF;
+            return 0xFFFFFFFFU;
         }
     }
 
@@ -297,7 +298,7 @@ __STATIC_INLINE uint32_t FMC_ReadUID(uint8_t u8Index)
         if (i32TimeOutCnt-- <= 0)
         {
             g_FMC_i32ErrCode = FMC_ERR_TIMEOUT;
-            return 0xFFFFFFFF;
+            return 0xFFFFFFFFU;
         }
     }
 
@@ -328,7 +329,7 @@ __STATIC_INLINE uint32_t FMC_ReadUCID(uint32_t u32Index)
         if (i32TimeOutCnt-- <= 0)
         {
             g_FMC_i32ErrCode = FMC_ERR_TIMEOUT;
-            return 0xFFFFFFFF;
+            return 0xFFFFFFFFU;
         }
     }
 
@@ -411,7 +412,7 @@ extern uint32_t FMC_Read(uint32_t u32Addr);
 extern int32_t  FMC_Read_64(uint32_t u32Addr, uint32_t *pu32Data0, uint32_t *pu32Data1);
 extern int32_t  FMC_Write(uint32_t u32Addr, uint32_t u32Data);
 extern int32_t  FMC_Write8Bytes(uint32_t u32Addr, uint32_t u32Data0, uint32_t u32Data1);
-extern int32_t  FMC_WriteMultiple(uint32_t u32Addr, uint32_t pu32Buf[], uint32_t u32ByteLen);
+extern int32_t  FMC_WriteMultiple(uint32_t u32Addr, const uint32_t pu32Buf[], uint32_t u32ByteLen);
 extern int32_t  FMC_Erase(uint32_t u32PageAddr);
 extern int32_t  FMC_ReadConfig(uint32_t u32Config[], uint32_t u32Count);
 extern int32_t  FMC_WriteConfig(uint32_t u32ConfigAddr, uint32_t u32ConfigVal);

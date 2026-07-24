@@ -7,7 +7,6 @@
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
-#include <stdio.h>
 #include <stdint.h>
 
 #ifndef __SDH_H__
@@ -103,7 +102,6 @@ typedef struct SDH_info_t
 /** @cond HIDDEN_SYMBOLS */
 extern SDH_INFO_T SD0;
 extern SDH_INFO_T SD1;
-extern int32_t g_SDH_i32ErrCode;
 /** @endcond HIDDEN_SYMBOLS */
 
 /** @addtogroup SDH_EXPORTED_FUNCTIONS SDH Exported Functions
@@ -209,7 +207,7 @@ extern int32_t g_SDH_i32ErrCode;
  *            0: Card removed.
  * \hideinitializer
  */
-#define SDH_IS_CARD_PRESENT(sdh) (((sdh) == SDH0)? SD0.IsCardInsert : SD1.IsCardInsert)
+#define SDH_IS_CARD_PRESENT(sdh) (((sdh) == SDH0) ? SD0.IsCardInsert : (((sdh) == SDH1) ? SD1.IsCardInsert : 0U))
 
 /**
  *  @brief    Get SD Card capacity.
@@ -219,12 +217,12 @@ extern int32_t g_SDH_i32ErrCode;
  *  @return   SD Card capacity. (unit: KByte)
  * \hideinitializer
  */
-#define SDH_GET_CARD_CAPACITY(sdh)  (((sdh) == SDH0)? SD0.diskSize : SD1.diskSize)
+#define SDH_GET_CARD_CAPACITY(sdh)  (((sdh) == SDH0) ? SD0.diskSize : (((sdh) == SDH1) ? SD1.diskSize : 0U))
 
 //------------------------------------------------------------------------------
 void *SDH_GetSDH0Buffer(void);
 void *SDH_GetSDH1Buffer(void);
-void *SDH_GetSDInfoMsg(const SDH_T *sdh);
+SDH_INFO_T *SDH_GetSDInfoMsg(const SDH_T *sdh);
 
 void SDH_Open(SDH_T *sdh, uint32_t u32CardDetSrc);
 void SDH_Close(SDH_T *sdh);

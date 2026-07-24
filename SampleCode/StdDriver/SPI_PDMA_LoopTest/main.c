@@ -91,12 +91,21 @@ void SYS_Init(void)
 
 void SPI_Init(void)
 {
+    uint32_t u32BusClock;
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init SPI                                                                                                */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Configure as a master, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Set IP clock divider. SPI clock rate = 2 MHz */
-    SPI_Open(SPI0, SPI_MASTER, SPI_MODE_0, 32, SPI_CLK_FREQ);
+    u32BusClock = SPI_Open(SPI0, SPI_MASTER, SPI_MODE_0, 32, SPI_CLK_FREQ);
+
+    if (u32BusClock == 0U)
+    {
+        printf("SPI_Open failed.\n");
+
+        while (1);
+    }
 
     /* Enable the automatic hardware slave select function. Select the SS pin and configure as low-active. */
     SPI_EnableAutoSS(SPI0, SPI_SS, SPI_SS_ACTIVE_LOW);

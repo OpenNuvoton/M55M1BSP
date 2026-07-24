@@ -16,7 +16,7 @@
         <TargetCommonOption>
           <Device>M55M1H2LJAE</Device>
           <Vendor>Nuvoton</Vendor>
-          <PackID>Nuvoton.NuMicroM55_DFP.1.0.2</PackID>
+          <PackID>Nuvoton.NuMicroM55_DFP.3.1.4-rc.3</PackID>
           <PackURL>https://github.com/OpenNuvoton/cmsis-packs/raw/master/Nuvoton_DFP/</PackURL>
           <Cpu>IRAM(0x20100000,0x150000) IRAM2(0x30100000,0x150000) IROM(0x00100000,0x200000) IROM2(0x10100000,0x200000) CPUTYPE("Cortex-M55") FPU3(DFPU) DSP TZ MVE(FP) CLOCK(12000000) ESEL ELITTLE IROM3(0x0F100000,0x00002000)</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define>STDIN_ECHO=0</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\StdDriver\inc;..\..\..\..\Library\UsbHostLib\inc;..\..\..\..\Library\UsbHostLib\src_core;..\..\..\..\Library\UsbHostLib\src_uac</IncludePath>
@@ -504,6 +504,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\..\Library\UsbHostLib\src_hid\hid_driver.c</FilePath>
             </File>
+            <File>
+              <FileName>hid_parser.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\..\Library\UsbHostLib\src_hid\hid_parser.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
@@ -511,9 +516,9 @@
   </Targets>
 
   <RTE>
-    <apis></apis>
-    <components></components>
-    <files></files>
+    <apis/>
+    <components/>
+    <files/>
   </RTE>
 
   <LayerInfo>

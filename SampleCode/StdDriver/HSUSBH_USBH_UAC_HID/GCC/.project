@@ -130,6 +130,11 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_hid/hid_driver.c</locationURI>
 		</link>
 		<link>
+			<name>UsbHostLib_HID/hid_parser.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_hid/hid_parser.c</locationURI>
+		</link>
+		<link>
 			<name>UsbHostLib_UAC/uac_core.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_uac/uac_core.c</locationURI>

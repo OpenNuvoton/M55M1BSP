@@ -461,7 +461,7 @@ void VCOM_LineCoding(uint8_t u8Port)
 #define HID_CMD_WRITE    0xC3
 #define HID_CMD_TEST     0xB4
 
-#define PAGE_SIZE        2048
+#define PAGE_SIZE        4096
 #define TEST_PAGES       4
 #define SECTOR_SIZE      4096
 #define START_SECTOR     0x10
@@ -701,7 +701,7 @@ void HID_GetOutReport(uint8_t *pu8EpBuf, uint32_t u32Size)
         /* Check and process the command packet */
         if (ProcessCommand(pu8EpBuf, sizeof(s_Cmd)))
         {
-            printf("Unknown HID command!\n");
+            printf("Unknown HID command! (0x%02X)\n", pu8EpBuf[0]);
         }
     }
 }

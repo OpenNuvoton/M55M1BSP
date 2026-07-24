@@ -38,15 +38,15 @@ FLASH FLASH_START
 	ARM_LIB_STACK __STACK_TOP EMPTY - STACK_SIZE {}     ; Reserve empty region for stack
 }
 
-XOM0 XOM_START
+XOM0 XOM_START XOM_SIZE
 {
     XOM0_ROM +0
     {
 		; Enable "Execute-only code" option of xom.c
-        * (+XO)
+        xom.o (+XO)
     }
 
-    ; We should not use RW / ZI in XOM. 
+    ; We should not use RW / ZI in XOM.
 	; Add an empty section to detect them.
     XOM0_SRAM 0x0 0x0
     {

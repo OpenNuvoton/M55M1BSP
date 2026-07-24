@@ -9,6 +9,8 @@
 
 #include "NuMicro.h"
 
+#define LPSPI_CONFIG_TIMEOUT    (0x100000UL)
+
 /** @addtogroup Standard_Driver Standard Driver
   @{
 */
@@ -20,6 +22,37 @@
 /** @addtogroup LPSPI_EXPORTED_FUNCTIONS LPSPI Exported Functions
   @{
 */
+static void LPSPI_WaitDisableReady(const LPSPI_T *lpspi)
+{
+    uint32_t u32Timeout = LPSPI_CONFIG_TIMEOUT;
+
+    while ((((lpspi->STATUS & LPSPI_STATUS_SPIENSTS_Msk) != 0U) || ((lpspi->STATUS & LPSPI_STATUS_BUSY_Msk) != 0U)) && (u32Timeout != 0U))
+    {
+        u32Timeout--;
+    }
+}
+
+static uint32_t LPSPI_EnterConfigMode(LPSPI_T *lpspi)
+{
+    uint32_t u32WasEnabled = lpspi->CTL & LPSPI_CTL_SPIEN_Msk;
+
+    if (u32WasEnabled != 0U)
+    {
+        lpspi->CTL &= ~LPSPI_CTL_SPIEN_Msk;
+        LPSPI_WaitDisableReady(lpspi);
+    }
+
+    return u32WasEnabled;
+}
+
+static void LPSPI_ExitConfigMode(LPSPI_T *lpspi, uint32_t u32WasEnabled)
+{
+    if (u32WasEnabled != 0U)
+    {
+        lpspi->CTL |= LPSPI_CTL_SPIEN_Msk;
+    }
+}
+
 static void LPSPI_SetPCLKSrc(const LPSPI_T *lpspi)
 {
     /* Select PCLK as the clock source of LPSPI */
@@ -32,7 +65,7 @@ static void LPSPI_SetPCLKSrc(const LPSPI_T *lpspi)
 /**
  * @brief Select PCLK as the clock source of LPSPI
  *
- * @return Actual frequency of LPSPI peripheral clock source.
+ * @return Actual frequency of LPSPI bus clock.
  */
 static uint32_t LPSPI_GetPCLKSrcFreq(const LPSPI_T *lpspi)
 {
@@ -101,7 +134,7 @@ static uint32_t LPSPI_GetModuleClkSrcFreq(const LPSPI_T *lpspi)
   * @return Actual frequency of LPSPI peripheral clock.
   * @details By default, the LPSPI transfer sequence is MSB first, the slave selection signal is active low and the automatic
   *          slave selection function is disabled.
-  *          In Slave mode, the u32BusClock shall be NULL and the LPSPI clock divider setting will be 0.
+ *          In Slave mode, u32BusClock shall be 0 and the LPSPI clock divider setting will be 0.
   *          The actual clock rate may be different from the target LPSPI clock rate.
   *          For example, if the LPSPI source clock rate is 12 MHz and the target LPSPI bus clock rate is 7 MHz, the
   *          actual LPSPI clock rate will be 6MHz.
@@ -113,45 +146,28 @@ static uint32_t LPSPI_GetModuleClkSrcFreq(const LPSPI_T *lpspi)
 uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMode, uint32_t u32DataWidth, uint32_t u32BusClock)
 {
     uint32_t u32RetValue = 0UL;
-    uint32_t u32DataWidthTmp = 0UL;
 
-    if ((u32DataWidth < 4U) && (u32DataWidth > 0U))
-    {
-        u32DataWidthTmp = 4U;
-    }
-    else if (u32DataWidth >= 32U)
-    {
-        u32DataWidthTmp = 0U;
-    }
-    else
-    {
-        u32DataWidthTmp = u32DataWidth;
-    }
+    lpspi->CTL &= ~LPSPI_CTL_SPIEN_Msk;
+
+    LPSPI_WaitDisableReady(lpspi);
+
+    /* Default setting: slave selection signal is active low.
+    In Master mode, disable the automatic slave selection function. */
+    lpspi->SSCTL = LPSPI_SS_ACTIVE_LOW;
+
+    /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
+    lpspi->CTL = (u32LPSPIMode | u32MasterSlave);
+    LPSPI_SET_DATA_WIDTH(lpspi, u32DataWidth);
 
     if (u32MasterSlave == LPSPI_MASTER)
     {
-        /* Default setting: slave selection signal is active low; disable automatic slave selection function. */
-        lpspi->SSCTL = LPSPI_SS_ACTIVE_LOW;
-
-        /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        lpspi->CTL = (u32MasterSlave);
-        lpspi->CTL |= ((u32DataWidthTmp << LPSPI_CTL_DWIDTH_Pos) |
-                       (u32LPSPIMode) |
-                       LPSPI_CTL_SPIEN_Msk);
-
         // Set the bus clock for the LPSPI module and store the actual frequency in u32RetValue
         u32RetValue = LPSPI_SetBusClock(lpspi, u32BusClock);
     }
     else     /* For slave mode, force the LPSPI peripheral clock rate to equal APB clock rate. */
     {
-        /* Default setting: slave selection signal is low level active. */
-        lpspi->SSCTL = LPSPI_SS_ACTIVE_LOW;
-
-        /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        lpspi->CTL = (u32MasterSlave);
-        lpspi->CTL |= ((u32DataWidthTmp << LPSPI_CTL_DWIDTH_Pos) |
-                       (u32LPSPIMode) |
-                       LPSPI_CTL_SPIEN_Msk);
+        /* Force slave clock source back to PCLK. */
+        LPSPI_SetPCLKSrc(lpspi);
 
         /* Set DIVIDER = 0 */
         lpspi->CLKDIV = 0U;
@@ -159,6 +175,8 @@ uint32_t LPSPI_Open(LPSPI_T *lpspi, uint32_t u32MasterSlave, uint32_t u32LPSPIMo
         /* Select PCLK4 as the clock source of LPSPI */
         u32RetValue = LPSPI_GetPCLKSrcFreq(lpspi);
     }
+
+    lpspi->CTL |= LPSPI_CTL_SPIEN_Msk;
 
     return u32RetValue;
 }
@@ -181,7 +199,12 @@ void LPSPI_Close(const LPSPI_T *lpspi)
     if (lpspi == LPSPI0)
     {
         /* Reset LPSPI */
-        SYS_ResetModule(SYS_LPSPI0RST);
+        SYS->LPSPIRST |= SYS_LPSPIRST_LPSPI0RST_Msk;
+        SYS->LPSPIRST &= ~SYS_LPSPIRST_LPSPI0RST_Msk;
+    }
+    else
+    {
+
     }
 
     if (u32RegLockLevel)
@@ -219,7 +242,11 @@ void LPSPI_ClearTxFIFO(LPSPI_T *lpspi)
   */
 void LPSPI_DisableAutoSS(LPSPI_T *lpspi)
 {
+    uint32_t u32WasEnabled = LPSPI_EnterConfigMode(lpspi);
+
     lpspi->SSCTL &= ~(LPSPI_SSCTL_AUTOSS_Msk | LPSPI_SSCTL_SS_Msk);
+
+    LPSPI_ExitConfigMode(lpspi, u32WasEnabled);
 }
 
 /**
@@ -232,7 +259,11 @@ void LPSPI_DisableAutoSS(LPSPI_T *lpspi)
   */
 void LPSPI_EnableAutoSS(LPSPI_T *lpspi, uint32_t u32SSPinMask, uint32_t u32ActiveLevel)
 {
+    uint32_t u32WasEnabled = LPSPI_EnterConfigMode(lpspi);
+
     lpspi->SSCTL = (lpspi->SSCTL & (~(LPSPI_SSCTL_AUTOSS_Msk | LPSPI_SSCTL_SSACTPOL_Msk | LPSPI_SSCTL_SS_Msk))) | (u32SSPinMask | u32ActiveLevel | LPSPI_SSCTL_AUTOSS_Msk);
+
+    LPSPI_ExitConfigMode(lpspi, u32WasEnabled);
 }
 
 /**
@@ -252,6 +283,7 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
     uint32_t u32ClkSrc = 0UL;
     uint32_t u32HCLKFreq = 0UL;
     uint32_t u32RetValue = 0UL;
+    uint32_t u32WasEnabled = LPSPI_EnterConfigMode(lpspi);
 
     /* Get system clock frequency */
     u32HCLKFreq = CLK_GetSCLKFreq();
@@ -282,7 +314,7 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
     else if (u32BusClock == 0U)
     {
         /* Set DIVIDER to the maximum value. f_lpspi = f_lpspi_clk_src / (DIVIDER + 1) */
-        lpspi->CLKDIV |= LPSPI_CLKDIV_DIVIDER_Msk;
+        lpspi->CLKDIV = (lpspi->CLKDIV & ~LPSPI_CLKDIV_DIVIDER_Msk) | LPSPI_CLKDIV_DIVIDER_Msk;
 
         /* Return master peripheral clock rate */
         u32RetValue = (u32ClkSrc / ((LPSPI_CLKDIV_DIVIDER_Msk >> LPSPI_CLKDIV_DIVIDER_Pos) + 1U));
@@ -291,9 +323,9 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
     {
         uint32_t u32Div = 0;
 
-        u32Div = (((((u32ClkSrc * 10U) / u32BusClock) + 5U) / 10U) - 1U); /* Round to the nearest integer */
+        u32Div = (uint32_t)((((uint64_t)u32ClkSrc + (uint64_t)u32BusClock - 1ULL) / (uint64_t)u32BusClock) - 1ULL);
 
-        // Ensure the calculated divider does not exceed the maximum allowed value
+        /* Ensure the selected LPSPI clock does not exceed the requested bus clock. */
         u32Div = ((u32Div > (LPSPI_CLKDIV_DIVIDER_Msk >> LPSPI_CLKDIV_DIVIDER_Pos)) ?
                   (LPSPI_CLKDIV_DIVIDER_Msk >> LPSPI_CLKDIV_DIVIDER_Pos) : u32Div);
 
@@ -303,6 +335,8 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
         /* Return master peripheral clock rate */
         u32RetValue = (u32ClkSrc / (u32Div + 1U));
     }
+
+    LPSPI_ExitConfigMode(lpspi, u32WasEnabled);
 
     return u32RetValue;
 }
@@ -316,9 +350,15 @@ uint32_t LPSPI_SetBusClock(LPSPI_T *lpspi, uint32_t u32BusClock)
   */
 void LPSPI_SetFIFO(LPSPI_T *lpspi, uint32_t u32TxThreshold, uint32_t u32RxThreshold)
 {
+    uint32_t u32WasEnabled = LPSPI_EnterConfigMode(lpspi);
+    uint32_t u32TxTh = (u32TxThreshold & 0x7U);
+    uint32_t u32RxTh = (u32RxThreshold & 0x7U);
+
     lpspi->FIFOCTL = (lpspi->FIFOCTL & ~(LPSPI_FIFOCTL_TXTH_Msk | LPSPI_FIFOCTL_RXTH_Msk)) |
-                     (u32TxThreshold << LPSPI_FIFOCTL_TXTH_Pos) |
-                     (u32RxThreshold << LPSPI_FIFOCTL_RXTH_Pos);
+                     (u32TxTh << LPSPI_FIFOCTL_TXTH_Pos) |
+                     (u32RxTh << LPSPI_FIFOCTL_RXTH_Pos);
+
+    LPSPI_ExitConfigMode(lpspi, u32WasEnabled);
 }
 
 /**
@@ -327,7 +367,7 @@ void LPSPI_SetFIFO(LPSPI_T *lpspi, uint32_t u32TxThreshold, uint32_t u32RxThresh
   * @return Actual LPSPI bus clock frequency in Hz.
   * @details This function will calculate the actual LPSPI bus clock rate according to the LPSPInSEL and DIVIDER settings. Only available in Master mode.
   */
-uint32_t LPSPI_GetBusClock(LPSPI_T *lpspi)
+uint32_t LPSPI_GetBusClock(const LPSPI_T *lpspi)
 {
     uint32_t u32Div = 0;
     uint32_t u32ClkSrc = 0;
@@ -529,84 +569,64 @@ void LPSPI_DisableInt(LPSPI_T *lpspi, uint32_t u32Mask)
 uint32_t LPSPI_GetIntFlag(const LPSPI_T *lpspi, uint32_t u32Mask)
 {
     uint32_t u32IntFlag = 0UL;
-    uint32_t u32TmpVal = 0UL;
-
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_UNITIF_Msk;
+    uint32_t u32Status = lpspi->STATUS;
 
     /* Check unit transfer interrupt flag */
-    if ((u32Mask & LPSPI_UNIT_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_UNIT_INT_MASK) && ((u32Status & LPSPI_STATUS_UNITIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_UNIT_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_SSACTIF_Msk;
-
     /* Check slave selection signal active interrupt flag */
-    if ((u32Mask & LPSPI_SSACT_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_SSACT_INT_MASK) && ((u32Status & LPSPI_STATUS_SSACTIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_SSACT_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_SSINAIF_Msk;
-
     /* Check slave selection signal inactive interrupt flag */
-    if ((u32Mask & LPSPI_SSINACT_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_SSINACT_INT_MASK) && ((u32Status & LPSPI_STATUS_SSINAIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_SSINACT_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_SLVURIF_Msk;
-
     /* Check slave TX under run interrupt flag */
-    if ((u32Mask & LPSPI_SLVUR_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_SLVUR_INT_MASK) && ((u32Status & LPSPI_STATUS_SLVURIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_SLVUR_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_SLVBEIF_Msk;
-
     /* Check slave bit count error interrupt flag */
-    if ((u32Mask & LPSPI_SLVBE_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_SLVBE_INT_MASK) && ((u32Status & LPSPI_STATUS_SLVBEIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_SLVBE_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_TXUFIF_Msk;
-
     /* Check slave TX underflow interrupt flag */
-    if ((u32Mask & LPSPI_TXUF_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_TXUF_INT_MASK) && ((u32Status & LPSPI_STATUS_TXUFIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_TXUF_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_TXTHIF_Msk;
-
     /* Check TX threshold interrupt flag */
-    if ((u32Mask & LPSPI_FIFO_TXTH_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_FIFO_TXTH_INT_MASK) && ((u32Status & LPSPI_STATUS_TXTHIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_FIFO_TXTH_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_RXTHIF_Msk;
-
     /* Check RX threshold interrupt flag */
-    if ((u32Mask & LPSPI_FIFO_RXTH_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_FIFO_RXTH_INT_MASK) && ((u32Status & LPSPI_STATUS_RXTHIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_FIFO_RXTH_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_RXOVIF_Msk;
-
     /* Check RX overrun interrupt flag */
-    if ((u32Mask & LPSPI_FIFO_RXOV_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_FIFO_RXOV_INT_MASK) && ((u32Status & LPSPI_STATUS_RXOVIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_FIFO_RXOV_INT_MASK;
     }
 
-    u32TmpVal = lpspi->STATUS & LPSPI_STATUS_RXTOIF_Msk;
-
     /* Check RX time-out interrupt flag */
-    if ((u32Mask & LPSPI_FIFO_RXTO_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & LPSPI_FIFO_RXTO_INT_MASK) && ((u32Status & LPSPI_STATUS_RXTOIF_Msk) != 0U))
     {
         u32IntFlag |= LPSPI_FIFO_RXTO_INT_MASK;
     }
@@ -695,68 +715,52 @@ void LPSPI_ClearIntFlag(LPSPI_T *lpspi, uint32_t u32Mask)
 uint32_t LPSPI_GetStatus(const LPSPI_T *lpspi, uint32_t u32Mask)
 {
     uint32_t u32Flag = 0UL;
-    uint32_t u32TmpValue = 0UL;
+    uint32_t u32Status = lpspi->STATUS;
 
     /* Check busy status */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_BUSY_Msk);
-
-    if ((u32Mask & LPSPI_BUSY_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_BUSY_MASK) && ((u32Status & LPSPI_STATUS_BUSY_Msk) != 0U))
     {
         u32Flag |= LPSPI_BUSY_MASK;
     }
 
     /* Check RX empty flag */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_RXEMPTY_Msk);
-
-    if ((u32Mask & LPSPI_RX_EMPTY_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_RX_EMPTY_MASK) && ((u32Status & LPSPI_STATUS_RXEMPTY_Msk) != 0U))
     {
         u32Flag |= LPSPI_RX_EMPTY_MASK;
     }
 
     /* Check RX full flag */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_RXFULL_Msk);
-
-    if ((u32Mask & LPSPI_RX_FULL_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_RX_FULL_MASK) && ((u32Status & LPSPI_STATUS_RXFULL_Msk) != 0U))
     {
         u32Flag |= LPSPI_RX_FULL_MASK;
     }
 
     /* Check TX empty flag */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_TXEMPTY_Msk);
-
-    if ((u32Mask & LPSPI_TX_EMPTY_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_TX_EMPTY_MASK) && ((u32Status & LPSPI_STATUS_TXEMPTY_Msk) != 0U))
     {
         u32Flag |= LPSPI_TX_EMPTY_MASK;
     }
 
     /* Check TX full flag */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_TXFULL_Msk);
-
-    if ((u32Mask & LPSPI_TX_FULL_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_TX_FULL_MASK) && ((u32Status & LPSPI_STATUS_TXFULL_Msk) != 0U))
     {
         u32Flag |= LPSPI_TX_FULL_MASK;
     }
 
     /* Check TX/RX reset flag */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_TXRXRST_Msk);
-
-    if ((u32Mask & LPSPI_TXRX_RESET_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_TXRX_RESET_MASK) && ((u32Status & LPSPI_STATUS_TXRXRST_Msk) != 0U))
     {
         u32Flag |= LPSPI_TXRX_RESET_MASK;
     }
 
     /* Check SPIEN flag */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_SPIENSTS_Msk);
-
-    if ((u32Mask & LPSPI_SPIEN_STS_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_SPIEN_STS_MASK) && ((u32Status & LPSPI_STATUS_SPIENSTS_Msk) != 0U))
     {
         u32Flag |= LPSPI_SPIEN_STS_MASK;
     }
 
     /* Check SPIx_SS line status */
-    u32TmpValue = (lpspi->STATUS & LPSPI_STATUS_SSLINE_Msk);
-
-    if ((u32Mask & LPSPI_SSLINE_STS_MASK) && (u32TmpValue))
+    if ((u32Mask & LPSPI_SSLINE_STS_MASK) && ((u32Status & LPSPI_STATUS_SSLINE_Msk) != 0U))
     {
         u32Flag |= LPSPI_SSLINE_STS_MASK;
     }

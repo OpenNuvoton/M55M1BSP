@@ -42,10 +42,13 @@
 uint32_t LPTMR_Open(LPTMR_T *lptmr, uint32_t u32Mode, uint32_t u32Freq)
 {
     uint32_t u32Clk = LPTMR_GetModuleClock(lptmr);
-    uint32_t u32Cmpr = 0UL, u32Prescale = 0UL;
+    uint32_t u32Cmpr = 0UL;
+    uint32_t u32Prescale = 0UL;
 
-    if (u32Freq == 0)
-        return 0 ;
+    if (u32Freq == 0UL)
+    {
+        return 0UL;
+    }
 
     /* Fastest possible lptmr working freq is (u32Clk / 2). While cmpr = 2, prescaler = 0. */
     if (u32Freq > (u32Clk / 2UL))
@@ -58,7 +61,9 @@ uint32_t LPTMR_Open(LPTMR_T *lptmr, uint32_t u32Mode, uint32_t u32Freq)
         u32Prescale = (u32Cmpr >> 24);  /* for 24 bits CMPDAT */
 
         if (u32Prescale > 0UL)
+        {
             u32Cmpr = u32Cmpr / (u32Prescale + 1UL);
+        }
     }
 
     lptmr->CTL = (u32Mode | u32Prescale);
@@ -100,8 +105,12 @@ void LPTMR_Close(LPTMR_T *lptmr)
 int32_t LPTMR_Delay(LPTMR_T *lptmr, uint32_t u32Usec)
 {
     uint32_t u32Clk = LPTMR_GetModuleClock(lptmr);
-    uint32_t u32Prescale = 0UL, delay = (SystemCoreClock / u32Clk) + 1UL;
-    uint32_t u32Cmpr, u32Cntr, u32NsecPerTick, i = 0UL;
+    uint32_t u32Prescale = 0UL;
+    uint32_t u32Delay;
+    uint32_t u32Cmpr;
+    uint32_t u32Cntr;
+    uint32_t i = 0UL;
+    uint32_t u32UsecLocal = u32Usec;
 
     /* Clear current lptmr configuration */
     lptmr->CTL = 0UL;
@@ -109,42 +118,45 @@ int32_t LPTMR_Delay(LPTMR_T *lptmr, uint32_t u32Usec)
 
     if (u32Clk <= 1000000UL)  /* min delay is 1000 us if lptmr clock source is <= 1 MHz */
     {
-        if (u32Usec < 1000UL)
+        if (u32UsecLocal < 1000UL)
         {
-            u32Usec = 1000UL;
+            u32UsecLocal = 1000UL;
         }
 
-        if (u32Usec > 1000000UL)
+        if (u32UsecLocal > 1000000UL)
         {
-            u32Usec = 1000000UL;
+            u32UsecLocal = 1000000UL;
         }
     }
     else
     {
-        if (u32Usec < 100UL)
+        if (u32UsecLocal < 100UL)
         {
-            u32Usec = 100UL;
+            u32UsecLocal = 100UL;
         }
 
-        if (u32Usec > 1000000UL)
+        if (u32UsecLocal > 1000000UL)
         {
-            u32Usec = 1000000UL;
+            u32UsecLocal = 1000000UL;
         }
     }
 
     if (u32Clk <= 1000000UL)
     {
+        uint32_t u32NsecPerTick;
         u32Prescale = 0UL;
         u32NsecPerTick = 1000000000UL / u32Clk;
-        u32Cmpr = (u32Usec * 1000UL) / u32NsecPerTick;
+        u32Cmpr = (u32UsecLocal * 1000UL) / u32NsecPerTick;
     }
     else
     {
-        u32Cmpr = u32Usec * (u32Clk / 1000000UL);
+        u32Cmpr = u32UsecLocal * (u32Clk / 1000000UL);
         u32Prescale = (u32Cmpr >> 24);  /* for 24 bits CMPDAT */
 
         if (u32Prescale > 0UL)
+        {
             u32Cmpr = u32Cmpr / (u32Prescale + 1UL);
+        }
     }
 
     lptmr->CMP = u32Cmpr;
@@ -152,23 +164,22 @@ int32_t LPTMR_Delay(LPTMR_T *lptmr, uint32_t u32Usec)
 
     /* When system clock is faster than lptmr clock, it is possible lptmr active bit cannot set in time while we check it.
        And the while loop below return immediately, so put a tiny delay here allowing lptmr start counting and raise active flag. */
-    for (; delay > 0UL; delay--)
+    for (u32Delay = (SystemCoreClock / u32Clk) + 1UL; u32Delay > 0UL; u32Delay--)
     {
-        __NOP();
     }
 
     /* Add a bail out counter here in case timer clock source is disabled accidentally.
        Prescale counter reset every ECLK * (prescale value + 1).
        The u32Delay here is to make sure timer counter value changed when prescale counter reset */
-    delay = (SystemCoreClock / LPTMR_GetModuleClock(lptmr)) * (u32Prescale + 1);
+    u32Delay = (SystemCoreClock / LPTMR_GetModuleClock(lptmr)) * (u32Prescale + 1UL);
     u32Cntr = lptmr->CNT;
 
-    while (lptmr->CTL & LPTMR_CTL_ACTSTS_Msk)
+    while ((lptmr->CTL & LPTMR_CTL_ACTSTS_Msk) != 0UL)
     {
         /* Bailed out if lptmr stop counting e.g. Some interrupt handler close lptmr clock source. */
         if (u32Cntr == lptmr->CNT)
         {
-            if (i++ > delay)
+            if (i++ > u32Delay)
             {
                 return LPTMR_ERR_TIMEOUT;
             }
@@ -207,7 +218,7 @@ int32_t LPTMR_Delay(LPTMR_T *lptmr, uint32_t u32Usec)
 void LPTMR_EnableCapture(LPTMR_T *lptmr, uint32_t u32CapMode, uint32_t u32Edge)
 {
     lptmr->EXTCTL = (lptmr->EXTCTL & ~(LPTMR_EXTCTL_CAPFUNCS_Msk | LPTMR_EXTCTL_CAPEDGE_Msk)) |
-                    u32CapMode | u32Edge | LPTMR_EXTCTL_CAPEN_Msk;
+                    ((u32CapMode & LPTMR_EXTCTL_CAPFUNCS_Msk) | (u32Edge & LPTMR_EXTCTL_CAPEDGE_Msk) | LPTMR_EXTCTL_CAPEN_Msk);
 }
 
 /**
@@ -236,7 +247,7 @@ void LPTMR_CaptureSelect(LPTMR_T *lptmr, uint32_t u32Src)
         lptmr->CTL = (lptmr->CTL & ~(LPTMR_CTL_CAPSRC_Msk)) |
                      (LPTMR_CAPSRC_INTERNAL);
         lptmr->EXTCTL = (lptmr->EXTCTL & ~(LPTMR_EXTCTL_INTERCAPSEL_Msk)) |
-                        (u32Src);
+                        (u32Src & LPTMR_EXTCTL_INTERCAPSEL_Msk);
     }
 }
 
@@ -271,7 +282,7 @@ void LPTMR_DisableCapture(LPTMR_T *lptmr)
   */
 void LPTMR_EnableEventCounter(LPTMR_T *lptmr, uint32_t u32Edge)
 {
-    lptmr->EXTCTL = (lptmr->EXTCTL & ~LPTMR_EXTCTL_CNTPHASE_Msk) | u32Edge;
+    lptmr->EXTCTL = (lptmr->EXTCTL & ~LPTMR_EXTCTL_CNTPHASE_Msk) | (u32Edge & LPTMR_EXTCTL_CNTPHASE_Msk);
     lptmr->CTL |= LPTMR_CTL_EXTCNTEN_Msk;
 }
 
@@ -301,9 +312,10 @@ void LPTMR_DisableEventCounter(LPTMR_T *lptmr)
   * @details    This API is used to get the lptmr clock frequency.
   * @note       This API cannot return correct clock rate if lptmr source is from external clock input.
   */
-uint32_t LPTMR_GetModuleClock(LPTMR_T *lptmr)
+uint32_t LPTMR_GetModuleClock(const LPTMR_T *lptmr)
 {
-    uint32_t u32Src = 0UL, u32Clk = 0UL;
+    uint32_t u32Src = 0UL;
+    uint32_t u32Clk = 0UL;
     const uint32_t au32Clk[] = {0UL, __LXT, __LIRC, __MIRC, __HIRC, 0UL};
 
     if (lptmr == LPTMR0)
@@ -315,7 +327,9 @@ uint32_t LPTMR_GetModuleClock(LPTMR_T *lptmr)
         u32Src = (CLK->LPTMRSEL & CLK_LPTMRSEL_LPTMR1SEL_Msk) >> CLK_LPTMRSEL_LPTMR1SEL_Pos;
     }
     else
+    {
         return u32Clk;
+    }
 
     if (u32Src == 0UL)
     {
@@ -343,7 +357,7 @@ uint32_t LPTMR_GetModuleClock(LPTMR_T *lptmr)
   */
 void LPTMR_SetTriggerSource(LPTMR_T *lptmr, uint32_t u32Src)
 {
-    lptmr->TRGCTL = (lptmr->TRGCTL & ~LPTMR_TRGCTL_TRGSSEL_Msk) | u32Src;
+    lptmr->TRGCTL = (lptmr->TRGCTL & ~LPTMR_TRGCTL_TRGSSEL_Msk) | (u32Src & LPTMR_TRGCTL_TRGSSEL_Msk);
 }
 
 /**
@@ -375,14 +389,13 @@ int32_t LPTMR_ResetCounter(LPTMR_T *lptmr)
 
     lptmr->CNT = 0UL;
     /* Takes 2~3 ECLKs to reset lptmr counter */
-    u32Delay = (SystemCoreClock / LPTMR_GetModuleClock(lptmr)) * 3;
+    u32Delay = (SystemCoreClock / LPTMR_GetModuleClock(lptmr)) * 3UL;
 
-    while (((lptmr->CNT & LPTMR_CNT_RSTACT_Msk) == LPTMR_CNT_RSTACT_Msk) && (--u32Delay))
+    while ((((lptmr->CNT & LPTMR_CNT_RSTACT_Msk) == LPTMR_CNT_RSTACT_Msk) && ((--u32Delay) > 0UL)))
     {
-        __NOP();
     }
 
-    return ((u32Delay > 0) ? LPTMR_OK : LPTMR_ERR_TIMEOUT);
+    return ((u32Delay > 0UL) ? LPTMR_OK : LPTMR_ERR_TIMEOUT);
 }
 
 /**
@@ -409,7 +422,7 @@ int32_t LPTMR_ResetCounter(LPTMR_T *lptmr)
 void LPTMR_EnableCaptureInputNoiseFilter(LPTMR_T *lptmr, uint32_t u32FilterCount, uint32_t u32ClkSrcSel)
 {
     lptmr->CAPNF = (((lptmr)->CAPNF & ~(LPTMR_CAPNF_CAPNFCNT_Msk | LPTMR_CAPNF_CAPNFSEL_Msk))
-                    | (LPTMR_CAPNF_CAPNFEN_Msk | (u32FilterCount << LPTMR_CAPNF_CAPNFCNT_Pos) | (u32ClkSrcSel << LPTMR_CAPNF_CAPNFSEL_Pos)));
+                    | (LPTMR_CAPNF_CAPNFEN_Msk | ((u32FilterCount & 0x7UL) << LPTMR_CAPNF_CAPNFCNT_Pos) | ((u32ClkSrcSel & 0x7UL) << LPTMR_CAPNF_CAPNFSEL_Pos)));
 }
 
 /**

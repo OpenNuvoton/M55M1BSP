@@ -175,6 +175,11 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/uart.c</locationURI>
 		</link>
 		<link>
+			<name>Library/fmc.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/StdDriver/src/fmc.c</locationURI>
+		</link>		
+		<link>
 			<name>LwIP/api_lib.c</name>
 			<type>1</type>
 			<locationURI>PARENT-4-PROJECT_LOC/ThirdParty/lwIP/src/api/api_lib.c</locationURI>

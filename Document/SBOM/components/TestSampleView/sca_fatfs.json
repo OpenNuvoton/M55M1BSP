@@ -1,0 +1,48 @@
+{
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/fatfs@R0.16?source=vendored&path=ThirdParty/FatFs",
+      "name": "FatFs",
+      "version": "R0.16",
+      "scope": "required",
+      "author": "ChaN",
+      "purl": "pkg:generic/fatfs@R0.16",
+      "cpe": "cpe:2.3:a:elm-chan:fatfs:r0.16:*:*:*:*:*:*:*",
+      "description": "FatFs - Generic FAT file system module for embedded systems (ANSI C/C89), integrated as vendored source code.",
+      "licenses": [
+        {
+          "license": {
+            "name": "FatFs license (BSD-like, as declared by ChaN in source header)"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "ThirdParty/FatFs"
+        },
+        {
+          "name": "fatfs_revision_id",
+          "value": "80386"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_source"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "third-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "FatFs (ChaN) - Generic FAT file system module"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/components/sca_fatfs.json"
+        }
+      ]
+    }
+  ]
+}

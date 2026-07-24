@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-mcpu=cortex-m55+cdecp2 -Wconditional-uninitialized</MiscControls>
+              <MiscControls>-mcpu=cortex-m55+cdecp2 -Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define></Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\StdDriver\inc;..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\CMSIS\DSP\Include;..\</IncludePath>

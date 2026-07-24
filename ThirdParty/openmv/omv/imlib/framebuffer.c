@@ -12,6 +12,7 @@
 //Modify by chchen59
 //#include "mpprint.h"
 #include "framebuffer.h"
+#include "_mutex.h"
 #include "omv_boardconfig.h"
 
 #define FB_ALIGN_SIZE_ROUND_DOWN(x) (((x) / FRAMEBUFFER_ALIGNMENT) * FRAMEBUFFER_ALIGNMENT)

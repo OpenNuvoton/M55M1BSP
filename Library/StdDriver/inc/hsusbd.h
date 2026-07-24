@@ -14,7 +14,6 @@
 extern "C"
 {
 #endif
-
 /** @addtogroup Standard_Driver Standard Driver
   @{
 */
@@ -156,6 +155,7 @@ extern uint8_t g_hsusbd_UsbAddr;
 extern uint32_t volatile g_hsusbd_DmaDone;
 extern uint32_t g_hsusbd_CtrlInSize;
 extern S_HSUSBD_INFO_T gsHSInfo;
+extern S_HSUSBD_INFO_T *g_hsusbd_sInfo;
 extern S_HSUSBD_CMD_T gUsbCmd;
 extern volatile uint8_t g_hsusbd_RemoteWakeupEn;
 /** @endcond HIDDEN_SYMBOLS */
@@ -187,8 +187,8 @@ extern volatile uint8_t g_hsusbd_RemoteWakeupEn;
 #define HSUSBD_CLR_EP_INT_FLAG(ep, flag)  (HSUSBD->EP[(ep)].EPINTSTS = (flag)) /*!<Clear EPx interrupt flag  \hideinitializer */
 #define HSUSBD_SET_DMA_LEN(len)           (HSUSBD->DMACNT = (len)) /*!<Set DMA transfer length  \hideinitializer */
 #define HSUSBD_SET_DMA_ADDR(addr)         (HSUSBD->DMAADDR = (addr)) /*!<Set DMA transfer address  \hideinitializer */
-#define HSUSBD_SET_DMA_READ(epnum)        (HSUSBD->DMACTL = (HSUSBD->DMACTL & ~HSUSBD_DMACTL_EPNUM_Msk) | HSUSBD_DMACTL_DMARD_Msk | (epnum) | 0x100) /*!<Set DMA transfer type to read \hideinitializer */
-#define HSUSBD_SET_DMA_WRITE(epnum)       (HSUSBD->DMACTL = (HSUSBD->DMACTL & ~(HSUSBD_DMACTL_EPNUM_Msk | HSUSBD_DMACTL_DMARD_Msk | 0x100)) | (epnum)) /*!<Set DMA transfer type to write \hideinitializer */
+#define HSUSBD_SET_DMA_READ(epnum)        (HSUSBD->DMACTL = (HSUSBD->DMACTL & ~HSUSBD_DMACTL_EPNUM_Msk) | HSUSBD_DMACTL_DMARD_Msk | (epnum) | HSUSBD_DMACTL_SVINEP_Msk) /*!<Set DMA transfer type to read \hideinitializer */
+#define HSUSBD_SET_DMA_WRITE(epnum)       (HSUSBD->DMACTL = (HSUSBD->DMACTL & ~(HSUSBD_DMACTL_EPNUM_Msk | HSUSBD_DMACTL_DMARD_Msk | HSUSBD_DMACTL_SVINEP_Msk)) | (epnum)) /*!<Set DMA transfer type to write \hideinitializer */
 #define HSUSBD_ENABLE_DMA()               (HSUSBD->DMACTL |= HSUSBD_DMACTL_DMAEN_Msk) /*!<Enable DMA transfer  \hideinitializer */
 #define HSUSBD_IS_ATTACHED()              ((uint32_t)(HSUSBD->PHYCTL & HSUSBD_PHYCTL_VBUSDET_Msk)) /*!<Check cable connect state  \hideinitializer */
 #define HSUSBD_ENABLE_BCD()               ((uint32_t)(HSUSBD->BCDC |= HSUSBD_BCDC_BCDEN_Msk)) /*!<Enable BCD  \hideinitializer */
@@ -416,7 +416,8 @@ __STATIC_INLINE void SYS_Enable_HSUSB_PHY(void)
     /* HSOTG PHY at reset mode at least 10us before changing to active mode */
     for (i = 0; i < 0x1000UL; i++)
     {
-        __NOP();
+        volatile uint32_t dummy = 0;
+        (void)dummy;
     }
 
     /* Set HSOTG PHY to active status */

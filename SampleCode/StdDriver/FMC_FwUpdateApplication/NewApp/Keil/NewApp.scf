@@ -53,7 +53,7 @@
 ;   <o1> Flash Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
  *----------------------------------------------------------------------------*/
-#define FLASH_START     0x00104000
+#define FLASH_START     0x00108000
 #define FLASH_SIZE      0x00008000
 
 /*--------------------- Cacheable SRAM Configuration ---------------------------

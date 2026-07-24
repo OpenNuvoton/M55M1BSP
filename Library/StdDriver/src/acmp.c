@@ -80,9 +80,9 @@ void ACMP_Calibration(ACMP_T *acmp)
     g_ACMP_i32ErrCode = 0;
 
     /* Do calibration for ACMP to decrease the effect of electrical random noise. */
-    if (((acmp->CALSR & ACMP_CALSR_DONE0_Msk) == 0) || ((acmp->CALSR & ACMP_CALSR_DONE1_Msk) == 0))
+    if (((acmp->CALSR & ACMP_CALSR_DONE0_Msk) == 0U) || ((acmp->CALSR & ACMP_CALSR_DONE1_Msk) == 0U))
     {
-        uint32_t u32Delay = 0;
+        uint32_t u32Delay = 0U;
         /* Unlock protected registers */
         SYS_UnlockReg();
 
@@ -111,7 +111,7 @@ void ACMP_Calibration(ACMP_T *acmp)
         acmp->CALCTL |= ACMP_CALCTL_CALTRG0_Msk;            /* Start to calibration */
         u32Delay = SystemCoreClock;   /* 1 second */
 
-        while ((acmp->CALSR & ACMP_CALSR_DONE0_Msk) == 0)   /* Wait calibration finish */
+        while ((acmp->CALSR & ACMP_CALSR_DONE0_Msk) == 0U)   /* Wait calibration finish */
         {
             if (--u32Delay == 0)
             {
@@ -130,7 +130,7 @@ void ACMP_Calibration(ACMP_T *acmp)
         acmp->CALCTL |= ACMP_CALCTL_CALTRG1_Msk;            /* Start to calibration */
         u32Delay = SystemCoreClock; /* 1 second */
 
-        while ((acmp->CALSR & ACMP_CALSR_DONE1_Msk) == 0)  /* Wait calibration finish */
+        while ((acmp->CALSR & ACMP_CALSR_DONE1_Msk) == 0U)  /* Wait calibration finish */
         {
             if (--u32Delay == 0)
             {

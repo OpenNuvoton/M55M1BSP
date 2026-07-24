@@ -5,13 +5,26 @@ solution:
     - compiler: AC6@>=5.19.0
     - compiler: GCC@>=10.3.1
   build-types:
-    - type: Release         # build-type name, used in context with: .Release
-      optimize: balanced    # balanced optimization (size, speed, balanced, none, debug)
-      debug: on             # generate debug info. for the release build (Set off to disable)
+    - type: Release # build-type name, used in context with: .Release
+      optimize: balanced # balanced optimization (size, speed, balanced, none, debug)
+      debug: on # generate debug info. for the release build (Set off to disable)
   target-types:
     - type: ARMCLANG
       compiler: AC6
       device: Nuvoton::M55M1H2LJAE
+      target-set:
+        - set:
+          images:
+            - image: out/SPIM_DMM_RUN_CODE/ARMCLANG/Release/SPIM_DMM_RUN_CODE.bin/ER_ROM.bin
+              type: bin
+              load: image
+              load-offset: 0x00100000
+            - image: out/SPIM_DMM_RUN_CODE/ARMCLANG/Release/SPIM_DMM_RUN_CODE.bin/SPIM.bin
+              type: bin
+              load: image
+              load-offset: 0x82000000
+            - project-context: SPIM_DMM_RUN_CODE.Release
+              load: symbols
     - type: GNUC
       compiler: GCC
       device: Nuvoton::M55M1H2LJAE

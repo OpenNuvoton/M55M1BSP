@@ -42,98 +42,98 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Module Reset Control Resister constant definitions.                                                    */
 /*---------------------------------------------------------------------------------------------------------*/
-#define SYS_ACMP01RST       ((0x200UL<<20) | SYS_ACMPRST_ACMP01RST_Pos)         /*!< Reset ACMP01 \hideinitializer*/
-#define SYS_ACMP23RST       ((0x200UL<<20) | SYS_ACMPRST_ACMP23RST_Pos)         /*!< Reset ACMP23 \hideinitializer*/
-#define SYS_AWF0RST         ((0x204UL<<20) | SYS_AWFRST_AWF0RST_Pos)            /*!< Reset AWF0 \hideinitializer*/
-#define SYS_BPWM0RST        ((0x208UL<<20) | SYS_BPWMRST_BPWM0RST_Pos)          /*!< Reset BPWM0 \hideinitializer*/
-#define SYS_BPWM1RST        ((0x208UL<<20) | SYS_BPWMRST_BPWM1RST_Pos)          /*!< Reset BPWM1 \hideinitializer*/
-#define SYS_CANFD0RST       ((0x20CUL<<20) | SYS_CANFDRST_CANFD0RST_Pos)        /*!< Reset CANFD0RST \hideinitializer*/
-#define SYS_CANFD1RST       ((0x20CUL<<20) | SYS_CANFDRST_CANFD1RST_Pos)        /*!< Reset CANFD1RST \hideinitializer*/
-#define SYS_CCAP0RST        ((0x210UL<<20) | SYS_CCAPRST_CCAP0RST_Pos)          /*!< Reset CCAP0RST \hideinitializer*/
-#define SYS_CRC0RST         ((0x214UL<<20) | SYS_CRCRST_CRC0RST_Pos)            /*!< Reset CRC0RST \hideinitializer*/
-#define SYS_CRYPTO0RST      ((0x218UL<<20) | SYS_CRYPTORST_CRYPTO0RST_Pos)      /*!< Reset CRYPTO0RST \hideinitializer*/
-#define SYS_DAC01RST        ((0x21CUL<<20) | SYS_DACRST_DAC01RST_Pos)           /*!< Reset DAC01RST \hideinitializer*/
-#define SYS_DMIC0RST        ((0x220UL<<20) | SYS_DMICRST_DMIC0RST_Pos)          /*!< Reset DMIC0RST \hideinitializer*/
-#define SYS_EADC0RST        ((0x224UL<<20) | SYS_EADCRST_EADC0RST_Pos)          /*!< Reset EADC0RST \hideinitializer*/
-#define SYS_EBI0RST         ((0x228UL<<20) | SYS_EBIRST_EBI0RST_Pos)            /*!< Reset EBI0RST \hideinitializer*/
-#define SYS_ECAP0RST        ((0x22CUL<<20) | SYS_ECAPRST_ECAP0RST_Pos)          /*!< Reset ECAP0RST \hideinitializer*/
-#define SYS_ECAP1RST        ((0x22CUL<<20) | SYS_ECAPRST_ECAP1RST_Pos)          /*!< Reset ECAP1RST \hideinitializer*/
-#define SYS_ECAP2RST        ((0x22CUL<<20) | SYS_ECAPRST_ECAP2RST_Pos)          /*!< Reset ECAP2RST \hideinitializer*/
-#define SYS_ECAP3RST        ((0x22CUL<<20) | SYS_ECAPRST_ECAP3RST_Pos)          /*!< Reset ECAP3RST \hideinitializer*/
-#define SYS_EMAC0RST        ((0x230UL<<20) | SYS_EMACRST_EMAC0RST_Pos)          /*!< Reset EMAC0RST \hideinitializer*/
-#define SYS_EPWM0RST        ((0x234UL<<20) | SYS_EPWMRST_EPWM0RST_Pos)          /*!< Reset EPWM0RST \hideinitializer*/
-#define SYS_EPWM1RST        ((0x234UL<<20) | SYS_EPWMRST_EPWM1RST_Pos)          /*!< Reset EPWM1RST \hideinitializer*/
-#define SYS_EQEI0RST        ((0x238UL<<20) | SYS_EQEIRST_EQEI0RST_Pos)          /*!< Reset EQEI0RST \hideinitializer*/
-#define SYS_EQEI1RST        ((0x238UL<<20) | SYS_EQEIRST_EQEI1RST_Pos)          /*!< Reset EQEI1RST \hideinitializer*/
-#define SYS_EQEI2RST        ((0x238UL<<20) | SYS_EQEIRST_EQEI2RST_Pos)          /*!< Reset EQEI2RST \hideinitializer*/
-#define SYS_EQEI3RST        ((0x238UL<<20) | SYS_EQEIRST_EQEI3RST_Pos)          /*!< Reset EQEI3RST \hideinitializer*/
-#define SYS_FMC0RST         ((0x23CUL<<20) | SYS_FMCRST_FMC0RST_Pos)            /*!< Reset FMC0RST \hideinitializer*/
-#define SYS_GDMA0RST        ((0x240UL<<20) | SYS_GDMARST_GDMA0RST_Pos)          /*!< Reset GDMA0RST \hideinitializer*/
-#define SYS_GPIO0RST        ((0x244UL<<20) | SYS_GPIORST_GPIO0RST_Pos)          /*!< Reset GPIO0RST \hideinitializer*/
-#define SYS_HSOTG0RST       ((0x248UL<<20) | SYS_HSOTGRST_HSOTG0RST_Pos)        /*!< Reset HSOTG0RST \hideinitializer*/
-#define SYS_HSUSBD0RST      ((0x24CUL<<20) | SYS_HSUSBDRST_HSUSBD0RST_Pos)      /*!< Reset HSUSBD0RST \hideinitializer*/
-#define SYS_HSUSBH0RST      ((0x250UL<<20) | SYS_HSUSBHRST_HSUSBH0RST_Pos)      /*!< Reset HSUSBH0RST \hideinitializer*/
-#define SYS_I2C0RST         ((0x254UL<<20) | SYS_I2CRST_I2C0RST_Pos)            /*!< Reset I2C0RST \hideinitializer*/
-#define SYS_I2C1RST         ((0x254UL<<20) | SYS_I2CRST_I2C1RST_Pos)            /*!< Reset I2C0RST \hideinitializer*/
-#define SYS_I2C2RST         ((0x254UL<<20) | SYS_I2CRST_I2C2RST_Pos)            /*!< Reset I2C0RST \hideinitializer*/
-#define SYS_I2C3RST         ((0x254UL<<20) | SYS_I2CRST_I2C3RST_Pos)            /*!< Reset I2C0RST \hideinitializer*/
-#define SYS_I2S0RST         ((0x258UL<<20) | SYS_I2SRST_I2S0RST_Pos)            /*!< Reset I2S0RST \hideinitializer*/
-#define SYS_I2S1RST         ((0x258UL<<20) | SYS_I2SRST_I2S1RST_Pos)            /*!< Reset I2S1RST \hideinitializer*/
-#define SYS_I3C0RST         ((0x25CUL<<20) | SYS_I3CRST_I3C0RST_Pos)            /*!< Reset I3C0RST \hideinitializer*/
-#define SYS_KDF0RST         ((0x260UL<<20) | SYS_KDFRST_KDF0RST_Pos)            /*!< Reset KDF0RST \hideinitializer*/
-#define SYS_KPI0RST         ((0x264UL<<20) | SYS_KPIRST_KPI0RST_Pos)            /*!< Reset KPI0RST \hideinitializer*/
-#define SYS_KS0RST          ((0x268UL<<20) | SYS_KSRST_KS0RST_Pos)              /*!< Reset KS0RST \hideinitializer*/
-#define SYS_LPADC0RST       ((0x26CUL<<20) | SYS_LPADCRST_LPADC0RST_Pos)        /*!< Reset LPADC0RST \hideinitializer*/
-#define SYS_LPPDMA0RST      ((0x270UL<<20) | SYS_LPPDMARST_LPPDMA0RST_Pos)      /*!< Reset LPDMA0RST \hideinitializer*/
-#define SYS_LPGPIO0RST      ((0x274UL<<20) | SYS_LPGPIORST_LPGPIO0RST_Pos)      /*!< Reset LPGPIO0RST \hideinitializer*/
-#define SYS_LPI2C0RST       ((0x278UL<<20) | SYS_LPI2CRST_LPI2C0RST_Pos)        /*!< Reset LPI2C0RST \hideinitializer*/
-#define SYS_LPSPI0RST       ((0x27CUL<<20) | SYS_LPSPIRST_LPSPI0RST_Pos)        /*!< Reset LPSPI0RST \hideinitializer*/
-#define SYS_LPTMR0RST       ((0x280UL<<20) | SYS_LPTMRRST_LPTMR0RST_Pos)        /*!< Reset LPTMR0RST \hideinitializer*/
-#define SYS_LPTMR1RST       ((0x280UL<<20) | SYS_LPTMRRST_LPTMR1RST_Pos)        /*!< Reset LPTMR1RST \hideinitializer*/
-#define SYS_LPUART0RST      ((0x284UL<<20) | SYS_LPUARTRST_LPUART0RST_Pos)      /*!< Reset LPUART0RST \hideinitializer*/
-#define SYS_NPURST          ((0x004UL<<20) | SYS_RSTCTL_NPURST_Pos)             /*!< Reset NPURST \hideinitializer*/
-#define SYS_OTFC0RST        ((0x288UL<<20) | SYS_OTFCRST_OTFC0RST_Pos)          /*!< Reset OTFC0RST \hideinitializer*/
-#define SYS_OTG0RST         ((0x28CUL<<20) | SYS_OTGRST_OTG0RST_Pos)            /*!< Reset OTG0RST \hideinitializer*/
-#define SYS_PDMA0RST        ((0x290UL<<20) | SYS_PDMARST_PDMA0RST_Pos)          /*!< Reset PDMA0RST \hideinitializer*/
-#define SYS_PDMA1RST        ((0x290UL<<20) | SYS_PDMARST_PDMA1RST_Pos)          /*!< Reset PDMA1RST \hideinitializer*/
-#define SYS_PSIO0RST        ((0x294UL<<20) | SYS_PSIORST_PSIO0RST_Pos)          /*!< Reset PSIO0RST \hideinitializer*/
-#define SYS_QSPI0RST        ((0x298UL<<20) | SYS_QSPIRST_QSPI0RST_Pos)          /*!< Reset QSPI0RST \hideinitializer*/
-#define SYS_QSPI1RST        ((0x298UL<<20) | SYS_QSPIRST_QSPI1RST_Pos)          /*!< Reset QSPI1RST \hideinitializer*/
-#define SYS_RTC0RST         ((0x29CUL<<20) | SYS_RTCRST_RTC0RST_Pos)            /*!< Reset RTC0RST \hideinitializer*/
-#define SYS_SC0RST          ((0x2A0UL<<20) | SYS_SCRST_SC0RST_Pos)              /*!< Reset SC0RST \hideinitializer*/
-#define SYS_SC1RST          ((0x2A0UL<<20) | SYS_SCRST_SC1RST_Pos)              /*!< Reset SC1RST \hideinitializer*/
-#define SYS_SC2RST          ((0x2A0UL<<20) | SYS_SCRST_SC2RST_Pos)              /*!< Reset SC2RST \hideinitializer*/
-#define SYS_SCU0RST         ((0x2A4UL<<20) | SYS_SCURST_SCU0RST_Pos)            /*!< Reset SCU0RST \hideinitializer*/
-#define SYS_SDH0RST         ((0x2A8UL<<20) | SYS_SDHRST_SDH0RST_Pos)            /*!< Reset SDH0RST \hideinitializer*/
-#define SYS_SDH1RST         ((0x2A8UL<<20) | SYS_SDHRST_SDH1RST_Pos)            /*!< Reset SDH1RST \hideinitializer*/
-#define SYS_SPI0RST         ((0x2ACUL<<20) | SYS_SPIRST_SPI0RST_Pos)            /*!< Reset SPI0RST \hideinitializer*/
-#define SYS_SPI1RST         ((0x2ACUL<<20) | SYS_SPIRST_SPI1RST_Pos)            /*!< Reset SPI1RST \hideinitializer*/
-#define SYS_SPI2RST         ((0x2ACUL<<20) | SYS_SPIRST_SPI2RST_Pos)            /*!< Reset SPI2RST \hideinitializer*/
-#define SYS_SPI3RST         ((0x2ACUL<<20) | SYS_SPIRST_SPI3RST_Pos)            /*!< Reset SPI3RST \hideinitializer*/
-#define SYS_SPIM0RST        ((0x2B0UL<<20) | SYS_SPIMRST_SPIM0RST_Pos)          /*!< Reset SPIM0RST \hideinitializer*/
-#define SYS_TMR0RST         ((0x2C0UL<<20) | SYS_TMRRST_TMR0RST_Pos)            /*!< Reset TMR0RST \hideinitializer*/
-#define SYS_TMR1RST         ((0x2C0UL<<20) | SYS_TMRRST_TMR1RST_Pos)            /*!< Reset TMR1RST \hideinitializer*/
-#define SYS_TMR2RST         ((0x2C0UL<<20) | SYS_TMRRST_TMR2RST_Pos)            /*!< Reset TMR2RST \hideinitializer*/
-#define SYS_TMR3RST         ((0x2C0UL<<20) | SYS_TMRRST_TMR3RST_Pos)            /*!< Reset TMR3RST \hideinitializer*/
-#define SYS_TRNG0RST        ((0x2C4UL<<20) | SYS_TRNGRST_TRNG0RST_Pos)          /*!< Reset TRNG0RST \hideinitializer*/
-#define SYS_TTMR0RST        ((0x2C8UL<<20) | SYS_TTMRRST_TTMR0RST_Pos)          /*!< Reset TTMR0RST \hideinitializer*/
-#define SYS_TTMR1RST        ((0x2C8UL<<20) | SYS_TTMRRST_TTMR1RST_Pos)          /*!< Reset TTMR1RST \hideinitializer*/
-#define SYS_UART0RST        ((0x2CCUL<<20) | SYS_UARTRST_UART0RST_Pos)          /*!< Reset UART0RST \hideinitializer*/
-#define SYS_UART1RST        ((0x2CCUL<<20) | SYS_UARTRST_UART1RST_Pos)          /*!< Reset UART1RST \hideinitializer*/
-#define SYS_UART2RST        ((0x2CCUL<<20) | SYS_UARTRST_UART2RST_Pos)          /*!< Reset UART2RST \hideinitializer*/
-#define SYS_UART3RST        ((0x2CCUL<<20) | SYS_UARTRST_UART3RST_Pos)          /*!< Reset UART3RST \hideinitializer*/
-#define SYS_UART4RST        ((0x2CCUL<<20) | SYS_UARTRST_UART4RST_Pos)          /*!< Reset UART4RST \hideinitializer*/
-#define SYS_UART5RST        ((0x2CCUL<<20) | SYS_UARTRST_UART5RST_Pos)          /*!< Reset UART5RST \hideinitializer*/
-#define SYS_UART6RST        ((0x2CCUL<<20) | SYS_UARTRST_UART6RST_Pos)          /*!< Reset UART6RST \hideinitializer*/
-#define SYS_UART7RST        ((0x2CCUL<<20) | SYS_UARTRST_UART7RST_Pos)          /*!< Reset UART7RST \hideinitializer*/
-#define SYS_UART8RST        ((0x2CCUL<<20) | SYS_UARTRST_UART8RST_Pos)          /*!< Reset UART8RST \hideinitializer*/
-#define SYS_UART9RST        ((0x2CCUL<<20) | SYS_UARTRST_UART9RST_Pos)          /*!< Reset UART9RST \hideinitializer*/
-#define SYS_USBD0RST        ((0x2D0UL<<20) | SYS_USBDRST_USBD0RST_Pos)          /*!< Reset USBD0RST \hideinitializer*/
-#define SYS_USBH0RST        ((0x2D4UL<<20) | SYS_USBHRST_USBH0RST_Pos)          /*!< Reset USBH0RST \hideinitializer*/
-#define SYS_USCI0RST        ((0x2D8UL<<20) | SYS_USCIRST_USCI0RST_Pos)          /*!< Reset USCI0RST \hideinitializer*/
-#define SYS_UTCPD0RST       ((0x2DCUL<<20) | SYS_UTCPDRST_UTCPD0RST_Pos)        /*!< Reset UTCPD0RST \hideinitializer*/
-#define SYS_WWDT0RST        ((0x2E0UL<<20) | SYS_WWDTRST_WWDT0RST_Pos)          /*!< Reset WWDT0RST \hideinitializer*/
-#define SYS_WWDT1RST        ((0x2E0UL<<20) | SYS_WWDTRST_WWDT1RST_Pos)          /*!< Reset WWDT1RST \hideinitializer*/
+#define SYS_ACMP01RST   ((uint32_t)(0x200UL<<20) | (uint32_t)SYS_ACMPRST_ACMP01RST_Pos)   /*!< Reset ACMP01 \hideinitializer*/
+#define SYS_ACMP23RST   ((uint32_t)(0x200UL<<20) | (uint32_t)SYS_ACMPRST_ACMP23RST_Pos)   /*!< Reset ACMP23 \hideinitializer*/
+#define SYS_AWF0RST     ((uint32_t)(0x204UL<<20) | (uint32_t)SYS_AWFRST_AWF0RST_Pos)      /*!< Reset AWF0 \hideinitializer*/
+#define SYS_BPWM0RST    ((uint32_t)(0x208UL<<20) | (uint32_t)SYS_BPWMRST_BPWM0RST_Pos)    /*!< Reset BPWM0 \hideinitializer*/
+#define SYS_BPWM1RST    ((uint32_t)(0x208UL<<20) | (uint32_t)SYS_BPWMRST_BPWM1RST_Pos)    /*!< Reset BPWM1 \hideinitializer*/
+#define SYS_CANFD0RST   ((uint32_t)(0x20CUL<<20) | (uint32_t)SYS_CANFDRST_CANFD0RST_Pos)  /*!< Reset CANFD0RST \hideinitializer*/
+#define SYS_CANFD1RST   ((uint32_t)(0x20CUL<<20) | (uint32_t)SYS_CANFDRST_CANFD1RST_Pos)  /*!< Reset CANFD1RST \hideinitializer*/
+#define SYS_CCAP0RST    ((uint32_t)(0x210UL<<20) | (uint32_t)SYS_CCAPRST_CCAP0RST_Pos)    /*!< Reset CCAP0RST \hideinitializer*/
+#define SYS_CRC0RST     ((uint32_t)(0x214UL<<20) | (uint32_t)SYS_CRCRST_CRC0RST_Pos)      /*!< Reset CRC0RST \hideinitializer*/
+#define SYS_CRYPTO0RST  ((uint32_t)(0x218UL<<20) | (uint32_t)SYS_CRYPTORST_CRYPTO0RST_Pos)/*!< Reset CRYPTO0RST \hideinitializer*/
+#define SYS_DAC01RST    ((uint32_t)(0x21CUL<<20) | (uint32_t)SYS_DACRST_DAC01RST_Pos)     /*!< Reset DAC01RST \hideinitializer*/
+#define SYS_DMIC0RST    ((uint32_t)(0x220UL<<20) | (uint32_t)SYS_DMICRST_DMIC0RST_Pos)    /*!< Reset DMIC0RST \hideinitializer*/
+#define SYS_EADC0RST    ((uint32_t)(0x224UL<<20) | (uint32_t)SYS_EADCRST_EADC0RST_Pos)    /*!< Reset EADC0RST \hideinitializer*/
+#define SYS_EBI0RST     ((uint32_t)(0x228UL<<20) | (uint32_t)SYS_EBIRST_EBI0RST_Pos)      /*!< Reset EBI0RST \hideinitializer*/
+#define SYS_ECAP0RST    ((uint32_t)(0x22CUL<<20) | (uint32_t)SYS_ECAPRST_ECAP0RST_Pos)    /*!< Reset ECAP0RST \hideinitializer*/
+#define SYS_ECAP1RST    ((uint32_t)(0x22CUL<<20) | (uint32_t)SYS_ECAPRST_ECAP1RST_Pos)    /*!< Reset ECAP1RST \hideinitializer*/
+#define SYS_ECAP2RST    ((uint32_t)(0x22CUL<<20) | (uint32_t)SYS_ECAPRST_ECAP2RST_Pos)    /*!< Reset ECAP2RST \hideinitializer*/
+#define SYS_ECAP3RST    ((uint32_t)(0x22CUL<<20) | (uint32_t)SYS_ECAPRST_ECAP3RST_Pos)    /*!< Reset ECAP3RST \hideinitializer*/
+#define SYS_EMAC0RST    ((uint32_t)(0x230UL<<20) | (uint32_t)SYS_EMACRST_EMAC0RST_Pos)    /*!< Reset EMAC0RST \hideinitializer*/
+#define SYS_EPWM0RST    ((uint32_t)(0x234UL<<20) | (uint32_t)SYS_EPWMRST_EPWM0RST_Pos)    /*!< Reset EPWM0RST \hideinitializer*/
+#define SYS_EPWM1RST    ((uint32_t)(0x234UL<<20) | (uint32_t)SYS_EPWMRST_EPWM1RST_Pos)    /*!< Reset EPWM1RST \hideinitializer*/
+#define SYS_EQEI0RST    ((uint32_t)(0x238UL<<20) | (uint32_t)SYS_EQEIRST_EQEI0RST_Pos)    /*!< Reset EQEI0RST \hideinitializer*/
+#define SYS_EQEI1RST    ((uint32_t)(0x238UL<<20) | (uint32_t)SYS_EQEIRST_EQEI1RST_Pos)    /*!< Reset EQEI1RST \hideinitializer*/
+#define SYS_EQEI2RST    ((uint32_t)(0x238UL<<20) | (uint32_t)SYS_EQEIRST_EQEI2RST_Pos)    /*!< Reset EQEI2RST \hideinitializer*/
+#define SYS_EQEI3RST    ((uint32_t)(0x238UL<<20) | (uint32_t)SYS_EQEIRST_EQEI3RST_Pos)    /*!< Reset EQEI3RST \hideinitializer*/
+#define SYS_FMC0RST     ((uint32_t)(0x23CUL<<20) | (uint32_t)SYS_FMCRST_FMC0RST_Pos)      /*!< Reset FMC0RST \hideinitializer*/
+#define SYS_GDMA0RST    ((uint32_t)(0x240UL<<20) | (uint32_t)SYS_GDMARST_GDMA0RST_Pos)    /*!< Reset GDMA0RST \hideinitializer*/
+#define SYS_GPIO0RST    ((uint32_t)(0x244UL<<20) | (uint32_t)SYS_GPIORST_GPIO0RST_Pos)    /*!< Reset GPIO0RST \hideinitializer*/
+#define SYS_HSOTG0RST   ((uint32_t)(0x248UL<<20) | (uint32_t)SYS_HSOTGRST_HSOTG0RST_Pos)  /*!< Reset HSOTG0RST \hideinitializer*/
+#define SYS_HSUSBD0RST  ((uint32_t)(0x24CUL<<20) | (uint32_t)SYS_HSUSBDRST_HSUSBD0RST_Pos)/*!< Reset HSUSBD0RST \hideinitializer*/
+#define SYS_HSUSBH0RST  ((uint32_t)(0x250UL<<20) | (uint32_t)SYS_HSUSBHRST_HSUSBH0RST_Pos)/*!< Reset HSUSBH0RST \hideinitializer*/
+#define SYS_I2C0RST     ((uint32_t)(0x254UL<<20) | (uint32_t)SYS_I2CRST_I2C0RST_Pos)      /*!< Reset I2C0RST \hideinitializer*/
+#define SYS_I2C1RST     ((uint32_t)(0x254UL<<20) | (uint32_t)SYS_I2CRST_I2C1RST_Pos)      /*!< Reset I2C1RST \hideinitializer*/
+#define SYS_I2C2RST     ((uint32_t)(0x254UL<<20) | (uint32_t)SYS_I2CRST_I2C2RST_Pos)      /*!< Reset I2C2RST \hideinitializer*/
+#define SYS_I2C3RST     ((uint32_t)(0x254UL<<20) | (uint32_t)SYS_I2CRST_I2C3RST_Pos)      /*!< Reset I2C3RST \hideinitializer*/
+#define SYS_I2S0RST     ((uint32_t)(0x258UL<<20) | (uint32_t)SYS_I2SRST_I2S0RST_Pos)      /*!< Reset I2S0RST \hideinitializer*/
+#define SYS_I2S1RST     ((uint32_t)(0x258UL<<20) | (uint32_t)SYS_I2SRST_I2S1RST_Pos)      /*!< Reset I2S1RST \hideinitializer*/
+#define SYS_I3C0RST     ((uint32_t)(0x25CUL<<20) | (uint32_t)SYS_I3CRST_I3C0RST_Pos)      /*!< Reset I3C0RST \hideinitializer*/
+#define SYS_KDF0RST     ((uint32_t)(0x260UL<<20) | (uint32_t)SYS_KDFRST_KDF0RST_Pos)      /*!< Reset KDF0RST \hideinitializer*/
+#define SYS_KPI0RST     ((uint32_t)(0x264UL<<20) | (uint32_t)SYS_KPIRST_KPI0RST_Pos)      /*!< Reset KPI0RST \hideinitializer*/
+#define SYS_KS0RST      ((uint32_t)(0x268UL<<20) | (uint32_t)SYS_KSRST_KS0RST_Pos)        /*!< Reset KS0RST \hideinitializer*/
+#define SYS_LPADC0RST   ((uint32_t)(0x26CUL<<20) | (uint32_t)SYS_LPADCRST_LPADC0RST_Pos)  /*!< Reset LPADC0RST \hideinitializer*/
+#define SYS_LPPDMA0RST  ((uint32_t)(0x270UL<<20) | (uint32_t)SYS_LPPDMARST_LPPDMA0RST_Pos)/*!< Reset LPPDMA0RST \hideinitializer*/
+#define SYS_LPGPIO0RST  ((uint32_t)(0x274UL<<20) | (uint32_t)SYS_LPGPIORST_LPGPIO0RST_Pos)/*!< Reset LPGPIO0RST \hideinitializer*/
+#define SYS_LPI2C0RST   ((uint32_t)(0x278UL<<20) | (uint32_t)SYS_LPI2CRST_LPI2C0RST_Pos)  /*!< Reset LPI2C0RST \hideinitializer*/
+#define SYS_LPSPI0RST   ((uint32_t)(0x27CUL<<20) | (uint32_t)SYS_LPSPIRST_LPSPI0RST_Pos)  /*!< Reset LPSPI0RST \hideinitializer*/
+#define SYS_LPTMR0RST   ((uint32_t)(0x280UL<<20) | (uint32_t)SYS_LPTMRRST_LPTMR0RST_Pos)  /*!< Reset LPTMR0RST \hideinitializer*/
+#define SYS_LPTMR1RST   ((uint32_t)(0x280UL<<20) | (uint32_t)SYS_LPTMRRST_LPTMR1RST_Pos)  /*!< Reset LPTMR1RST \hideinitializer*/
+#define SYS_LPUART0RST  ((uint32_t)(0x284UL<<20) | (uint32_t)SYS_LPUARTRST_LPUART0RST_Pos)/*!< Reset LPUART0RST \hideinitializer*/
+#define SYS_NPURST      ((uint32_t)(0x004UL<<20) | (uint32_t)SYS_RSTCTL_NPURST_Pos)       /*!< Reset NPURST \hideinitializer*/
+#define SYS_OTFC0RST    ((uint32_t)(0x288UL<<20) | (uint32_t)SYS_OTFCRST_OTFC0RST_Pos)    /*!< Reset OTFC0RST \hideinitializer*/
+#define SYS_OTG0RST     ((uint32_t)(0x28CUL<<20) | (uint32_t)SYS_OTGRST_OTG0RST_Pos)      /*!< Reset OTG0RST \hideinitializer*/
+#define SYS_PDMA0RST    ((uint32_t)(0x290UL<<20) | (uint32_t)SYS_PDMARST_PDMA0RST_Pos)    /*!< Reset PDMA0RST \hideinitializer*/
+#define SYS_PDMA1RST    ((uint32_t)(0x290UL<<20) | (uint32_t)SYS_PDMARST_PDMA1RST_Pos)    /*!< Reset PDMA1RST \hideinitializer*/
+#define SYS_PSIO0RST    ((uint32_t)(0x294UL<<20) | (uint32_t)SYS_PSIORST_PSIO0RST_Pos)    /*!< Reset PSIO0RST \hideinitializer*/
+#define SYS_QSPI0RST    ((uint32_t)(0x298UL<<20) | (uint32_t)SYS_QSPIRST_QSPI0RST_Pos)    /*!< Reset QSPI0RST \hideinitializer*/
+#define SYS_QSPI1RST    ((uint32_t)(0x298UL<<20) | (uint32_t)SYS_QSPIRST_QSPI1RST_Pos)    /*!< Reset QSPI1RST \hideinitializer*/
+#define SYS_RTC0RST     ((uint32_t)(0x29CUL<<20) | (uint32_t)SYS_RTCRST_RTC0RST_Pos)      /*!< Reset RTC0RST \hideinitializer*/
+#define SYS_SC0RST      ((uint32_t)(0x2A0UL<<20) | (uint32_t)SYS_SCRST_SC0RST_Pos)        /*!< Reset SC0RST \hideinitializer*/
+#define SYS_SC1RST      ((uint32_t)(0x2A0UL<<20) | (uint32_t)SYS_SCRST_SC1RST_Pos)        /*!< Reset SC1RST \hideinitializer*/
+#define SYS_SC2RST      ((uint32_t)(0x2A0UL<<20) | (uint32_t)SYS_SCRST_SC2RST_Pos)        /*!< Reset SC2RST \hideinitializer*/
+#define SYS_SCU0RST     ((uint32_t)(0x2A4UL<<20) | (uint32_t)SYS_SCURST_SCU0RST_Pos)      /*!< Reset SCU0RST \hideinitializer*/
+#define SYS_SDH0RST     ((uint32_t)(0x2A8UL<<20) | (uint32_t)SYS_SDHRST_SDH0RST_Pos)      /*!< Reset SDH0RST \hideinitializer*/
+#define SYS_SDH1RST     ((uint32_t)(0x2A8UL<<20) | (uint32_t)SYS_SDHRST_SDH1RST_Pos)      /*!< Reset SDH1RST \hideinitializer*/
+#define SYS_SPI0RST     ((uint32_t)(0x2ACUL<<20) | (uint32_t)SYS_SPIRST_SPI0RST_Pos)      /*!< Reset SPI0RST \hideinitializer*/
+#define SYS_SPI1RST     ((uint32_t)(0x2ACUL<<20) | (uint32_t)SYS_SPIRST_SPI1RST_Pos)      /*!< Reset SPI1RST \hideinitializer*/
+#define SYS_SPI2RST     ((uint32_t)(0x2ACUL<<20) | (uint32_t)SYS_SPIRST_SPI2RST_Pos)      /*!< Reset SPI2RST \hideinitializer*/
+#define SYS_SPI3RST     ((uint32_t)(0x2ACUL<<20) | (uint32_t)SYS_SPIRST_SPI3RST_Pos)      /*!< Reset SPI3RST \hideinitializer*/
+#define SYS_SPIM0RST    ((uint32_t)(0x2B0UL<<20) | (uint32_t)SYS_SPIMRST_SPIM0RST_Pos)    /*!< Reset SPIM0RST \hideinitializer*/
+#define SYS_TMR0RST     ((uint32_t)(0x2C0UL<<20) | (uint32_t)SYS_TMRRST_TMR0RST_Pos)      /*!< Reset TMR0RST \hideinitializer*/
+#define SYS_TMR1RST     ((uint32_t)(0x2C0UL<<20) | (uint32_t)SYS_TMRRST_TMR1RST_Pos)      /*!< Reset TMR1RST \hideinitializer*/
+#define SYS_TMR2RST     ((uint32_t)(0x2C0UL<<20) | (uint32_t)SYS_TMRRST_TMR2RST_Pos)      /*!< Reset TMR2RST \hideinitializer*/
+#define SYS_TMR3RST     ((uint32_t)(0x2C0UL<<20) | (uint32_t)SYS_TMRRST_TMR3RST_Pos)      /*!< Reset TMR3RST \hideinitializer*/
+#define SYS_TRNG0RST    ((uint32_t)(0x2C4UL<<20) | (uint32_t)SYS_TRNGRST_TRNG0RST_Pos)    /*!< Reset TRNG0RST \hideinitializer*/
+#define SYS_TTMR0RST    ((uint32_t)(0x2C8UL<<20) | (uint32_t)SYS_TTMRRST_TTMR0RST_Pos)    /*!< Reset TTMR0RST \hideinitializer*/
+#define SYS_TTMR1RST    ((uint32_t)(0x2C8UL<<20) | (uint32_t)SYS_TTMRRST_TTMR1RST_Pos)    /*!< Reset TTMR1RST \hideinitializer*/
+#define SYS_UART0RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART0RST_Pos)    /*!< Reset UART0RST \hideinitializer*/
+#define SYS_UART1RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART1RST_Pos)    /*!< Reset UART1RST \hideinitializer*/
+#define SYS_UART2RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART2RST_Pos)    /*!< Reset UART2RST \hideinitializer*/
+#define SYS_UART3RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART3RST_Pos)    /*!< Reset UART3RST \hideinitializer*/
+#define SYS_UART4RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART4RST_Pos)    /*!< Reset UART4RST \hideinitializer*/
+#define SYS_UART5RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART5RST_Pos)    /*!< Reset UART5RST \hideinitializer*/
+#define SYS_UART6RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART6RST_Pos)    /*!< Reset UART6RST \hideinitializer*/
+#define SYS_UART7RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART7RST_Pos)    /*!< Reset UART7RST \hideinitializer*/
+#define SYS_UART8RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART8RST_Pos)    /*!< Reset UART8RST \hideinitializer*/
+#define SYS_UART9RST    ((uint32_t)(0x2CCUL<<20) | (uint32_t)SYS_UARTRST_UART9RST_Pos)    /*!< Reset UART9RST \hideinitializer*/
+#define SYS_USBD0RST    ((uint32_t)(0x2D0UL<<20) | (uint32_t)SYS_USBDRST_USBD0RST_Pos)    /*!< Reset USBD0RST \hideinitializer*/
+#define SYS_USBH0RST    ((uint32_t)(0x2D4UL<<20) | (uint32_t)SYS_USBHRST_USBH0RST_Pos)    /*!< Reset USBH0RST \hideinitializer*/
+#define SYS_USCI0RST    ((uint32_t)(0x2D8UL<<20) | (uint32_t)SYS_USCIRST_USCI0RST_Pos)    /*!< Reset USCI0RST \hideinitializer*/
+#define SYS_UTCPD0RST   ((uint32_t)(0x2DCUL<<20) | (uint32_t)SYS_UTCPDRST_UTCPD0RST_Pos)  /*!< Reset UTCPD0RST \hideinitializer*/
+#define SYS_WWDT0RST    ((uint32_t)(0x2E0UL<<20) | (uint32_t)SYS_WWDTRST_WWDT0RST_Pos)    /*!< Reset WWDT0RST \hideinitializer*/
+#define SYS_WWDT1RST    ((uint32_t)(0x2E0UL<<20) | (uint32_t)SYS_WWDTRST_WWDT1RST_Pos)    /*!< Reset WWDT1RST \hideinitializer*/
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Brown Out Detector Threshold Voltage Selection constant definitions.                                   */
@@ -4329,7 +4329,7 @@ __STATIC_INLINE uint32_t SYS_GetResetSrc(void)
   */
 __STATIC_INLINE uint32_t SYS_IsRegLocked(void)
 {
-    return SYS->REGLCTL & 1UL ? 0UL : 1UL;
+    return (SYS->REGLCTL & 1UL) ? 0UL : 1UL;
 }
 
 /**

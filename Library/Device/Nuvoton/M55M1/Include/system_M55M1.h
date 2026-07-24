@@ -113,7 +113,7 @@ extern "C" {
 
 #define __HIRC      (12000000UL)          /*!< Internal 12 MHz RC Oscillator Frequency */
 #define __HIRC48M   (48000000UL)          /*!< Internal 48 MHz RC Oscillator Frequency */
-#define __MIRC      (1000000UL)           /*!< Internal 1 MHz RC Oscillator Frequency */
+#define __MIRC      (1000000UL)           /*!< Internal 1 MHz RC Oscillator Frequency  */
 #define __LIRC      (32000UL)             /*!< Internal 32 KHz RC Oscillator Frequency */
 
 #define __SYS_OSC_CLK     (    ___HSI)    /*!< Main oscillator frequency */
@@ -122,6 +122,8 @@ extern "C" {
 extern uint32_t CyclesPerUs;              /*!< Cycles per micro second              */
 extern uint32_t SystemCoreClock;          /*!< System Clock Frequency (Core Clock)  */
 extern uint32_t PllClock;                 /*!< PLL Output Clock Frequency           */
+extern uint32_t g_u32NonCacheableBase;    /*!< Non-cacheable memory base address    */
+extern uint32_t g_u32NonCacheableLimit;   /*!< Non-cacheable memory limit address   */
 
 #if defined (__ARM_FEATURE_CMSE) && (__ARM_FEATURE_CMSE == 3L)
 #if defined (__ICCARM__)
@@ -143,11 +145,6 @@ extern uint32_t PllClock;                 /*!< PLL Output Clock Frequency       
   \brief Exception / Interrupt Handler Function Prototype
 */
 typedef void(*VECTOR_TABLE_Type)(void);
-
-/**
-  \brief System Clock Frequency (Core Clock)
-*/
-extern uint32_t SystemCoreClock;
 
 /**
   \brief Setup the microcontroller system.
@@ -196,6 +193,18 @@ extern int32_t SetupMPC(
     const uint32_t u32MemBaseAddr_S,  const uint32_t u32MemByteSize_S,
     const uint32_t u32MemBaseAddr_NS, const uint32_t u32MemByteSize_NS
 );
+
+/**
+ * \brief    Send a character data to UART debug port or semihost.
+ *           stdout_putchar is implemented in retarget.c.
+ */
+extern int stdout_putchar(int ch);
+
+/**
+ * \brief    Wait UART debug port or semihost to input a char.
+ *           stdin_getchar is implemented in retarget.c.
+ */
+extern int stdin_getchar(void);
 
 #ifdef __cplusplus
 }

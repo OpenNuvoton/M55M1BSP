@@ -17,11 +17,11 @@
   @{
 */
 
-int32_t g_I2C_i32ErrCode = 0;       /*!< I2C global error code */
-
 /** @addtogroup I2C_EXPORTED_FUNCTIONS I2C Exported Functions
   @{
 */
+
+int32_t g_I2C_i32ErrCode = 0;       /*!< I2C global error code */
 
 /**
   * @brief      Enable specify I2C Controller and set Clock Divider
@@ -572,7 +572,7 @@ void I2C_SMBusClose(I2C_T *i2c)
  * @brief      Enable SMBus PEC Transmit Function
  *
  * @param[in]  i2c              Specify I2C port
- * @param[in]  u8PECTxEn        CRC transmit enable(PECTX_ENABLE) or disable(PECTX_DISABLE)
+ * @param[in]  u8PECTxEn        CRC transmit enable(I2C_PECTX_ENABLE) or disable(I2C_PECTX_DISABLE)
  *
  * @details    When enable CRC check function, the Host or Device needs to transmit CRC byte.
  *

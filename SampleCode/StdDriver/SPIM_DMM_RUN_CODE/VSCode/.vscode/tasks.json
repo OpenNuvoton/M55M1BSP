@@ -1,5 +1,6 @@
 {
     "version": "2.0.0",
+
     "tasks": [
         {
             "label": "CMSIS Erase",
@@ -15,19 +16,17 @@
             ],
             "problemMatcher": []
         },
+
         {
             "label": "CMSIS Load",
-            "type": "shell",
-            "command": "pyocd",
-            "args": [
-                "load",
-                "--probe",
-                "cmsisdap:",
-                "--cbuild-run",
-                "${command:cmsis-csolution.getCbuildRunFile}"
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Download ER_ROM",
+                "Download SPIM"
             ],
             "problemMatcher": []
         },
+
         {
             "label": "CMSIS Run",
             "type": "shell",
@@ -45,13 +44,62 @@
             ],
             "problemMatcher": []
         },
+
         {
             "label": "CMSIS Load+Run",
-            "dependsOn": [
-                "CMSIS Load"
-            ],
             "dependsOrder": "sequence",
+            "dependsOn": [
+                "CMSIS Load",
+                "CMSIS Run"
+            ],
             "problemMatcher": []
+        },
+
+        {
+            "label": "Download ER_ROM",
+            "type": "shell",
+            "command": "pyocd",
+            "args": [
+                "load",
+                "${workspaceFolder}/out/SPIM_DMM_RUN_CODE/${input:targetType}/Release/SPIM_DMM_RUN_CODE.bin/ER_ROM.bin",
+                "--base-address",
+                "0x00100000",
+                "--probe",
+                "cmsisdap:",
+                "--cbuild-run",
+                "${workspaceFolder}/SPIM_DMM_RUN_CODE+${input:targetType}.cbuild-run.yml"
+            ],
+            "problemMatcher": []
+        },
+
+        {
+            "label": "Download SPIM",
+            "type": "shell",
+            "command": "pyocd",
+            "args": [
+                "load",
+                "${workspaceFolder}/out/SPIM_DMM_RUN_CODE/${input:targetType}/Release/SPIM_DMM_RUN_CODE.bin/SPIM.bin",
+                "--base-address",
+                "0x82000000",
+                "--probe",
+                "cmsisdap:",
+                "--cbuild-run",
+                "${workspaceFolder}/SPIM_DMM_RUN_CODE+${input:targetType}.cbuild-run.yml"
+            ],
+            "problemMatcher": []
+        }
+    ],
+
+    "inputs": [
+        {
+            "id": "targetType",
+            "type": "pickString",
+            "description": "Select compiler target type",
+            "options": [
+                "ARMCLANG",
+                "GNUC"
+            ],
+            "default": "ARMCLANG"
         }
     ]
 }

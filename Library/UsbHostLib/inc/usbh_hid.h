@@ -23,17 +23,17 @@ extern "C"
 #define ENABLE_DBG_MSG          0
 
 #if ENABLE_ERR_MSG
-#define HID_ERRMSG   printf
+#define HID_ERRMSG   (void)usbh_printf
 #else
 #define HID_ERRMSG(...)
 #endif
 
 #if ENABLE_DBG_MSG
-#define HID_DBGMSG   printf
+#define HID_DBGMSG   (void)usbh_printf
 #else
 #define HID_DBGMSG(...)
 #endif
-
+extern int _data_usage_cnt;
 /// @endcond HIDDEN_SYMBOLS
 
 /** @addtogroup LIBRARY Library
@@ -56,23 +56,23 @@ extern "C"
 #define HID_DESCRIPTOR_TYPE         0x21
 #define REPORT_DESCRIPTOR_TYPE      0x22
 
-#define HID_SUBCLASS_BOOT_DEVICE    0x01   /*!< bInterfaceSubClass: boot device interface   */
+#define HID_SUBCLASS_BOOT_DEVICE    0x01U   /*!< bInterfaceSubClass: boot device interface   */
 
-#define HID_PROTOCOL_KEYBOARD       0x01   /*!< bInterfaceProtocol: Keyboard                */
-#define HID_PROTOCOL_MOUSE          0x02   /*!< bInterfaceProtocol: Mouse                   */
+#define HID_PROTOCOL_KEYBOARD       0x01U   /*!< bInterfaceProtocol: Keyboard                */
+#define HID_PROTOCOL_MOUSE          0x02U   /*!< bInterfaceProtocol: Mouse                   */
 
 /*-----------------------------------------------------------------------------------
  *  Short Item Tags
  */
 
-/* Main item tag (tag & 0xFC) */
-#define TAG_INPUT                   0x80
-#define TAG_OUTPUT                  0x90
-#define TAG_FEATURE                 0xB0
+/* Main item tag (tag & 0xFCU) */
+#define TAG_INPUT                   0x80U
+#define TAG_OUTPUT                  0x90U
+#define TAG_FEATURE                 0xB0U
 #define TAG_COLLECTION              0xA0
 #define TAG_END_COLLECTION          0xC0
 
-/* Global item tag (tag & 0xFC) */
+/* Global item tag (tag & 0xFCU) */
 #define TAG_USAGE_PAGE              0x04
 #define TAG_LOGICAL_MIN             0x14
 #define TAG_LOGICAL_MAX             0x24
@@ -86,7 +86,7 @@ extern "C"
 #define TAG_PUSH                    0xA4
 #define TAG_POP                     0xB4
 
-/* Local item tag (tag & 0xFC) */
+/* Local item tag (tag & 0xFCU) */
 #define TAG_USAGE                   0x08
 #define TAG_USAGE_MIN               0x18
 #define TAG_USAGE_MAX               0x28
@@ -107,14 +107,14 @@ extern "C"
 /*-----------------------------------------------------------------------------------
  *  Usage Page
  */
-#define UP_GENERIC_DESKTOP          0x01
+#define UP_GENERIC_DESKTOP          0x01U
 #define UP_SIMULATION_CONTROLS      0x02
 #define UP_VR_CONTROLS              0x03
 #define UP_SPORT_CONTROLS           0x04
 #define UP_GAME_CONTROLS            0x05
-#define UP_KEYCODE                  0x07
-#define UP_LEDS                     0x08
-#define UP_BUTTON                   0x09
+#define UP_KEYCODE                  0x07U
+#define UP_LEDS                     0x08U
+#define UP_BUTTON                   0x09U
 #define UP_ORDINAL                  0x0A
 #define UP_TELEPHONY                0x0B
 #define UP_CONSUMER                 0x0C
@@ -124,16 +124,16 @@ extern "C"
 #define UP_BARCODE_SCANNER          0x8C
 
 /* Usage ID of Generic Desktop Page */
-#define USAGE_ID_POINTER            0x01
-#define USAGE_ID_MOUSE              0x02
-#define USAGE_ID_JOYSTICK           0x04
-#define USAGE_ID_GAMEPAD            0x05
-#define USAGE_ID_KEYBOARD           0x06
-#define USAGE_ID_KEYPAD             0x07
-#define USAGE_ID_X                  0x30
-#define USAGE_ID_Y                  0x31
-#define USAGE_ID_Z                  0x32
-#define USAGE_ID_WHEEL              0x38
+#define USAGE_ID_POINTER            0x01U
+#define USAGE_ID_MOUSE              0x02U
+#define USAGE_ID_JOYSTICK           0x04U
+#define USAGE_ID_GAMEPAD            0x05U
+#define USAGE_ID_KEYBOARD           0x06U
+#define USAGE_ID_KEYPAD             0x07U
+#define USAGE_ID_X                  0x30U
+#define USAGE_ID_Y                  0x31U
+#define USAGE_ID_Z                  0x32U
+#define USAGE_ID_WHEEL              0x38U
 
 #define KEYCODE_CAPS_LOCK           0x39
 #define KEYCODE_SCROLL_LOCK         0x47
@@ -227,16 +227,13 @@ typedef struct report_info
         uint32_t    wrap: 1;            /* {No Wrap (0) | Wrap (1)}                 */
         uint32_t    non_linear: 1;      /* {Linear (0) | Non Linear (1)}            */
         uint32_t    no_preferred: 1;    /* {Preferred State (0) | No Preferred (1)} */
-        uint32_t    null_state: 1;      /* {No Null position (0) | Null state(1)}   */
+        uint32_t    USBNULL_state: 1;      /* {No USBNULL position (0) | USBNULL state(1)}   */
         uint32_t    is_volatile: 1;     /* {Non Volatile (0) | Volatile (1)}        */
         uint32_t    buffered_bytes: 1;  /* {Bit Field (0) | Buffered Bytes (1)}     */
         uint32_t    reserved: 23;       /* Reserved (0)                             */
     } status;
     struct report_info  *next;
 } RP_INFO_T;
-
-static uint8_t  _designator_index, _designator_min, _designator_max;
-static uint8_t  _string_index, _string_max, _string_min;
 
 typedef struct rp_desc_info
 {
@@ -320,11 +317,13 @@ typedef void (HID_KEYBOARD_FUNC)(struct usbhid_dev *hdev, KEYBOARD_EVENT_T *kbd)
 
 void usbh_hid_regitser_mouse_callback(HID_MOUSE_FUNC *func);
 void usbh_hid_regitser_keyboard_callback(HID_KEYBOARD_FUNC *func);
+HID_KEYBOARD_FUNC *usbh_hid_get_keyboard_callback(void);
+HID_MOUSE_FUNC *usbh_hid_get_mouse_callback(void);
 
 /// @cond HIDDEN_SYMBOLS
 int hid_parse_report_descriptor(HID_DEV_T *hdev, IFACE_T *iface);
-int hid_parse_keyboard_reports(HID_DEV_T *hdev, uint8_t *data, int data_len);
-int hid_parse_mouse_reports(HID_DEV_T *hdev, uint8_t *data, int data_len);
+int hid_parse_keyboard_reports(HID_DEV_T *hdev, const uint8_t *data, int data_len);
+int hid_parse_mouse_reports(HID_DEV_T *hdev, const uint8_t *data, int data_len);
 int32_t  usbh_hid_set_report_non_blocking(HID_DEV_T *hdev, int rtp_typ, int rtp_id, uint8_t *data, int len);
 /// @endcond HIDDEN_SYMBOLS
 

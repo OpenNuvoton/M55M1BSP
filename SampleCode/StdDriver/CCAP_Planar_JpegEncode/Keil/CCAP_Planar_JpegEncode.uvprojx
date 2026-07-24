@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wno-unused-parameter -Wno-unused-variable -Wno-char-subscripts -Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wno-unused-parameter -Wno-unused-variable -Wno-char-subscripts -Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define>WITH_JPEGACC</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\StdDriver\inc;..\..\..\..\Library\JpegAcceleratorLib\include;..\..\..\..\ThirdParty\libjpeg;..</IncludePath>

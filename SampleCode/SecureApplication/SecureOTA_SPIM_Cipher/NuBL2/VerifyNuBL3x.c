@@ -14,7 +14,7 @@
 
 #define DBG_EN      0
 
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
+//void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
 int32_t Cal_SHA256_Flash(uint32_t u32Addr, uint32_t u32Bytes, uint32_t *pu32Digest);
 int32_t Cal_SHA256_SRAM(uint32_t u32Addr, uint32_t u32Bytes, uint32_t *pu32Digest);
 

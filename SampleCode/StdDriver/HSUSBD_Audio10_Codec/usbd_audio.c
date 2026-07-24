@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 /*!<Includes */
+#include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
 #include "usbd_audio.h"

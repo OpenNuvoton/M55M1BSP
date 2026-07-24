@@ -17,7 +17,7 @@
     #include <strings.h>
 #endif
 
-
+__attribute__((section(".bss.sram.data"), aligned(32))) static uint8_t line_buffer [1024 * 3];
 
 
 #include "main.h"
@@ -31,6 +31,9 @@
 #define MAX_PHOTOS 32          // Max 100 files
 #define MAX_PATH_SIZE 64       // Max path is 64 Byte
 
+/* For optimal image display. */
+#define PANEL_DISPLAY_MARGIN_W 120
+#define PANEL_DISPLAY_MARGIN_H 64
 
 
 typedef struct
@@ -127,6 +130,7 @@ FRESULT collect_photos(char *path)
             {
                 strncpy(myPlaylist.file_paths[myPlaylist.total_count],
                         full_path, MAX_PATH_SIZE - 1);
+                myPlaylist.file_paths[myPlaylist.total_count][MAX_PATH_SIZE - 1] = '\0';
                 myPlaylist.total_count++;
             }
         }
@@ -348,8 +352,6 @@ void decode_jpeg_to_memory(unsigned char *jfile, unsigned char *imgBuf)
 
     JSAMPROW row_pointer[1];
 
-    int row_stride;
-
     FIL file;
 
     if (f_open(&file, (const char *)(jfile), FA_READ) != FR_OK)
@@ -375,15 +377,8 @@ void decode_jpeg_to_memory(unsigned char *jfile, unsigned char *imgBuf)
 
 #if (TEST_GRAYSCALE_DECODE == 1)
     // Support GRAYSCALE Output?
-    /*
-    todo
-            cinfo.output_components = 1;
+    cinfo.output_components = 1;
     cinfo.out_color_space   = JCS_GRAYSCALE;
-    */
-    //Default as follow, based on jpeg file header
-    //Target Out is RGB888, 3 byte per pixel
-    //cinfo.output_components = 3;
-    //cinfo.out_color_space    = JCS_RGB;
 #endif
 
 
@@ -391,35 +386,79 @@ void decode_jpeg_to_memory(unsigned char *jfile, unsigned char *imgBuf)
     //Use scaling in libjpeg
     printf("Jpg file dimension: %d x %d\n", cinfo.image_width, cinfo.image_height);
     decode_info.num = jpeg_get_best_denom_factor(cinfo.image_width, cinfo.image_height, (uint16_t *)(&decode_info.denom));
+    DBG_msg("decode_info.num =%d\r\n", decode_info.num);
 
-    cinfo.scale_num = decode_info.num;
+
     cinfo.scale_denom = SCALING_DENOM;
-
-    //      float fscale = (float)(num)/ (float)(SCALING_DENOM);
-    //      DBG_msg("Suitable Scaling: num=%d , denom=%d, fscale=%f \n", cinfo.scale_num, cinfo.scale_denom, fscale);
+    cinfo.scale_num = decode_info.num;
 
     jpeg_start_decompress(&cinfo);
 
     DBG_msg("Decoded output dimension: %d x %d\n", cinfo.output_width, cinfo.output_height);
 
-    decode_info.img_w = cinfo.output_width;
-    decode_info.img_h = cinfo.output_height;
-
-    // row stride = width * byte per pixel
-    row_stride = cinfo.output_width * cinfo.output_components;
-
-    // Decode
-    while (cinfo.output_scanline < cinfo.output_height)
+    if ((cinfo.output_width > PANEL_DISPLAY_WIDTH_MAX) || (cinfo.output_height > PANEL_DISPLAY_HEIGHT_MAX))
     {
-
-        row_pointer[0] = imgBuf + (row_stride * cinfo.output_scanline);
-        jpeg_read_scanlines(&cinfo, row_pointer, 1);
-
+        //crop to display fit maximum panel display area
+        DBG_msg("CROP to fit PANEL!\r\n");
+        decode_info.img_w = PANEL_DISPLAY_WIDTH_MAX;
+        decode_info.img_h = PANEL_DISPLAY_HEIGHT_MAX;
+    }
+    else
+    {
+        decode_info.img_w = cinfo.output_width;
+        decode_info.img_h = cinfo.output_height;
     }
 
-    jpeg_finish_decompress(&cinfo);
+    /*
+        Set the cropping parameters.
+        The goal is to get those lines in ROI.
+    */
+    uint16_t ROI_W  =         decode_info.img_w;
+    uint16_t ROI_H  =         decode_info.img_h;
+    uint16_t OFF_X  = (cinfo.output_width - decode_info.img_w) / 2;
+    uint16_t OFF_Y  = (cinfo.output_height - decode_info.img_h) / 2;
+
+    uint8_t *dest_ptr = imgBuf;
+    row_pointer[0] = line_buffer;
+
+    //Vertical Skip
+    while (cinfo.output_scanline < OFF_Y)
+    {
+        if (jpeg_read_scanlines(&cinfo, row_pointer, 1) != 1) break;
+    }
+
+    //Crop ROI area
+    int lines_read = 0;
+
+    while (lines_read < ROI_H && cinfo.output_scanline < (OFF_Y + ROI_H))
+    {
+        if (jpeg_read_scanlines(&cinfo, row_pointer, 1) == 1)
+        {
+            //point to ROI location in this line
+            uint8_t *src_roi_start = &line_buffer[OFF_X * RGB888_COMPONENTS];
+
+            jpeg_convert_RGB888toRGB565_SW(src_roi_start, ROI_W * 1);
+
+            //Copy ROI data to frame buffer
+            memcpy(dest_ptr, src_roi_start, ROI_W * (RGB565_COMPONENTS));
+
+            //Advance dest address
+            dest_ptr += (ROI_W * (RGB565_COMPONENTS));
+            lines_read++;
+        }
+        else
+        {
+            //If there are some exceptions
+            break;
+        }
+    }
+
+    //Skip other non ROI lines
+    jpeg_abort_decompress(&cinfo);
+
     jpeg_destroy_decompress(&cinfo);
 
+    f_close(&file);
 }
 
 void JpegDecode(unsigned char *jFile, unsigned char *image)
@@ -428,60 +467,56 @@ void JpegDecode(unsigned char *jFile, unsigned char *image)
     DBG_msg("Decoded JPEG image buffer range: 0x%08x \n", (unsigned int)image);
 }
 
-//Fixed Scaling_Denom to 8, then try num from 1 to 8.
-//The return value here is the scaling num.
+
 uint16_t jpeg_get_best_denom_factor(uint16_t img_w, uint16_t img_h, uint16_t *pscaling_denom)
 {
+    int s;
+    int target_w, target_h;
 
-    //uint16_t ii;
     *pscaling_denom = SCALING_DENOM;
-    float ratio_w = (float)img_w / PANEL_DISPLAY_WIDTH_MAX;
-    float ratio_h = (float)img_h / PANEL_DISPLAY_HEIGHT_MAX;
 
-    if (ratio_w < 0) return 0;
-
-    if (ratio_h < 0) return 0;
-
-    if (ratio_w < ratio_h)
+    //1. Check if Fill Panel is feasible
+    if (img_w < PANEL_DISPLAY_WIDTH_MAX || img_h < PANEL_DISPLAY_HEIGHT_MAX)
     {
-        // Hight limited
-        DBG_msg("jpeg denom height scaling: %d / %d  \r\n", (img_h), PANEL_DISPLAY_HEIGHT_MAX);
+        printf("original input size is too small, just shrink to fit.\r\n");
 
-        for (uint16_t ii = SCALING_DENOM; ii > 0; ii--)
+        for (s = 8; s >= 1; s--)
         {
-            if ((((float)(ii) / SCALING_DENOM) * img_h) <= PANEL_DISPLAY_HEIGHT_MAX)
+            target_w = (img_w * s) >> 3;
+            target_h = (img_h * s) >> 3;
+
+            if (target_w <= (int)PANEL_DISPLAY_WIDTH_MAX &&
+                    target_h <= (int)PANEL_DISPLAY_HEIGHT_MAX)
             {
-                DBG_msg("height scaling: %d/8 is fine. \r\n", ii);
-                return ii;
-
+                DBG_msg("found s=%d, (target_w,target_h)=(%d,%d)\r\n", s, target_w, target_h);
+                return (uint16_t)s;
             }
-
         }
-
-
-
     }
     else
     {
-        // Width limited
-        DBG_msg("jpeg denom width scaling: %d / %d  \r\n", (img_w), PANEL_DISPLAY_WIDTH_MAX);
-
-        for (uint16_t ii = SCALING_DENOM; ii > 0; ii--)
+        //2. For proper Aspect Ratio case,
+        //   Compute current diff in size
+        for (s = 8; s >= 1; s--)
         {
-            if ((((float)(ii) / SCALING_DENOM) * img_w) <= PANEL_DISPLAY_WIDTH_MAX)
+            target_w = (img_w * s) >> 3;
+            target_h = (img_h * s) >> 3;
+
+            if (target_w <= (int)(PANEL_DISPLAY_WIDTH_MAX  + PANEL_DISPLAY_MARGIN_W) ||
+                    target_h <= (int)(PANEL_DISPLAY_HEIGHT_MAX + PANEL_DISPLAY_MARGIN_H))
             {
-                DBG_msg("width scaling: %d/8 is fine. \r\n", ii);
-                return ii;
-
+                DBG_msg("found s=%d, (target_w,target_h)=(%d,%d)\r\n", s, target_w, target_h);
+                return (uint16_t)s;
             }
-
         }
-
-
     }
 
-    return 0;
+    /* Fallback: s=1 (1/8 scale). Guards against returning s=0
+     * which is invalid for libjpeg scale_num. */
+    DBG_msg("fallback s=1\r\n");
+    return 1;
 }
+
 
 void jpeg_get_output_size(uint16_t *img_w, uint16_t *img_h)
 {
@@ -526,4 +561,5 @@ void jpeg_compute_roi_centering(S_DISP_RECT *pDispRect, uint16_t u16_w, uint16_t
             pDispRect->u32TopLeftX, pDispRect->u32TopLeftY,
             pDispRect->u32BottonRightX, pDispRect->u32BottonRightY);
 }
+
 /*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/

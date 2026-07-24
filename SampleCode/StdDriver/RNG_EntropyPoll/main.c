@@ -94,7 +94,7 @@ int main(void)
     do
     {
         /* Get entropy */
-        n = RNG_EntropyPoll((uint32_t *)(au8Buf), 32);
+        n = RNG_EntropyPoll(au8Buf, sizeof(au8Buf));
 
         if (n < 0)
         {

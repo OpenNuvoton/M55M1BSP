@@ -21,9 +21,9 @@ extern "C"
 
 #define CDC_DEBUG
 
-#define CDC_ERRMSG      printf
+#define CDC_ERRMSG      (void)usbh_printf
 #ifdef CDC_DEBUG
-#define CDC_DBGMSG      printf
+#define CDC_DBGMSG      (void)usbh_printf
 #else
 #define CDC_DBGMSG(...)
 #endif
@@ -173,7 +173,7 @@ typedef struct cdc_dev_t
 {
     UDEV_T              *udev;
     IFACE_T             *iface_cdc;     /* CDC interface number                               */
-    IFACE_T             *iface_data;    /* CDC data interface number (can be NULL)            */
+    IFACE_T             *iface_data;    /* CDC data interface number (can be USBNULL)            */
     int                 ifnum_data;
     EP_INFO_T           *ep_sts;
     EP_INFO_T           *ep_rx;
@@ -189,6 +189,11 @@ typedef struct cdc_dev_t
 }   CDC_DEV_T;
 
 /** @} end of group USBH_EXPORTED_STRUCTURES */
+
+
+/// @cond HIDDEN_SYMBOLS
+extern int  cdc_config_parser(CDC_DEV_T *cdev);
+/// @endcond HIDDEN_SYMBOLS
 
 
 #ifdef __cplusplus

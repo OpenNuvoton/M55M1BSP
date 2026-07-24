@@ -264,6 +264,7 @@ void PDMA_Init(void)
 int32_t main(void)
 {
     TCHAR sd_path[] = { '0', ':', 0 };    /* SD drive started from 0 */
+    FRESULT res;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -286,8 +287,19 @@ int32_t main(void)
     printf(" Please put MP3 files on SD card \n");
 
     /* Configure FATFS */
-    SDH_Open_Disk(SDH0, CardDetect_From_GPIO);
-    f_chdrive(sd_path);          /* Set default path */
+    if (SDH_Open_Disk(SDH0, CardDetect_From_GPIO) != SDH_OK)
+    {
+        printf("Open disk failed!\n");
+        return -1;
+    }
+
+    res = f_chdrive(sd_path);          /* Set default path */
+
+    if (res != FR_OK)
+    {
+        printf("Change drive failed!\n");
+        return -1;
+    }
 
     /* Lock protected registers */
     SYS_LockReg();

@@ -138,7 +138,12 @@ void LPSPI_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Configure as a master, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Set IP clock divider. LPSPI clock rate = 2 MHz */
-    LPSPI_Open(LPSPI0, LPSPI_MASTER, LPSPI_MODE_0, 32, LPSPI_CLK_FREQ);
+    if (LPSPI_Open(LPSPI0, LPSPI_MASTER, LPSPI_MODE_0, 32, LPSPI_CLK_FREQ) == 0U)
+    {
+        printf("LPSPI_Open failed!\n");
+
+        while (1);
+    }
 
     /* Enable the automatic hardware slave select function. Select the SS pin and configure as low-active. */
     LPSPI_EnableAutoSS(LPSPI0, LPSPI_SS, LPSPI_SS_ACTIVE_LOW);

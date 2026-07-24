@@ -20,10 +20,32 @@
 /** @addtogroup QSPI_EXPORTED_FUNCTIONS QSPI Exported Functions
   @{
 */
+#define QSPI_CONFIG_TIMEOUT     (0x100000UL)
+
+static int32_t QSPI_IsValidModule(const QSPI_T *qspi)
+{
+    return ((qspi == QSPI0) || (qspi == QSPI1)) ? 1 : 0;
+}
+
+static int32_t QSPI_IsValidMasterSlave(uint32_t u32MasterSlave)
+{
+    return ((u32MasterSlave == QSPI_MASTER) || (u32MasterSlave == QSPI_SLAVE));
+}
+
+static int32_t QSPI_IsValidMode(uint32_t u32QSPIMode)
+{
+    return ((u32QSPIMode == QSPI_MODE_0) || (u32QSPIMode == QSPI_MODE_1)
+            || (u32QSPIMode == QSPI_MODE_2) || (u32QSPIMode == QSPI_MODE_3));
+}
 
 /* Set PCLK as the clock source of QSPI */
 static void QSPI_SetPCLKSrc(const QSPI_T *qspi)
 {
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
     if (qspi == QSPI0)
     {
         CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI0SEL_Msk)) | (CLK_QSPISEL_QSPI0SEL_PCLK0);
@@ -37,7 +59,12 @@ static void QSPI_SetPCLKSrc(const QSPI_T *qspi)
 /* Get the PCLK clock frequency of QSPI */
 static uint32_t QSPI_GetPCLKSrcFreq(const QSPI_T *qspi)
 {
-    uint32_t u32RetValue = 0;
+    uint32_t u32RetValue = 0UL;
+
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return 0UL;
+    }
 
     if (qspi == QSPI0)
     {
@@ -62,6 +89,11 @@ static uint32_t QSPI_GetModuleClkSrcFrq(const QSPI_T *qspi)
     uint32_t u32QSPIClkSrcSel = 0UL;
     uint32_t u32RetValue = 0UL;
 
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return 0UL;
+    }
+
     /* Get QSPI clock source selection */
     if (qspi == QSPI0)
     {
@@ -73,37 +105,79 @@ static uint32_t QSPI_GetModuleClkSrcFrq(const QSPI_T *qspi)
     }
     else
     {
-        u32QSPIClkSrcSel = QSPI_CLKSEL_HXT;
+        u32QSPIClkSrcSel = QSPI_CLKSRC_HXT;
     }
 
     switch (u32QSPIClkSrcSel)
     {
-        case QSPI_CLKSEL_HXT:
-            u32RetValue = __HXT;                            /* Clock source is HXT */
-            break;
-
-        case QSPI_CLKSEL_APLL0_DIV2:
+        case QSPI_CLKSRC_PLL:
             u32RetValue = (CLK_GetAPLL0ClockFreq() >> 1);   /* Clock source is APLL0 */
             break;
 
-        case QSPI_CLKSEL_PCLK:
+        case QSPI_CLKSRC_PCLK:
             u32RetValue = QSPI_GetPCLKSrcFreq(qspi);        /* Clock source is PCLK */
             break;
 
-        case QSPI_CLKSEL_HIRC:
+        case QSPI_CLKSRC_HIRC:
             u32RetValue = __HIRC;                           /* Clock source is HIRC 12Mhz */
             break;
 
-        case QSPI_CLKSEL_HIRC48M_DIV4:
-            u32RetValue = ((uint32_t)__HIRC48M / 4U);                  /* Clock source is HIRC 48Mhz / 4 */
+        case QSPI_CLKSRC_HIRC48M:
+            u32RetValue = ((uint32_t)__HIRC48M / 4U);       /* Clock source is HIRC 48Mhz / 4 */
             break;
 
+        case QSPI_CLKSRC_HXT:
         default:
             u32RetValue = __HXT;                            /* Clock source is HXT */
             break;
     }
 
     return u32RetValue;
+}
+
+static int32_t QSPI_WaitDisableReady(const QSPI_T *qspi)
+{
+    uint32_t u32Timeout = QSPI_CONFIG_TIMEOUT;
+
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return QSPI_ERR_FAIL;
+    }
+
+    while ((((qspi->STATUS & QSPI_STATUS_QSPIENSTS_Msk) != 0U) ||
+            ((qspi->STATUS & QSPI_STATUS_BUSY_Msk) != 0U)) &&
+            (u32Timeout > 0U))
+    {
+        u32Timeout--;
+    }
+
+    return (u32Timeout == 0U) ? QSPI_ERR_TIMEOUT : QSPI_OK;
+}
+
+static int32_t QSPI_EnterConfigMode(QSPI_T *qspi, uint32_t *pu32WasEnabled)
+{
+    if ((!QSPI_IsValidModule(qspi)) || (pu32WasEnabled == (uint32_t *)NULL))
+    {
+        return QSPI_ERR_FAIL;
+    }
+
+    *pu32WasEnabled = qspi->CTL & QSPI_CTL_QSPIEN_Msk;
+
+    if (*pu32WasEnabled != 0U)
+    {
+        qspi->CTL &= ~QSPI_CTL_QSPIEN_Msk;
+        return QSPI_WaitDisableReady(qspi);
+    }
+
+    return QSPI_OK;
+}
+
+static void QSPI_ExitConfigMode(QSPI_T *qspi, uint32_t u32WasEnabled)
+{
+    if (u32WasEnabled != 0U)
+    {
+        qspi->CTL |= QSPI_CTL_QSPIEN_Msk;
+    }
 }
 
 /**
@@ -116,7 +190,7 @@ static uint32_t QSPI_GetModuleClkSrcFrq(const QSPI_T *qspi)
   * @return Actual frequency of QSPI peripheral clock.
   * @details By default, the QSPI transfer sequence is MSB first, the slave selection signal is active low and the automatic
   *          slave selection function is disabled.
-  *          In Slave mode, the u32BusClock shall be NULL and the QSPI clock divider setting will be 0.
+    *          In Slave mode, the u32BusClock shall be 0U and the QSPI clock divider setting will be 0.
   *          The actual clock rate may be different from the target QSPI clock rate.
   *          For example, if the QSPI source clock rate is 12 MHz and the target QSPI bus clock rate is 7 MHz, the
   *          actual QSPI clock rate will be 6MHz.
@@ -128,45 +202,38 @@ static uint32_t QSPI_GetModuleClkSrcFrq(const QSPI_T *qspi)
 uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, uint32_t u32DataWidth, uint32_t u32BusClock)
 {
     uint32_t u32RetValue = 0UL;
-    uint32_t u32DataWidthTmp = 0UL;
 
-    if ((u32DataWidth < 8UL) && (u32DataWidth > 0UL))
+    if (!QSPI_IsValidModule(qspi) ||
+            !QSPI_IsValidMasterSlave(u32MasterSlave) ||
+            !QSPI_IsValidMode(u32QSPIMode))
     {
-        u32DataWidthTmp = 8UL;
+        return 0UL;
     }
-    else if (u32DataWidth >= 32UL)
+
+    qspi->CTL &= ~QSPI_CTL_QSPIEN_Msk;
+
+    if (QSPI_WaitDisableReady(qspi) != QSPI_OK)
     {
-        u32DataWidthTmp = 0UL;
+        return 0UL;
     }
-    else
-    {
-        u32DataWidthTmp = u32DataWidth;
-    }
+
+    /* Default setting: slave selection signal is active low.
+       In Master mode, disable the automatic slave selection function. */
+    qspi->SSCTL = QSPI_SS_ACTIVE_LOW;
+
+    /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
+    qspi->CTL = (u32QSPIMode | u32MasterSlave);
+    QSPI_SET_DATA_WIDTH(qspi, u32DataWidth);
 
     if (u32MasterSlave == QSPI_MASTER)
     {
-        /* Default setting: slave selection signal is active low; disable automatic slave selection function. */
-        qspi->SSCTL = QSPI_SS_ACTIVE_LOW;
-
-        /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        qspi->CTL = (u32MasterSlave);
-        qspi->CTL |= ((u32DataWidthTmp << QSPI_CTL_DWIDTH_Pos) |
-                      (u32QSPIMode) |
-                      QSPI_CTL_QSPIEN_Msk);
-
-        // Set the bus clock for the QSPI module and store the actual frequency in u32RetValue
+        /* Set the bus clock for the QSPI module and store the actual frequency in u32RetValue. */
         u32RetValue = QSPI_SetBusClock(qspi, u32BusClock);
     }
     else     /* For slave mode, force the QSPI peripheral clock rate to equal APB clock rate. */
     {
-        /* Default setting: slave selection signal is low level active. */
-        qspi->SSCTL = QSPI_SS_ACTIVE_LOW;
-
-        /* Default setting: MSB first, disable unit transfer interrupt, SP_CYCLE = 0. */
-        qspi->CTL = (u32MasterSlave);
-        qspi->CTL |= ((u32DataWidthTmp << QSPI_CTL_DWIDTH_Pos) |
-                      (u32QSPIMode) |
-                      QSPI_CTL_QSPIEN_Msk);
+        /* Force slave peripheral clock source back to PCLK. */
+        QSPI_SetPCLKSrc(qspi);
 
         /* Set DIVIDER = 0 */
         qspi->CLKDIV = 0UL;
@@ -174,6 +241,8 @@ uint32_t QSPI_Open(QSPI_T *qspi, uint32_t u32MasterSlave, uint32_t u32QSPIMode, 
         /* Get the PCLK clock frequency of QSPI */
         u32RetValue = QSPI_GetPCLKSrcFreq(qspi);
     }
+
+    qspi->CTL |= QSPI_CTL_QSPIEN_Msk;
 
     return u32RetValue;
 }
@@ -187,25 +256,32 @@ void QSPI_Close(const QSPI_T *qspi)
 {
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
+    /* Unlock protected registers */
     if (u32RegLockLevel)
     {
-        /* Unlock protected registers */
         SYS_UnlockReg();
     }
 
     /* Reset QSPI */
     if (qspi == QSPI0)
     {
-        SYS_ResetModule(SYS_QSPI0RST);
+        SYS->QSPIRST |= SYS_QSPIRST_QSPI0RST_Msk;
+        SYS->QSPIRST &= ~SYS_QSPIRST_QSPI0RST_Msk;
     }
     else
     {
-        SYS_ResetModule(SYS_QSPI1RST);
+        SYS->QSPIRST |= SYS_QSPIRST_QSPI1RST_Msk;
+        SYS->QSPIRST &= ~SYS_QSPIRST_QSPI1RST_Msk;
     }
 
+    /* Lock protected registers */
     if (u32RegLockLevel)
     {
-        /* Lock protected registers */
         SYS_LockReg();
     }
 }
@@ -217,6 +293,11 @@ void QSPI_Close(const QSPI_T *qspi)
   */
 void QSPI_ClearRxFIFO(QSPI_T *qspi)
 {
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
     qspi->FIFOCTL |= QSPI_FIFOCTL_RXFBCLR_Msk;
 }
 
@@ -228,6 +309,11 @@ void QSPI_ClearRxFIFO(QSPI_T *qspi)
   */
 void QSPI_ClearTxFIFO(QSPI_T *qspi)
 {
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
     qspi->FIFOCTL |= QSPI_FIFOCTL_TXFBCLR_Msk;
 }
 
@@ -238,7 +324,16 @@ void QSPI_ClearTxFIFO(QSPI_T *qspi)
   */
 void QSPI_DisableAutoSS(QSPI_T *qspi)
 {
+    uint32_t u32WasEnabled = 0UL;
+
+    if (QSPI_EnterConfigMode(qspi, &u32WasEnabled) != QSPI_OK)
+    {
+        return;
+    }
+
     qspi->SSCTL &= ~(QSPI_SSCTL_AUTOSS_Msk | QSPI_SSCTL_SS_Msk);
+
+    QSPI_ExitConfigMode(qspi, u32WasEnabled);
 }
 
 /**
@@ -251,8 +346,17 @@ void QSPI_DisableAutoSS(QSPI_T *qspi)
   */
 void QSPI_EnableAutoSS(QSPI_T *qspi, uint32_t u32SSPinMask, uint32_t u32ActiveLevel)
 {
+    uint32_t u32WasEnabled = 0UL;
+
+    if (QSPI_EnterConfigMode(qspi, &u32WasEnabled) != QSPI_OK)
+    {
+        return;
+    }
+
     qspi->SSCTL = (qspi->SSCTL & (~(QSPI_SSCTL_AUTOSS_Msk | QSPI_SSCTL_SSACTPOL_Msk | QSPI_SSCTL_SS_Msk))) |
-                  (u32SSPinMask | u32ActiveLevel | QSPI_SSCTL_AUTOSS_Msk);
+                  ((u32SSPinMask & QSPI_SSCTL_SS_Msk) | (u32ActiveLevel & QSPI_SSCTL_SSACTPOL_Msk) | QSPI_SSCTL_AUTOSS_Msk);
+
+    QSPI_ExitConfigMode(qspi, u32WasEnabled);
 }
 
 /**
@@ -272,6 +376,17 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
     uint32_t u32ClkSrc = 0UL;
     uint32_t u32HCLKFreq = 0UL;
     uint32_t u32RetValue = 0UL;
+    uint32_t u32WasEnabled = 0UL;
+
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return 0UL;
+    }
+
+    if (QSPI_EnterConfigMode(qspi, &u32WasEnabled) != QSPI_OK)
+    {
+        return QSPI_GetBusClock(qspi);
+    }
 
     /* Get system clock frequency */
     u32HCLKFreq = CLK_GetSCLKFreq();
@@ -302,7 +417,7 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
     else if (u32BusClock == 0U)
     {
         /* Set DIVIDER to the maximum value. f_qspi = f_qspi_clk_src / (DIVIDER + 1) */
-        qspi->CLKDIV |= QSPI_CLKDIV_DIVIDER_Msk;
+        qspi->CLKDIV = (qspi->CLKDIV & ~QSPI_CLKDIV_DIVIDER_Msk) | QSPI_CLKDIV_DIVIDER_Msk;
         /* Return master peripheral clock rate */
         u32RetValue = (u32ClkSrc / ((QSPI_CLKDIV_DIVIDER_Msk >> QSPI_CLKDIV_DIVIDER_Pos) + 1U));
     }
@@ -310,18 +425,20 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
     {
         uint32_t u32Div = 0UL;
 
-        u32Div = ((((u32ClkSrc * 10U) / (u32BusClock + 5U)) / 10U) - 1UL); /* Round to the nearest integer */
+        u32Div = (uint32_t)((((uint64_t)u32ClkSrc + (uint64_t)u32BusClock - 1ULL) / (uint64_t)u32BusClock) - 1ULL);
 
-        // Ensure the divider does not exceed the maximum allowed value
+        /* Ensure the selected QSPI clock does not exceed the requested bus clock. */
         u32Div = ((u32Div > (QSPI_CLKDIV_DIVIDER_Msk >> QSPI_CLKDIV_DIVIDER_Pos)) ?
                   (QSPI_CLKDIV_DIVIDER_Msk >> QSPI_CLKDIV_DIVIDER_Pos) : u32Div);
 
-        // Update the CLKDIV register with the new divider value
+        /* Update the CLKDIV register with the new divider value. */
         qspi->CLKDIV = (qspi->CLKDIV & ~(QSPI_CLKDIV_DIVIDER_Msk)) | (u32Div << QSPI_CLKDIV_DIVIDER_Pos);
 
         /* Return master peripheral clock rate */
         u32RetValue = (u32ClkSrc / (u32Div + 1U));
     }
+
+    QSPI_ExitConfigMode(qspi, u32WasEnabled);
 
     return u32RetValue;
 }
@@ -335,9 +452,23 @@ uint32_t QSPI_SetBusClock(QSPI_T *qspi, uint32_t u32BusClock)
   */
 void QSPI_SetFIFO(QSPI_T *qspi, uint32_t u32TxThreshold, uint32_t u32RxThreshold)
 {
-    qspi->FIFOCTL = (qspi->FIFOCTL & ~(QSPI_FIFOCTL_TXTH_Msk | QSPI_FIFOCTL_RXTH_Msk)) |
-                    (u32TxThreshold << QSPI_FIFOCTL_TXTH_Pos) |
-                    (u32RxThreshold << QSPI_FIFOCTL_RXTH_Pos);
+    uint32_t u32WasEnabled = 0UL;
+
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
+    if (QSPI_EnterConfigMode(qspi, &u32WasEnabled) != QSPI_OK)
+    {
+        return;
+    }
+
+    qspi->FIFOCTL = ((qspi->FIFOCTL & ~(QSPI_FIFOCTL_TXTH_Msk | QSPI_FIFOCTL_RXTH_Msk)) |
+                     ((u32TxThreshold << QSPI_FIFOCTL_TXTH_Pos) & QSPI_FIFOCTL_TXTH_Msk) |
+                     ((u32RxThreshold << QSPI_FIFOCTL_RXTH_Pos) & QSPI_FIFOCTL_RXTH_Msk));
+
+    QSPI_ExitConfigMode(qspi, u32WasEnabled);
 }
 
 /**
@@ -348,11 +479,16 @@ void QSPI_SetFIFO(QSPI_T *qspi, uint32_t u32TxThreshold, uint32_t u32RxThreshold
   */
 uint32_t QSPI_GetBusClock(const QSPI_T *qspi)
 {
-    uint32_t u32Div = 0;
-    uint32_t u32ClkSrc = 0;
+    uint32_t u32Div = 0UL;
+    uint32_t u32ClkSrc = 0UL;
+
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return 0UL;
+    }
 
     /* Get DIVIDER setting */
-    u32Div = (qspi->CLKDIV & QSPI_CLKDIV_DIVIDER_Msk) >> QSPI_CLKDIV_DIVIDER_Pos;
+    u32Div = ((qspi->CLKDIV & QSPI_CLKDIV_DIVIDER_Msk) >> QSPI_CLKDIV_DIVIDER_Pos);
 
     /* Get clock source of QSPI */
     u32ClkSrc = QSPI_GetModuleClkSrcFrq(qspi);
@@ -383,6 +519,11 @@ uint32_t QSPI_GetBusClock(const QSPI_T *qspi)
   */
 void QSPI_EnableInt(QSPI_T *qspi, uint32_t u32Mask)
 {
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
     /* Enable unit transfer interrupt flag */
     if ((u32Mask & QSPI_UNIT_INT_MASK) == QSPI_UNIT_INT_MASK)
     {
@@ -472,6 +613,11 @@ void QSPI_EnableInt(QSPI_T *qspi, uint32_t u32Mask)
   */
 void QSPI_DisableInt(QSPI_T *qspi, uint32_t u32Mask)
 {
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
     /* Disable unit transfer interrupt flag */
     if ((u32Mask & QSPI_UNIT_INT_MASK) == QSPI_UNIT_INT_MASK)
     {
@@ -550,6 +696,7 @@ void QSPI_DisableInt(QSPI_T *qspi, uint32_t u32Mask)
   *                       - \ref QSPI_SSINACT_INT_MASK
   *                       - \ref QSPI_SLVUR_INT_MASK
   *                       - \ref QSPI_SLVBE_INT_MASK
+    *                       - \ref QSPI_SLVTO_INT_MASK
   *                       - \ref QSPI_TXUF_INT_MASK
   *                       - \ref QSPI_FIFO_TXTH_INT_MASK
   *                       - \ref QSPI_FIFO_RXTH_INT_MASK
@@ -562,84 +709,77 @@ void QSPI_DisableInt(QSPI_T *qspi, uint32_t u32Mask)
 uint32_t QSPI_GetIntFlag(const QSPI_T *qspi, uint32_t u32Mask)
 {
     uint32_t u32IntFlag = 0UL;
-    uint32_t u32TmpVal = 0UL;
+    uint32_t u32Status = 0UL;
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_UNITIF_Msk);
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return 0UL;
+    }
+
+    u32Status = qspi->STATUS;
 
     /* Check unit transfer interrupt flag */
-    if ((u32Mask & QSPI_UNIT_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_UNIT_INT_MASK) && ((u32Status & QSPI_STATUS_UNITIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_UNIT_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_SSACTIF_Msk);
-
     /* Check slave selection signal active interrupt flag */
-    if ((u32Mask & QSPI_SSACT_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_SSACT_INT_MASK) && ((u32Status & QSPI_STATUS_SSACTIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_SSACT_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_SSINAIF_Msk);
-
     /* Check slave selection signal inactive interrupt flag */
-    if ((u32Mask & QSPI_SSINACT_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_SSINACT_INT_MASK) && ((u32Status & QSPI_STATUS_SSINAIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_SSINACT_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_SLVURIF_Msk);
-
     /* Check slave TX under run interrupt flag */
-    if ((u32Mask & QSPI_SLVUR_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_SLVUR_INT_MASK) && ((u32Status & QSPI_STATUS_SLVURIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_SLVUR_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_SLVBEIF_Msk);
-
     /* Check slave bit count error interrupt flag */
-    if ((u32Mask & QSPI_SLVBE_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_SLVBE_INT_MASK) && ((u32Status & QSPI_STATUS_SLVBEIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_SLVBE_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_TXUFIF_Msk);
+    /* Check slave mode time-out interrupt flag */
+    if ((u32Mask & QSPI_SLVTO_INT_MASK) && ((u32Status & QSPI_STATUS_SLVTOIF_Msk) != 0U))
+    {
+        u32IntFlag |= QSPI_SLVTO_INT_MASK;
+    }
 
     /* Check slave TX underflow interrupt flag */
-    if ((u32Mask & QSPI_TXUF_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_TXUF_INT_MASK) && ((u32Status & QSPI_STATUS_TXUFIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_TXUF_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_TXTHIF_Msk);
-
     /* Check TX threshold interrupt flag */
-    if ((u32Mask & QSPI_FIFO_TXTH_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_FIFO_TXTH_INT_MASK) && ((u32Status & QSPI_STATUS_TXTHIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_FIFO_TXTH_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_RXTHIF_Msk);
-
     /* Check RX threshold interrupt flag */
-    if ((u32Mask & QSPI_FIFO_RXTH_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_FIFO_RXTH_INT_MASK) && ((u32Status & QSPI_STATUS_RXTHIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_FIFO_RXTH_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_RXOVIF_Msk);
-
     /* Check RX overrun interrupt flag */
-    if ((u32Mask & QSPI_FIFO_RXOV_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_FIFO_RXOV_INT_MASK) && ((u32Status & QSPI_STATUS_RXOVIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_FIFO_RXOV_INT_MASK;
     }
 
-    u32TmpVal = (qspi->STATUS & QSPI_STATUS_RXTOIF_Msk);
-
     /* Check RX time-out interrupt flag */
-    if ((u32Mask & QSPI_FIFO_RXTO_INT_MASK) && (u32TmpVal))
+    if ((u32Mask & QSPI_FIFO_RXTO_INT_MASK) && ((u32Status & QSPI_STATUS_RXTOIF_Msk) != 0U))
     {
         u32IntFlag |= QSPI_FIFO_RXTO_INT_MASK;
     }
@@ -658,6 +798,7 @@ uint32_t QSPI_GetIntFlag(const QSPI_T *qspi, uint32_t u32Mask)
   *                       - \ref QSPI_SSINACT_INT_MASK
   *                       - \ref QSPI_SLVUR_INT_MASK
   *                       - \ref QSPI_SLVBE_INT_MASK
+    *                       - \ref QSPI_SLVTO_INT_MASK
   *                       - \ref QSPI_TXUF_INT_MASK
   *                       - \ref QSPI_FIFO_RXOV_INT_MASK
   *                       - \ref QSPI_FIFO_RXTO_INT_MASK
@@ -666,44 +807,61 @@ uint32_t QSPI_GetIntFlag(const QSPI_T *qspi, uint32_t u32Mask)
   */
 void QSPI_ClearIntFlag(QSPI_T *qspi, uint32_t u32Mask)
 {
+    uint32_t u32ClearMask = 0UL;
+
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return;
+    }
+
     if (u32Mask & QSPI_UNIT_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_UNITIF_Msk; /* Clear unit transfer interrupt flag */
+        u32ClearMask |= QSPI_STATUS_UNITIF_Msk; /* Clear unit transfer interrupt flag */
     }
 
     if (u32Mask & QSPI_SSACT_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_SSACTIF_Msk; /* Clear slave selection signal active interrupt flag */
+        u32ClearMask |= QSPI_STATUS_SSACTIF_Msk; /* Clear slave selection signal active interrupt flag */
     }
 
     if (u32Mask & QSPI_SSINACT_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_SSINAIF_Msk; /* Clear slave selection signal inactive interrupt flag */
+        u32ClearMask |= QSPI_STATUS_SSINAIF_Msk; /* Clear slave selection signal inactive interrupt flag */
     }
 
     if (u32Mask & QSPI_SLVUR_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_SLVURIF_Msk; /* Clear slave TX under run interrupt flag */
+        u32ClearMask |= QSPI_STATUS_SLVURIF_Msk; /* Clear slave TX under run interrupt flag */
     }
 
     if (u32Mask & QSPI_SLVBE_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_SLVBEIF_Msk; /* Clear slave bit count error interrupt flag */
+        u32ClearMask |= QSPI_STATUS_SLVBEIF_Msk; /* Clear slave bit count error interrupt flag */
+    }
+
+    if (u32Mask & QSPI_SLVTO_INT_MASK)
+    {
+        u32ClearMask |= QSPI_STATUS_SLVTOIF_Msk; /* Clear slave mode time-out interrupt flag */
     }
 
     if (u32Mask & QSPI_TXUF_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_TXUFIF_Msk; /* Clear slave TX underflow interrupt flag */
+        u32ClearMask |= QSPI_STATUS_TXUFIF_Msk; /* Clear slave TX underflow interrupt flag */
     }
 
     if (u32Mask & QSPI_FIFO_RXOV_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_RXOVIF_Msk; /* Clear RX overrun interrupt flag */
+        u32ClearMask |= QSPI_STATUS_RXOVIF_Msk; /* Clear RX overrun interrupt flag */
     }
 
     if (u32Mask & QSPI_FIFO_RXTO_INT_MASK)
     {
-        qspi->STATUS = QSPI_STATUS_RXTOIF_Msk; /* Clear RX time-out interrupt flag */
+        u32ClearMask |= QSPI_STATUS_RXTOIF_Msk; /* Clear RX time-out interrupt flag */
+    }
+
+    if (u32ClearMask != 0UL)
+    {
+        qspi->STATUS = u32ClearMask;
     }
 }
 
@@ -719,7 +877,7 @@ void QSPI_ClearIntFlag(QSPI_T *qspi, uint32_t u32Mask)
   *                       - \ref QSPI_TX_EMPTY_MASK
   *                       - \ref QSPI_TX_FULL_MASK
   *                       - \ref QSPI_TXRX_RESET_MASK
-  *                       - \ref QSPI_SPIEN_STS_MASK
+  *                       - \ref QSPI_QSPIEN_STS_MASK
   *                       - \ref QSPI_SSLINE_STS_MASK
   *
   * @return Flags of selected sources.
@@ -728,68 +886,59 @@ void QSPI_ClearIntFlag(QSPI_T *qspi, uint32_t u32Mask)
 uint32_t QSPI_GetStatus(const QSPI_T *qspi, uint32_t u32Mask)
 {
     uint32_t u32Flag = 0UL;
-    uint32_t u32TmpValue = 0UL;
+    uint32_t u32Status = 0UL;
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_BUSY_Msk);
+    if (!QSPI_IsValidModule(qspi))
+    {
+        return 0UL;
+    }
+
+    u32Status = qspi->STATUS;
 
     /* Check busy status */
-    if ((u32Mask & QSPI_BUSY_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_BUSY_MASK) && ((u32Status & QSPI_STATUS_BUSY_Msk) != 0U))
     {
         u32Flag |= QSPI_BUSY_MASK;
     }
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_RXEMPTY_Msk);
-
     /* Check RX empty flag */
-    if ((u32Mask & QSPI_RX_EMPTY_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_RX_EMPTY_MASK) && ((u32Status & QSPI_STATUS_RXEMPTY_Msk) != 0U))
     {
         u32Flag |= QSPI_RX_EMPTY_MASK;
     }
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_RXFULL_Msk);
-
     /* Check RX full flag */
-    if ((u32Mask & QSPI_RX_FULL_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_RX_FULL_MASK) && ((u32Status & QSPI_STATUS_RXFULL_Msk) != 0U))
     {
         u32Flag |= QSPI_RX_FULL_MASK;
     }
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_TXEMPTY_Msk);
-
     /* Check TX empty flag */
-    if ((u32Mask & QSPI_TX_EMPTY_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_TX_EMPTY_MASK) && ((u32Status & QSPI_STATUS_TXEMPTY_Msk) != 0U))
     {
         u32Flag |= QSPI_TX_EMPTY_MASK;
     }
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_TXFULL_Msk);
-
     /* Check TX full flag */
-    if ((u32Mask & QSPI_TX_FULL_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_TX_FULL_MASK) && ((u32Status & QSPI_STATUS_TXFULL_Msk) != 0U))
     {
         u32Flag |= QSPI_TX_FULL_MASK;
     }
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_TXRXRST_Msk);
-
     /* Check TX/RX reset flag */
-    if ((u32Mask & QSPI_TXRX_RESET_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_TXRX_RESET_MASK) && ((u32Status & QSPI_STATUS_TXRXRST_Msk) != 0U))
     {
         u32Flag |= QSPI_TXRX_RESET_MASK;
     }
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_QSPIENSTS_Msk);
-
     /* Check QSPIEN flag */
-    if ((u32Mask & QSPI_SPIEN_STS_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_QSPIEN_STS_MASK) && ((u32Status & QSPI_STATUS_QSPIENSTS_Msk) != 0U))
     {
-        u32Flag |= QSPI_SPIEN_STS_MASK;
+        u32Flag |= QSPI_QSPIEN_STS_MASK;
     }
 
-    u32TmpValue = (qspi->STATUS & QSPI_STATUS_SSLINE_Msk);
-
     /* Check QSPIx_SS line status */
-    if ((u32Mask & QSPI_SSLINE_STS_MASK) && (u32TmpValue))
+    if ((u32Mask & QSPI_SSLINE_STS_MASK) && ((u32Status & QSPI_STATUS_SSLINE_Msk) != 0U))
     {
         u32Flag |= QSPI_SSLINE_STS_MASK;
     }

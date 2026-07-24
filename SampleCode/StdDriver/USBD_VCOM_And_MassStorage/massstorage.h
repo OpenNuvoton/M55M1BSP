@@ -117,9 +117,6 @@ extern uint32_t g_au32StorageBlock[];
 /*-------------------------------------------------------------*/
 
 /*-------------------------------------------------------------*/
-void DataFlashWrite(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer);
-void DataFlashRead(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer);
-
 void MSC_RequestSense(void);
 void MSC_ReadFormatCapacity(void);
 void MSC_Read(void);

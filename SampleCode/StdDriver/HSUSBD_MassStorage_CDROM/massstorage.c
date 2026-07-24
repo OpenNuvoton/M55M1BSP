@@ -35,8 +35,14 @@ uint32_t g_u32CbwSize = 0;
 struct CBW g_sCBW;
 struct CSW g_sCSW;
 
-uint8_t gMassBuf[MASS_BUFFER_SIZE] __attribute__((aligned(4)));
-uint8_t gStorageBuf[STORAGE_BUFFER_SIZE] __attribute__((aligned(4)));
+#if (NVT_DCACHE_ON == 1)
+    /* Base address and size of cache buffer must be DCACHE_LINE_SIZE byte aligned */
+    __attribute__((aligned(DCACHE_LINE_SIZE))) uint8_t g_au8MassBuf[MASS_BUFFER_SIZE];
+    __attribute__((aligned(DCACHE_LINE_SIZE))) uint8_t g_au8StorageBuf[DATA_FLASH_STORAGE_SIZE];
+#else
+    __attribute__((aligned)) uint8_t g_au8MassBuf[MASS_BUFFER_SIZE];
+    __attribute__((aligned)) uint8_t g_au8StorageBuf[DATA_FLASH_STORAGE_SIZE];
+#endif
 
 /*--------------------------------------------------------------------------*/
 uint8_t g_au8InquiryID[36] =
@@ -612,10 +618,9 @@ void MSC_Init(void)
     MSC_InitForHighSpeed();
 
     g_sCSW.dCSWSignature = CSW_SIGNATURE;
-    /* when doing FDBENCH, the disk size should >= 5MB */
     g_TotalSectors = DATA_FLASH_STORAGE_SIZE / CDROM_BLOCK_SIZE;
-    g_u32MassBase = (uint32_t)gMassBuf;
-    g_u32StorageBase = (uint32_t)gStorageBuf;
+    g_u32MassBase = (uint32_t)g_au8StorageBuf;
+    g_u32StorageBase = (uint32_t)g_au8StorageBuf;
 }
 
 void MSC_ClassRequest(void)
@@ -1091,10 +1096,6 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     for (i = 0; i < u32Loop; i++)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
-#if (NVT_DCACHE_ON == 1)
-        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
-        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
-#endif
     }
 
     u32Loop = u32Len % USBD_MAX_DMA_LEN;
@@ -1102,11 +1103,12 @@ void MSC_BulkOut(uint32_t u32Addr, uint32_t u32Len)
     if (u32Loop)
     {
         MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, u32Loop);
-#if (NVT_DCACHE_ON == 1)
-        /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
-        SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), DCACHE_ALIGN_LINE_SIZE(u32Loop));
-#endif
     }
+
+#if (NVT_DCACHE_ON == 1)
+    /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
+    SCB_InvalidateDCache_by_Addr((uint8_t *)u32Addr, DCACHE_ALIGN_LINE_SIZE(u32Len));
+#endif
 }
 
 void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
@@ -1119,6 +1121,11 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
 
     u32Loop = u32Len / USBD_MAX_DMA_LEN;
 
+#if (NVT_DCACHE_ON == 1)
+    /* Device to host, so need clean data to sram. */
+    SCB_CleanDCache_by_Addr((uint8_t *)u32Addr, DCACHE_ALIGN_LINE_SIZE(u32Len));
+#endif
+
     for (i = 0; i < u32Loop; i++)
     {
         HSUSBD_ENABLE_EP_INT(EPA, HSUSBD_EPINTEN_TXPKIEN_Msk);
@@ -1128,10 +1135,6 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
         {
             if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
             {
-#if (NVT_DCACHE_ON == 1)
-                /* Device to host, so need clean data to sram. */
-                SCB_CleanDCache_by_Addr((uint8_t *)(u32Addr + i * USBD_MAX_DMA_LEN), USBD_MAX_DMA_LEN);
-#endif
                 MSC_ActiveDMA(u32Addr + i * USBD_MAX_DMA_LEN, USBD_MAX_DMA_LEN);
                 break;
             }
@@ -1154,10 +1157,6 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
-#if (NVT_DCACHE_ON == 1)
-                    /* Device to host, so need clean data to sram. */
-                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), (count * g_u32EpMaxPacketSize));
-#endif
                     MSC_ActiveDMA(addr, count * g_u32EpMaxPacketSize);
                     break;
                 }
@@ -1177,10 +1176,6 @@ void MSC_BulkIn(uint32_t u32Addr, uint32_t u32Len)
             {
                 if (HSUSBD_GET_EP_INT_FLAG(EPA) & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                 {
-#if (NVT_DCACHE_ON == 1)
-                    /* Device to host, so need clean data to sram. */
-                    SCB_CleanDCache_by_Addr((uint8_t *)(addr), DCACHE_ALIGN_LINE_SIZE(count));
-#endif
                     MSC_ActiveDMA(addr, count);
                     break;
                 }
@@ -1215,7 +1210,7 @@ void MSC_ReceiveCBW(uint32_t u32Buf, uint32_t u32Len)
 
 #if (NVT_DCACHE_ON == 1)
     /* Host to device.Invalidate the cache to allow the CPU to access the latest data. */
-    SCB_InvalidateDCache_by_Addr((uint8_t *)(u32Buf), DCACHE_ALIGN_LINE_SIZE(u32Len));
+    SCB_InvalidateDCache_by_Addr((uint8_t *)u32Buf, DCACHE_ALIGN_LINE_SIZE(u32Len));
 #endif
 }
 
@@ -1322,7 +1317,7 @@ void MSC_ProcessCmd(void)
                     }
                     else                                             /* Logical Block Address > 32KB */
                     {
-                        memset((uint32_t *)gStorageBuf, 0, i); /* First 32KB of ISO file are all 0 */
+                        memset((uint8_t *)g_au8StorageBuf, 0, i); /* First 32KB of ISO file are all 0 */
                         g_u32Address = STORAGE_DATA_BUF;
                     }
 
@@ -1570,7 +1565,7 @@ void MSC_ProcessCmd(void)
 
                 case UFI_GET_CONFIGURATION:
                 {
-                    MSC_GetConfiguration(g_sCBW.dCBWDataTransferLength, (uint8_t *)gMassBuf);
+                    MSC_GetConfiguration(g_sCBW.dCBWDataTransferLength, (uint8_t *)g_au8MassBuf);
                     MSC_BulkIn(g_u32MassBase, g_sCBW.dCBWDataTransferLength);
                     g_sCSW.dCSWDataResidue = 0;
                     g_sCSW.bCSWStatus = 0;

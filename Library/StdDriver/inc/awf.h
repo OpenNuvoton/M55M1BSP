@@ -49,31 +49,31 @@ extern "C"
   * @brief      This macro is used to set accumulation count.
   * @param[in]  u32Count is AccumulationCount. It could be 2~8.
   */
-#define AWF_SET_ACC_COUNT(u32Count)    (AWF->CTL = (AWF->CTL & ~AWF_CTL_ACUCNT_Msk) | (u32Count << AWF_CTL_ACUCNT_Pos))
+#define AWF_SET_ACC_COUNT(u32Count)    (AWF->CTL = (AWF->CTL & ~AWF_CTL_ACUCNT_Msk) | ((u32Count) << AWF_CTL_ACUCNT_Pos))
 
 /**
   * @brief      This macro is used to set high threshold value.
   * @param[in]  u32Value is HTH Value. It could be 0~524288.
   */
-#define AWF_SET_HTH(u32Value)    (AWF->HTH = (AWF->HTH & ~AWF_HTH_AWFHTH_Msk) | (u32Value << AWF_HTH_AWFHTH_Pos))
+#define AWF_SET_HTH(u32Value)    (AWF->HTH = (AWF->HTH & ~AWF_HTH_AWFHTH_Msk) | ((u32Value) << AWF_HTH_AWFHTH_Pos))
 
 /**
   * @brief      This macro is used to set low threshold value.
   * @param[in]  u32Value is LTH Value. It could be 0~524288.
   */
-#define AWF_SET_LTH(u32Value)    (AWF->LTH = (AWF->LTH & ~AWF_LTH_AWFLTH_Msk) | (u32Value << AWF_LTH_AWFLTH_Pos))
+#define AWF_SET_LTH(u32Value)    (AWF->LTH = (AWF->LTH & ~AWF_LTH_AWFLTH_Msk) | ((u32Value) << AWF_LTH_AWFLTH_Pos))
 
 /**
   * @brief      This macro is used to set AWF word buffer initial value.
   * @param[in]  u32Value is WBINIT Value. It could be 0~65535.
   */
-#define AWF_SET_WBINIT(u32Value)    (AWF->WBINIT = (AWF->WBINIT & ~AWF_WBINIT_WBINIT_Msk) | (u32Value << AWF_WBINIT_WBINIT_Pos))
+#define AWF_SET_WBINIT(u32Value)    (AWF->WBINIT = (AWF->WBINIT & ~AWF_WBINIT_WBINIT_Msk) | ((u32Value) << AWF_WBINIT_WBINIT_Pos))
 
 /**
   * @brief      This macro is used to Write AWF data holding register value.
   * @param[in]  u32Value is WBINIT Value. It could be 0~65535.
   */
-#define AWF_WRITE_DAT(u32Value)    (AWF->DAT = u32Value)
+#define AWF_WRITE_DAT(u32Value)    (AWF->DAT = (u32Value))
 
 /**
   * @brief      Get AWF HTH Interrupt Flag

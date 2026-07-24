@@ -307,11 +307,11 @@
                 </option>
                 <option>
                     <name>IExtraOptionsCheck</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state></state>
+                    <state>--no_unaligned_access</state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -1414,11 +1414,11 @@
                 </option>
                 <option>
                     <name>IExtraOptionsCheck</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state></state>
+                    <state>--no_unaligned_access</state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -2202,7 +2202,7 @@
             <data>
                 <buildActions>
                     <buildAction>
-                        <cmdline>cmd /C "cd /D $PROJ_DIR$ &amp;&amp; ielftool.exe --bin .\$CONFIG_NAME$\Exe\$PROJ_FNAME$_$CONFIG_NAME$.out .\$CONFIG_NAME$\Exe\$PROJ_FNAME$_$CONFIG_NAME$.bin &amp;&amp; ..\..\FwSign.bat .\$CONFIG_NAME$\Exe\$PROJ_FNAME$_$CONFIG_NAME$.bin ..\FwKey\ECC-P256.pem"</cmdline>
+                        <cmdline>cmd /C "cd /D $PROJ_DIR$ &amp;&amp; ielftool.exe --bin .\$CONFIG_NAME$\Exe\$PROJ_FNAME$_$CONFIG_NAME$.out .\$CONFIG_NAME$\Exe\$PROJ_FNAME$_$CONFIG_NAME$.bin &amp;&amp; python ..\..\FwSign.py .\$CONFIG_NAME$\Exe\$PROJ_FNAME$_$CONFIG_NAME$.bin ..\UNSAFE_DEV_ONLY_KEY\ECC-P256.pem 0"</cmdline>
                         <workingDirectory></workingDirectory>
                         <buildSequence>postLink</buildSequence>
                     </buildAction>

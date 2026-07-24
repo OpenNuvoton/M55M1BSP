@@ -34,12 +34,17 @@
   */
 uint32_t LPTPWM_ConfigOutputFreqAndDuty(LPTMR_T *lptmr, uint32_t u32Frequency, uint32_t u32DutyCycle)
 {
-    uint32_t u32PWMClockFreq, u32TargetFreq = 0UL, u32Src = 0UL;
-    uint32_t u32Prescaler = 0x100UL, u32Period = 1UL;
+    uint32_t u32PWMClockFreq;
+    uint32_t u32TargetFreq = 0UL;
+    uint32_t u32Src = 0UL;
+    uint32_t u32Prescaler = 0x100UL;
+    uint32_t u32Period = 1UL;
     const uint32_t au32Clk[] = {0UL, __LXT, __LIRC, __MIRC, __HIRC, 0UL};
 
-    if (u32Frequency == 0)
+    if (u32Frequency == 0UL)
+    {
         return u32Frequency;
+    }
 
     if (lptmr == LPTMR0)
     {
@@ -50,7 +55,9 @@ uint32_t LPTPWM_ConfigOutputFreqAndDuty(LPTMR_T *lptmr, uint32_t u32Frequency, u
         u32Src = (CLK->LPTMRSEL & CLK_LPTMRSEL_LPTMR1SEL_Msk) >> CLK_LPTMRSEL_LPTMR1SEL_Pos;
     }
     else
-        return (u32TargetFreq);
+    {
+        return u32TargetFreq;
+    }
 
     if (u32Src == 0UL)
     {
@@ -66,16 +73,20 @@ uint32_t LPTPWM_ConfigOutputFreqAndDuty(LPTMR_T *lptmr, uint32_t u32Frequency, u
     }
 
     if (u32Frequency > u32PWMClockFreq)
-        return 0;
+    {
+        return 0UL;
+    }
 
     /* Calculate u32Period and u32Prescaler */
-    for (u32Prescaler = 1; u32Prescaler <= 0x100UL; u32Prescaler++)
+    for (u32Prescaler = 1UL; u32Prescaler <= 0x100UL; u32Prescaler++)
     {
         u32Period = (u32PWMClockFreq / u32Prescaler) / u32Frequency;
 
         /* If target u32Period is larger than 0x10000, need to use a larger prescaler */
         if (u32Period > 0x10000UL)
+        {
             continue;
+        }
 
         break;
     }
@@ -147,7 +158,7 @@ void LPTPWM_DisableCounter(LPTMR_T *lptmr)
 void LPTPWM_EnableTrigger(LPTMR_T *lptmr, uint32_t u32TargetMask, uint32_t u32Condition)
 {
     lptmr->PWMTRGCTL &= ~(LPTMR_PWMTRGCTL_PWMTRGLPPDMA_Msk | LPTMR_PWMTRGCTL_TRGEN_Msk | LPTMR_PWMTRGCTL_TRGSEL_Msk);
-    lptmr->PWMTRGCTL |= (u32TargetMask) | (u32Condition);
+    lptmr->PWMTRGCTL |= (u32TargetMask) | ((u32Condition) & LPTMR_PWMTRGCTL_TRGSEL_Msk);
 }
 
 /**

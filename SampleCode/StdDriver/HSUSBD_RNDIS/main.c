@@ -18,39 +18,7 @@
 uint8_t g_au8MacAddr[6] = {0x00, 0x00, 0x00, 0x59, 0x16, 0x88};
 // Buffer for holding received packet
 
-uint32_t u32RxAct = 0;
 uint32_t u32TxCnt = 0, u32RxCnt = 0;
-
-// Descriptor pointers holds current Tx and Rx used by IRQ handler here.
-uint32_t u32CurrentTxDesc, u32CurrentRxDesc;
-
-// allocate 5 buffers for tx and other 5 for rx.
-// 1 for usb, the other 4 for emac. 4 is the descriptor number allocated in this sample
-// these buffers are shared between usb and emac so no memory copy is required while
-// passing buffer content between two interfaces.
-#if (NVT_DCACHE_ON == 1)
-    #ifdef __ICCARM__
-        #pragma data_alignment=4
-        NVT_DTCM uint8_t rndis_outdata[RNDIS_OUTDATA_RING_SIZE];
-        NVT_DTCM uint8_t rndis_indata[EMAC_RX_DESC_SIZE + 1][1580];
-    #else
-        NVT_DTCM uint8_t rndis_outdata[RNDIS_OUTDATA_RING_SIZE] __attribute__((aligned(32)));
-        NVT_DTCM uint8_t rndis_indata[EMAC_RX_DESC_SIZE + 1][1580] __attribute__((aligned(32)));
-    #endif
-#else
-    #ifdef __ICCARM__
-        #pragma data_alignment=4
-        uint8_t rndis_outdata[EMAC_TX_DESC_SIZE + 1][1580];
-        uint8_t rndis_indata[EMAC_RX_DESC_SIZE + 1][1580];
-    #else
-        volatile uint8_t  rndis_outdata[RNDIS_OUTDATA_RING_SIZE] __attribute__((aligned(32)));
-        volatile uint8_t rndis_indata[EMAC_RX_DESC_SIZE + 1][1580] __attribute__((aligned(32)));
-    #endif
-#endif
-//for usb
-volatile uint32_t u32CurrentTxBuf = 0;
-volatile uint32_t u32CurrentRxBuf = 0;
-
 
 void SYS_Init(void)
 {
@@ -104,7 +72,7 @@ int32_t main(void)
 
     printf("NuMicro HSUSBD RNDIS\n");
 
-    /* Initial M55M1 EMAC module */
+    /* Initial EMAC module */
     EMAC_Open(&g_au8MacAddr[0]);
 
     /* Lock protected registers */
@@ -116,10 +84,10 @@ int32_t main(void)
     RNDIS_Init();
     NVIC_EnableIRQ(HSUSBD_IRQn);
 
-    for (i = 0; i < EMAC_RX_DESC_SIZE + 1; i++)
+    for (i = 0; i < RQ_SZ + 1; i++)
     {
-        *(uint32_t *)&rndis_indata[i][0] = 0x00000001; /* message type */
-        *(uint32_t *)&rndis_indata[i][8] = 0x24;       /* data offset */
+        *(uint32_t *)&(_rrxq.data[i][0]) = 0x00000001; /* message type */
+        *(uint32_t *)&(_rrxq.data[i][8]) = 0x24;       /* data offset */
     }
 
     /* Start transaction */
@@ -139,8 +107,7 @@ int32_t main(void)
         if ((i = EMAC_ReceivePkt()) > 0)
         {
             RNDIS_InData(i);
-            u32CurrentRxBuf = (u32CurrentRxBuf + 1) % EMAC_RX_DESC_SIZE;
-            printf("Rx:%d\n", u32CurrentRxBuf);
+            _rrxq.usb_idx = (_rrxq.usb_idx + 1) % RQ_SZ;
         }
 
         // Tx

@@ -72,10 +72,18 @@ void SYS_Init(void)
 
 void QSPI_Init(void)
 {
+    uint32_t u32BusClock;
 
     /* Configure as a slave, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Configure QSPI0 as a low level active device. */
-    QSPI_Open(QSPI0, QSPI_SLAVE, QSPI_MODE_0, 32, (uint32_t)NULL);
+    u32BusClock = QSPI_Open(QSPI0, QSPI_SLAVE, QSPI_MODE_0, 32, 0U);
+
+    if (u32BusClock == 0U)
+    {
+        printf("QSPI_Open failed.\n");
+
+        while (1);
+    }
 
     /* Enable slave 3 wire mode */
     QSPI0->SSCTL |= QSPI_SSCTL_SLV3WIRE_Msk;

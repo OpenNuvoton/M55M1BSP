@@ -250,7 +250,7 @@ uint32_t LPUART_Read(const LPUART_T *lpuart, uint8_t pu8RxBuf[], uint32_t u32Rea
         {
             u32delayno++;
 
-            if (u32delayno >= 0x40000000ul)
+            if (u32delayno >= 0x40000000UL)
             {
                 u32Exit = 1UL;
                 break;
@@ -300,7 +300,8 @@ uint32_t LPUART_Read(const LPUART_T *lpuart, uint8_t pu8RxBuf[], uint32_t u32Rea
  */
 void LPUART_SetLineConfig(LPUART_T *lpuart, uint32_t u32baudrate, uint32_t u32data_width, uint32_t u32parity, uint32_t  u32stop_bits)
 {
-    uint32_t u32UartClkSrcSel = 0UL, u32UartClkDivNum = 0UL;
+    uint32_t u32UartClkSrcSel = 0UL;
+    uint32_t u32UartClkDivNum = 0UL;
     uint32_t u32ClkTbl[4] = {0UL, __LXT, __MIRC, __HIRC};
 
     if (lpuart == (LPUART_T *)LPUART0)
@@ -324,7 +325,7 @@ void LPUART_SetLineConfig(LPUART_T *lpuart, uint32_t u32baudrate, uint32_t u32da
 
         u32Baud_Div = LPUART_BAUD_MODE2_DIVIDER((u32ClkTbl[u32UartClkSrcSel]) / (u32UartClkDivNum + 1UL), u32baudrate);
 
-        if (u32Baud_Div > 0xFFFFul)
+        if (u32Baud_Div > 0xFFFFUL)
         {
             lpuart->BAUD = (LPUART_BAUD_MODE0 | LPUART_BAUD_MODE0_DIVIDER((u32ClkTbl[u32UartClkSrcSel]) / (u32UartClkDivNum + 1UL), u32baudrate));
         }

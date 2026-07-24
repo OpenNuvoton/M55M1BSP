@@ -47,33 +47,35 @@
   */
 void CRC_Open(uint32_t u32Mode, uint32_t u32Attribute, uint32_t u32Seed, uint32_t u32DataLen)
 {
+    uint32_t u32CRCMode = u32Mode;
+
     CRC->SEED = u32Seed;
 
-    switch (u32Mode)
+    switch (u32CRCMode)
     {
         case CRC_CCITT:
-            u32Mode = CRC_16;
-            CRC->POLYNOMIAL = 0x1021;
+            u32CRCMode = CRC_16;
+            CRC->POLYNOMIAL = 0x1021U;
             break;
 
         case CRC_8:
-            CRC->POLYNOMIAL = 0x7;
+            CRC->POLYNOMIAL = 0x7U;
             break;
 
         case CRC_16:
-            CRC->POLYNOMIAL = 0x8005;
+            CRC->POLYNOMIAL = 0x8005U;
             break;
 
         case CRC_32:
-            CRC->POLYNOMIAL = 0x04C11DB7;
+            CRC->POLYNOMIAL = 0x04C11DB7U;
             break;
 
         default:
-            CRC->POLYNOMIAL = 0x0ul;
+            CRC->POLYNOMIAL = 0x0UL;
             break;
     }
 
-    CRC->CTL = u32Mode | u32Attribute | u32DataLen | CRC_CTL_CRCEN_Msk;
+    CRC->CTL = u32CRCMode | u32Attribute | u32DataLen | CRC_CTL_CRCEN_Msk;
 
     /* Setting CHKSINIT bit will reload the initial seed value(CRC_SEED register) to CRC controller */
     CRC->CTL |= CRC_CTL_CHKSINIT_Msk;

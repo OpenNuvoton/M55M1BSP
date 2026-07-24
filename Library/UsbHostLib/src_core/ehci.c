@@ -20,14 +20,15 @@
 
 #ifdef ENABLE_EHCI
 #define EHCI_IRQHandler     HSUSBH_IRQHandler
+extern NVT_ITCM void EHCI_IRQHandler(void);
+
+//function list..
+#define get_int_tree_head_node  ehci_get_int_tree_head_node
 
 static QH_T   *_H_qh;                           /* head of reclamation list                   */
 static qTD_T  *_ghost_qtd;                      /* used as a terminator qTD                   */
 static QH_T *qh_remove_list;
 
-extern ISO_EP_T  *iso_ep_list;              /* list of activated isochronous pipes        */
-extern int ehci_iso_xfer(UTR_T *utr);       /* EHCI isochronous transfer function         */
-extern int ehci_quit_iso_xfer(UTR_T *utr, EP_INFO_T *ep);
 
 #ifdef __ICCARM__
     #if (NVT_DCACHE_ON == 1)
@@ -47,7 +48,7 @@ extern int ehci_quit_iso_xfer(UTR_T *utr, EP_INFO_T *ep);
     #endif
 #endif
 
-QH_T   *_Iqh[NUM_IQH];
+static QH_T   *_Iqh[NUM_IQH];
 
 #ifdef DUMP_DESCRIPTOR
 void dump_ehci_regs(void)
@@ -113,7 +114,7 @@ void dump_ehci_asynclist(void)
 
         qtd = QTD_PTR(qh->Curr_qTD);
 
-        while (qtd != NULL)
+        while (qtd != USBNULL)
         {
             dump_ehci_qtd(qtd);
             qtd = QTD_PTR(qtd->Next_qTD);
@@ -141,7 +142,7 @@ static void dump_ehci_asynclist_simple(void)
 
 void dump_ehci_period_frame_list_simple(void)
 {
-    QH_T     *qh = _Iqh[NUM_IQH - 1];
+    QH_T     *qh = _Iqh[NUM_IQH - 1U];
 
     USB_debug(">>> EHCI period frame list simple <<<\n");
     USB_debug("[FList] => ");
@@ -150,7 +151,7 @@ void dump_ehci_period_frame_list_simple(void)
     {
         USB_debug("0x%08x ", (int)qh);
         qh = QH_PTR(qh->HLink);
-    } while (qh != NULL);
+    } while (qh != USBNULL);
 
     USB_debug("\n");
 }
@@ -165,7 +166,7 @@ static void dump_ehci_period_frame_list()
         USB_debug("!%02d: ", i);
         qh = QH_PTR(_PFList[i]);;
 
-        while (qh != NULL)
+        while (qh != USBNULL)
         {
             // USB_debug("0x%x (0x%x) => ", (int)qh, qh->HLink);
             USB_debug("0x%x => ", (int)qh);
@@ -178,45 +179,54 @@ static void dump_ehci_period_frame_list()
 
 #endif  /* ENABLE_ERROR_MSG */
 
-static void init_periodic_frame_list()
+static void init_periodic_frame_list(void)
 {
-    QH_T   *qh_p;
-    int    i, idx, interval;
+    uint32_t i;
+    uint32_t idx;
 
-    memset(_PFList, 0, sizeof(_PFList));
 
-    iso_ep_list = NULL;
+    (void)memset(_PFList, 0, sizeof(_PFList));
 
-    for (i = NUM_IQH - 1; i >= 0; i--)      /* interval = i^2                             */
+    iso_ep_list = USBNULL;
+
+    for (i = NUM_IQH; i > 0U; i--)            /* interval = i^2                             */
     {
-        _Iqh[i] = alloc_ehci_QH();
+        uint32_t iqh_idx;
 
-        _Iqh[i]->HLink           = QH_HLNK_END;
-        _Iqh[i]->Curr_qTD        = (uint32_t)_ghost_qtd;
-        _Iqh[i]->OL_Next_qTD     = QTD_LIST_END;
-        _Iqh[i]->OL_Alt_Next_qTD = (uint32_t)_ghost_qtd;
-        _Iqh[i]->OL_Token        = QTD_STS_HALT;
+        iqh_idx = i - 1U;
 
-        interval = 0x1 << i;
+        _Iqh[iqh_idx] = alloc_ehci_QH();
 
-        for (idx = interval - 1; idx < FL_SIZE; idx += interval)
+        _Iqh[iqh_idx]->HLink           = QH_HLNK_END;
+        _Iqh[iqh_idx]->Curr_qTD        = (uint32_t)_ghost_qtd;
+        _Iqh[iqh_idx]->OL_Next_qTD     = QTD_LIST_END;
+        _Iqh[iqh_idx]->OL_Alt_Next_qTD = (uint32_t)_ghost_qtd;
+        _Iqh[iqh_idx]->OL_Token        = QTD_STS_HALT;
+
+        uint32_t interval;
+        interval = (0x1UL << (iqh_idx));
+
+        for (idx = (interval - 1U); idx < (uint32_t)FL_SIZE; idx += interval)
         {
-            if (_PFList[idx] == 0)          /* is empty list, insert directly             */
+            if (_PFList[idx] == 0U)         /* is empty list, insert directly             */
             {
-                _PFList[idx] = QH_HLNK_QH(_Iqh[i]);
+                _PFList[idx] = QH_HLNK_QH(_Iqh[iqh_idx]);
             }
             else
             {
+                QH_T   *qh_p;
                 qh_p = QH_PTR(_PFList[idx]);
 
                 while (1)
                 {
-                    if (qh_p == _Iqh[i])
-                        break;                   /* already chained by previous visit     */
-
-                    if (qh_p->HLink == QH_HLNK_END)        /* reach end of list?          */
+                    /* stop when already chained by previous visit, or reached end of list */
+                    if ((qh_p == _Iqh[iqh_idx]) || (qh_p->HLink == QH_HLNK_END))
                     {
-                        qh_p->HLink = QH_HLNK_QH(_Iqh[i]);
+                        if (qh_p != _Iqh[iqh_idx])         /* reached end, not yet chained */
+                        {
+                            qh_p->HLink = QH_HLNK_QH(_Iqh[iqh_idx]);
+                        }
+
                         break;
                     }
 
@@ -227,79 +237,96 @@ static void init_periodic_frame_list()
     }
 }
 
-static QH_T *get_int_tree_head_node(int interval)
+static QH_T *get_int_tree_head_node(uint32_t interval)
 {
-    int    i;
+    uint32_t i;
+    uint32_t interval_local;
 
-    interval /= 8;                          /* each frame list entry for 8 micro-frame    */
+    interval_local = interval / 8U;          /* each frame list entry for 8 micro-frame    */
 
-    for (i = 0; i < NUM_IQH - 1; i++)
+    for (i = 0U; i < (NUM_IQH - 1U); i++)
     {
-        interval >>= 1;
+        interval_local >>= 1;
 
-        if (interval == 0)
+        if (interval_local == 0U)
+        {
             return _Iqh[i];
+        }
     }
 
-    return _Iqh[NUM_IQH - 1];
+    return _Iqh[NUM_IQH - 1U];
 }
 
-static int  make_int_s_mask(int bInterval)
+static uint32_t make_int_s_mask(uint32_t bInterval)
 {
-    int   order, interval;
+    uint32_t order;
+    uint32_t interval;
+    uint32_t interval_local;
 
-    interval = 1;
+    interval = 1U;
+    interval_local = bInterval;
 
-    while (bInterval > 1)
+    while (interval_local > 1U)
     {
-        interval *= 2;
-        bInterval--;
+        interval *= 2U;
+        interval_local--;
     }
 
-    if (interval < 2)
-        return 0xFF;                        /* interval 1                                 */
-
-    if (interval < 4)
-        return 0x55;                        /* interval 2                                 */
-
-    if (interval < 8)
-        return 0x22;                        /* interval 4                                 */
-
-    for (order = 0; (interval > 1); order++)
+    if (interval < 2U)
     {
-        interval >>= 1;
+        return 0xFFU;                       /* interval 1                                 */
     }
 
-    return (0x1 << (order % 8));
+    if (interval < 4U)
+    {
+        return 0x55U;                       /* interval 2                                 */
+    }
+
+    if (interval < 8U)
+    {
+        return 0x22U;                       /* interval 4                                 */
+    }
+
+    order = 0U;
+
+    while (interval > 1U)
+    {
+        interval >>= 1U;
+        order++;
+    }
+
+    return (0x1U << (order % 8U));
 }
 
 static int  ehci_init(void)
 {
-    int      timeout = 250 * 1000;          /* EHCI reset time-out 250 ms                */
+    uint32_t timeout = 250U * 1000U;        /* EHCI reset time-out 250 ms                */
 
     /*------------------------------------------------------------------------------------*/
     /*  Reset EHCI host controller                                                        */
     /*------------------------------------------------------------------------------------*/
     _ehci->UCMDR = HSUSBH_UCMDR_HCRST_Msk;
 
-    while ((_ehci->UCMDR & HSUSBH_UCMDR_HCRST_Msk) && (timeout > 0))
+    while (((_ehci->UCMDR & HSUSBH_UCMDR_HCRST_Msk) != 0U) && (timeout > 0U))
     {
         delay_us(1000);
-        timeout -= 1000;
+        timeout -= 1000U;
     }
 
-    if (_ehci->UCMDR & HSUSBH_UCMDR_HCRST_Msk)
+    if ((_ehci->UCMDR & HSUSBH_UCMDR_HCRST_Msk) != 0U)
+    {
         return USBH_ERR_EHCI_INIT;
+    }
 
     _ehci->UCMDR = UCMDR_INT_THR_CTRL | HSUSBH_UCMDR_RUN_Msk;
 
-    _ghost_qtd = alloc_ehci_qTD(NULL);
+    _ghost_qtd = alloc_ehci_qTD(USBNULL);
     //_ghost_qtd->Token = 0x11197B3F;    //QTD_STS_HALT;  visit_qtd() will not remove a qTD with this mark. It represents a qhost qTD.
-    _ghost_qtd->Token = 0x11197B7F;
+    _ghost_qtd->Token = 0x11197B7FU;
     /*------------------------------------------------------------------------------------*/
     /*  Initialize asynchronous list                                                      */
     /*------------------------------------------------------------------------------------*/
-    qh_remove_list = NULL;
+    qh_remove_list = USBNULL;
 
     /* Create the QH list head with H-bit 1 */
     _H_qh = alloc_ehci_QH();
@@ -315,14 +342,22 @@ static int  ehci_init(void)
     /*------------------------------------------------------------------------------------*/
     /*  Initialize periodic list                                                          */
     /*------------------------------------------------------------------------------------*/
-    if (FL_SIZE == 256)
-        _ehci->UCMDR |= (0x2 << HSUSBH_UCMDR_FLSZ_Pos);
-    else if (FL_SIZE == 512)
-        _ehci->UCMDR |= (0x1 << HSUSBH_UCMDR_FLSZ_Pos);
-    else if (FL_SIZE == 1024)
-        _ehci->UCMDR |= (0x0 << HSUSBH_UCMDR_FLSZ_Pos);
+    if (FL_SIZE == 256U)
+    {
+        _ehci->UCMDR |= (0x2U << HSUSBH_UCMDR_FLSZ_Pos);
+    }
+    else if (FL_SIZE == 512U)
+    {
+        _ehci->UCMDR |= (0x1U << HSUSBH_UCMDR_FLSZ_Pos);
+    }
+    else if (FL_SIZE == 1024U)
+    {
+        _ehci->UCMDR |= (0x0U << HSUSBH_UCMDR_FLSZ_Pos);
+    }
     else
+    {
         return USBH_ERR_EHCI_INIT;               /* Invalid FL_SIZE setting!              */
+    }
 
     _ehci->UPFLBAR = (uint32_t)_PFList;
     //USB_debug("_ehci->UPFLBAR - 0x%x \n", _ehci->UPFLBAR);
@@ -330,13 +365,13 @@ static int  ehci_init(void)
     /*  start run                                                                         */
     /*------------------------------------------------------------------------------------*/
 
-    _ehci->UCFGR = 0x1;                          /* enable port routing to EHCI           */
+    _ehci->UCFGR = 0x1U;                         /* enable port routing to EHCI           */
     _ehci->UIENR = HSUSBH_UIENR_USBIEN_Msk | HSUSBH_UIENR_UERRIEN_Msk | HSUSBH_UIENR_HSERREN_Msk | HSUSBH_UIENR_IAAEN_Msk;
 
     delay_us(1000);                              /* delay 1 ms                            */
 
     _ehci->UPSCR[0] = HSUSBH_UPSCR_PP_Msk;      /* enable port 1 port power               */
-    //_ehci->UPSCR[1] = HSUSBH_UPSCR_PP_Msk | HSUSBH_UPSCR_PO_Msk;     /* set port 2 owner to OHCI              */
+    //_ehci->UPSCR[1] = HSUSBH_UPSCR_PP_Msk | HSUSBH_UPSCR_PO_Msk;     set port 2 owner to OHCI
 
     init_periodic_frame_list();
 
@@ -350,7 +385,7 @@ static int  ehci_reinit(void)
     int      timeout = 250 * 1000;          /* EHCI reset time-out 250 ms                */
     HSUSBH_T ehci_backup = { 0 };
 
-    memcpy(&ehci_backup, _ehci, sizeof(ehci_backup));
+    (void)memcpy(&ehci_backup, _ehci, sizeof(ehci_backup));
 
     /*------------------------------------------------------------------------------------*/
     /*  Reset EHCI host controller                                                        */
@@ -364,7 +399,9 @@ static int  ehci_reinit(void)
     }
 
     if (_ehci->UCMDR & HSUSBH_UCMDR_HCRST_Msk)
+    {
         return USBH_ERR_EHCI_INIT;
+    }
 
     _ehci->UCMDR = ehci_backup.UCMDR & ~HSUSBH_UCMDR_IAAD_Msk;;
 
@@ -376,7 +413,7 @@ static int  ehci_reinit(void)
     /*  start run                                                                         */
     /*------------------------------------------------------------------------------------*/
 
-    _ehci->UCFGR = 0x1;                          /* enable port routing to EHCI           */
+    _ehci->UCFGR = 0x1U;                          /* enable port routing to EHCI           */
     _ehci->UIENR = HSUSBH_UIENR_USBIEN_Msk | HSUSBH_UIENR_UERRIEN_Msk | HSUSBH_UIENR_HSERREN_Msk | HSUSBH_UIENR_IAAEN_Msk;
 
     delay_us(1000);                              /* delay 1 ms                            */
@@ -391,7 +428,9 @@ static int  ehci_reinit(void)
 static void ehci_suspend(void)
 {
     if (_ehci->UPSCR[0] & HSUSBH_UPSCR_PE_Msk)
+    {
         _ehci->UPSCR[0] |= HSUSBH_UPSCR_SUSPEND_Msk;
+    }
 }
 
 static void ehci_resume(void)
@@ -434,7 +473,7 @@ static void move_qh_to_remove_list(QH_T *qh)
     /*  deactive the QH                                                                   */
     /*------------------------------------------------------------------------------------*/
     qh->Chrst |= QH_RCLM_LIST_HEAD;
-    qh->OL_Token = (qh->OL_Token & ~QTD_STS_ACTIVE) | QTD_STS_HALT;
+    qh->OL_Token = (qh->OL_Token & (~QTD_STS_ACTIVE)) | QTD_STS_HALT;
 
     /*------------------------------------------------------------------------------------*/
     /*  Search asynchronous frame list and remove qh if found in list.                    */
@@ -460,7 +499,7 @@ static void move_qh_to_remove_list(QH_T *qh)
     /*------------------------------------------------------------------------------------*/
     /*  Search periodic frame list and remove qh if found in list.                        */
     /*------------------------------------------------------------------------------------*/
-    q =  _Iqh[NUM_IQH - 1];
+    q =  _Iqh[NUM_IQH - 1U];
 
     while (q->HLink != QH_HLNK_END)
     {
@@ -483,7 +522,6 @@ static void move_qh_to_remove_list(QH_T *qh)
 
 static void remove_queue_head(QH_T *qh)
 {
-    //printf("%s\n", __func__);
     DISABLE_EHCI_IRQ();
     move_qh_to_remove_list(qh);
     ENABLE_EHCI_IRQ();
@@ -494,7 +532,7 @@ static void append_to_qtd_list_of_QH(QH_T *qh, qTD_T *qtd)
 {
     qTD_T  *q;
 
-    if (qh->qtd_list == NULL)
+    if (qh->qtd_list == USBNULL)
     {
         qh->qtd_list = qtd;
     }
@@ -502,7 +540,7 @@ static void append_to_qtd_list_of_QH(QH_T *qh, qTD_T *qtd)
     {
         q = qh->qtd_list;
 
-        while (q->next != NULL)
+        while (q->next != USBNULL)
         {
             q = q->next;
         }
@@ -512,44 +550,57 @@ static void append_to_qtd_list_of_QH(QH_T *qh, qTD_T *qtd)
 }
 
 /*
- *  If ep==NULL, it's a control endpoint QH.
+ *  If ep==USBNULL, it's a control endpoint QH.
  */
-static void  write_qh(UDEV_T *udev, EP_INFO_T *ep, QH_T *qh)
+static void  write_qh(UDEV_T *udev, const EP_INFO_T *ep, QH_T *qh)
 {
-    uint32_t   chrst, cap;
+    uint32_t   chrst;
+    uint32_t   cap;
 
     /*------------------------------------------------------------------------------------*/
     /*  Write QH DWord 1 - Endpoint Characteristics                                       */
     /*------------------------------------------------------------------------------------*/
-    if (ep == NULL)                             /* is control endpoint?                   */
+    if (ep == USBNULL)                             /* is control endpoint?                   */
     {
-        if (udev->descriptor.bMaxPacketSize0 == 0)
+        if (udev->descriptor.bMaxPacketSize0 == 0U)
         {
             if (udev->speed == SPEED_LOW)       /* give a default maximum packet size     */
-                udev->descriptor.bMaxPacketSize0 = 8;
+            {
+                udev->descriptor.bMaxPacketSize0 = 8U;
+            }
             else
-                udev->descriptor.bMaxPacketSize0 = 64;
+            {
+                udev->descriptor.bMaxPacketSize0 = 64U;
+            }
         }
 
-        chrst = QH_DTC | QH_NAK_RL | (udev->descriptor.bMaxPacketSize0 << 16);
+        chrst = QH_DTC | QH_NAK_RL | ((uint32_t)udev->descriptor.bMaxPacketSize0 << 16U);
 
         if (udev->speed != SPEED_HIGH)
+        {
             chrst |= QH_CTRL_EP_FLAG;           /* non-high-speed control endpoint        */
+        }
     }
     else                                        /* not a control endpoint                 */
     {
-        chrst = QH_NAK_RL | (ep->wMaxPacketSize << 16);
-        chrst |= ((ep->bEndpointAddress & 0xf) << 8);      /* Endpoint Address             */
+        chrst = QH_NAK_RL | ((uint32_t)ep->wMaxPacketSize << 16U);
+        chrst |= ((uint32_t)(ep->bEndpointAddress & 0x0FU) << 8U);      /* Endpoint Address             */
     }
 
     if (udev->speed == SPEED_LOW)
+    {
         chrst |= QH_EPS_LOW;
+    }
     else if (udev->speed == SPEED_FULL)
+    {
         chrst |= QH_EPS_FULL;
+    }
     else
+    {
         chrst |= QH_EPS_HIGH;
+    }
 
-    chrst |= udev->dev_num;
+    chrst |= (uint32_t)udev->dev_num;
 
     qh->Chrst = chrst;
 
@@ -558,7 +609,7 @@ static void  write_qh(UDEV_T *udev, EP_INFO_T *ep, QH_T *qh)
     /*------------------------------------------------------------------------------------*/
     if (udev->speed == SPEED_HIGH)
     {
-        cap = 0x40000000;
+        cap = 0x40000000U;
     }
     else
     {
@@ -566,19 +617,26 @@ static void  write_qh(UDEV_T *udev, EP_INFO_T *ep, QH_T *qh)
          *  Backtrace device tree until the USB 2.0 hub found
          */
         HUB_DEV_T   *hub;
-        int         port_num;
+        uint32_t    port_num;
 
         port_num = udev->port_num;
         hub = udev->parent;
 
-        while ((hub != NULL) && (hub->iface->udev->speed != SPEED_HIGH))
+        while ((hub != USBNULL) && (hub->iface->udev->speed != SPEED_HIGH))
         {
             port_num = hub->iface->udev->port_num;
             hub = hub->iface->udev->parent;
         }
 
-        cap = (port_num << QH_HUB_PORT_Pos) |
-              (hub->iface->udev->dev_num << QH_HUB_ADDR_Pos);
+        if (hub != USBNULL)
+        {
+            cap = ((uint32_t)port_num << QH_HUB_PORT_Pos) |
+                  ((uint32_t)hub->iface->udev->dev_num << QH_HUB_ADDR_Pos);
+        }
+        else
+        {
+            cap = ((uint32_t)port_num << QH_HUB_PORT_Pos);
+        }
     }
 
     qh->Cap = cap;
@@ -586,17 +644,18 @@ static void  write_qh(UDEV_T *udev, EP_INFO_T *ep, QH_T *qh)
 
 static void  write_qtd_bptr(qTD_T *qtd, uint32_t buff_addr, int xfer_len)
 {
-    int     i;
+    int       i;
+    uint32_t  next_buff_addr;
 
     qtd->xfer_len = xfer_len;
     qtd->Bptr[0] = buff_addr;
 
-    buff_addr = (buff_addr + 0x1000) & ~0xFFF;
+    next_buff_addr = (buff_addr + 0x1000U) & ~0xFFFU;
 
     for (i = 1; i < 5; i++)
     {
-        qtd->Bptr[i] = buff_addr;
-        buff_addr += 0x1000;
+        qtd->Bptr[i] = next_buff_addr;
+        next_buff_addr += 0x1000U;
     }
 }
 
@@ -604,40 +663,48 @@ static int ehci_ctrl_xfer(UTR_T *utr)
 {
     UDEV_T     *udev;
     QH_T       *qh;
-    qTD_T      *qtd_setup, *qtd_data, *qtd_status;
+    qTD_T      *qtd_setup;
+    qTD_T      *qtd_data;
+    qTD_T      *qtd_status;
     uint32_t   token;
     int        is_new_qh = 0;
 
     udev = utr->udev;
 
-    if (utr->data_len > 0)
+    if (utr->data_len > 0U)
     {
-        if (((uint32_t)utr->buff + utr->data_len) > (((uint32_t)utr->buff & ~0xFFF) + 0x5000))
+        if ((((uint32_t)utr->buff + (uint32_t)utr->data_len) > ((((uint32_t)utr->buff) & ~0xFFFU) + 0x5000U)))
+        {
             return USBH_ERR_BUFF_OVERRUN;
+        }
     }
 
     /*------------------------------------------------------------------------------------*/
     /*  Allocate and link QH                                                              */
     /*------------------------------------------------------------------------------------*/
-    if (udev->ep0.hw_pipe != NULL)
+    if (udev->ep0.hw_pipe != USBNULL)
     {
         qh = (QH_T *)udev->ep0.hw_pipe;
 
-        if (qh->qtd_list)
+        if (qh->qtd_list != USBNULL)
+        {
             return USBH_ERR_EHCI_QH_BUSY;
+        }
     }
     else
     {
         qh = alloc_ehci_QH();
 
-        if (qh == NULL)
+        if (qh == USBNULL)
+        {
             return USBH_ERR_MEMORY_OUT;
+        }
 
         udev->ep0.hw_pipe = (void *)qh;     /* driver can find QH from EP                 */
         is_new_qh = 1;
     }
 
-    write_qh(udev, NULL, qh);
+    write_qh(udev, USBNULL, qh);
     utr->ep = &udev->ep0;                   /* driver can find EP from UTR                */
 
     /*------------------------------------------------------------------------------------*/
@@ -645,20 +712,28 @@ static int ehci_ctrl_xfer(UTR_T *utr)
     /*------------------------------------------------------------------------------------*/
     qtd_setup = alloc_ehci_qTD(utr);        /* allocate qTD for SETUP                     */
 
-    if (utr->data_len > 0)
+    if (utr->data_len > 0U)
+    {
         qtd_data = alloc_ehci_qTD(utr);     /* allocate qTD for DATA                      */
+    }
     else
-        qtd_data = NULL;
+    {
+        qtd_data = USBNULL;
+    }
 
     qtd_status = alloc_ehci_qTD(utr);       /* allocate qTD for USTSR                     */
 
-    if (qtd_status == NULL)                 /* out of memory?                             */
+    if (qtd_status == USBNULL)                 /* out of memory?                             */
     {
-        if (qtd_setup)
+        if (qtd_setup != USBNULL)
+        {
             free_ehci_qTD(qtd_setup);       /* free memory                                */
+        }
 
-        if (qtd_data)
+        if (qtd_data != USBNULL)
+        {
             free_ehci_qTD(qtd_data);        /* free memory                                */
+        }
 
         return USBH_ERR_MEMORY_OUT;         /* out of memory                              */
     }
@@ -672,26 +747,30 @@ static int ehci_ctrl_xfer(UTR_T *utr)
     //qtd_setup->utr = utr;
     write_qtd_bptr(qtd_setup, (uint32_t)&utr->setup, 8);
     append_to_qtd_list_of_QH(qh, qtd_setup);
-    qtd_setup->Token = (8 << 16) | QTD_ERR_COUNTER | QTD_PID_SETUP | QTD_STS_ACTIVE;
+    qtd_setup->Token = (8UL << 16) | QTD_ERR_COUNTER | QTD_PID_SETUP | QTD_STS_ACTIVE;
 
     /*------------------------------------------------------------------------------------*/
     /* prepare DATA stage qTD                                                             */
     /*------------------------------------------------------------------------------------*/
-    if (utr->data_len > 0)
+    if (utr->data_len > 0U)
     {
         qtd_setup->Next_qTD = (uint32_t)qtd_data;
         qtd_data->Next_qTD = (uint32_t)qtd_status;
 
-        if ((utr->setup.bmRequestType & 0x80) == REQ_TYPE_OUT)
+        if ((utr->setup.bmRequestType & 0x80U) == REQ_TYPE_OUT)
+        {
             token = QTD_ERR_COUNTER | QTD_PID_OUT | QTD_STS_ACTIVE;
+        }
         else
+        {
             token = QTD_ERR_COUNTER | QTD_PID_IN | QTD_STS_ACTIVE;
+        }
 
         qtd_data->qh = qh;
         //qtd_data->utr = utr;
         write_qtd_bptr(qtd_data, (uint32_t)utr->buff, utr->data_len);
         append_to_qtd_list_of_QH(qh, qtd_data);
-        qtd_data->Token = QTD_DT | (utr->data_len << 16) | token;
+        qtd_data->Token = QTD_DT | ((uint32_t)utr->data_len << 16U) | token;
     }
     else
     {
@@ -702,12 +781,16 @@ static int ehci_ctrl_xfer(UTR_T *utr)
     /* prepare USTSR stage qTD                                                            */
     /*------------------------------------------------------------------------------------*/
     qtd_status->Next_qTD = (uint32_t)_ghost_qtd;
-    qtd_status->Alt_Next_qTD = QTD_LIST_END;
+    qtd_status->Alt_Next_qTD = (uint32_t)QTD_LIST_END;
 
-    if ((utr->setup.bmRequestType & 0x80) == REQ_TYPE_OUT)
+    if ((utr->setup.bmRequestType & 0x80U) == REQ_TYPE_OUT)
+    {
         token = QTD_ERR_COUNTER | QTD_PID_IN | QTD_STS_ACTIVE;
+    }
     else
+    {
         token = QTD_ERR_COUNTER | QTD_PID_OUT | QTD_STS_ACTIVE;
+    }
 
     qtd_status->qh = qh;
     //qtd_status->utr = utr;
@@ -717,10 +800,10 @@ static int ehci_ctrl_xfer(UTR_T *utr)
     /*------------------------------------------------------------------------------------*/
     /* Update QH overlay                                                                  */
     /*------------------------------------------------------------------------------------*/
-    qh->Curr_qTD = 0;
+    qh->Curr_qTD = 0U;
     qh->OL_Next_qTD = (uint32_t)qtd_setup;
     qh->OL_Alt_Next_qTD = QTD_LIST_END;
-    qh->OL_Token = 0;
+    qh->OL_Token = 0U;
 
     /*------------------------------------------------------------------------------------*/
     /* Link QH and start asynchronous transfer                                            */
@@ -741,9 +824,12 @@ static int ehci_bulk_xfer(UTR_T *utr)
     UDEV_T     *udev;
     EP_INFO_T  *ep = utr->ep;
     QH_T       *qh;
-    qTD_T      *qtd, *qtd_pre;
-    uint32_t   data_len, xfer_len;
+    qTD_T      *qtd;
+    qTD_T      *qtd_pre;
+    uint32_t   data_len;
+    uint32_t   xfer_len;
     uint8_t    *buff;
+    uint32_t   buff_offset;
     uint32_t   token;
     int        is_new_qh = 0;
 
@@ -752,11 +838,11 @@ static int ehci_bulk_xfer(UTR_T *utr)
 
     udev = utr->udev;
 
-    if (ep->hw_pipe != NULL)
+    if (ep->hw_pipe != USBNULL)
     {
         qh = (QH_T *)ep->hw_pipe ;
 
-        if (qh->qtd_list)
+        if (qh->qtd_list != USBNULL)
         {
             return USBH_ERR_EHCI_QH_BUSY;
         }
@@ -765,8 +851,10 @@ static int ehci_bulk_xfer(UTR_T *utr)
     {
         qh = alloc_ehci_QH();
 
-        if (qh == NULL)
+        if (qh == USBNULL)
+        {
             return USBH_ERR_MEMORY_OUT;
+        }
 
         is_new_qh = 1;
         write_qh(udev, ep, qh);
@@ -778,17 +866,18 @@ static int ehci_bulk_xfer(UTR_T *utr)
     /*------------------------------------------------------------------------------------*/
     data_len = utr->data_len;
     buff = utr->buff;
-    qtd_pre = NULL;
+    buff_offset = 0U;
+    qtd_pre = USBNULL;
 
-    while (data_len > 0)
+    while (data_len > 0U)
     {
         qtd = alloc_ehci_qTD(utr);
 
-        if (qtd == NULL)                    /* failed to allocate a qTD                   */
+        if (qtd == USBNULL)                    /* failed to allocate a qTD                   */
         {
             qtd = qh->qtd_list;
 
-            while (qtd != NULL)
+            while (qtd != USBNULL)
             {
                 qtd_pre = qtd;
                 qtd = qtd->next;
@@ -798,40 +887,50 @@ static int ehci_bulk_xfer(UTR_T *utr)
             if (is_new_qh)
             {
                 free_ehci_QH(qh);
-                ep->hw_pipe = NULL;
+                ep->hw_pipe = USBNULL;
             }
 
             return USBH_ERR_MEMORY_OUT;
         }
 
         if ((ep->bEndpointAddress & EP_ADDR_DIR_MASK) == EP_ADDR_DIR_OUT)
+        {
             token = QTD_ERR_COUNTER | QTD_PID_OUT | QTD_STS_ACTIVE;
+        }
         else
+        {
             token = QTD_ERR_COUNTER | QTD_PID_IN | QTD_STS_ACTIVE;
+        }
 
-        if (data_len > 0x4000)              /* force maximum x'fer length 16K per qTD     */
-            xfer_len = 0x4000;
+        if (data_len > 0x4000U)             /* force maximum x'fer length 16K per qTD     */
+        {
+            xfer_len = 0x4000U;
+        }
         else
+        {
             xfer_len = data_len;            /* remaining data length < 4K                 */
+        }
 
         qtd->qh = qh;
         qtd->Next_qTD = (uint32_t)_ghost_qtd;
         qtd->Alt_Next_qTD = QTD_LIST_END; //(uint32_t)_ghost_qtd;
-        write_qtd_bptr(qtd, (uint32_t)buff, xfer_len);
+        write_qtd_bptr(qtd, (uint32_t)&buff[buff_offset], (int)xfer_len);
         append_to_qtd_list_of_QH(qh, qtd);
-        qtd->Token = (xfer_len << 16) | token;
+        qtd->Token = (xfer_len << 16U) | token;
 
-        buff += xfer_len;                   /* advanced buffer pointer                    */
+        buff_offset += xfer_len;            /* advanced buffer offset                     */
         data_len -= xfer_len;
 
-        if (data_len == 0)                  /* is this the latest qTD?                   */
+        if (data_len == 0U)                  /* is this the latest qTD?                   */
         {
             qtd->Token |= QTD_IOC;          /* ask to raise an interrupt on the last qTD  */
             qtd->Next_qTD = (uint32_t)_ghost_qtd;     /* qTD list end                     */
         }
 
-        if (qtd_pre != NULL)
+        if (qtd_pre != USBNULL)
+        {
             qtd_pre->Next_qTD = (uint32_t)qtd;
+        }
 
         qtd_pre = qtd;
     }
@@ -849,13 +948,15 @@ static int ehci_bulk_xfer(UTR_T *utr)
     /*------------------------------------------------------------------------------------*/
     if (is_new_qh)
     {
-        memcpy(&(qh->OL_Bptr[0]), &(qtd->Bptr[0]), 20);
+        (void)memcpy(&(qh->OL_Bptr[0]), &(qtd->Bptr[0]), 20);
         qh->Curr_qTD = (uint32_t)qtd;
 
         qh->OL_Token = 0; //qtd->Token;
 
-        if (utr->ep->bToggle)
+        if (utr->ep->bToggle != 0U)
+        {
             qh->OL_Token |= QTD_DT;
+        }
 
         qh->HLink = _H_qh->HLink;
         _H_qh->HLink = QH_HLNK_QH(qh);
@@ -871,18 +972,22 @@ static int ehci_int_xfer(UTR_T *utr)
 {
     UDEV_T     *udev = utr->udev;
     EP_INFO_T  *ep = utr->ep;
-    QH_T       *qh, *iqh;
-    qTD_T      *qtd, *dummy_qtd;
+    QH_T       *qh;
+    QH_T       *iqh;
+    qTD_T      *qtd;
+    qTD_T      *dummy_qtd;
     uint32_t   token;
 
-    dummy_qtd = alloc_ehci_qTD(NULL);     /* allocate a new dummy qTD                    */
+    dummy_qtd = alloc_ehci_qTD(USBNULL);     /* allocate a new dummy qTD                    */
 
-    if (dummy_qtd == NULL)
+    if (dummy_qtd == USBNULL)
+    {
         return USBH_ERR_MEMORY_OUT;
+    }
 
     dummy_qtd->Token &= ~(QTD_STS_ACTIVE | QTD_STS_HALT);
 
-    if (ep->hw_pipe != NULL)
+    if (ep->hw_pipe != USBNULL)
     {
         qh = (QH_T *)ep->hw_pipe ;
     }
@@ -890,22 +995,22 @@ static int ehci_int_xfer(UTR_T *utr)
     {
         qh = alloc_ehci_QH();
 
-        if (qh == NULL)
+        if (qh == USBNULL)
         {
             free_ehci_qTD(dummy_qtd);
             return USBH_ERR_MEMORY_OUT;
         }
 
         write_qh(udev, ep, qh);
-        qh->Chrst &= ~0xF0000000;
+        qh->Chrst &= ~0xF0000000U;
 
         if (udev->speed == SPEED_HIGH)
         {
-            qh->Cap = (0x1 << QH_MULT_Pos) | (qh->Cap & 0xff) | make_int_s_mask(ep->bInterval);
+            qh->Cap = (0x1UL << QH_MULT_Pos) | (qh->Cap & 0xFFU) | make_int_s_mask(ep->bInterval);
         }
         else
         {
-            qh->Cap = (0x1 << QH_MULT_Pos) | (qh->Cap & ~(QH_C_MASK_Msk | QH_S_MASK_Msk)) | 0x7802;
+            qh->Cap = (0x1UL << QH_MULT_Pos) | (qh->Cap & ~(QH_C_MASK_Msk | QH_S_MASK_Msk)) | 0x7802U;
         }
 
         ep->hw_pipe = (void *)qh;           /* associate QH with endpoint                 */
@@ -913,28 +1018,32 @@ static int ehci_int_xfer(UTR_T *utr)
         /*
          *  Allocate another dummy qTD
          */
-        qtd = alloc_ehci_qTD(NULL);    /* allocate a new dummy qTD                   */
+        qtd = alloc_ehci_qTD(USBNULL);    /* allocate a new dummy qTD                   */
 
-        if (qtd == NULL)
+        if (qtd == USBNULL)
         {
             free_ehci_qTD(dummy_qtd);
             free_ehci_QH(qh);
             return USBH_ERR_MEMORY_OUT;
         }
 
-        qtd->Token &= ~(QTD_STS_ACTIVE | QTD_STS_HALT);
+        qtd->Token &= ~((uint32_t)QTD_STS_ACTIVE | (uint32_t)QTD_STS_HALT);
 
         qh->dummy = dummy_qtd;
         qh->OL_Next_qTD = (uint32_t)dummy_qtd;
-        qh->OL_Token = 0;    /* !Active & !Halted */
+        qh->OL_Token = 0U;    /* !Active & !Halted */
 
         /*
          *  link QH
          */
         if (udev->speed == SPEED_HIGH)      /* get head node of this interval             */
+        {
             iqh = get_int_tree_head_node(ep->bInterval);
+        }
         else
-            iqh = get_int_tree_head_node(ep->bInterval * 8);
+        {
+            iqh = get_int_tree_head_node((uint32_t)ep->bInterval * 8U);
+        }
 
         qh->HLink = iqh->HLink;             /* Add to list of the same interval           */
         iqh->HLink = QH_HLNK_QH(qh);
@@ -952,15 +1061,19 @@ static int ehci_int_xfer(UTR_T *utr)
     /*------------------------------------------------------------------------------------*/
 
     if ((ep->bEndpointAddress & EP_ADDR_DIR_MASK) == EP_ADDR_DIR_OUT)
+    {
         token = QTD_ERR_COUNTER | QTD_PID_OUT;
+    }
     else
+    {
         token = QTD_ERR_COUNTER | QTD_PID_IN;
+    }
 
     qtd->qh = qh;
-    qtd->Alt_Next_qTD = QTD_LIST_END;
+    qtd->Alt_Next_qTD = (uint32_t)QTD_LIST_END;
     write_qtd_bptr(qtd, (uint32_t)utr->buff, utr->data_len);
     append_to_qtd_list_of_QH(qh, qtd);
-    qtd->Token = QTD_IOC | (utr->data_len << 16) | token | QTD_STS_ACTIVE;
+    qtd->Token = QTD_IOC | ((uint32_t)utr->data_len << 16U) | token | QTD_STS_ACTIVE;
 
     // printf("ehci_int_xfer - qh: 0x%x, 0x%x, 0x%x\n", (int)qh, (int)qh->Chrst, (int)qh->Cap);
 
@@ -988,38 +1101,42 @@ static int ehci_quit_xfer(UTR_T *utr, EP_INFO_T *ep)
 
     ENABLE_EHCI_IRQ();
 
-    if (utr != NULL)
+    if (utr != USBNULL)
     {
-        if (utr->ep == NULL)
+        if (utr->ep == USBNULL)
+        {
             return USBH_ERR_NOT_FOUND;
+        }
 
         qh = (QH_T *)(utr->ep->hw_pipe);
 
-        if (!qh)
+        if (qh == USBNULL)
+        {
             return USBH_ERR_NOT_FOUND;
+        }
 
         /* add the QH to remove list, it will be removed on the next IAAD interrupt       */
         remove_queue_head(qh);
-        utr->ep->hw_pipe = NULL;
+        utr->ep->hw_pipe = USBNULL;
     }
 
-    if ((ep != NULL) && (ep->hw_pipe != NULL))
+    if ((ep != USBNULL) && (ep->hw_pipe != USBNULL))
     {
         qh = (QH_T *)(ep->hw_pipe);
         /* add the QH to remove list, it will be removed on the next IAAD interrupt       */
         remove_queue_head(qh);
-        ep->hw_pipe = NULL;
+        ep->hw_pipe = USBNULL;
     }
 
     /* wait until IAAD interrupt processed */
     t0 = get_ticks();
 
-    while ((_ehci->UCMDR & HSUSBH_UCMDR_IAAD_Msk) || (_ehci->USTSR & HSUSBH_USTSR_IAA_Msk))
+    while (((_ehci->UCMDR & HSUSBH_UCMDR_IAAD_Msk) != 0U) || ((_ehci->USTSR & HSUSBH_USTSR_IAA_Msk) != 0U))
     {
-        if (get_ticks() - t0 > 2)
+        if ((get_ticks() - t0) > 2U)
         {
             USB_error("%s - IAAD lost!!  UCMDR:0x%x, USTSR: 0x%x, UIENR: 0x%x\n", __func__, _ehci->UCMDR, _ehci->USTSR, _ehci->UIENR);
-            ehci_reinit();
+            (void)ehci_reinit();
             _ehci->UCMDR |= HSUSBH_UCMDR_IAAD_Msk;
             break;
         }
@@ -1030,25 +1147,32 @@ static int ehci_quit_xfer(UTR_T *utr, EP_INFO_T *ep)
 
 static int visit_qtd(qTD_T *qtd)
 {
-    if ((qtd->Token == 0x11197B3F) || (qtd->Token == 0x1197B3F))
+    if ((qtd->Token == 0x11197B3FU) || (qtd->Token == 0x1197B3FU))
+    {
         return 0;                    /* A Dummy qTD or qTD on writing, don't touch it.    */
+    }
 
     // USB_debug("Visit qtd 0x%x - 0x%x\n", (int)qtd, qtd->Token);
 
-    if ((qtd->Token & QTD_STS_ACTIVE) == 0)
+    if ((qtd->Token & QTD_STS_ACTIVE) == 0U)
     {
-        if (qtd->Token & (QTD_STS_HALT | QTD_STS_DATA_BUFF_ERR | QTD_STS_BABBLE | QTD_STS_XactErr | QTD_STS_MISS_MF))
+        if ((qtd->Token & ((uint32_t)QTD_STS_HALT | (uint32_t)QTD_STS_DATA_BUFF_ERR | (uint32_t)QTD_STS_BABBLE | (uint32_t)QTD_STS_XactErr | (uint32_t)QTD_STS_MISS_MF)) != 0U)
         {
             USB_error("qTD error token=0x%x!  0x%x\n", qtd->Token, qtd->Bptr[0]);
 
             if (qtd->utr->status == 0)
+            {
                 qtd->utr->status = USBH_ERR_TRANSACTION;
+            }
         }
         else
         {
-            if ((qtd->Token & QTD_PID_Msk) != QTD_PID_SETUP)
+            if ((qtd->Token & (uint32_t)QTD_PID_Msk) != (uint32_t)QTD_PID_SETUP)
             {
-                qtd->utr->xfer_len += qtd->xfer_len - QTD_TODO_LEN(qtd->Token);
+                uint32_t xferred_len;
+
+                xferred_len = qtd->xfer_len - (uint32_t)QTD_TODO_LEN(qtd->Token);
+                qtd->utr->xfer_len += xferred_len;
                 // USB_debug("0x%x  utr->xfer_len += %d\n", qtd->Token, qtd->xfer_len - QTD_TODO_LEN(qtd->Token));
             }
         }
@@ -1059,23 +1183,24 @@ static int visit_qtd(qTD_T *qtd)
     return 0;
 }
 
-static void scan_asynchronous_list()
+static void scan_asynchronous_list(void)
 {
-    QH_T    *qh, *qh_tmp;
-    qTD_T   *q_pre, *qtd, *qtd_tmp;
-    UTR_T   *utr;
+    QH_T    *qh;
+    qTD_T   *q_pre;
+    qTD_T   *qtd;
+    qTD_T   *qtd_tmp;
 
     qh =  QH_PTR(_H_qh->HLink);
-    q_pre = NULL;
+    q_pre = USBNULL;
 
     while (qh != _H_qh)
     {
         // USB_debug("Scan qh=0x%x, 0x%x\n", (int)qh, qh->OL_Token);
-
-        utr = NULL;
+        UTR_T   *utr;
+        utr = USBNULL;
         qtd = qh->qtd_list;
 
-        while (qtd != NULL)
+        while (qtd != USBNULL)
         {
             if (visit_qtd(qtd))                  /* if TRUE, reclaim this qtd             */
             {
@@ -1083,9 +1208,13 @@ static void scan_asynchronous_list()
                 utr = qtd->utr;
 
                 if (qtd == qh->qtd_list)
+                {
                     qh->qtd_list = qtd->next;    /* unlink the qTD from qtd_list          */
+                }
                 else
+                {
                     q_pre->next = qtd->next;     /* unlink the qTD from qtd_list          */
+                }
 
                 qtd_tmp = qtd;                   /* remember this qTD for freeing later   */
                 qtd = qtd->next;                 /* advance to the next qTD               */
@@ -1100,57 +1229,65 @@ static void scan_asynchronous_list()
             }
         }
 
+        QH_T const *qh_tmp;
         qh_tmp = qh;
         qh = QH_PTR(qh->HLink);                  /* advance to the next QH                */
 
         /* If all TDs are done, call-back to requester and then remove this QH.           */
-        if ((qh_tmp->qtd_list == NULL) && utr)
+        if ((qh_tmp->qtd_list == USBNULL) && (utr != USBNULL))
         {
             // printf("T %d [%d]\n", (qh_tmp->Chrst>>8)&0xf, (qh_tmp->OL_Token&QTD_DT) ? 1 : 0);
-            if (qh_tmp->OL_Token & QTD_DT)
+            if ((qh_tmp->OL_Token & QTD_DT) != 0U)
+            {
                 utr->ep->bToggle = 1;
+            }
             else
+            {
                 utr->ep->bToggle = 0;
+            }
 
             utr->bIsTransferDone = 1;
 
-            if (utr->func)
+            if (utr->func != USBNULL)
+            {
                 utr->func(utr);
+            }
 
             _ehci->UCMDR |= HSUSBH_UCMDR_IAAD_Msk;   /* trigger IAA to reclaim done_list  */
         }
     }
 }
 
-static void scan_periodic_frame_list()
+static void scan_periodic_frame_list(void)
 {
     QH_T    *qh;
-    qTD_T   *qtd, *qNext;
+    qTD_T   *qtd;
+    qTD_T   *qNext;
     UTR_T   *utr;
 
     /*------------------------------------------------------------------------------------*/
     /* Scan interrupt frame list                                                          */
     /*------------------------------------------------------------------------------------*/
-    qh =  _Iqh[NUM_IQH - 1];
+    qh =  _Iqh[NUM_IQH - 1U];
 
-    while (qh != NULL)
+    while (qh != USBNULL)
     {
         qtd = qh->qtd_list;
 
-        if (qtd == NULL)
+        if (qtd == USBNULL)
         {
             /* empty QH                                   */
             qh = QH_PTR(qh->HLink);         /* advance to the next QH                     */
             continue;
         }
 
-        while (qtd != NULL)
+        while (qtd != USBNULL)
         {
             qNext = qtd->next;
 
             if (visit_qtd(qtd))                 /* if TRUE, reclaim this qtd                  */
             {
-                qh->qtd_list = qtd->next;       /* proceed to next qTD or NULL                */
+                qh->qtd_list = qtd->next;       /* proceed to next qTD or USBNULL                */
                 qtd->next = qh->done_list;      /* push qTD into the done list                */
                 qh->done_list = qtd;            /* move qTD to done list                      */
             }
@@ -1161,21 +1298,27 @@ static void scan_periodic_frame_list()
         qtd = qh->done_list;
 
         /* If all TDs are done, call-back to requester and then remove this QH.           */
-        while (qtd != NULL)
+        while (qtd != USBNULL)
         {
-            if (qh->qtd_list == NULL)
+            if (qh->qtd_list == USBNULL)
             {
                 utr = qtd->utr;
 
                 if (qh->OL_Token & QTD_DT)
+                {
                     utr->ep->bToggle = 1;
+                }
                 else
+                {
                     utr->ep->bToggle = 0;
+                }
 
                 utr->bIsTransferDone = 1;
 
-                if (utr->func)
+                if (utr->func != USBNULL)
+                {
                     utr->func(utr);
+                }
 
                 _ehci->UCMDR |= HSUSBH_UCMDR_IAAD_Msk;   /* trigger IAA to reclaim done_list  */
             }
@@ -1193,34 +1336,34 @@ static void scan_periodic_frame_list()
     scan_isochronous_list();
 }
 
-static void iaad_remove_qh()
+static void iaad_remove_qh(void)
 {
     QH_T    *qh;
     qTD_T   *qtd;
-    UTR_T   *utr;
 
     /*------------------------------------------------------------------------------------*/
     /* Remove all QHs in qh_remove_list...                                                */
     /*------------------------------------------------------------------------------------*/
-    while (qh_remove_list != NULL)
+    while (qh_remove_list != USBNULL)
     {
         qh = qh_remove_list;
         qh_remove_list = qh->next;
 
         // USB_debug("iaad_remove_qh - remove QH 0x%x\n", (int)qh);
 
-        while (qh->done_list)               /* we can free the qTDs now                   */
+        while (qh->done_list != USBNULL)    /* we can free the qTDs now                   */
         {
             qtd = qh->done_list;
             qh->done_list = qtd->next;
             free_ehci_qTD(qtd);
         }
 
-        if (qh->qtd_list != NULL)           /* still have incomplete qTDs?               */
+        if (qh->qtd_list != USBNULL)           /* still have incomplete qTDs?               */
         {
+            UTR_T   *utr;
             utr = qh->qtd_list->utr;
 
-            while (qh->qtd_list)
+            while (qh->qtd_list != USBNULL)
             {
                 qtd = qh->qtd_list;
                 qh->qtd_list = qtd->next;
@@ -1230,12 +1373,16 @@ static void iaad_remove_qh()
             utr->status = USBH_ERR_ABORT;
             utr->bIsTransferDone = 1;
 
-            if (utr->func)
+            if (utr->func != USBNULL)
+            {
                 utr->func(utr);             /* call back                                  */
+            }
         }
 
-        if (qh->dummy)
+        if (qh->dummy != USBNULL)
+        {
             free_ehci_qTD(qh->dummy);
+        }
 
         free_ehci_QH(qh);                   /* free the QH                                */
     }
@@ -1247,7 +1394,7 @@ static void iaad_remove_qh()
 
     while (qh != _H_qh)
     {
-        while (qh->done_list)               /* we can free the qTDs now                   */
+        while (qh->done_list != USBNULL)    /* we can free the qTDs now                   */
         {
             qtd = qh->done_list;
             qh->done_list = qtd->next;
@@ -1260,11 +1407,11 @@ static void iaad_remove_qh()
     /*------------------------------------------------------------------------------------*/
     /* Free all qTD in done_list of each QH of periodic frame list                        */
     /*------------------------------------------------------------------------------------*/
-    qh =  _Iqh[NUM_IQH - 1];
+    qh =  _Iqh[NUM_IQH - 1U];
 
-    while (qh != NULL)
+    while (qh != USBNULL)
     {
-        while (qh->done_list)               /* we can free the qTDs now                   */
+        while (qh->done_list != USBNULL)    /* we can free the qTDs now                   */
         {
             qtd = qh->done_list;
 
@@ -1272,7 +1419,7 @@ static void iaad_remove_qh()
             {
 
                 free_ehci_qTD(qtd);
-                qh->done_list = NULL;
+                qh->done_list = USBNULL;
                 break;
             }
 
@@ -1284,23 +1431,23 @@ static void iaad_remove_qh()
     }
 }
 
-static void sync_remove_qtd_done()
+static void sync_remove_qtd_done(void)
 {
     QH_T    *qh;
     qTD_T   *qtd;
 
-    qh =  _Iqh[NUM_IQH - 1];
+    qh =  _Iqh[NUM_IQH - 1U];
 
-    while (qh != NULL)
+    while (qh != USBNULL)
     {
-        while (qh->done_list)               /* we can free the qTDs now                   */
+        while (qh->done_list != USBNULL)    /* we can free the qTDs now                   */
         {
             qtd = qh->done_list;
 
             if (qtd == qtd->next)
             {
                 free_ehci_qTD(qtd);
-                qh->done_list = NULL;
+                qh->done_list = USBNULL;
                 break;
             }
 
@@ -1322,12 +1469,12 @@ NVT_ITCM void EHCI_IRQHandler(void)
 
     //USB_debug("Eirq USTSR=0x%x\n", intsts);
 
-    if (intsts & HSUSBH_USTSR_UERRINT_Msk)
+    if ((intsts & HSUSBH_USTSR_UERRINT_Msk) != 0U)
     {
         //TBD...
     }
 
-    if (intsts & HSUSBH_USTSR_USBINT_Msk)
+    if ((intsts & HSUSBH_USTSR_USBINT_Msk) != 0U)
     {
         /* some transfers completed, travel asynchronous */
         /* and periodic lists to find and reclaim them.  */
@@ -1338,7 +1485,7 @@ NVT_ITCM void EHCI_IRQHandler(void)
         scan_periodic_frame_list();
     }
 
-    if (intsts & HSUSBH_USTSR_IAA_Msk)
+    if ((intsts & HSUSBH_USTSR_IAA_Msk) != 0U)
     {
         iaad_remove_qh();
     }
@@ -1350,53 +1497,72 @@ static UDEV_T *ehci_find_device_by_port(int port)
 
     udev = g_udev_list;
 
-    while (udev != NULL)
+    while (udev != USBNULL)
     {
-        if ((udev->parent == NULL) && (udev->port_num == port) && (udev->speed == SPEED_HIGH))
+        if ((udev->parent == USBNULL) && (udev->port_num == (uint8_t)port) && (udev->speed == SPEED_HIGH))
+        {
             return udev;
+        }
 
         udev = udev->next;
     }
 
-    return NULL;
+    return USBNULL;
 }
 
 static int ehci_rh_port_reset(int port)
 {
-    int       retry;
-    int       reset_time;
-    uint32_t  t0;
+    int32_t  retry;
+    uint32_t  reset_time;
+    int32_t  port_ready;
 
-    reset_time = PORT_RESET_TIME_MS;
+    reset_time = (uint32_t)PORT_RESET_TIME_MS;
+    port_ready = 0;
 
     for (retry = 0; retry < PORT_RESET_RETRY; retry++)
     {
+        uint32_t  t0;
+        uint32_t  reset_delay_ticks;
+
         _ehci->UPSCR[port] = (_ehci->UPSCR[port] | HSUSBH_UPSCR_PRST_Msk) & ~HSUSBH_UPSCR_PE_Msk;
+        reset_delay_ticks = reset_time / 10U;
 
         t0 = get_ticks();
 
-        while (get_ticks() - t0 < (uint32_t)(reset_time / 10) + 1) ;  /* wait at least 50 ms        */
+        while ((get_ticks() - t0) < (reset_delay_ticks + 1U))
+        {
+            ;  /* wait at least 50 ms        */
+        }
 
         _ehci->UPSCR[port] &= ~HSUSBH_UPSCR_PRST_Msk;
 
         t0 = get_ticks();
 
-        while (get_ticks() - t0 < (uint32_t)(reset_time / 10) + 1)
+        while ((get_ticks() - t0) < (reset_delay_ticks + 1U))
         {
-            if (!(_ehci->UPSCR[port] & HSUSBH_UPSCR_CCS_Msk) ||
+            if (((_ehci->UPSCR[port] & HSUSBH_UPSCR_CCS_Msk) == 0U) ||
                     ((_ehci->UPSCR[port] & (HSUSBH_UPSCR_CCS_Msk | HSUSBH_UPSCR_PE_Msk)) == (HSUSBH_UPSCR_CCS_Msk | HSUSBH_UPSCR_PE_Msk)))
-                goto port_reset_done;
+            {
+                port_ready = 1;
+                break;
+            }
         }
 
-        reset_time += PORT_RESET_RETRY_INC_MS;
+        if (port_ready != 0)
+        {
+            break;
+        }
+
+        reset_time += (uint32_t)PORT_RESET_RETRY_INC_MS;
     }
 
-    USB_debug("EHCI port %d - port reset failed!\n", port + 1);
-    return USBH_ERR_PORT_RESET;
+    if (port_ready == 0)
+    {
+        USB_debug("EHCI port %d - port reset failed!\n", port + 1);
+        return USBH_ERR_PORT_RESET;
+    }
 
-port_reset_done:
-
-    if ((_ehci->UPSCR[port] & HSUSBH_UPSCR_CCS_Msk) == 0)    /* check again if device disconnected */
+    if ((_ehci->UPSCR[port] & HSUSBH_UPSCR_CCS_Msk) == 0U)    /* check again if device disconnected */
     {
         USB_debug("EHCI port 0x%x - port Disconnected!\n", _ehci->UPSCR[port]);
         _ehci->UPSCR[port] |= HSUSBH_UPSCR_CSC_Msk;          /* clear CSC                          */
@@ -1410,10 +1576,10 @@ port_reset_done:
 static int ehci_rh_polling(void)
 {
     UDEV_T    *udev;
-    int       ret;
-    int       connect_status, t0;
+    uint32_t  connect_status;
+    uint32_t  t0;
 
-    if (!(_ehci->UPSCR[0] & HSUSBH_UPSCR_CSC_Msk))
+    if ((_ehci->UPSCR[0] & HSUSBH_UPSCR_CSC_Msk) == 0U)
     {
         return 0;
     }
@@ -1431,8 +1597,10 @@ static int ehci_rh_polling(void)
     {
         udev = ehci_find_device_by_port(1);
 
-        if (udev == NULL)
+        if (udev == USBNULL)
+        {
             break;
+        }
 
         disconnect_device(udev);
     }
@@ -1443,7 +1611,7 @@ static int ehci_rh_polling(void)
     t0 = get_ticks();
     connect_status = _ehci->UPSCR[0] & HSUSBH_UPSCR_CCS_Msk;
 
-    while (get_ticks() - t0 < HUB_DEBOUNCE_TIME / 10)
+    while ((get_ticks() - t0) < ((uint32_t)HUB_DEBOUNCE_TIME / 10U))
     {
         if (connect_status != (_ehci->UPSCR[0] & HSUSBH_UPSCR_CCS_Msk))
         {
@@ -1474,14 +1642,17 @@ static int ehci_rh_polling(void)
          */
         udev = alloc_device();
 
-        if (udev == NULL)
+        if (udev == USBNULL)
+        {
             return 0;                       /* out-of-memory, do nothing...               */
+        }
 
-        udev->parent = NULL;
+        udev->parent = USBNULL;
         udev->port_num = 1;
         udev->speed = SPEED_HIGH;
         udev->hc_driver = &ehci_driver;
 
+        int ret;
         ret = connect_device(udev);
 
         if (ret < 0)
@@ -1499,8 +1670,10 @@ static int ehci_rh_polling(void)
         {
             udev = ehci_find_device_by_port(1);
 
-            if (udev == NULL)
+            if (udev == USBNULL)
+            {
                 break;
+            }
 
             disconnect_device(udev);
         }

@@ -92,7 +92,7 @@
  *                  1 if normalized
  */
 #define INTERNAL_MPI_IS_NORM(N, P)                          \
-    ((mbedtls_mpi_cmp_int(&N, 0) >= 0) && (mbedtls_mpi_cmp_mpi(&N, &P) < 0))
+    ((mbedtls_mpi_cmp_int(&(N), 0) >= 0) && (mbedtls_mpi_cmp_mpi(&(N), &(P)) < 0))
 
 /**
  * \brief           Normalize MPI if it is not normalized yet
@@ -104,11 +104,11 @@
  */
 #define INTERNAL_MPI_NORM(R, N1, N2, P)                     \
     do {                                                            \
-        if (INTERNAL_MPI_IS_NORM(N1, P)) {                  \
-            *R = &N1;                                               \
+        if (INTERNAL_MPI_IS_NORM((N1), (P))) {                  \
+            *(R) = &(N1);                                               \
         } else {                                                    \
-            MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&N2, &N1, &P));     \
-            *R = &N2;                                               \
+            MBEDTLS_MPI_CHK(mbedtls_mpi_mod_mpi(&(N2), &(N1), &(P)));     \
+            *(R) = &(N2);                                               \
         }                                                           \
     } while(0)
 

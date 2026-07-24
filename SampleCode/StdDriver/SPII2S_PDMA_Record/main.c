@@ -167,6 +167,7 @@ void SYS_Init(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
+    uint32_t u32I2SClock;
     uint32_t u32InitValue, u32DataCount;
 
     /* Unlock protected registers */
@@ -202,7 +203,14 @@ int32_t main(void)
     /* Enable I2S TX and RX functions */
     /* Sampling rate 16000 Hz; bit clock rate 512 kHz. */
     /* Master mode, 16-bit word width, stereo mode, I2S format. */
-    SPII2S_Open(SPI0, SPII2S_MODE_MASTER, 16000, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+    u32I2SClock = SPII2S_Open(SPI0, SPII2S_MODE_MASTER, 16000, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+
+    if (u32I2SClock == 0U)
+    {
+        printf("SPII2S_Open failed.\n");
+
+        while (1);
+    }
 
     /* Data initiation */
     u32InitValue = 0x50005000;

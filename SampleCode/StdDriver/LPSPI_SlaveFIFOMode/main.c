@@ -182,7 +182,12 @@ void LPSPI_Init(void)
     /*---------------------------------------------------------------------------------------------------------*/
     /* Configure as a slave, clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
     /* Configure LPSPI0 as a low level active device. */
-    LPSPI_Open(LPSPI0, LPSPI_SLAVE, LPSPI_MODE_0, 32, (uint32_t) NULL);
+    if (LPSPI_Open(LPSPI0, LPSPI_SLAVE, LPSPI_MODE_0, 32, 0U) == 0U)
+    {
+        printf("LPSPI_Open failed!\n");
+
+        while (1);
+    }
 }
 
 /*** (C) COPYRIGHT 2016 Nuvoton Technology Corp. ***/

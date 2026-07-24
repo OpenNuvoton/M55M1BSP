@@ -28,11 +28,11 @@
 */
 
 #define CONFIG_UAC_MAX_DEV           3      /*!< Maximum number of Audio Class device.                     */
-#define NUM_UTR                      2      /*!< Number of UTR used for audio in/out transfer.             */
+#define NUM_UTR                      2U      /*!< Number of UTR used for audio in/out transfer.             */
 #define UAC_REQ_TIMEOUT              50     /*!< UAC control request timeout value in tick (10ms unit)     */
 
-#define UAC_SPEAKER                  1      /*!< Control target is speaker of UAC device. \hideinitializer */
-#define UAC_MICROPHONE               2      /*!< Control target is microphone of UAC device. \hideinitializer */
+#define UAC_SPEAKER                  1U      /*!< Control target is speaker of UAC device. \hideinitializer */
+#define UAC_MICROPHONE               2U      /*!< Control target is microphone of UAC device. \hideinitializer */
 
 /*
  * Audio Class-Specific Request Codes
@@ -76,10 +76,13 @@
 typedef struct ac_if_t
 {
     IFACE_T        *iface;                  /*!< USB interface                            */
+    uint16_t       bcdADC;                  /*!< UAC version: 0x0100=UAC1.0, 0x0200=UAC2.0 */
     uint8_t        mic_id;                  /*!< Microphone Input Terminal ID             */
     uint8_t        mic_fuid;                /*!< Microphone Feature Unit ID               */
     uint8_t        speaker_id;              /*!< Speaker terminal ID                      */
     uint8_t        speaker_fuid;            /*!< Speaker Feature Unit ID                  */
+    uint8_t        clk_src_id;              /*!< UAC2.0 Clock Source ID                   */
+    uint8_t        mic_clk_src_id;          /*!< UAC2.0 Microphone Clock Source ID        */
 }  AC_IF_T;
 
 /*----------------------------------------------------------------------------------------*/
@@ -95,6 +98,12 @@ typedef struct as_if_t
     AC_OT_T        *ot;                     /*!< Point to the Output Terminal connected with USB IN endpoint */
     AS_FT1_T       *ft;                     /*!< Point to Format type descriptor, support Type-I only */
     CS_EP_T        *cs_epd;                 /*!< Point to AS Isochronous Audio Data Endpoint Descriptor */
+    /* UAC 2.0 descriptors */
+    AS2_GEN_T      *as2_gen;                /*!< UAC2.0 Class-Specific AS Interface Descriptor */
+    AC2_IT_T       *it2;                    /*!< UAC2.0 Input Terminal (USB OUT endpoint)  */
+    AC2_OT_T       *ot2;                    /*!< UAC2.0 Output Terminal (USB IN endpoint)  */
+    AS2_FT1_T      *ft2;                    /*!< UAC2.0 Format Type-I descriptor          */
+    CS2_EP_T       *cs2_epd;                /*!< UAC2.0 AS Isochronous Endpoint Descriptor */
     uint8_t        flag_streaming;          /*!< audio is streaming or not                */
 }  AS_IF_T;
 
@@ -123,6 +132,11 @@ extern int uac_parse_control_interface(UAC_DEV_T *uac, IFACE_T *iface);
 extern int uac_parse_streaming_interface(UAC_DEV_T *uac, IFACE_T *iface, uint8_t bAlternateSetting);
 extern int usbh_uac_find_best_alt(IFACE_T *iface, uint8_t dir, uint8_t attr, int pkt_sz, uint8_t *bAlternateSetting);
 extern int usbh_uac_find_max_alt(IFACE_T *iface, uint8_t dir, uint8_t attr, uint8_t *bAlternateSetting);
+extern int usbh_uac2_find_pcm_alt(UAC_DEV_T *uac, IFACE_T *iface, uint8_t dir, uint8_t attr, uint8_t max_bitres, uint8_t *bAlternateSetting);
+
+/* UAC 2.0 clock control APIs (implemented in uac_core.c) */
+extern int usbh_uac2_clock_get_freq_range(UAC_DEV_T *uac, UAC2_FREQ_SUBRANGE_T *ranges, int max_cnt, uint16_t *num_ranges, uint8_t target);
+
 
 /// @endcond HIDDEN_SYMBOLS
 

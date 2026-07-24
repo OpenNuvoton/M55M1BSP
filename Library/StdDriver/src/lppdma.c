@@ -9,7 +9,7 @@
 
 #include "NuMicro.h"
 
-static uint32_t u32ChSelect[LPPDMA_CH_MAX];
+static uint32_t LPPDMA_ChSelect[LPPDMA_CH_MAX];
 
 /** @addtogroup Standard_Driver Standard Driver
   @{
@@ -37,10 +37,10 @@ void LPPDMA_Open(LPPDMA_T *lppdma, uint32_t u32Mask)
 
     for (i = 0UL; i < LPPDMA_CH_MAX; i++)
     {
-        if ((1 << i) & u32Mask)
+        if ((1UL << i) & u32Mask)
         {
             lppdma->LPDSCT[i].CTL = 0UL;
-            u32ChSelect[i] = LPPDMA_MEM;
+            LPPDMA_ChSelect[i] = LPPDMA_MEM;
         }
     }
 
@@ -128,23 +128,23 @@ void LPPDMA_SetTransferAddr(LPPDMA_T *lppdma, uint32_t u32Ch, uint32_t u32SrcAdd
  */
 void LPPDMA_SetTransferMode(LPPDMA_T *lppdma, uint32_t u32Ch, uint32_t u32Peripheral, uint32_t u32ScatterEn, uint32_t u32DescAddr)
 {
-    u32ChSelect[u32Ch] = u32Peripheral;
+    LPPDMA_ChSelect[u32Ch] = u32Peripheral;
 
     switch (u32Ch)
     {
-        case 0ul:
+        case 0UL:
             lppdma->REQSEL0_3 = (lppdma->REQSEL0_3 & ~LPPDMA_REQSEL0_3_REQSRC0_Msk) | u32Peripheral;
             break;
 
-        case 1ul:
+        case 1UL:
             lppdma->REQSEL0_3 = (lppdma->REQSEL0_3 & ~LPPDMA_REQSEL0_3_REQSRC1_Msk) | (u32Peripheral << LPPDMA_REQSEL0_3_REQSRC1_Pos);
             break;
 
-        case 2ul:
+        case 2UL:
             lppdma->REQSEL0_3 = (lppdma->REQSEL0_3 & ~LPPDMA_REQSEL0_3_REQSRC2_Msk) | (u32Peripheral << LPPDMA_REQSEL0_3_REQSRC2_Pos);
             break;
 
-        case 3ul:
+        case 3UL:
             lppdma->REQSEL0_3 = (lppdma->REQSEL0_3 & ~LPPDMA_REQSEL0_3_REQSRC3_Msk) | (u32Peripheral << LPPDMA_REQSEL0_3_REQSRC3_Pos);
             break;
 
@@ -199,11 +199,11 @@ void LPPDMA_SetBurstType(LPPDMA_T *lppdma, uint32_t u32Ch, uint32_t u32BurstType
  */
 void LPPDMA_Trigger(LPPDMA_T *lppdma, uint32_t u32Ch)
 {
-    if (u32ChSelect[u32Ch] == LPPDMA_MEM)
+    if (LPPDMA_ChSelect[u32Ch] == LPPDMA_MEM)
     {
         /* Ensure completion of memory access */
         __DSB();
-        lppdma->SWREQ = (1ul << u32Ch);
+        lppdma->SWREQ = (1UL << u32Ch);
     }
     else {}
 }

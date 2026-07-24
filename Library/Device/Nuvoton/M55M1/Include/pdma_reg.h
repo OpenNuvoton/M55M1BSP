@@ -74,12 +74,6 @@ typedef struct
      * |        |          |10 = One word (32-bit) is transferred for every operation.
      * |        |          |11 = Reserved.
      * |        |          |Note: The PDMA transfer source address (PDMA_DSCT_SA) and PDMA transfer destination address (PDMA_DSCT_DA) should be alignment under the TXWIDTH selection
-     * |[14]    |TXACK     |Transfer Acknowledge Selection
-     * |        |          |0 = transfer ack when transfer done.
-     * |        |          |1 = transfer ack when PDMA get transfer data.
-     * |[15]    |STRIDEEN |Stride Mode Enable Bit
-     * |        |          |0 = Stride transfer mode Disabled.
-     * |        |          |1 = Stride transfer mode Enabled.
      * |[31:16] |TXCNT     |Transfer Count
      * |        |          |The TXCNT represents the required number of PDMA transfer, the real transfer count is (TXCNT + 1); The maximum transfer count is 32768, every transfer may be byte, half-word or word that is dependent on TXWIDTH field.
      * |        |          |Note: When PDMA finish each transfer data, this field will be decrease immediately.
@@ -856,9 +850,6 @@ typedef struct
 
 #define PDMA_DSCT_CTL_TXWIDTH_Pos        (12)                                              /*!< PDMA_T::DSCT_CTL: TXWIDTH Position    */
 #define PDMA_DSCT_CTL_TXWIDTH_Msk        (0x3ul << PDMA_DSCT_CTL_TXWIDTH_Pos)              /*!< PDMA_T::DSCT_CTL: TXWIDTH Mask        */
-
-#define PDMA_DSCT_CTL_STRIDEEN_Pos       (15)                                              /*!< PDMA_T::DSCT_CTL: STRIDEEN Position   */
-#define PDMA_DSCT_CTL_STRIDEEN_Msk       (0x1ul << PDMA_DSCT_CTL_STRIDEEN_Pos)             /*!< PDMA_T::DSCT_CTL: STRIDEEN Mask       */
 
 #define PDMA_DSCT_CTL_TXCNT_Pos          (16)                                              /*!< PDMA_T::DSCT_CTL: TXCNT Position      */
 #define PDMA_DSCT_CTL_TXCNT_Msk          (0xfffful << PDMA_DSCT_CTL_TXCNT_Pos)             /*!< PDMA_T::DSCT_CTL: TXCNT Mask          */

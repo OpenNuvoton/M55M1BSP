@@ -20,6 +20,8 @@ static TCHAR  _Path[3];
 
 int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc)
 {
+    FRESULT res;
+
     SDH_Open(sdh, u32CardDetSrc);
 
     if (SDH_Probe(sdh))
@@ -34,12 +36,17 @@ int32_t SDH_Open_Disk(SDH_T *sdh, uint32_t u32CardDetSrc)
     if (sdh == SDH0)
     {
         _Path[0] = '0';
-        f_mount(&_FatfsVolSd0, _Path, 1);
+        res = f_mount(&_FatfsVolSd0, _Path, 1);
     }
     else
     {
         _Path[0] = '1';
-        f_mount(&_FatfsVolSd1, _Path, 1);
+        res = f_mount(&_FatfsVolSd1, _Path, 1);
+    }
+
+    if (res != FR_OK)
+    {
+        return SDH_ERR_FAIL;
     }
 
     return SDH_OK;
@@ -50,13 +57,23 @@ void SDH_Close_Disk(SDH_T *sdh)
     if (sdh == SDH0)
     {
         memset(&SD0, 0, sizeof(SDH_INFO_T));
-        f_mount(NULL, _Path, 1);
+
+        if (f_mount(NULL, _Path, 1) != FR_OK)
+        {
+            printf("Unmount disk failed!\n");
+        }
+
         memset(&_FatfsVolSd0, 0, sizeof(FATFS));
     }
     else
     {
         memset(&SD1, 0, sizeof(SDH_INFO_T));
-        f_mount(NULL, _Path, 1);
+
+        if (f_mount(NULL, _Path, 1) != FR_OK)
+        {
+            printf("Unmount disk failed!\n");
+        }
+
         memset(&_FatfsVolSd1, 0, sizeof(FATFS));
     }
 }

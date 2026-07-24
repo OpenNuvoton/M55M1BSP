@@ -308,7 +308,7 @@
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state>--cdecp=2</state>
+                    <state>--cdecp=2 --no_unaligned_access</state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -1087,7 +1087,7 @@
         <settings>
             <name>BUILDACTION</name>
             <archiveVersion>2</archiveVersion>
-            <data />
+            <data></data>
         </settings>
     </configuration>
     <group>

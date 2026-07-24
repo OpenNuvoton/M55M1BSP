@@ -122,8 +122,8 @@ static inline uint32_t spi_idx_from_port_rt(uint32_t n)
                                               SPI_TO_QSPI_PDMA_TX_CH(n),       \
                                               SPI_TO_QSPI_PDMA_RX_NUM(n),      \
                                               SPI_TO_QSPI_PDMA_TX_NUM(n),      \
-                                             }                                 \
-                                           };
+                                              }                                 \
+                                             };
 
 // Local driver functions declarations (for instances)
 #if (RTE_SPI_QSPI0 == 1)
@@ -996,6 +996,7 @@ static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
     SPI_RESOURCES *pSPIn = (SPI_RESOURCES *)spi_res_list[SPI_TO_QSPI_INSTANCE(u32Inst)];
     QSPI_T *phspi = (QSPI_T *)pSPIn->phspi;
     uint32_t u32DataBits;
+    uint32_t u32ActualBusSpeed;
     volatile int32_t i32TimeoutCnt = (SystemCoreClock / 1000);
 
     if (!(pSPIn->sState.u8State & SPI_POWERED))
@@ -1040,7 +1041,7 @@ static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
             QSPI_DISABLE(phspi);
             i32TimeoutCnt = (SystemCoreClock / 1000);
 
-            while (phspi->STATUS & SPI_STATUS_SPIENSTS_Msk)
+            while ((phspi->STATUS & QSPI_STATUS_QSPIENSTS_Msk) != 0U)
             {
                 if (--i32TimeoutCnt <= 0)
                     return ARM_DRIVER_ERROR;
@@ -1060,7 +1061,23 @@ static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
             else
             {
                 phspi->CTL |= QSPI_SLAVE;
-                phspi->CLKDIV = 2;
+
+                if (phspi == QSPI0)
+                {
+                    CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI0SEL_Msk)) | CLK_QSPISEL_QSPI0SEL_PCLK0;
+                    pSPIn->sConfig.u32BusSpeed = CLK_GetPCLK0Freq();
+                }
+                else if (phspi == QSPI1)
+                {
+                    CLK->QSPISEL = (CLK->QSPISEL & ~(CLK_QSPISEL_QSPI1SEL_Msk)) | CLK_QSPISEL_QSPI1SEL_PCLK2;
+                    pSPIn->sConfig.u32BusSpeed = CLK_GetPCLK2Freq();
+                }
+                else
+                {
+                    return ARM_DRIVER_ERROR;
+                }
+
+                phspi->CLKDIV = 0;
 
                 if (pSPIn->sConfig.u32XferMode == RTE_SPI_3WIRE_XFER_MODE)
                 {
@@ -1075,13 +1092,15 @@ static int32_t SPIn_Control(uint32_t u32Inst, uint32_t control, uint32_t arg)
 
         case ARM_SPI_SET_BUS_SPEED:
 set_speed:
-            pSPIn->sConfig.u32BusSpeed = QSPI_SetBusClock(phspi, arg);
+            u32ActualBusSpeed = QSPI_SetBusClock(phspi, arg);
 
-            if (pSPIn->sConfig.u32BusSpeed == 0)
+            if (u32ActualBusSpeed == 0U)
                 return ARM_DRIVER_ERROR;
 
+            pSPIn->sConfig.u32BusSpeed = arg;
+
             if ((control & ARM_SPI_CONTROL_Msk) == ARM_SPI_SET_BUS_SPEED)
-                return ARM_DRIVER_OK;
+                return (int32_t)u32ActualBusSpeed;
 
             break;
 

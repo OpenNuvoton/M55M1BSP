@@ -1,4 +1,4 @@
-/**************************************************************************//**
+﻿/**************************************************************************//**
  * @file     eadc.h
  * @version  V1.00
  * @brief    EADC driver header file
@@ -136,7 +136,7 @@ extern "C"
   *             user can enable this bit to generate a PDMA data transfer request.
   * \hideinitializer
   */
-#define EADC_ENABLE_SAMPLE_MODULE_PDMA(eadc, u32ModuleMask)     ((eadc)->PDMACTL |= u32ModuleMask)
+#define EADC_ENABLE_SAMPLE_MODULE_PDMA(eadc, u32ModuleMask)     ((eadc)->PDMACTL |= (u32ModuleMask))
 
 /**
   * @brief      Disable Sample Module PDMA transfer.
@@ -300,7 +300,7 @@ extern "C"
  *
  *    @details      This macro is used to read VALID bit field to get data valid status.
  */
-__STATIC_INLINE uint32_t EADC_GET_DATA_VALID_FLAG(EADC_T *eadc, uint32_t u32ModuleMask)
+__STATIC_INLINE uint32_t EADC_GET_DATA_VALID_FLAG(const EADC_T *eadc, uint32_t u32ModuleMask)
 {
     uint32_t u32VALID = 0;
 
@@ -319,7 +319,7 @@ __STATIC_INLINE uint32_t EADC_GET_DATA_VALID_FLAG(EADC_T *eadc, uint32_t u32Modu
  *
  *    @details      This macro is used to read OV bit field to get data overrun status.
  */
-__STATIC_INLINE uint32_t EADC_GET_DATA_OVERRUN_FLAG(EADC_T *eadc, uint32_t u32ModuleMask)
+__STATIC_INLINE uint32_t EADC_GET_DATA_OVERRUN_FLAG(const EADC_T *eadc, uint32_t u32ModuleMask)
 {
     uint32_t u32OVFlag = 0;
 

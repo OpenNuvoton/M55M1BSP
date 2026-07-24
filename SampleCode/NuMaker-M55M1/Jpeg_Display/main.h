@@ -45,7 +45,7 @@
     #define PANEL_DISPLAY_WIDTH_MAX  320U
     #define PANEL_DISPLAY_HEIGHT_MAX 240U
 #else
-    #define PANEL_DISPLAY_WIDTH_MAX  600U
+    #define PANEL_DISPLAY_WIDTH_MAX  800U
     #define PANEL_DISPLAY_HEIGHT_MAX 480U
 #endif
 
@@ -53,7 +53,8 @@
 //Image Scaling Parameter for libjpeg
 #define SCALING_DENOM              8U
 
-
+#define RGB888_COMPONENTS     3    // RGB888
+#define RGB565_COMPONENTS     2    // RGB565
 //Enumeration
 
 

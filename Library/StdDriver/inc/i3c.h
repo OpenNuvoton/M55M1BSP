@@ -45,55 +45,55 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /* I3C CCC (Common Command Codes) related definitions                                                      */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_CCC_DIRECT                      0x00000080
+#define I3C_CCC_DIRECT                      0x00000080UL
 
 #define I3C_CCC_ID(id, broadcast)   \
-    ((id) | ((broadcast) ? 0 : I3C_CCC_DIRECT))
+    ((id) | ((broadcast) ? 0UL : I3C_CCC_DIRECT))
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* I3C CCC (Common Command Codes) Commands valid in both broadcast and unicast modes                       */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_CCC_ENEC(broadcast)             I3C_CCC_ID(0x0, broadcast)           /*!< Enable Events Command */
-#define I3C_CCC_DISEC(broadcast)            I3C_CCC_ID(0x1, broadcast)           /*!< Disable Events Command */
-#define I3C_CCC_ENTAS(as, broadcast)        I3C_CCC_ID(0x2 + (as), broadcast)    /*!< Enter Activity State */
-#define I3C_CCC_SETMWL(broadcast)           I3C_CCC_ID(0x9, broadcast)           /*!< Set Max Write Length */
-#define I3C_CCC_SETMRL(broadcast)           I3C_CCC_ID(0xa, broadcast)           /*!< Set Max Read Length */
-#define I3C_CCC_SETXTIME(broadcast)         ((broadcast) ? 0x28 : 0x98)          /*!< Exchange Timing Information */
-#define I3C_CCC_RSTACT(broadcast)           ((broadcast) ? 0x2a : 0x9a)          /*!< Target Reset Action */
-#define I3C_CCC_RSTGRPA(broadcast)          ((broadcast) ? 0x2c : 0x9c)          /*!< Reset Group Address */
-#define I3C_CCC_VENDOR(id, broadcast)       ((id) + ((broadcast) ? 0x61 : 0xe0)) /*!< Vendor / Standards Extension – Broadcast CCCs */
+#define I3C_CCC_ENEC(broadcast)             I3C_CCC_ID(0x0UL, broadcast)             /*!< Enable Events Command */
+#define I3C_CCC_DISEC(broadcast)            I3C_CCC_ID(0x1UL, broadcast)             /*!< Disable Events Command */
+#define I3C_CCC_ENTAS(as, broadcast)        I3C_CCC_ID(0x2UL + (as), broadcast)      /*!< Enter Activity State */
+#define I3C_CCC_SETMWL(broadcast)           I3C_CCC_ID(0x9UL, broadcast)             /*!< Set Max Write Length */
+#define I3C_CCC_SETMRL(broadcast)           I3C_CCC_ID(0xaUL, broadcast)             /*!< Set Max Read Length */
+#define I3C_CCC_SETXTIME(broadcast)         ((broadcast) ? 0x28UL : 0x98UL)          /*!< Exchange Timing Information */
+#define I3C_CCC_RSTACT(broadcast)           ((broadcast) ? 0x2aUL : 0x9aUL)          /*!< Target Reset Action */
+#define I3C_CCC_RSTGRPA(broadcast)          ((broadcast) ? 0x2cUL : 0x9cUL)          /*!< Reset Group Address */
+#define I3C_CCC_VENDOR(id, broadcast)       ((id) + ((broadcast) ? 0x61UL : 0xe0UL)) /*!< Vendor / Standards Extension – Broadcast CCCs */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* I3C CCC (Common Command Codes) Broadcast-only commands                                                  */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_CCC_RSTDAA                      I3C_CCC_ID(0x6, TRUE)       /*!< Reset Dynamic Address Assignment */
-#define I3C_CCC_ENTDAA                      I3C_CCC_ID(0x7, TRUE)       /*!< Enter Dynamic Address Assignment */
-#define I3C_CCC_SETAASA                     I3C_CCC_ID(0x29, TRUE)      /*!< Set All Addresses to Static Address */
-#define I3C_CCC_DEFTGTS                     I3C_CCC_ID(0x8, TRUE)       /*!< Define List of Targets */
-#define I3C_CCC_DEFSLVS                     I3C_CCC_DEFTGTS             /*!< DEFSLVS has been renamed to DEFTGTS */
-#define I3C_CCC_ENTTM                       I3C_CCC_ID(0xb, TRUE)       /*!< Enter Test Mode */ // ??????????
-#define I3C_CCC_ENTHDR(x)                   I3C_CCC_ID(0x20 + (x), TRUE) /*!< Enter HDR Mode */
-#define I3C_CCC_DEFGRPA                     I3C_CCC_ID(0x2b, TRUE)      /*!< Define List of  Group Addresses */
-#define I3C_CCC_HDRDDR                      I3C_CCC_ENTHDR((0))         /*!< Enter HDR-DDR Mode */
-#define I3C_CCC_HDRBT                       I3C_CCC_ENTHDR((3))         /*!< Enter HDR-BT Mode */
+#define I3C_CCC_RSTDAA                      I3C_CCC_ID(0x6UL, TRUE)        /*!< Reset Dynamic Address Assignment */
+#define I3C_CCC_ENTDAA                      I3C_CCC_ID(0x7UL, TRUE)        /*!< Enter Dynamic Address Assignment */
+#define I3C_CCC_SETAASA                     I3C_CCC_ID(0x29UL, TRUE)       /*!< Set All Addresses to Static Address */
+#define I3C_CCC_DEFTGTS                     I3C_CCC_ID(0x8UL, TRUE)        /*!< Define List of Targets */
+#define I3C_CCC_DEFSLVS                     I3C_CCC_DEFTGTS                /*!< DEFSLVS has been renamed to DEFTGTS */
+#define I3C_CCC_ENTTM                       I3C_CCC_ID(0xbUL, TRUE)        /*!< Enter Test Mode */ // ??????????
+#define I3C_CCC_ENTHDR(x)                   I3C_CCC_ID(0x20UL + (x), TRUE) /*!< Enter HDR Mode */
+#define I3C_CCC_DEFGRPA                     I3C_CCC_ID(0x2bUL, TRUE)       /*!< Define List of  Group Addresses */
+#define I3C_CCC_HDRDDR                      I3C_CCC_ENTHDR((0UL))          /*!< Enter HDR-DDR Mode */
+#define I3C_CCC_HDRBT                       I3C_CCC_ENTHDR((3UL))          /*!< Enter HDR-BT Mode */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* I3C CCC (Common Command Codes) Unicast-only commands                                                    */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_CCC_SETDASA                     I3C_CCC_ID(0x7, FALSE)  /*!< Set Dynamic Address from Static Address */
-#define I3C_CCC_SETNEWDA                    I3C_CCC_ID(0x8, FALSE)  /*!< Set New Dynamic Address */
-#define I3C_CCC_GETMWL                      I3C_CCC_ID(0xb, FALSE)  /*!< Get Max Write Length */
-#define I3C_CCC_GETMRL                      I3C_CCC_ID(0xc, FALSE)  /*!< Get Max Read Length */
-#define I3C_CCC_GETPID                      I3C_CCC_ID(0xd, FALSE)  /*!< Get Provisioned ID */
-#define I3C_CCC_GETBCR                      I3C_CCC_ID(0xe, FALSE)  /*!< Get Bus Characteristics Register */
-#define I3C_CCC_GETDCR                      I3C_CCC_ID(0xf, FALSE)  /*!< Get Device Characteristics Register */
-#define I3C_CCC_GETSTATUS                   I3C_CCC_ID(0x10, FALSE) /*!< Get Device Status */
-#define I3C_CCC_GETACCCR                    I3C_CCC_ID(0x11, FALSE) /*!< Get Accept Controller Role */
-#define I3C_CCC_GETACCMST                   I3C_CCC_GETACCCR        /*!< GETACCMST has been renamed to GETACCCR */
-#define I3C_CCC_GETMXDS                     I3C_CCC_ID(0x14, FALSE) /*!< Get Max Data Speed */
-#define I3C_CCC_GETCAPS                     I3C_CCC_ID(0x15, FALSE) /*!< Get Optional Feature Capabilities */
-#define I3C_CCC_GETXTIME                    I3C_CCC_ID(0x19, FALSE) /*!< Get Exchange Timing Information */
-#define I3C_CCC_SETGRPA                     I3C_CCC_ID(0x1b, FALSE) /*!< Set Group Address */
+#define I3C_CCC_SETDASA                     I3C_CCC_ID(0x7UL, FALSE)  /*!< Set Dynamic Address from Static Address */
+#define I3C_CCC_SETNEWDA                    I3C_CCC_ID(0x8UL, FALSE)  /*!< Set New Dynamic Address */
+#define I3C_CCC_GETMWL                      I3C_CCC_ID(0xbUL, FALSE)  /*!< Get Max Write Length */
+#define I3C_CCC_GETMRL                      I3C_CCC_ID(0xcUL, FALSE)  /*!< Get Max Read Length */
+#define I3C_CCC_GETPID                      I3C_CCC_ID(0xdUL, FALSE)  /*!< Get Provisioned ID */
+#define I3C_CCC_GETBCR                      I3C_CCC_ID(0xeUL, FALSE)  /*!< Get Bus Characteristics Register */
+#define I3C_CCC_GETDCR                      I3C_CCC_ID(0xfUL, FALSE)  /*!< Get Device Characteristics Register */
+#define I3C_CCC_GETSTATUS                   I3C_CCC_ID(0x10UL, FALSE) /*!< Get Device Status */
+#define I3C_CCC_GETACCCR                    I3C_CCC_ID(0x11UL, FALSE) /*!< Get Accept Controller Role */
+#define I3C_CCC_GETACCMST                   I3C_CCC_GETACCCR          /*!< GETACCMST has been renamed to GETACCCR */
+#define I3C_CCC_GETMXDS                     I3C_CCC_ID(0x14UL, FALSE) /*!< Get Max Data Speed */
+#define I3C_CCC_GETCAPS                     I3C_CCC_ID(0x15UL, FALSE) /*!< Get Optional Feature Capabilities */
+#define I3C_CCC_GETXTIME                    I3C_CCC_ID(0x19UL, FALSE) /*!< Get Exchange Timing Information */
+#define I3C_CCC_SETGRPA                     I3C_CCC_ID(0x1bUL, FALSE) /*!< Set Group Address */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Controller COMMAND_QUEUE_PORT - CMD_ATTR field values                                              */
@@ -102,7 +102,7 @@ extern "C"
 #define I3C_CMDATTR_TRANSFER_ARG            (0x1UL) /*!<  (TRANSFER_ARG): Transfer Argument */
 #define I3C_CMDATTR_SHORT_DATA_ARG          (0x2UL) /*!<  (SHORT_DATA_ARG): Short Data Argument */
 #define I3C_CMDATTR_ADDR_ASSGN_CMD          (0x3UL) /*!<  (ADDR_ASSGN_CMD): Address Assignment Command */
-#define I3C_SDAP_MAX_SIZE                   (3)     /*!<  (SDAP_SIZE): Maximum Short Data Size */
+#define I3C_SDAP_MAX_SIZE                   (3UL)   /*!<  (SDAP_SIZE): Maximum Short Data Size */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Maximum RX/TX FIFO and Response/Command Queue Constant Definitions                                 */
@@ -134,10 +134,10 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Target In-Band Interrupt Type Constant Definitions                                                 */
 /*---------------------------------------------------------------------------------------------------------*/
-#define I3C_IBI_TYPE_TIR                    (0)
-#define I3C_IBI_TYPE_CR                     (1)
-#define I3C_IBI_TYPE_TS                     (2)
-#define I3C_IBI_TYPE_HJ                     (3)
+#define I3C_IBI_TYPE_TIR                    (0U)
+#define I3C_IBI_TYPE_CR                     (1U)
+#define I3C_IBI_TYPE_TS                     (2U)
+#define I3C_IBI_TYPE_HJ                     (3U)
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Transfer Mode and Spped Constant Definitions                                                       */
@@ -184,7 +184,7 @@ extern "C"
 #define I3C_CTRRESP_WRITE_NACK_ERR          (9UL << I3C_CTRRESP_ERRSTS_Pos)     /*!< I2C Target Write Data NACK Error */
 #define I3C_CTRRESP_PEC_ERR                 (12UL << I3C_CTRRESP_ERRSTS_Pos)    /*!< PEC byte validation error occurs in read transfers when PEC function enabled */
 #define I3C_CTRRESP_INITIAL_VALUE           (0xFFFFFFFFUL)                      /*!< Initial value */
-#define I3C_IBIQSTS_NACK                    (0x8 << I3C_IBISTS_IBISTS_Pos)
+#define I3C_IBIQSTS_NACK                    (0x8UL << I3C_IBISTS_IBISTS_Pos)
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  I3C Target Status in Response Queue Constant Definitions                                               */
@@ -933,11 +933,11 @@ __STATIC_INLINE int32_t I3C_Enable(I3C_T *i3c)
 {
     volatile uint32_t u32Timeout;
     i3c->DEVCTL |= I3C_DEVCTL_ENABLE_Msk;
-    u32Timeout = (SystemCoreClock / 1000);
+    u32Timeout = (SystemCoreClock / 1000UL);
 
     while (((i3c->DEVCTL & I3C_DEVCTL_ENABLE_Msk) != I3C_DEVCTL_ENABLE_Msk) && (--u32Timeout)) {}
 
-    if (u32Timeout == 0)
+    if (u32Timeout == 0UL)
     {
         return I3C_TIMEOUT_ERR;
     }
@@ -959,11 +959,11 @@ __STATIC_INLINE int32_t I3C_Disable(I3C_T *i3c)
 {
     volatile uint32_t u32Timeout;
     i3c->DEVCTL &= ~I3C_DEVCTL_ENABLE_Msk;
-    u32Timeout = (SystemCoreClock / 1000);
+    u32Timeout = (SystemCoreClock / 1000UL);
 
     while (((i3c->DEVCTL & I3C_DEVCTL_ENABLE_Msk) == I3C_DEVCTL_ENABLE_Msk) && (--u32Timeout)) {}
 
-    if (u32Timeout == 0)
+    if (u32Timeout == 0UL)
     {
         return I3C_TIMEOUT_ERR;
     }
@@ -1000,7 +1000,7 @@ __STATIC_INLINE void I3C_DelayLoop(uint32_t counts)
 {
     volatile uint32_t i = counts;
 
-    if (i != 0)
+    if (i != 0UL)
     {
         while (i--) {}
     }

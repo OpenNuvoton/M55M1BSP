@@ -7,7 +7,6 @@
 /* storage control module to the FatFs module with a defined API.        */
 /*-----------------------------------------------------------------------*/
 
-#include <stdio.h>
 #include <string.h>
 
 #include "NuMicro.h"
@@ -25,17 +24,26 @@
 #define USBH_DRIVE_3    6        /* USB Mass Storage */
 #define USBH_DRIVE_4    7        /* USB Mass Storage */
 
+extern DSTATUS disk_initialize(BYTE pdrv);
+extern DSTATUS disk_status(BYTE pdrv);
+extern DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count);
+extern DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count);
+extern DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff);
+
 
 /*-----------------------------------------------------------------------*/
 /* Initialize a Drive                                                    */
 /*-----------------------------------------------------------------------*/
 
+/* cppcheck-suppress misra-c2012-8.6 ; DEVIATION: FatFs diskio glue; alternate impl in diskio_SDH.c, only one linked per project */
 DSTATUS disk_initialize(BYTE pdrv)        /* Physical drive number (0..) */
 {
-    usbh_pooling_hubs();
+    (void)usbh_pooling_hubs();
 
     if (usbh_umas_disk_status(pdrv) == UMAS_ERR_NO_DEVICE)
+    {
         return STA_NODISK;
+    }
 
     return RES_OK;
 }
@@ -45,12 +53,15 @@ DSTATUS disk_initialize(BYTE pdrv)        /* Physical drive number (0..) */
 /* Get Disk Status                                                       */
 /*-----------------------------------------------------------------------*/
 
+/* cppcheck-suppress misra-c2012-8.6 ; DEVIATION: FatFs diskio glue; alternate impl in diskio_SDH.c, only one linked per project */
 DSTATUS disk_status(BYTE pdrv)        /* Physical drive number (0..) */
 {
-    usbh_pooling_hubs();
+    (void)usbh_pooling_hubs();
 
     if (usbh_umas_disk_status(pdrv) == UMAS_ERR_NO_DEVICE)
+    {
         return STA_NODISK;
+    }
 
     return RES_OK;
 }
@@ -59,6 +70,7 @@ DSTATUS disk_status(BYTE pdrv)        /* Physical drive number (0..) */
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
 /*-----------------------------------------------------------------------*/
+/* cppcheck-suppress misra-c2012-8.6 ; DEVIATION: FatFs diskio glue; alternate impl in diskio_SDH.c, only one linked per project */
 DRESULT disk_read(
     BYTE pdrv,      /* Physical drive number (0..) */
     BYTE *buff,     /* Data buffer to store read data */
@@ -75,18 +87,24 @@ DRESULT disk_read(
 
     if (ret != UMAS_OK)
     {
-        usbh_umas_reset_disk(pdrv);
+        (void)usbh_umas_reset_disk(pdrv);
         ret = usbh_umas_read(pdrv, sector, count, buff);
     }
 
     if (ret == UMAS_OK)
+    {
         return RES_OK;
+    }
 
     if (ret == UMAS_ERR_NO_DEVICE)
+    {
         return RES_NOTRDY;
+    }
 
     if (ret == UMAS_ERR_IO)
+    {
         return RES_ERROR;
+    }
 
     return (DRESULT) ret;
 }
@@ -97,6 +115,7 @@ DRESULT disk_read(
 /* Write Sector(s)                                                       */
 /*-----------------------------------------------------------------------*/
 
+/* cppcheck-suppress misra-c2012-8.6 ; DEVIATION: FatFs diskio glue; alternate impl in diskio_SDH.c, only one linked per project */
 DRESULT disk_write(
     BYTE pdrv,          /* Physical drive number (0..) */
     const BYTE *buff,   /* Data to be written */
@@ -113,18 +132,24 @@ DRESULT disk_write(
 
     if (ret != UMAS_OK)
     {
-        usbh_umas_reset_disk(pdrv);
+        (void)usbh_umas_reset_disk(pdrv);
         ret = usbh_umas_write(pdrv, sector, count, (uint8_t *)buff);
     }
 
     if (ret == UMAS_OK)
+    {
         return RES_OK;
+    }
 
     if (ret == UMAS_ERR_NO_DEVICE)
+    {
         return RES_NOTRDY;
+    }
 
     if (ret == UMAS_ERR_IO)
+    {
         return RES_ERROR;
+    }
 
     return (DRESULT) ret;
 }
@@ -134,6 +159,7 @@ DRESULT disk_write(
 /* Miscellaneous Functions                                               */
 /*-----------------------------------------------------------------------*/
 
+/* cppcheck-suppress misra-c2012-8.6 ; DEVIATION: FatFs diskio glue; alternate impl in diskio_SDH.c, only one linked per project */
 DRESULT disk_ioctl(
     BYTE pdrv,      /* Physical drive number (0..) */
     BYTE cmd,       /* Control code */
@@ -145,13 +171,19 @@ DRESULT disk_ioctl(
     ret = usbh_umas_ioctl(pdrv, cmd, buff);
 
     if (ret == UMAS_OK)
+    {
         return RES_OK;
+    }
 
     if (ret == UMAS_ERR_IVALID_PARM)
+    {
         return RES_PARERR;
+    }
 
     if (ret == UMAS_ERR_NO_DEVICE)
+    {
         return RES_NOTRDY;
+    }
 
     return RES_PARERR;
 }

@@ -43,8 +43,8 @@
 #define ERR_CMD_CHECKSUM            0x7D
 #define ERR_CMD_PACKET_NUM          0x50
 
-void Hex2Reg(char input[], uint32_t volatile reg[]);
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
+//void Hex2Reg(char input[], uint32_t volatile reg[]);
+//void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
 /* These functions are for process USBH read and write function */
 void int_read_callback(HID_DEV_T *hdev, uint16_t ep_addr, int status, uint8_t *rdata, uint32_t data_len);
 void int_write_callback(HID_DEV_T *hdev, uint16_t ep_addr, int staus, uint8_t *wbuff, uint32_t *data_len);

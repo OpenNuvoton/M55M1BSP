@@ -108,17 +108,17 @@
 		<link>
 			<name>drv_emac/synopGMAC_Dev.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC//Library/StdDriver/src/emac/synopGMAC_Dev.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/drv_emac/synopGMAC_Dev.c</locationURI>
 		</link>
 		<link>
 			<name>drv_emac/synopGMAC_network_interface.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC//Library/StdDriver/src/emac/synopGMAC_network_interface.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/drv_emac/synopGMAC_network_interface.c</locationURI>
 		</link>
 		<link>
 			<name>drv_emac/synopGMAC_plat.c</name>
 			<type>1</type>
-			<locationURI>PARENT-4-PROJECT_LOC//Library/StdDriver/src/emac/synopGMAC_plat.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/drv_emac/synopGMAC_plat.c</locationURI>
 		</link>
 		<link>
 			<name>drv_emac/m55m1_emac.c</name>

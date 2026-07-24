@@ -7,7 +7,6 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
-#include <stdio.h>
 #include "NuMicro.h"
 
 /** @addtogroup Standard_Driver Standard Driver
@@ -22,6 +21,16 @@
   @{
 */
 
+static uint32_t i2s_get_frame_bit_rate_factor(uint32_t u32WordWidth)
+{
+    return ((((u32WordWidth >> I2S_CTL0_DATWIDTH_Pos) & 0x3U) + 1U) * 16U);
+}
+
+static uint32_t i2s_is_valid_instance(const I2S_T *i2s)
+{
+    return ((i2s == I2S0) || (i2s == I2S1)) ? 1UL : 0UL;
+}
+
 /**
   * @brief  This function is used to get I2S source clock frequency.
   * @param[in]  i2s is the base address of I2S module.
@@ -30,14 +39,15 @@
 uint32_t I2S_GetSourceClockFreq(const I2S_T *i2s)
 {
     uint32_t u32Freq = 0UL;
-    uint32_t u32ClkSrcSel = 0UL;
+
+    if (!i2s_is_valid_instance(i2s))
+    {
+        return 0UL;
+    }
 
     if (i2s == I2S0)
     {
-        /* get I2S selection clock source */
-        u32ClkSrcSel = (CLK_GetModuleClockSource(I2S0_MODULE) << CLK_I2SSEL_I2S0SEL_Pos);
-
-        switch (u32ClkSrcSel)
+        switch ((CLK_GetModuleClockSource(I2S0_MODULE) << CLK_I2SSEL_I2S0SEL_Pos))
         {
             case CLK_I2SSEL_I2S0SEL_APLL1_DIV2:
                 u32Freq = (CLK_GetAPLL1ClockFreq() >> 1);
@@ -69,10 +79,7 @@ uint32_t I2S_GetSourceClockFreq(const I2S_T *i2s)
     }
     else
     {
-        /* get I2S selection clock source */
-        u32ClkSrcSel = (CLK_GetModuleClockSource(I2S1_MODULE) << CLK_I2SSEL_I2S1SEL_Pos);
-
-        switch (u32ClkSrcSel)
+        switch ((CLK_GetModuleClockSource(I2S1_MODULE) << CLK_I2SSEL_I2S1SEL_Pos))
         {
             case CLK_I2SSEL_I2S1SEL_APLL1_DIV2:
                 u32Freq = (CLK_GetAPLL1ClockFreq() >> 1);
@@ -136,9 +143,15 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
 {
     uint16_t u16Divider;
     uint32_t u32BitRate;
+    uint32_t u32FrameBitRateFactor;
     uint32_t u32SrcClk;
     uint32_t u32SampleRateTmp = 0UL;
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
+
+    if ((!i2s_is_valid_instance(i2s)) || (u32SampleRate == 0UL))
+    {
+        return 0UL;
+    }
 
     if (u32RegLockLevel)
     {
@@ -148,11 +161,13 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
 
     if (i2s == I2S0)
     {
-        SYS_ResetModule(SYS_I2S0RST);
+        SYS->I2SRST |= SYS_I2SRST_I2S0RST_Msk;
+        SYS->I2SRST &= ~SYS_I2SRST_I2S0RST_Msk;
     }
     else
     {
-        SYS_ResetModule(SYS_I2S1RST);
+        SYS->I2SRST |= SYS_I2SRST_I2S1RST_Msk;
+        SYS->I2SRST &= ~SYS_I2SRST_I2S1RST_Msk;
     }
 
     if (u32RegLockLevel)
@@ -165,14 +180,26 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
     i2s->CTL1 = (I2S_FIFO_TX_LEVEL_WORD_8 | I2S_FIFO_RX_LEVEL_WORD_8);
 
     u32SrcClk = I2S_GetSourceClockFreq(i2s);
+    u32FrameBitRateFactor = i2s_get_frame_bit_rate_factor(u32WordWidth);
 
-    u32BitRate = (u32SampleRate * (((u32WordWidth >> 4U) & 0x3U) + 1U) * 16U);
+    if (u32SrcClk == 0UL)
+    {
+        return 0UL;
+    }
+
+    u32BitRate = u32SampleRate * u32FrameBitRateFactor;
+
+    if ((u32BitRate == 0UL) || (u32BitRate > (u32SrcClk / 2UL)))
+    {
+        return 0UL;
+    }
+
     u16Divider = (uint16_t)((((u32SrcClk * 10UL / u32BitRate) >> 1U) + 5UL) / 10UL) - 1U; /* Round to the nearest integer */
-    i2s->CLKDIV = (i2s->CLKDIV & ~I2S_CLKDIV_BCLKDIV_Msk) | ((uint32_t)u16Divider << 8U);
+    i2s->CLKDIV = (i2s->CLKDIV & ~I2S_CLKDIV_BCLKDIV_Msk) | ((uint32_t)u16Divider << I2S_CLKDIV_BCLKDIV_Pos);
 
     /* Calculate real sample rate */
     u32BitRate = u32SrcClk / (2U * ((uint32_t)u16Divider + 1U));
-    u32SampleRateTmp = (u32BitRate / ((((u32WordWidth >> 4U) & 0x3U) + 1U) * 16U));
+    u32SampleRateTmp = u32BitRate / u32FrameBitRateFactor;
 
     i2s->CTL0 |= I2S_CTL0_I2SEN_Msk;
 
@@ -180,12 +207,19 @@ uint32_t I2S_Open(I2S_T *i2s, uint32_t u32MasterSlave, uint32_t u32SampleRate, u
 }
 
 /**
-  * @brief  Disable I2S function and I2S clock.
+    * @brief  Disable I2S core function.
   * @param[in]  i2s is the base address of I2S module.
   * @return none
+    * @note   This function clears only I2SEN. Other settings such as MCLK, DMA, TX/RX enable,
+    *         FIFO state, and interrupt enable bits are preserved.
   */
 void I2S_Close(I2S_T *i2s)
 {
+    if (!i2s_is_valid_instance(i2s))
+    {
+        return;
+    }
+
     i2s->CTL0 &= ~I2S_CTL0_I2SEN_Msk;
 }
 
@@ -198,6 +232,11 @@ void I2S_Close(I2S_T *i2s)
   */
 void I2S_EnableInt(I2S_T *i2s, uint32_t u32Mask)
 {
+    if (!i2s_is_valid_instance(i2s))
+    {
+        return;
+    }
+
     i2s->IEN |= u32Mask;
 }
 
@@ -210,6 +249,11 @@ void I2S_EnableInt(I2S_T *i2s, uint32_t u32Mask)
   */
 void I2S_DisableInt(I2S_T *i2s, uint32_t u32Mask)
 {
+    if (!i2s_is_valid_instance(i2s))
+    {
+        return;
+    }
+
     i2s->IEN &= ~u32Mask;
 }
 
@@ -226,7 +270,17 @@ uint32_t I2S_EnableMCLK(I2S_T *i2s, uint32_t u32BusClock)
     uint32_t u32Reg;
     uint32_t u32Clock;
 
+    if (u32BusClock == 0UL)
+    {
+        return 0UL;
+    }
+
     u32SrcClk = I2S_GetSourceClockFreq(i2s);
+
+    if ((u32SrcClk == 0UL) || (u32BusClock > u32SrcClk))
+    {
+        return 0UL;
+    }
 
     if (u32BusClock == u32SrcClk)
     {
@@ -262,6 +316,11 @@ uint32_t I2S_EnableMCLK(I2S_T *i2s, uint32_t u32BusClock)
   */
 void I2S_DisableMCLK(I2S_T *i2s)
 {
+    if (!i2s_is_valid_instance(i2s))
+    {
+        return;
+    }
+
     i2s->CTL0 &= ~I2S_CTL0_MCLKEN_Msk;
 }
 
@@ -275,9 +334,14 @@ void I2S_DisableMCLK(I2S_T *i2s)
   */
 void I2S_SetFIFO(I2S_T *i2s, uint32_t u32TxThreshold, uint32_t u32RxThreshold)
 {
+    if (!i2s_is_valid_instance(i2s))
+    {
+        return;
+    }
+
     i2s->CTL1 = (i2s->CTL1 & ~(I2S_CTL1_TXTH_Msk | I2S_CTL1_RXTH_Msk)) |
-                (u32TxThreshold << I2S_CTL1_TXTH_Pos) |
-                (u32RxThreshold << I2S_CTL1_RXTH_Pos);
+                ((u32TxThreshold & 0xFUL) << I2S_CTL1_TXTH_Pos) |
+                ((u32RxThreshold & 0xFUL) << I2S_CTL1_RXTH_Pos);
 }
 
 /**
@@ -301,10 +365,15 @@ void I2S_SetFIFO(I2S_T *i2s, uint32_t u32TxThreshold, uint32_t u32RxThreshold)
   */
 void I2S_ConfigureTDM(I2S_T *i2s, uint32_t u32ChannelWidth, uint32_t u32ChannelNum, uint32_t u32SyncWidth)
 {
+    if (!i2s_is_valid_instance(i2s))
+    {
+        return;
+    }
+
     i2s->CTL0 = (i2s->CTL0 & ~(I2S_CTL0_TDMCHNUM_Msk | I2S_CTL0_CHWIDTH_Msk | I2S_CTL0_PCMSYNC_Msk)) |
-                (u32ChannelWidth << I2S_CTL0_CHWIDTH_Pos) |
-                (u32ChannelNum << I2S_CTL0_TDMCHNUM_Pos) |
-                (u32SyncWidth << I2S_CTL0_PCMSYNC_Pos);
+                ((u32ChannelWidth & 0x3UL) << I2S_CTL0_CHWIDTH_Pos) |
+                ((u32ChannelNum & 0x3UL) << I2S_CTL0_TDMCHNUM_Pos) |
+                ((u32SyncWidth & 0x1UL) << I2S_CTL0_PCMSYNC_Pos);
 }
 
 /** @} end of group I2S_EXPORTED_FUNCTIONS */

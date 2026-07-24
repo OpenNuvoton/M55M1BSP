@@ -38,7 +38,7 @@ extern "C"
 
 #define SPIM_HYPER_DMM_SIZE                 (0x2000000UL)       /*!< DMM mode memory mapping size */
 
-#define SPIM_HYPER_MAX_LATENCY              (0x20)              /*!< Maximum DLL training number */
+#define SPIM_HYPER_MAX_LATENCY              (uint32_t)(0x20)              /*!< Maximum DLL training number */
 
 /* SPIM_HYPER Define Hyper Device Mode */
 #define SPIM_HYPERRAM_MODE                  (0x01)
@@ -619,7 +619,7 @@ extern "C"
   * \hideinitializer
   */
 #define SPIM_HYPER_GET_INTSTS(spim) \
-    (((spim)->HYPER_INTEN & SPIM_HYPER_INTEN_OPINTEN_Msk) >> SPIM_HYPER_INTEN_OPINTEN_Pos)
+    (((spim)->HYPER_INTSTS & SPIM_HYPER_INTSTS_OPDONE_Msk) >> SPIM_HYPER_INTSTS_OPDONE_Pos)
 
 /*----------------------------------------------------------------------------*/
 /* Function Declarations                                                      */
@@ -644,8 +644,8 @@ int32_t SPIM_HYPER_Write2Byte(SPIM_T *spim, uint32_t u32Addr, uint16_t u16Data);
 int32_t SPIM_HYPER_Write3Byte(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Data);
 int32_t SPIM_HYPER_Write4Byte(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Data);
 
-int32_t SPIM_HYPER_DMAWrite(SPIM_T *spim, uint32_t u32Addr, uint8_t *pu8WrBuf, uint32_t u32NTx);
-int32_t SPIM_HYPER_DMARead(SPIM_T *spim, uint32_t u32Addr, uint8_t *pu8RdBuf, uint32_t u32NRx);
+int32_t SPIM_HYPER_DMAWrite(SPIM_T *spim, uint32_t u32Addr, const uint8_t *pu8WrBuf, uint32_t u32NTx);
+int32_t SPIM_HYPER_DMARead(SPIM_T *spim, uint32_t u32Addr, const uint8_t *pu8RdBuf, uint32_t u32NRx);
 
 void SPIM_HYPER_EnterDirectMapMode(SPIM_T *spim);
 void SPIM_HYPER_ExitDirectMapMode(SPIM_T *spim);

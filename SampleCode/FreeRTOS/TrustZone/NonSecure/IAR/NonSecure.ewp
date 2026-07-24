@@ -312,7 +312,7 @@
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state>--diag_suppress Pe550</state>
+                    <state>--diag_suppress Pe550 --no_unaligned_access</state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -1093,7 +1093,7 @@
         <settings>
             <name>BUILDACTION</name>
             <archiveVersion>2</archiveVersion>
-            <data />
+            <data></data>
         </settings>
     </configuration>
     <group>

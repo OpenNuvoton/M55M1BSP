@@ -289,7 +289,7 @@ static void vMqttTask(void *pvParameters)
 #endif
 
     tcpip_init(NULL, NULL);
-    lwip_tls_init();//clyu
+    lwip_tls_init();
 
     netif_add(&netif, &ipaddr, &netmask, &gw, NULL, ethernetif_init, tcpip_input);
 

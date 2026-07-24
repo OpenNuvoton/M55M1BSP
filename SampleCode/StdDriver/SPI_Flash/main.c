@@ -414,6 +414,7 @@ void SYS_Init(void)
 int main(void)
 {
     uint32_t u32ByteCount, u32FlashAddress, u32PageNumber;
+    uint32_t u32BusClock;
     uint32_t u32Error = 0;
     uint16_t u16ID;
 
@@ -430,7 +431,14 @@ int main(void)
     SYS_LockReg();
 
     /* Configure SPI_FLASH_PORT as a master, MSB first, 8-bit transaction, SPI Mode-0 timing, clock is 2MHz */
-    SPI_Open(SPI_FLASH_PORT, SPI_MASTER, SPI_MODE_0, 8, 2000000);
+    u32BusClock = SPI_Open(SPI_FLASH_PORT, SPI_MASTER, SPI_MODE_0, 8, 2000000);
+
+    if (u32BusClock == 0U)
+    {
+        printf("SPI_Open failed.\n");
+
+        while (1);
+    }
 
     /* Disable auto SS function, control SS signal manually. */
     SPI_DisableAutoSS(SPI_FLASH_PORT);

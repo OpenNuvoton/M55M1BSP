@@ -7,7 +7,6 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,13 +15,9 @@
 #include "usb.h"
 #include "msc.h"
 
-static int __tag = 0x10e24388;
-
 #if (NVT_DCACHE_ON == 1)
     //Please refer to the sector size definition values in ff.c and reduce them accordingly. Currently, the largest sector size in ff.c is being used as the standard.
-    #define BUFF_SIZE (16*1024)
-    /* Declare a DCache-line aligned variable for the USB Host block qTD buffer.  */
-    static uint8_t Tmp_Buffer[DCACHE_ALIGN_LINE_SIZE(BUFF_SIZE)] __attribute__((aligned(DCACHE_LINE_SIZE)));
+    #define BUFF_SIZE (16U*1024U)
     #define DEF_ALIGNED_VALUE      DCACHE_LINE_SIZE
 #endif
 
@@ -35,7 +30,7 @@ static void bulk_xfer_done(UTR_T *utr)
 #endif
 }
 
-int msc_bulk_transfer(MSC_T *msc, EP_INFO_T *ep, uint8_t *data_buff, int data_len, int timeout_ticks)
+static int msc_bulk_transfer(MSC_T *msc, EP_INFO_T *ep, uint8_t *data_buff, int data_len, int timeout_ticks)
 {
     UTR_T     *utr;
     uint32_t  t0;
@@ -44,7 +39,9 @@ int msc_bulk_transfer(MSC_T *msc, EP_INFO_T *ep, uint8_t *data_buff, int data_le
     utr = alloc_utr(msc->iface->udev);
 
     if (!utr)
+    {
         return USBH_ERR_MEMORY_OUT;
+    }
 
     utr->ep = ep;
     utr->buff = data_buff;
@@ -56,15 +53,17 @@ int msc_bulk_transfer(MSC_T *msc, EP_INFO_T *ep, uint8_t *data_buff, int data_le
     ret = usbh_bulk_xfer(utr);
 
     if (ret < 0)
+    {
         return ret;
+    }
 
     t0 = get_ticks();
 
-    while (utr->bIsTransferDone == 0)
+    while (utr->bIsTransferDone == 0U)
     {
-        if (get_ticks() - t0 > (uint32_t)timeout_ticks)
+        if ((get_ticks() - t0) > ((uint32_t)timeout_ticks))
         {
-            usbh_quit_utr(utr);
+            (void)usbh_quit_utr(utr);
             free_utr(utr);
             return USBH_ERR_TIMEOUT;
         }
@@ -79,32 +78,40 @@ int msc_bulk_transfer(MSC_T *msc, EP_INFO_T *ep, uint8_t *data_buff, int data_le
 
 static int  do_scsi_command(MSC_T *msc, uint8_t *buff, uint32_t data_len, int bIsDataIn, int timeout_ticks)
 {
+    static int __tag = 0x10e24388;
+#if (NVT_DCACHE_ON == 1)
+    /* Keep static storage to avoid placing the aligned transfer buffer on the stack. */
+    static uint8_t msc_tmp_buffer[BUFF_SIZE] __attribute__((aligned(DCACHE_LINE_SIZE)));
+#endif
     int   ret;
     struct bulk_cb_wrap  *cmd_blk = &msc->cmd_blk;         /* MSC Bulk-only command block   */
     struct bulk_cs_wrap  *cmd_status = &msc->cmd_status;   /* MSC Bulk-only command status  */
 
     cmd_blk->Signature = MSC_CB_SIGN;
-    cmd_blk->Tag = __tag++;
+    cmd_blk->Tag = __tag;
+    __tag++;
     cmd_blk->DataTransferLength = data_len;
     cmd_blk->Lun = msc->lun;
 
     ret = msc_bulk_transfer(msc, msc->ep_bulk_out, (uint8_t *)cmd_blk, 31, timeout_ticks);
 
     if (ret < 0)
+    {
         return ret;
+    }
 
     msc_debug_msg("    [XFER] MSC CMD OK.\n");
 
-    if (data_len > 0)
+    if (data_len > 0U)
     {
         if (bIsDataIn)
         {
 #if (NVT_DCACHE_ON == 1)
-            ret = msc_bulk_transfer(msc, msc->ep_bulk_in, Tmp_Buffer, data_len, 500);
+            ret = msc_bulk_transfer(msc, msc->ep_bulk_in, msc_tmp_buffer, data_len, 500);
 
-            SCB_InvalidateDCache_by_Addr((void *)Tmp_Buffer, data_len);
+            SCB_InvalidateDCache_by_Addr((void *)msc_tmp_buffer, data_len);
 
-            memcpy(buff, Tmp_Buffer, data_len);
+            (void)memcpy(buff, msc_tmp_buffer, data_len);
 
 #else
             ret = msc_bulk_transfer(msc, msc->ep_bulk_in, buff, data_len, 500);
@@ -113,18 +120,20 @@ static int  do_scsi_command(MSC_T *msc, uint8_t *buff, uint32_t data_len, int bI
         else
         {
 #if (NVT_DCACHE_ON == 1)
-            memcpy(Tmp_Buffer, buff, data_len);
+            (void)memcpy(msc_tmp_buffer, buff, data_len);
 
-            SCB_CleanDCache_by_Addr(Tmp_Buffer, data_len);
+            SCB_CleanDCache_by_Addr(msc_tmp_buffer, data_len);
 
-            ret = msc_bulk_transfer(msc, msc->ep_bulk_out, Tmp_Buffer, data_len, 500);
+            ret = msc_bulk_transfer(msc, msc->ep_bulk_out, msc_tmp_buffer, data_len, 500);
 #else
             ret = msc_bulk_transfer(msc, msc->ep_bulk_out, buff, data_len, 500);
 #endif
         }
 
         if (ret < 0)
+        {
             return ret;
+        }
 
         msc_debug_msg("    [XFER] MSC DATA OK.\n");
     }
@@ -132,11 +141,13 @@ static int  do_scsi_command(MSC_T *msc, uint8_t *buff, uint32_t data_len, int bI
     ret = msc_bulk_transfer(msc, msc->ep_bulk_in, (uint8_t *)cmd_status, 13, timeout_ticks);
 
     if (ret < 0)
+    {
         return ret;
+    }
 
     msc_debug_msg("    [XFER] MSC STATUS OK.\n");
 
-    if (cmd_status->Status != 0)
+    if (cmd_status->Status != 0U)
     {
         msc_debug_msg("    !! CSW status error.\n");
         return UMAS_ERR_CMD_STATUS;

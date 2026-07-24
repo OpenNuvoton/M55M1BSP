@@ -36,6 +36,7 @@ char Line[256];                         /* Console input buffer */
 uint8_t  *Buff;
 uint32_t volatile gSec = 0;
 uint32_t volatile gSdInit = 0;
+uint32_t volatile gSdCardStateChanged = 0;
 
 NVT_ITCM void TIMER0_IRQHandler(void)
 {
@@ -357,13 +358,14 @@ NVT_ITCM void SDH0_IRQHandler(void)
         {
             printf("\n***** card remove !\n");
             SD0.IsCardInsert = FALSE;   // SDISR_CD_Card = 1 means card remove for GPIO mode
-            memset(&SD0, 0, sizeof(SDH_INFO_T));
+            gSdInit = 0;
+            gSdCardStateChanged = 1;
         }
         else
         {
             printf("***** card insert !\n");
-            //SDH_Open(SDH0, CardDetect_From_GPIO);
-            //SDH_Probe(SDH0);
+            gSdInit = 0;
+            gSdCardStateChanged = 1;
         }
 
         SDH0->INTSTS = SDH_INTSTS_CDIF_Msk;
@@ -563,6 +565,13 @@ int32_t main(void)
 
     for (;;)
     {
+        if (gSdCardStateChanged)
+        {
+            SDH_Close_Disk(SDH0);
+            gSdInit = 0;
+            gSdCardStateChanged = 0;
+        }
+
         if (!(SDH_CardDetection(SDH0)))
         {
             gSdInit = 0;

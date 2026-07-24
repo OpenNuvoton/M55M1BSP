@@ -10,15 +10,15 @@
 #include "NuMicro.h"
 
 /** @addtogroup Standard_Driver Standard Driver
-  @{
+    @{
 */
 
 /** @addtogroup CCAP_Driver CCAP Driver
-  @{
+    @{
 */
 
 /** @addtogroup CCAP_EXPORTED_FUNCTIONS CCAP Exported Functions
-  @{
+    @{
 */
 
 /**
@@ -128,8 +128,8 @@ void CCAP_OpenPipes(uint32_t u32SensorSetting, uint32_t u32SensorDataFmt, uint32
 
     CCAP->PAR   = u32SensorSetting & (CCAP_PAR_FBB_Msk | CCAP_PAR_VSP_Msk | CCAP_PAR_HSP_Msk | CCAP_PAR_PCLKP_Msk | CCAP_PAR_SENTYPE_Msk);
     CCAP->PAR   = CCAP->PAR | (u32SensorDataFmt & (CCAP_PAR_INDATORD_Msk | CCAP_PAR_INFMT_Msk));
-    CCAP->PARM  = (((u32SensorDataFmt & BIT1) ? 1 : 0) << CCAP_PARM_INFMTH_Pos);
-    CCAP->PARM  = CCAP->PARM | (((u32SensorDataFmt & BIT1) ? 1 : 0) << CCAP_PARM_INDATORDH_Pos);
+    CCAP->PARM  = (((u32SensorDataFmt & BIT1) ? 1U : 0U) << CCAP_PARM_INFMTH_Pos);
+    CCAP->PARM  = CCAP->PARM | (((u32SensorDataFmt & BIT1) ? 1U : 0U) << CCAP_PARM_INDATORDH_Pos);
 
     if (u32OutPacketFmt == CCAP_PKT_DISABLED)
     {
@@ -190,17 +190,22 @@ void CCAP_SetCroppingWindow(uint32_t u32VStart, uint32_t u32HStart, uint32_t u32
  */
 int32_t CCAP_Stop(uint32_t u32FrameComplete)
 {
-    uint32_t u32TimeOutCnt = SystemCoreClock << 1; /* 2 second */
-
     if (u32FrameComplete == CCAP_DISABLE)
+    {
         CCAP->CTL &= ~CCAP_CTL_CCAPEN;
+    }
     else
     {
+        uint32_t u32TimeOutCnt = SystemCoreClock << 1; /* 2 second */
+
         CCAP->CTL |= CCAP_CTL_SHUTTER_Msk;
 
         while (!CCAP_IS_STOPPED())
         {
-            if (--u32TimeOutCnt == 0) return CCAP_ERR_TIMEOUT;
+            if (--u32TimeOutCnt == 0)
+            {
+                return CCAP_ERR_TIMEOUT;
+            }
         }
     }
 
@@ -222,22 +227,24 @@ int32_t CCAP_Stop(uint32_t u32FrameComplete)
  */
 void CCAP_SetPacketScaling(uint32_t u32VNumerator, uint32_t u32VDenominator, uint32_t u32HNumerator, uint32_t u32HDenominator)
 {
-    uint32_t u32NumeratorL, u32NumeratorH;
-    uint32_t u32DenominatorL, u32DenominatorH;
+    uint32_t u32NumeratorL;
+    uint32_t u32NumeratorH;
+    uint32_t u32DenominatorL;
+    uint32_t u32DenominatorH;
 
-    u32NumeratorL = u32VNumerator & 0xFF;
-    u32NumeratorH = u32VNumerator >> 8;
-    u32DenominatorL = u32VDenominator & 0xFF;
-    u32DenominatorH = u32VDenominator >> 8;
+    u32NumeratorL = u32VNumerator & 0xFFU;
+    u32NumeratorH = u32VNumerator >> 8U;
+    u32DenominatorL = u32VDenominator & 0xFFU;
+    u32DenominatorH = u32VDenominator >> 8U;
     CCAP->PKTSL = (CCAP->PKTSL & ~(CCAP_PKTSL_PKTSVNL_Msk | CCAP_PKTSL_PKTSVML_Msk))
                   | ((u32NumeratorL << CCAP_PKTSL_PKTSVNL_Pos) | (u32DenominatorL << CCAP_PKTSL_PKTSVML_Pos));
     CCAP->PKTSM = (CCAP->PKTSM & ~(CCAP_PKTSM_PKTSVNH_Msk | CCAP_PKTSM_PKTSVMH_Msk))
                   | ((u32NumeratorH << CCAP_PKTSM_PKTSVNH_Pos) | (u32DenominatorH << CCAP_PKTSM_PKTSVMH_Pos));
 
-    u32NumeratorL = u32HNumerator & 0xFF;
-    u32NumeratorH = u32HNumerator >> 8;
-    u32DenominatorL = u32HDenominator & 0xFF;
-    u32DenominatorH = u32HDenominator >> 8;
+    u32NumeratorL = u32HNumerator & 0xFFU;
+    u32NumeratorH = u32HNumerator >> 8U;
+    u32DenominatorL = u32HDenominator & 0xFFU;
+    u32DenominatorH = u32HDenominator >> 8U;
     CCAP->PKTSL = (CCAP->PKTSL & ~(CCAP_PKTSL_PKTSHNL_Msk | CCAP_PKTSL_PKTSHML_Msk))
                   | ((u32NumeratorL << CCAP_PKTSL_PKTSHNL_Pos) | (u32DenominatorL << CCAP_PKTSL_PKTSHML_Pos));
     CCAP->PKTSM = (CCAP->PKTSM & ~(CCAP_PKTSM_PKTSHNH_Msk | CCAP_PKTSM_PKTSHMH_Msk))
@@ -259,22 +266,24 @@ void CCAP_SetPacketScaling(uint32_t u32VNumerator, uint32_t u32VDenominator, uin
  */
 void CCAP_SetPlanarScaling(uint32_t u32VNumerator, uint32_t u32VDenominator, uint32_t u32HNumerator, uint32_t u32HDenominator)
 {
-    uint32_t u32NumeratorL, u32NumeratorH;
-    uint32_t u32DenominatorL, u32DenominatorH;
+    uint32_t u32NumeratorL;
+    uint32_t u32NumeratorH;
+    uint32_t u32DenominatorL;
+    uint32_t u32DenominatorH;
 
-    u32NumeratorL = u32VNumerator & 0xFF;
-    u32NumeratorH = u32VNumerator >> 8;
-    u32DenominatorL = u32VDenominator & 0xFF;
-    u32DenominatorH = u32VDenominator >> 8;
+    u32NumeratorL = u32VNumerator & 0xFFU;
+    u32NumeratorH = u32VNumerator >> 8U;
+    u32DenominatorL = u32VDenominator & 0xFFU;
+    u32DenominatorH = u32VDenominator >> 8U;
     CCAP->PLNSL = (CCAP->PLNSL & ~(CCAP_PLNSL_PLNSVNL_Msk | CCAP_PLNSL_PLNSVML_Msk))
                   | ((u32NumeratorL << CCAP_PLNSL_PLNSVNL_Pos) | (u32DenominatorL << CCAP_PLNSL_PLNSVML_Pos));
     CCAP->PLNSM = (CCAP->PLNSM & ~(CCAP_PLNSM_PLNSVNH_Msk | CCAP_PLNSM_PLNSVMH_Msk))
                   | ((u32NumeratorH << CCAP_PLNSM_PLNSVNH_Pos) | (u32DenominatorH << CCAP_PLNSM_PLNSVMH_Pos));
 
-    u32NumeratorL = u32HNumerator & 0xFF;
-    u32NumeratorH = u32HNumerator >> 8;
-    u32DenominatorL = u32HDenominator & 0xFF;
-    u32DenominatorH = u32HDenominator >> 8;
+    u32NumeratorL = u32HNumerator & 0xFFU;
+    u32NumeratorH = u32HNumerator >> 8U;
+    u32DenominatorL = u32HDenominator & 0xFFU;
+    u32DenominatorH = u32HDenominator >> 8U;
     CCAP->PLNSL = (CCAP->PLNSL & ~(CCAP_PLNSL_PLNSHNL_Msk | CCAP_PLNSL_PLNSHML_Msk))
                   | ((u32NumeratorL << CCAP_PLNSL_PLNSHNL_Pos) | (u32DenominatorL << CCAP_PLNSL_PLNSHML_Pos));
     CCAP->PLNSM = (CCAP->PLNSM & ~(CCAP_PLNSM_PLNSHNH_Msk | CCAP_PLNSM_PLNSHMH_Msk))
@@ -329,39 +338,53 @@ void CCAP_SetPlanarStride(uint32_t u32Stride)
  */
 int32_t CCAP_MD_SetRegionSensitivity(uint32_t u32Y, uint32_t u32X, uint32_t u32Height, uint32_t u32Width, uint32_t u32Sensitivity)
 {
-    int32_t  x, y;
-    uint32_t u32WinStartX, u32WinStartY, u32WinEndX, u32WinEndY;
-    uint32_t u32WinIdx, u32Threshold;
+    uint32_t x;
+    uint32_t y;
+    uint32_t u32Threshold;
 
-    if ((u32Y + u32Height) > CCAP_MD_HEIGHT || (u32X + u32Width) > CCAP_MD_WIDTH)
-        return CCAP_ERR_INVALID_MD_REGION;
-
-    if (u32Height == 0 || u32Width == 0)
-        return CCAP_ERR_INVALID_MD_REGION;
-
-    if (u32Sensitivity > 100)
-        return CCAP_ERR_INVALID_PARAM;
-
-    u32Threshold = CCAP_MD_MAX_WINDOW_SAD - ((u32Sensitivity * CCAP_MD_MAX_WINDOW_SAD) / 100);
-
-    for (x = 0; x < 4; x++)
+    if (((u32Y + u32Height) > CCAP_MD_HEIGHT) || ((u32X + u32Width) > CCAP_MD_WIDTH))
     {
-        for (y = 0; y < 4; y++)
+        return CCAP_ERR_INVALID_MD_REGION;
+    }
+
+    if ((u32Height == 0U) || (u32Width == 0U))
+    {
+        return CCAP_ERR_INVALID_MD_REGION;
+    }
+
+    if (u32Sensitivity > 100U)
+    {
+        return CCAP_ERR_INVALID_PARAM;
+    }
+
+    u32Threshold = CCAP_MD_MAX_WINDOW_SAD - ((u32Sensitivity * CCAP_MD_MAX_WINDOW_SAD) / 100U);
+
+    for (x = 0U; x < 4U; x++)
+    {
+        for (y = 0U; y < 4U; y++)
         {
-            u32WinIdx    = x + y * 4;
+            uint32_t u32WinStartX;
+            uint32_t u32WinStartY;
+            uint32_t u32WinEndX;
+            uint32_t u32WinEndY;
+            uint32_t u32WinIdx;
+
+            u32WinIdx    = x + (y * 4U);
             u32WinStartX = x * CCAP_MD_CELL_WIDTH;
             u32WinStartY = y * CCAP_MD_CELL_HEIGHT;
             u32WinEndX   = u32WinStartX + CCAP_MD_CELL_WIDTH;
             u32WinEndY   = u32WinStartY + CCAP_MD_CELL_HEIGHT;
 
             if ((u32X >= u32WinEndX) || (u32Y >= u32WinEndY))
-                continue;
-
-            if ((u32X >= u32WinStartX) && (u32X < u32WinEndX))
             {
-                if ((u32Y >= u32WinStartY) && (u32Y < u32WinEndY))
+                continue;
+            }
+
+            if (u32X >= u32WinStartX)
+            {
+                if (u32Y >= u32WinStartY)
                 {
-                    CCAP->MDCTL |= (1 << u32WinIdx);
+                    CCAP->MDCTL |= (1U << u32WinIdx);
                     CCAP_MD_SET_WIN_THRESHOLD(u32WinIdx, u32Threshold);
                     continue;
                 }
@@ -371,7 +394,7 @@ int32_t CCAP_MD_SetRegionSensitivity(uint32_t u32Y, uint32_t u32X, uint32_t u32H
             {
                 if (((u32X + u32Width) > u32WinStartX) && ((u32Y + u32Height) > u32WinStartY))
                 {
-                    CCAP->MDCTL |= (1 << u32WinIdx);
+                    CCAP->MDCTL |= (1U << u32WinIdx);
                     CCAP_MD_SET_WIN_THRESHOLD(u32WinIdx, u32Threshold);
                 }
             }
@@ -394,7 +417,7 @@ int32_t CCAP_MD_SetRegionSensitivity(uint32_t u32Y, uint32_t u32X, uint32_t u32H
  */
 int32_t CCAP_MD_SetGlobalSensitivity(uint32_t u32Sensitivity)
 {
-    CCAP_MD_SET_TOTAL_THRESHOLD(CCAP_MD_MAX_TOTAL_SAD - ((u32Sensitivity * CCAP_MD_MAX_TOTAL_SAD) / 100));
+    CCAP_MD_SET_TOTAL_THRESHOLD(CCAP_MD_MAX_TOTAL_SAD - ((u32Sensitivity * CCAP_MD_MAX_TOTAL_SAD) / 100U));
 
     return CCAP_OK;
 }

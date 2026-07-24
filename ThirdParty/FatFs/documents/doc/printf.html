@@ -68,7 +68,7 @@ int f_printf (
 </dd>
 </dl>
 <p>When FatFs is configured for Unicode API (<tt><a href="config.html#lfn_unicode">FF_LFN_UNICODE</a> &gt;= 1</tt>), character encoding on the string fuctions, <tt>f_putc</tt>, <tt>f_puts</tt>, <tt>f_printf</tt> and <tt>f_gets</tt> function, is also switched to Unicode. The Unicode characters in multiple encoding unit, such as surrogate pair and multi-byte sequence, should not be divided into two function calls, or the character will be lost. The character encoding <em>on the file</em> to be written via this function is selected by <tt><a href="config.html#strf_encode">FF_STRF_ENCODE</a></tt>. If the character encoding differs between file data and API, it is converted in this function. Input characters with wrong encoding for output will be lost.</p>
-<p>If <tt>sprintf</tt> is used in the project and code conversion is not needed, <tt>f_write</tt> with <tt>sprintf</tt> will be efficient in code size and performance rather than <tt>f_printf</tt>.</p>
+<p>If <tt>sprintf</tt> is used in the project and code conversion is not needed, <tt>f_write</tt> with <tt>sprintf</tt> will be better in code size and write throughput rather than <tt>f_printf</tt>.</p>
 </div>
 
 
@@ -109,6 +109,6 @@ int f_printf (
 </div>
 
 
-<p class="foot"><a href="../00index_e.html">Return</a></p>
+<p class="foot"><a href="../index.html">Return</a></p>
 </body>
 </html>

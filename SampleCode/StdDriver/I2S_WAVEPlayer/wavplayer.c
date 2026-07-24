@@ -14,6 +14,8 @@
 #include "diskio.h"
 #include "ff.h"
 
+#define WAV_BUFFER_WAIT_TIMEOUT_COUNT      ((SystemCoreClock != 0UL) ? SystemCoreClock : __HXT)
+
 /*
  * This is perhaps the simplest example use of the MAD high-level API.
  * Standard input is mapped into memory via mmap(), then the high-level API
@@ -42,6 +44,7 @@ void WAVPlayer(void)
     FRESULT res;
     uint8_t u8PCMBufferTargetIdx = 0;
     uint32_t u32WavSamplingRate;
+    uint32_t u32TimeOutCnt;
 
     res = f_open(&wavFileObject, "0:\\test.wav", FA_OPEN_EXISTING | FA_READ);       //USBH:0 , SD0: 1
 
@@ -53,7 +56,21 @@ void WAVPlayer(void)
 
     // read sampling rate from WAV header
     memset(s_au32WavHeader, 0, sizeof(s_au32WavHeader));
-    f_read(&wavFileObject, s_au32WavHeader, 44, &ReturnSize);
+
+    res = f_read(&wavFileObject, s_au32WavHeader, 44, &ReturnSize);
+
+    if (res != FR_OK)
+    {
+        printf("Read file error!\n");
+        goto cleanup;
+    }
+
+    if (ReturnSize < 44U)
+    {
+        printf("Invalid WAV header!\n");
+        goto cleanup;
+    }
+
     u32WavSamplingRate = s_au32WavHeader[6];
 
 #if NAU8822
@@ -66,7 +83,12 @@ void WAVPlayer(void)
     printf("wav: sampling rate=%d\n", u32WavSamplingRate);
 
     /* Set MCLK and enable MCLK */
-    I2S_EnableMCLK(I2S0, 12000000);
+    if (I2S_EnableMCLK(I2S0, 12000000) == 0UL)
+    {
+        printf("Enable I2S0 MCLK failed!\n");
+        goto cleanup;
+    }
+
     I2S0->CTL0 |= I2S_CTL0_ORDER_Msk;
 
     while (1)
@@ -87,12 +109,27 @@ void WAVPlayer(void)
                 printf("Start Playing ...\n");
             }
 
-            while ((g_u8PCMBufferFull[0] == 1) && (g_u8PCMBufferFull[1] == 1));
+            u32TimeOutCnt = WAV_BUFFER_WAIT_TIMEOUT_COUNT;
+
+            while ((g_u8PCMBufferFull[0] == 1U) && (g_u8PCMBufferFull[1] == 1U))
+            {
+                if (--u32TimeOutCnt == 0UL)
+                {
+                    printf("Wait for WAV buffer timeout!\n");
+                    goto cleanup;
+                }
+            }
 
             //printf(".");
         }
 
         res = f_read(&wavFileObject, &aiPCMBuffer[u8PCMBufferTargetIdx][0], PCM_BUFFER_SIZE * 4, &ReturnSize);
+
+        if (res != FR_OK)
+        {
+            printf("Read file error!\n");
+            goto cleanup;
+        }
 
         if (ReturnSize < PCM_BUFFER_SIZE * 4)
             memset(&aiPCMBuffer[u8PCMBufferTargetIdx][ReturnSize], 0, PCM_BUFFER_SIZE * 4 - ReturnSize);
@@ -105,7 +142,18 @@ void WAVPlayer(void)
         if (u8AudioPlaying)
         {
             if (g_u8PCMBufferFull[u8PCMBufferTargetIdx ^ 1] == 1)
-                while (g_u8PCMBufferFull[u8PCMBufferTargetIdx ^ 1]);
+            {
+                u32TimeOutCnt = WAV_BUFFER_WAIT_TIMEOUT_COUNT;
+
+                while (g_u8PCMBufferFull[u8PCMBufferTargetIdx ^ 1U] == 1U)
+                {
+                    if (--u32TimeOutCnt == 0UL)
+                    {
+                        printf("Wait for WAV buffer timeout!\n");
+                        goto cleanup;
+                    }
+                }
+            }
         }
 
         u8PCMBufferTargetIdx ^= 1;
@@ -114,9 +162,15 @@ void WAVPlayer(void)
     }
 
     printf("Done..\n");
+
+cleanup:
     I2S_DISABLE_TX(I2S0);
     I2S_DISABLE_TXDMA(I2S0);
-    f_close(&wavFileObject);
+
+    if (f_close(&wavFileObject) != FR_OK)
+    {
+        printf("Close file error!\n");
+    }
 
     u8AudioPlaying = 0;
     g_u8PCMBufferFull[0] = 0;

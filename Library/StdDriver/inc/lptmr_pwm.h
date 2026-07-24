@@ -212,7 +212,7 @@ extern "C"
   *
   * @param[in]  lptmr       The pointer of the specified LPTMR module. It could be LPTMR0, LPTMR1.
   *
-  * @param[in]  u32Channel  Enable specified channel output function. Valid values are:
+  * @param[in]  u32ChMask   Enable specified channel output function. Valid values are:
   *                             - \ref LPTPWM_CH0
   *
   * @return     None
@@ -221,7 +221,7 @@ extern "C"
   * @note       If the corresponding bit in u32ChMask parameter is 0, then output function will be disabled in this channel.
   * \hideinitializer
   */
-#define LPTPWM_ENABLE_OUTPUT(lptmr, u32Channel)  ((lptmr)->PWMPOCTL = (u32Channel))
+#define LPTPWM_ENABLE_OUTPUT(lptmr, u32ChMask)  ((lptmr)->PWMPOCTL = ((lptmr)->PWMPOCTL & ~LPTMR_PWMPOCTL_POEN_Msk) | (u32ChMask & LPTMR_PWMPOCTL_POEN_Msk))
 
 /**
   * @brief      Select Toggle-output Pin
@@ -235,7 +235,7 @@ extern "C"
   *
   * @details    This macro is used to select LPTPWM toggle-output pin is output on Tx or Tx_EXT pin.
   */
-#define LPTPWM_SELECT_TOUT_PIN(lptmr, u32ToutSel)    ((lptmr)->PWMPOCTL = ((lptmr)->PWMPOCTL & ~LPTMR_PWMPOCTL_POSEL_Msk) | (u32ToutSel))
+#define LPTPWM_SELECT_TOUT_PIN(lptmr, u32ToutSel)    ((lptmr)->PWMPOCTL = ((lptmr)->PWMPOCTL & ~LPTMR_PWMPOCTL_POSEL_Msk) | (u32ToutSel & LPTMR_PWMPOCTL_POSEL_Msk))
 
 /**
   * @brief      Set Output Inverse
@@ -387,7 +387,7 @@ extern "C"
   *
   * @details    This macro is used to select LPTPWM Counter Mode.
   */
-#define LPTPWM_SET_CNT_MODE(lptmr, mode)      ((lptmr)->PWMCTL = ((lptmr)->PWMCTL&~LPTMR_PWMCTL_CNTMODE_Msk) | (mode<<LPTMR_PWMCTL_CNTMODE_Pos))
+#define LPTPWM_SET_CNT_MODE(lptmr, mode)      ((lptmr)->PWMCTL = ((lptmr)->PWMCTL &~ LPTMR_PWMCTL_CNTMODE_Msk) | (((mode) & 0x1UL) << LPTMR_PWMCTL_CNTMODE_Pos))
 
 /**
   * @brief      Select PIF is Interrupt Flag Accumulator Source
@@ -421,7 +421,7 @@ extern "C"
   * @details    This macro is used to set the Counter of Interrupt Flag Accumulator.
   * \hideinitializer
   */
-#define LPTPWM_SET_IFACNT(lptmr, cnt)         ((lptmr)->PWMIFA = (((lptmr)->PWMIFA&~LPTMR_PWMIFA_IFACNT_Msk) | ((cnt)<<LPTMR_PWMIFA_IFACNT_Pos)))
+#define LPTPWM_SET_IFACNT(lptmr, cnt)         ((lptmr)->PWMIFA = (((lptmr)->PWMIFA&~LPTMR_PWMIFA_IFACNT_Msk) | ((cnt) & LPTMR_PWMIFA_IFACNT_Msk)))
 
 #define LPTPWM_ENABLE_IFA(lptmr)              ((lptmr)->PWMIFA |= LPTMR_PWMIFA_IFAEN_Msk)
 #define LPTPWM_DISABLE_IFA(lptmr)             ((lptmr)->PWMIFA &= ~LPTMR_PWMIFA_IFAEN_Msk)
@@ -444,7 +444,7 @@ void LPTPWM_DisableTrigger(LPTMR_T *lptmr, uint32_t u32TargetMask);
 /* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
 __STATIC_INLINE void LPTPWM_EnableWakeup(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_DisableWakeup(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTPWM_GetWakeupFlag(LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTPWM_GetWakeupFlag(const LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_ClearWakeupFlag(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_EnablePDCLK(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_DisablePDCLK(LPTMR_T *lptmr);
@@ -453,7 +453,7 @@ __STATIC_INLINE void LPTPWM_DisableAcc(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_EnableAccInt(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_DisableAccInt(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_ClearAccInt(LPTMR_T *lptmr);
-__STATIC_INLINE uint32_t LPTPWM_GetAccInt(LPTMR_T *lptmr);
+__STATIC_INLINE uint32_t LPTPWM_GetAccInt(const LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_EnableAccLPPDMA(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_DisableAccLPPDMA(LPTMR_T *lptmr);
 __STATIC_INLINE void LPTPWM_EnableAccStopMode(LPTMR_T *lptmr);
@@ -503,7 +503,7 @@ __STATIC_INLINE void LPTPWM_DisableWakeup(LPTMR_T *lptmr)
   * @details    This function indicates LPTPWM interrupt event has waked up system or not.
   * \hideinitializer
   */
-__STATIC_INLINE uint32_t LPTPWM_GetWakeupFlag(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTPWM_GetWakeupFlag(const LPTMR_T *lptmr)
 {
     return ((lptmr->PWMSTATUS & LPTMR_PWMSTATUS_PWMINTWKF_Msk) ? 1 : 0);
 }
@@ -564,7 +564,7 @@ __STATIC_INLINE void LPTPWM_DisablePDCLK(LPTMR_T *lptmr)
 __STATIC_INLINE void LPTPWM_EnableAcc(LPTMR_T *lptmr, uint32_t u32IntFlagCnt, uint32_t u32IntAccSrc)
 {
     lptmr->PWMIFA = (((lptmr)->PWMIFA & ~(LPTMR_PWMIFA_IFACNT_Msk | LPTMR_PWMIFA_IFASEL_Msk | LPTMR_PWMIFA_STPMOD_Msk))
-                     | (LPTMR_PWMIFA_IFAEN_Msk | (u32IntFlagCnt << LPTMR_PWMIFA_IFACNT_Pos) | (u32IntAccSrc << LPTMR_PWMIFA_IFASEL_Pos)));
+                     | (LPTMR_PWMIFA_IFAEN_Msk | (u32IntFlagCnt & LPTMR_PWMIFA_IFACNT_Msk) | ((u32IntAccSrc & 0x3UL) << LPTMR_PWMIFA_IFASEL_Pos)));
 }
 
 /**
@@ -618,7 +618,7 @@ __STATIC_INLINE void LPTPWM_ClearAccInt(LPTMR_T *lptmr)
   * @retval     1   Accumulator interrupt occurred
   * @details    This function is used to get interrupt flag accumulator interrupt.
   */
-__STATIC_INLINE uint32_t LPTPWM_GetAccInt(LPTMR_T *lptmr)
+__STATIC_INLINE uint32_t LPTPWM_GetAccInt(const LPTMR_T *lptmr)
 {
     return (((lptmr)->PWMAINTSTS & LPTMR_PWMAINTSTS_IFAIF_Msk) ? 1UL : 0UL);
 }
@@ -666,12 +666,6 @@ __STATIC_INLINE void LPTPWM_DisableAccStopMode(LPTMR_T *lptmr)
 {
     lptmr->PWMIFA &= ~LPTMR_PWMIFA_STPMOD_Msk;
 }
-
-uint32_t LPTPWM_ConfigOutputFreqAndDuty(LPTMR_T *lptmr, uint32_t u32Frequency, uint32_t u32DutyCycle);
-void LPTPWM_EnableCounter(LPTMR_T *lptmr);
-void LPTPWM_DisableCounter(LPTMR_T *lptmr);
-void LPTPWM_EnableTrigger(LPTMR_T *lptmr, uint32_t u32TargetMask, uint32_t u32Condition);
-void LPTPWM_DisableTrigger(LPTMR_T *lptmr, uint32_t u32TargetMask);
 
 /**
   * @brief      Enable Trigger LPPDMA

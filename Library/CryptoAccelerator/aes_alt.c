@@ -34,6 +34,7 @@
 #if defined(MBEDTLS_AES_ALT)
 
 #include <string.h>
+#include <stdio.h>
 #include "NuMicro.h"
 
 
@@ -45,7 +46,7 @@
 
 
 #ifndef ARG_UNUSED
-    #define ARG_UNUSED(arg)  ((void)arg)
+    #define ARG_UNUSED(arg)  ((void)(arg))
 #endif
 
 #define AES_BLOCK_SIZE  (16)
@@ -91,7 +92,10 @@ static void mbedtls_zeroize(void *v, size_t n)
 {
     volatile unsigned char *p = (unsigned char *)v;
 
-    while (n--) *p++ = 0;
+    while (n--)
+    {
+        *p++ = 0;
+    }
 }
 
 /* AES DMA compatible backup buffer if user buffer doesn't meet requirements
@@ -116,7 +120,9 @@ void mbedtls_aes_init(mbedtls_aes_context *ctx)
 void mbedtls_aes_free(mbedtls_aes_context *ctx)
 {
     if (ctx == NULL)
+    {
         return;
+    }
 
     mbedtls_zeroize(ctx, sizeof(mbedtls_aes_context));
 }
@@ -177,7 +183,9 @@ int mbedtls_aes_setkey_dec(mbedtls_aes_context *ctx, const unsigned char *key,
 
     /* Also checks keybits */
     if ((ret = mbedtls_aes_setkey_enc(ctx, key, keybits)) != 0)
+    {
         goto exit;
+    }
 
 exit:
     return (ret);
@@ -199,7 +207,9 @@ static int __nvt_aes_crypt(mbedtls_aes_context *ctx,
     int32_t i, wcnt, timeout = 0x10000000;
 
     if (dataSize > AES_BLOCK_SIZE)
+    {
         return -1;
+    }
 
     /* Force AES free */
     CRYPTO->AES_CTL = CRYPTO_AES_CTL_STOP_Msk;
@@ -252,7 +262,9 @@ static int __nvt_aes_crypt(mbedtls_aes_context *ctx,
     {
         /* Check timeout */
         if (timeout-- <= 0)
+        {
             return -1;
+        }
     }
 
 #if (NVT_DCACHE_ON == 1)
@@ -304,9 +316,13 @@ int mbedtls_aes_crypt_ecb(mbedtls_aes_context *ctx,
     ctx->opMode = AES_MODE_ECB << CRYPTO_AES_CTL_OPMODE_Pos;
 
     if (mode == MBEDTLS_AES_ENCRYPT)
+    {
         mbedtls_aes_encrypt(ctx, input, output);
+    }
     else
+    {
         mbedtls_aes_decrypt(ctx, input, output);
+    }
 
 
     return (0);
@@ -335,7 +351,9 @@ int mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
     AES_VALIDATE_RET(output != NULL);
 
     if (length & (AES_BLOCK_SIZE - 1))
+    {
         return (MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH);
+    }
 
     ctx->opMode = AES_MODE_CBC << CRYPTO_AES_CTL_OPMODE_Pos;
     /* Fetch IV byte data in big-endian */
@@ -469,7 +487,9 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
         {
             /* Check timeout */
             if (timeout-- <= 0)
+            {
                 return -1;
+            }
         }
 
 #if (NVT_DCACHE_ON == 1)
@@ -521,7 +541,9 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
             {
                 /* Check timeout */
                 if (timeout-- <= 0)
+                {
                     return -1;
+                }
             }
 
 #if (NVT_DCACHE_ON == 1)
@@ -564,12 +586,16 @@ int mbedtls_aes_crypt_cfb8(mbedtls_aes_context *ctx,
         mbedtls_aes_crypt_ecb(ctx, MBEDTLS_AES_ENCRYPT, iv, iv);
 
         if (mode == MBEDTLS_AES_DECRYPT)
+        {
             ov[AES_BLOCK_SIZE] = *input;
+        }
 
         c = *output++ = (unsigned char)(iv[0] ^ *input++);
 
         if (mode == MBEDTLS_AES_ENCRYPT)
+        {
             ov[AES_BLOCK_SIZE] = c;
+        }
 
         memcpy(iv, ov + 1, AES_BLOCK_SIZE);
     }
@@ -607,8 +633,12 @@ int mbedtls_aes_crypt_ctr(mbedtls_aes_context *ctx,
             mbedtls_aes_crypt_ecb(ctx, MBEDTLS_AES_ENCRYPT, nonce_counter, stream_block);
 
             for (i = AES_BLOCK_SIZE; i > 0; i--)
+            {
                 if (++nonce_counter[i - 1] != 0)
+                {
                     break;
+                }
+            }
         }
 
         c = *input++;
@@ -712,7 +742,9 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
         {
             /* Check timeout */
             if (timeout-- <= 0)
+            {
                 return -1;
+            }
         }
 
 #if (NVT_DCACHE_ON == 1)
@@ -768,7 +800,9 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
             {
                 /* Check timeout */
                 if (timeout-- <= 0)
+                {
                     return -1;
+                }
             }
 
 #if (NVT_DCACHE_ON == 1)
@@ -785,10 +819,6 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
 }
 #endif /* MBEDTLS_CIPHER_MODE_OFB */
 
-
-
-
 #endif /* MBEDTLS_AES_ALT */
-
 
 #endif /* MBEDTLS_AES_C */

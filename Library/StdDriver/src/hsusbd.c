@@ -6,7 +6,7 @@
  * @copyright SPDX-License-Identifier: Apache-2.0
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
-
+#include <string.h>
 #include "NuMicro.h"
 
 /** @addtogroup Standard_Driver Standard Driver
@@ -743,7 +743,9 @@ void HSUSBD_CtrlIn(void)
 
         for (i = 0UL; i < cnt; i++)
         {
-            HSUSBD->CEPDAT = *(uint32_t *)g_hsusbd_CtrlInPointer;
+            uint32_t u32CtrlInData;
+            (void)memcpy(&u32CtrlInData, g_hsusbd_CtrlInPointer, 4UL);
+            HSUSBD->CEPDAT = u32CtrlInData;
             g_hsusbd_CtrlInPointer = (uint8_t *)((uintptr_t)g_hsusbd_CtrlInPointer + 4UL);
         }
 

@@ -100,7 +100,14 @@ void USCI_SPI_Init(void)
     /* Configure USCI_SPI0 */
     /* Configure USCI_SPI0 as a master, USCI_SPI clock rate 2MHz,
        clock idle low, 16-bit transaction, drive output on falling clock edge and latch input on rising edge. */
-    USPI_Open(USPI0, USPI_MASTER, USPI_MODE_0, 16, 2000000);
+    if (USPI_Open(USPI0, USPI_MASTER, USPI_MODE_0, 16, 2000000) == 0U)
+    {
+        printf("USPI_Open failed!\n");
+
+        while (1)
+        {
+        }
+    }
 
     /* Enable the automatic hardware slave selection function. Select the USCI_SPI0_SS pin and configure as low-active. */
     USPI_EnableAutoSS(USPI0, USPI_SS, USPI_SS_ACTIVE_LOW);
@@ -110,6 +117,7 @@ void SpiLoopTest_WithPDMA(void)
 {
     uint32_t u32DataCount, u32TestCycle;
     uint32_t u32RegValue, u32Abort;
+    uint32_t u32TimeOutCount;
     int32_t i32Err;
 
     USPI_T *UspiMaster = USPI0;
@@ -189,6 +197,8 @@ void SpiLoopTest_WithPDMA(void)
     {
         if ((u32TestCycle & 0x1FF) == 0)
             printf(".");
+
+        u32TimeOutCount = SystemCoreClock;
 
         while (1)
         {
@@ -270,6 +280,14 @@ void SpiLoopTest_WithPDMA(void)
                 i32Err = 1;
                 break;
             }
+
+            if (u32TimeOutCount == 0U)
+            {
+                i32Err = 1;
+                break;
+            }
+
+            u32TimeOutCount--;
         }
 
         if (i32Err)

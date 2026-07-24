@@ -19,8 +19,11 @@
 
 /// @cond HIDDEN_SYMBOLS
 
-//#define HUB_DBGMSG     printf
-#define HUB_DBGMSG(...)
+#if defined(ENABLE_HUB_DBGMSG)
+    #define HUB_DBGMSG     (void)usbh_printf
+#else
+    #define HUB_DBGMSG(...)
+#endif
 
 #if (NVT_DCACHE_ON == 1)
     /* Hub device arrary are placed in a non-cacheable region */
@@ -37,18 +40,18 @@ static HUB_DEV_T *alloc_hub_device(void)
 
     for (i = 0; i < MAX_HUB_DEVICE; i++)
     {
-        if (g_hub_dev[i].iface == NULL)
+        if (g_hub_dev[i].iface == USBNULL)
         {
-            memset((char *)&g_hub_dev[i], 0, sizeof(HUB_DEV_T));
+            (void)memset((char *)&g_hub_dev[i], 0, sizeof(HUB_DEV_T));
             g_hub_dev[i].port_reset = do_port_reset;
             return &g_hub_dev[i];
         }
     }
 
-    return NULL;
+    return USBNULL;
 }
 
-static void  free_hub_device(HUB_DEV_T *hub_dev)
+static void  free_hub_device(const HUB_DEV_T *hub_dev)
 {
     int     i;
 
@@ -56,26 +59,10 @@ static void  free_hub_device(HUB_DEV_T *hub_dev)
     {
         if (g_hub_dev[i].iface == hub_dev->iface)
         {
-            memset((char *)&g_hub_dev[i], 0, sizeof(HUB_DEV_T));
+            (void)memset((char *)&g_hub_dev[i], 0, sizeof(HUB_DEV_T));
         }
     }
 }
-
-static HUB_DEV_T *find_hub_device(IFACE_T *iface)
-{
-    int     i;
-
-    for (i = 0; i < MAX_HUB_DEVICE; i++)
-    {
-        if (g_hub_dev[i].iface == iface)
-        {
-            return &g_hub_dev[i];
-        }
-    }
-
-    return NULL;
-}
-
 #if 0
 /*
  *  Hub Class-specific Request -  "Set Hub Feature"
@@ -87,7 +74,7 @@ static int  set_hub_feature(HUB_DEV_T *hub, int feature_selector, int port)
 
     return usbh_ctrl_xfer(udev, REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_DEV,
                           USB_REQ_SET_FEATURE, feature_selector, 0, 0,
-                          NULL, &read_len, 200);
+                          USBNULL, &read_len, 200);
 }
 #endif
 
@@ -101,7 +88,7 @@ static int  clear_hub_feature(HUB_DEV_T *hub, int feature_selector)
 
     return usbh_ctrl_xfer(udev, REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_DEV,
                           USB_REQ_CLEAR_FEATURE, feature_selector, 0, 0,
-                          NULL, &read_len, 200);
+                          USBNULL, &read_len, 200);
 }
 
 /*
@@ -119,10 +106,14 @@ static int  get_hub_status(HUB_DEV_T *hub, uint16_t *wHubStatus, uint16_t *wHubC
                           buff, &read_len, 200);
 
     if (ret < 0)
+    {
         return ret;
+    }
 
-    if (read_len != 4)
+    if (read_len != 4U)
+    {
         return USBH_ERR_DATA_UNDERRUN;
+    }
 
     *wHubStatus = (buff[1] << 8) | buff[0];
     *wHubChange = (buff[3] << 8) | buff[2];
@@ -139,7 +130,7 @@ static int  set_port_feature(HUB_DEV_T *hub, int feature_selector, int port)
 
     return usbh_ctrl_xfer(udev, REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_OTHER,
                           USB_REQ_SET_FEATURE, feature_selector, port, 0,
-                          NULL, &read_len, 200);
+                          USBNULL, &read_len, 200);
 }
 
 /*
@@ -152,7 +143,7 @@ static int  clear_port_feature(HUB_DEV_T *hub, int feature_selector, int port)
 
     return usbh_ctrl_xfer(udev, REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_OTHER,
                           USB_REQ_CLEAR_FEATURE, feature_selector, port, 0,
-                          NULL, &read_len, 200);
+                          USBNULL, &read_len, 200);
 }
 
 /*
@@ -170,9 +161,11 @@ static int  get_port_status(HUB_DEV_T *hub, int port, uint16_t *wPortStatus, uin
                           buff, &read_len, 200);
 
     if (ret < 0)
+    {
         return ret;
+    }
 
-    if (read_len != 4)
+    if (read_len != 4U)
     {
         USB_error("HUB [%s] get_port_status read_len!=4. (%d).\n", hub->pos_id, read_len);
         return USBH_ERR_DATA_UNDERRUN;
@@ -186,8 +179,6 @@ static int  get_port_status(HUB_DEV_T *hub, int port, uint16_t *wPortStatus, uin
 static void hub_status_irq(UTR_T *utr)
 {
     HUB_DEV_T   *hub;
-    uint32_t       i;
-
     // HUB_DBGMSG("hub_read_irq - %d\n", utr->xfer_len);
 
     hub = (HUB_DEV_T *)utr->context;
@@ -200,30 +191,33 @@ static void hub_status_irq(UTR_T *utr)
 
     if (utr->xfer_len)
     {
-        for (i = 0; i < (uint32_t)utr->xfer_len; i++)
+        for (uint32_t i = 0; i < (uint32_t)utr->xfer_len; i++)
         {
-            hub->sc_bitmap |= (utr->buff[i] << (i * 8));
+            hub->sc_bitmap |= (utr->buff[i] << ((uint32_t)i * 8U));
         }
 
         // HUB_DBGMSG("hub_status_irq - status bitmap: 0x%x\n", hub->sc_bitmap);
     }
 }
 
-int hub_probe(IFACE_T *iface)
+static int hub_probe(IFACE_T *iface)
 {
     UDEV_T      *udev = iface->udev;
     ALT_IFACE_T *aif = iface->aif;
-    EP_INFO_T   *ep = NULL;
+    EP_INFO_T   *ep = USBNULL;
     HUB_DEV_T   *hub;
     UTR_T       *utr;
     uint32_t    read_len;
-    int         i, ret;
+    uint8_t     i;
+    int         ret;
     DESC_HUB_T  desc_hub;
-    char        str[2] = "0";
+    char        str[2] = { '0', '\0' };
 
     /* Is this interface HID class? */
     if (aif->ifd->bInterfaceClass != USB_CLASS_HUB)
+    {
         return USBH_ERR_NOT_MATCHED;
+    }
 
     /*
      *  Try to find an interrupt endpoint
@@ -238,25 +232,32 @@ int hub_probe(IFACE_T *iface)
         }
     }
 
-    if (ep == NULL)
+    if (ep == USBNULL)
+    {
         return USBH_ERR_NOT_MATCHED;        /* no INT-in endpoints, Ignore this interface */
+    }
 
     hub = alloc_hub_device();               /* allocate hub device                        */
 
-    if (hub == NULL)
+    if (hub == USBNULL)
+    {
         return USBH_ERR_MEMORY_OUT;         /* out of memory                              */
+    }
 
     hub->iface = iface;                     /* assign interface device pointer            */
     iface->context = (void *)hub;
 
     str[0] += udev->port_num;
 
-    if (udev->parent == NULL)               /* is connected under the root hub?           */
-        strcpy(hub->pos_id, str);           /* create hub position identifier string      */
+    if (udev->parent == USBNULL)
+    {
+        /* is connected under the root hub?           */
+        (void)strcpy(hub->pos_id, str);           /* create hub position identifier string      */
+    }
     else
     {
-        strcpy(hub->pos_id, udev->parent->pos_id);
-        strcat(hub->pos_id, str);
+        (void)strcpy(hub->pos_id, udev->parent->pos_id);
+        (void)strcat(hub->pos_id, str);
     }
 
     HUB_DBGMSG("hub found is:[%s] - device (vid=0x%x, pid=0x%x), interface %d.\n", hub->pos_id,
@@ -267,7 +268,7 @@ int hub_probe(IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     ret = usbh_ctrl_xfer(udev, REQ_TYPE_IN | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_DEV,
                          USB_REQ_GET_DESCRIPTOR,
-                         ((USB_DT_CLASS | 0x9) << 8),  /* Hub descriptor type: 29H   */
+                         (uint16_t)(((uint32_t)USB_DT_CLASS | (uint32_t)0x9U) << 8U),  /* Hub descriptor type: 29H   */
                          0, sizeof(desc_hub),
                          (uint8_t *)&desc_hub, &read_len, 200);
 
@@ -287,19 +288,28 @@ int hub_probe(IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     for (i = 1; i <= hub->bNbrPorts; i++)
     {
+#if defined(ENABLE_HUB_DBGMSG)
         ret = set_port_feature(hub, FS_PORT_POWER, i);
 
         if (ret == 0)
+        {
             HUB_DBGMSG("Hub [%s] port %d power enabled.\n", hub->pos_id, i);
+        }
         else
+        {
             HUB_DBGMSG("Hub [%s] port %d power enabling failed!\n", hub->pos_id, i);
+        }
+
+#else
+        (void)set_port_feature(hub, FS_PORT_POWER, i);  /* ignore error for power enabling failure, just try best to enable it. */
+#endif
     }
 
-    delay_us(hub->bPwrOn2PwrGood * 1000 + 100000);   /* delay to wait hub power ready     */
+    delay_us((((uint32_t)hub->bPwrOn2PwrGood * 1000U) + 100000U));   /* delay to wait hub power ready     */
 
     utr = alloc_utr(udev);                  /* allocate an UTR for INT-in transfer        */
 
-    if (utr == NULL)
+    if (utr == USBNULL)
     {
         free_hub_device(hub);
         return USBH_ERR_MEMORY_OUT;         /* out of memory                              */
@@ -326,20 +336,29 @@ int hub_probe(IFACE_T *iface)
     HUB_DBGMSG("hub_probe OK.\n");
     return 0;
 }
-
-void hub_disconnect(IFACE_T *iface)
+static void hub_disconnect(IFACE_T *iface)
 {
-    HUB_DEV_T   *hub;
-    UDEV_T      *udev;
+    HUB_DEV_T   *hub = USBNULL;
     int         port;
 
-    hub = find_hub_device(iface);           /* find the hub device by inface device       */
+    /* find the hub device by inface device       */
+    for (int i = 0; i < MAX_HUB_DEVICE; i++)
+    {
+        if (g_hub_dev[i].iface == iface)
+        {
+            hub = &g_hub_dev[i];
+            break;
+        }
+    }
 
-    if (hub == NULL)
+    if (hub == USBNULL)
     {
         HUB_DBGMSG("hub_disconnect - hub not found!\n");
         return;
     }
+
+    /* Clear the interface back-link before releasing hub-owned resources. */
+    iface->context = USBNULL;
 
     /*
      *  disconnect all device under this hub
@@ -352,17 +371,18 @@ void hub_disconnect(IFACE_T *iface)
 
         if (ep && ep->hw_pipe)
         {
-            usbh_quit_xfer(hub->iface->udev, ep);
+            (void)usbh_quit_xfer(hub->iface->udev, ep);
         }
 
         free_utr(hub->utr);
     }
 
-    for (port = 1; port <= hub->bNbrPorts; port++)
+    for (port = 1; port <= ((int)hub->bNbrPorts); port++)
     {
+        UDEV_T      *udev;
         udev = usbh_find_device(hub->pos_id, port);
 
-        if (udev != NULL)
+        if (udev != USBNULL)
         {
             HUB_DBGMSG("Disconnect HUB [%s] port %d device 0x%x:0x%x\n", hub->pos_id, port, udev->descriptor.idVendor, udev->descriptor.idProduct);
             disconnect_device(udev);
@@ -373,17 +393,10 @@ void hub_disconnect(IFACE_T *iface)
     free_hub_device(hub);
 }
 
-UDEV_DRV_T  hub_driver =
-{
-    hub_probe,
-    hub_disconnect,
-    NULL,
-    NULL
-};
-
 static int  hub_status_change(HUB_DEV_T *hub)
 {
-    uint16_t    wHubStatus, wHubChange;
+    uint16_t    wHubStatus;
+    uint16_t    wHubChange;
     int         ret;
 
     HUB_DBGMSG("Hub [%s] hub status change 0x%x.\n", hub->pos_id, hub->sc_bitmap);
@@ -403,7 +416,9 @@ static int  hub_status_change(HUB_DEV_T *hub)
         ret = clear_hub_feature(hub, FS_C_HUB_LOCAL_POWER); /* clear local power change   */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
     }
 
     if (wHubChange & HUB_C_OVERCURRENT)     /* has over-current change?                   */
@@ -411,7 +426,9 @@ static int  hub_status_change(HUB_DEV_T *hub)
         ret = clear_hub_feature(hub, FS_C_HUB_OVER_CURRENT); /* clear change              */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
     }
 
     return 0;
@@ -421,22 +438,28 @@ static int do_port_reset(HUB_DEV_T *hub, int port)
 {
     int         retry;
     int         reset_time;
-    uint32_t    t0;
-    uint16_t    wPortStatus, wPortChange;
-    int         ret;
+    uint16_t    wPortStatus;
+    uint16_t    wPortChange;
 
     reset_time = PORT_RESET_TIME_MS;        /* initial reset time                         */
 
     for (retry = 0; retry < PORT_RESET_RETRY; retry++)
     {
+        int         ret;
         ret = set_port_feature(hub, FS_PORT_RESET, port);  /* submit a port reset         */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
+
+        uint32_t    reset_ticks;
+        uint32_t    t0;
 
         t0 = get_ticks();                   /* get start time                             */
+        reset_ticks = (uint32_t)reset_time / 10U;
 
-        while (get_ticks() - t0 < (uint32_t)(reset_time / 10) + 1) /* time-out?                      */
+        while ((get_ticks() - t0) < (reset_ticks + 1U)) /* time-out?                      */
         {
             delay_us(12000);
 
@@ -451,10 +474,10 @@ static int do_port_reset(HUB_DEV_T *hub, int port)
             /*
              *  If device is disconnected or port enabled, we can stop port reset.
              */
-            if (((wPortStatus & PORT_S_CONNECTION) == 0) ||
+            if (((wPortStatus & PORT_S_CONNECTION) == 0U) ||
                     ((wPortStatus & (PORT_S_CONNECTION | PORT_S_ENABLE)) == (PORT_S_CONNECTION | PORT_S_ENABLE)))
             {
-                clear_port_feature(hub, FS_C_PORT_ENABLE, port); /* clear port enable change */
+                (void)clear_port_feature(hub, FS_C_PORT_ENABLE, port); /* clear port enable change */
                 return USBH_OK;
             }
         }
@@ -470,7 +493,7 @@ static int  port_connect_change(HUB_DEV_T *hub, int port, uint16_t wPortStatus)
 {
     UDEV_T     *udev;
     uint16_t   wPortChange;
-    int        ret;
+
 
     if (wPortStatus & PORT_S_CONNECTION)
     {
@@ -479,7 +502,7 @@ static int  port_connect_change(HUB_DEV_T *hub, int port, uint16_t wPortStatus)
         /*--------------------------------------------------------------------------------*/
         udev = usbh_find_device(hub->pos_id, port);
 
-        if (udev != NULL)
+        if (udev != USBNULL)
         {
             disconnect_device(udev);
         }
@@ -487,10 +510,13 @@ static int  port_connect_change(HUB_DEV_T *hub, int port, uint16_t wPortStatus)
         /*
          * New device connected. Do a port reset first.
          */
+        int        ret;
         ret = do_port_reset(hub, port);
 
         if (ret < 0)
+        {
             return ret;
+        }
 
         ret = get_port_status(hub, port, &wPortStatus, &wPortChange);
 
@@ -507,18 +533,26 @@ static int  port_connect_change(HUB_DEV_T *hub, int port, uint16_t wPortStatus)
          */
         udev = alloc_device();
 
-        if (udev == NULL)
+        if (udev == USBNULL)
+        {
             return USBH_ERR_MEMORY_OUT;     /* unlikely, out of memory                    */
+        }
 
         udev->parent = hub;
         udev->port_num = port;
 
         if (wPortStatus & PORT_S_HIGH_SPEED)
+        {
             udev->speed = SPEED_HIGH;
+        }
         else if (wPortStatus & PORT_S_LOW_SPEED)
+        {
             udev->speed = SPEED_LOW;
+        }
         else
+        {
             udev->speed = SPEED_FULL;
+        }
 
         udev->hc_driver = hub->iface->udev->hc_driver;
 
@@ -537,7 +571,7 @@ static int  port_connect_change(HUB_DEV_T *hub, int port, uint16_t wPortStatus)
          */
         udev = usbh_find_device(hub->pos_id, port);
 
-        if (udev != NULL)
+        if (udev != USBNULL)
         {
             disconnect_device(udev);
         }
@@ -548,7 +582,8 @@ static int  port_connect_change(HUB_DEV_T *hub, int port, uint16_t wPortStatus)
 
 static int  port_status_change(HUB_DEV_T *hub, int port)
 {
-    uint16_t    wPortStatus, wPortChange;
+    uint16_t    wPortStatus;
+    uint16_t    wPortChange;
     int         ret;
 
     ret = get_port_status(hub, port, &wPortStatus, &wPortChange);
@@ -566,9 +601,11 @@ static int  port_status_change(HUB_DEV_T *hub, int port)
         ret = clear_port_feature(hub, FS_C_PORT_CONNECTION, port); /* clear port change   */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
 
-        port_connect_change(hub, port, wPortStatus);
+        (void)port_connect_change(hub, port, wPortStatus);
     }
 
     if (wPortChange & PORT_C_ENABLE)        /* have port enable change?                   */
@@ -576,7 +613,9 @@ static int  port_status_change(HUB_DEV_T *hub, int port)
         ret = clear_port_feature(hub, FS_C_PORT_ENABLE, port);     /* clear port change   */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
     }
 
     if (wPortChange & PORT_C_SUSPEND)       /* have port suspend change?                  */
@@ -584,7 +623,9 @@ static int  port_status_change(HUB_DEV_T *hub, int port)
         ret = clear_port_feature(hub, FS_C_PORT_SUSPEND, port);    /* clear port change   */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
     }
 
     if (wPortChange & PORT_C_OVERCURRENT)   /* have port over-current change?             */
@@ -592,7 +633,9 @@ static int  port_status_change(HUB_DEV_T *hub, int port)
         ret = clear_port_feature(hub, FS_C_PORT_OVER_CURRENT, port); /* clear port change */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
     }
 
     if (wPortChange & PORT_C_RESET)         /* have port reset change?                    */
@@ -600,28 +643,33 @@ static int  port_status_change(HUB_DEV_T *hub, int port)
         ret = clear_port_feature(hub, FS_C_PORT_RESET, port);        /* clear port change */
 
         if (ret < 0)
+        {
             return ret;                     /* class command failed                       */
+        }
     }
 
     return 0;
 }
 
-static  volatile  uint8_t   _hub_polling_mutex = 0;
-
 static int  hub_polling(void)
 {
+    static volatile uint8_t  _hub_polling_mutex = 0;
     HUB_DEV_T   *hub;
-    UTR_T       *utr;
-    int         i, ret = 0, port, change = 0;
+    int         i;
+    int         ret = 0;
+    //int         port = 0;
+    int         change = 0;
 
-    if (_hub_polling_mutex)                 /* do nothing                                 */
+    if (_hub_polling_mutex)/* do nothing                                 */
+    {
         return 0;
+    }
 
     _hub_polling_mutex = 1;
 
     for (i = 0; i < MAX_HUB_DEVICE; i++)
     {
-        if ((g_hub_dev[i].iface != NULL) && (g_hub_dev[i].sc_bitmap))
+        if ((g_hub_dev[i].iface != USBNULL) && (g_hub_dev[i].sc_bitmap))
         {
             /*
              *  This hub device has status change
@@ -631,17 +679,21 @@ static int  hub_polling(void)
 
             // HUB_DBGMSG("HUB [%s] hub status change 0x%x.\n", hub->pos_id, hub->sc_bitmap);
 
-            if (hub->sc_bitmap & 0x1)
-                hub_status_change(hub);
-
-            for (port = 1; port <= hub->bNbrPorts; port++)
+            if (hub->sc_bitmap & 0x1U)
             {
-                if (hub->sc_bitmap & (1 << port))
+                (void)hub_status_change(hub);
+            }
+
+            for (int port = 1; port <= ((int)hub->bNbrPorts); port++)
+            {
+                if (hub->sc_bitmap & (1U << (uint32_t)port))
                 {
                     ret = port_status_change(hub, port);
 
                     if (ret < 0)
+                    {
                         break;
+                    }
                 }
             }
 
@@ -650,6 +702,7 @@ static int  hub_polling(void)
             /* re-submit interrupt-in transfer */
             if (ret == 0)
             {
+                UTR_T       *utr;
                 utr = hub->utr;
                 utr->xfer_len = 0;
                 ret = usbh_int_xfer(utr);
@@ -672,8 +725,16 @@ static int  hub_polling(void)
   */
 void usbh_hub_init(void)
 {
-    memset((char *)&g_hub_dev[0], 0, sizeof(g_hub_dev));
-    usbh_register_driver(&hub_driver);
+    static UDEV_DRV_T  hub_driver =
+    {
+        hub_probe,
+        hub_disconnect,
+        USBNULL,
+        USBNULL
+    };
+
+    (void)memset((char *)&g_hub_dev[0], 0, sizeof(g_hub_dev));
+    (void)usbh_register_driver(&hub_driver);
 }
 
 /// @endcond HIDDEN_SYMBOLS
@@ -690,17 +751,19 @@ void usbh_hub_init(void)
   */
 int  usbh_pooling_hubs(void)
 {
-    int   ret, change = 0;
+    int   ret;
+    int   change = 0;
 
 #ifdef ENABLE_EHCI
-    //_ehci->UPSCR[1] = HSUSBH_UPSCR_PP_Msk | HSUSBH_UPSCR_PO_Msk;     /* set port 2 owner to OHCI              */
 
     do
     {
         ret = ehci_driver.rthub_polling();
 
         if (ret)
+        {
             change = 1;
+        }
     } while (ret == 1);
 
 #endif
@@ -712,7 +775,9 @@ int  usbh_pooling_hubs(void)
         ret = ohci1_driver.rthub_polling();
 
         if (ret)
+        {
             change = 1;
+        }
     } while (ret == 1);
 
 #endif
@@ -724,7 +789,9 @@ int  usbh_pooling_hubs(void)
         ret = ohci0_driver.rthub_polling();
 
         if (ret)
+        {
             change = 1;
+        }
     } while (ret == 1);
 
 #endif
@@ -734,7 +801,9 @@ int  usbh_pooling_hubs(void)
         ret = hub_polling();
 
         if (ret)
+        {
             change = 1;
+        }
     } while (ret == 1);
 
     return change;
@@ -744,36 +813,40 @@ int  usbh_pooling_hubs(void)
   * @brief    Find the device under the specified hub port.
   * @param[in]  hub_id    Hub identify ID
   * @param[in]  port      Port number of the specified ub.
-  * @retval   NULL   Not found. There's no valid device connected under that hub port.
+  * @retval   USBNULL   Not found. There's no valid device connected under that hub port.
   * @retval   Otherwise  An UDEV_T pointer reference to the device under specified hub and port.
   */
-UDEV_T *usbh_find_device(char *hub_id, int port)
+UDEV_T *usbh_find_device(const char *hub_id, int port)
 {
     int         i;
-    HUB_DEV_T   *hub = NULL;
+    const HUB_DEV_T   *hub = USBNULL;
     UDEV_T      *udev;
 
     for (i = 0; i < MAX_HUB_DEVICE; i++)
     {
-        if ((g_hub_dev[i].iface != NULL) && (strcmp(g_hub_dev[i].pos_id, hub_id) == 0))
+        if ((g_hub_dev[i].iface != USBNULL) && (strcmp(g_hub_dev[i].pos_id, hub_id) == 0))
         {
             hub = &g_hub_dev[i];
             break;
         }
     }
 
-    if (hub == NULL)
-        return NULL;
+    if (hub == USBNULL)
+    {
+        return USBNULL;
+    }
 
     udev = g_udev_list;
 
-    while (udev != NULL)
+    while (udev != USBNULL)
     {
-        if ((udev->parent == hub) && (udev->port_num == port))
+        if ((udev->parent == hub) && (udev->port_num == (uint8_t)port))
+        {
             return udev;
+        }
 
         udev = udev->next;
     }
 
-    return NULL;
+    return USBNULL;
 }

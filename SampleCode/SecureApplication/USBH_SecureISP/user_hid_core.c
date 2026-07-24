@@ -22,7 +22,7 @@
 HID_MOUSE_FUNC *_mouse_callback = NULL;
 HID_KEYBOARD_FUNC  *_keyboard_callback = NULL;
 
-#include "hid_parser.c"
+
 
 #define USB_CTRL_TIMEOUT_MS        100
 
@@ -790,6 +790,17 @@ void  usbh_hid_regitser_mouse_callback(HID_MOUSE_FUNC *func)
 }
 
 /**
+ * @brief Get the mouse event callback function registered to HID class driver.
+ *
+ * @return HID_MOUSE_FUNC pointer to the mouse event callback function
+ */
+
+HID_MOUSE_FUNC *usbh_hid_get_mouse_callback(void)
+{
+    return _mouse_callback;
+}
+
+/**
  * @brief  Register the keyboard event callback function to HID class driver.
  *         Any keyboard reports will be sent to user application via this callback.
  *
@@ -799,4 +810,14 @@ void  usbh_hid_regitser_mouse_callback(HID_MOUSE_FUNC *func)
 void  usbh_hid_regitser_keyboard_callback(HID_KEYBOARD_FUNC *func)
 {
     _keyboard_callback = func;
+}
+
+/**
+ * @brief Get the keyboard event callback function registered to HID class driver.
+ *
+ * @return HID_KEYBOARD_FUNC pointer to the keyboard event callback function
+ */
+HID_KEYBOARD_FUNC *usbh_hid_get_keyboard_callback(void)
+{
+    return _keyboard_callback;
 }

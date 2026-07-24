@@ -573,7 +573,7 @@ int main()
     /* Set SPIM clock as HCLK divided by 1 */
     SPIM_SET_CLOCK_DIVIDER(SPIM_PORT, SPIM_PORT_DIV);
 
-    if (SPIM_InitFlash(SPIM_PORT, SPIM_OP_ENABLE) != SPIM_OP_DISABLE)          /* Initialized SPI flash */
+    if (SPIM_InitFlash(SPIM_PORT, SPIM_OP_ENABLE) != SPIM_OK)          /* Initialized SPI flash */
     {
         printf("SPIM flash initialize failed!\n");
         goto lexit;
@@ -585,7 +585,12 @@ int main()
     SPIM_ENABLE_CIPHER(SPIM_PORT);
 
     /* Set Cipher Key and protection region */
-    OTFC_SetKeyFromKeyReg(OTFC0, gau32AESKey, OTFC_PR_0, TEST_BLOCK_ADDR, FLASH_BLOCK_SIZE);
+    if (OTFC_SetKeyFromKeyReg(OTFC0, gau32AESKey, OTFC_PR_0, TEST_BLOCK_ADDR, FLASH_BLOCK_SIZE) != OTFC_OK)
+    {
+        printf("OTFC key configuration failed!\n");
+        goto lexit;
+    }
+
     OTFC_ENABLE_PR(OTFC0, OTFC_PR_0);
 
     printf("\n[Fast Read] 3-bytes address mode, Fast Read command...\r\n");

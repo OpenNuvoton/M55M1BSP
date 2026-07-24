@@ -377,7 +377,7 @@ void PTR_Data_Receive(void)
 #define HID_CMD_WRITE    0xC3
 #define HID_CMD_TEST     0xB4
 
-#define PAGE_SIZE        2048
+#define PAGE_SIZE        4096
 #define TEST_PAGES       4
 #define SECTOR_SIZE      4096
 #define START_SECTOR     0x10

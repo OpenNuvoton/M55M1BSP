@@ -20,7 +20,7 @@
 //#define MEM_DEBUG
 
 #ifdef MEM_DEBUG
-    #define mem_debug       printf
+    #define mem_debug       (void)usbh_printf
 #else
     #define mem_debug(...)
 #endif
@@ -71,8 +71,6 @@
     static uint8_t  _dma_unit_used[DMA_MEM_UNIT_NUM];
 #endif
 
-static volatile int  _usbh_hw_mem_used;
-static volatile int  _usbh_hw_max_mem_used;
 static volatile int  _hw_mem_pool_used;
 
 static volatile int  _usbh_dma_mem_used;
@@ -83,10 +81,10 @@ UDEV_T *g_udev_list;
 
 #if (NVT_DCACHE_ON == 1)
     /* device address pool are placed in a non-cacheable region */
-    NVT_NONCACHEABLE uint8_t  _dev_addr_pool[128];
+    NVT_NONCACHEABLE static uint8_t  _dev_addr_pool[128];
     NVT_NONCACHEABLE static volatile int  _device_addr;
 #else
-    uint8_t  _dev_addr_pool[128];
+    static uint8_t  _dev_addr_pool[128];
     static volatile int  _device_addr;
 #endif
 static  int  _sidx = 0;
@@ -97,37 +95,40 @@ static  int  _sidx = 0;
 
 void usbh_memory_init(void)
 {
-    if (sizeof(TD_T) > HW_MEM_UNIT_SIZE)
+    if ((int)sizeof(TD_T) > (int)HW_MEM_UNIT_SIZE)
     {
         USB_error("TD_T - MEM_POOL_UNIT_SIZE too small!\n");
 
-        while (1);
+        while (1)
+        {
+            ;
+        }
     }
 
-    if (sizeof(ED_T) > HW_MEM_UNIT_SIZE)
+    if ((int)sizeof(ED_T) > (int)HW_MEM_UNIT_SIZE)
     {
         USB_error("ED_T - MEM_POOL_UNIT_SIZE too small!\n");
 
-        while (1);
+        while (1)
+        {
+            ;
+        }
     }
-
-    _usbh_hw_mem_used = 0L;
-    _usbh_hw_max_mem_used = 0L;
 
     _usbh_dma_mem_used = 0L;
     _usbh_dma_max_mem_used = 0L;
 
-    memset(_hw_unit_used, 0, sizeof(_hw_unit_used));
+    (void)memset(_hw_unit_used, 0, sizeof(_hw_unit_used));
     _hw_mem_pool_used = 0;
 
-    memset(_dma_unit_used, 0, sizeof(_dma_unit_used));
+    (void)memset(_dma_unit_used, 0, sizeof(_dma_unit_used));
     _dma_men_pool_used = 0;
 
     _sidx = 0;
 
-    g_udev_list = NULL;
+    g_udev_list = USBNULL;
 
-    memset(_dev_addr_pool, 0, sizeof(_dev_addr_pool));
+    (void)memset(_dev_addr_pool, 0, sizeof(_dev_addr_pool));
     _device_addr = 1;
 }
 
@@ -143,30 +144,38 @@ static void  memory_counter(int size)
     _usbh_dma_mem_used += size;
 
     if (_usbh_dma_mem_used > _usbh_dma_max_mem_used)
+    {
         _usbh_dma_max_mem_used = _usbh_dma_mem_used;
+    }
 }
 
 void *usbh_alloc_mem(int size)
 {
-    int  i, start;
-    int  found, wanted;
+    int  i;
+    int  start;
+    int  found;
+    int  wanted;
     void  *p;
 
     start = -1;
     found = 0;
-    wanted = (size + DMA_MEM_UNIT_SIZE - 1) / DMA_MEM_UNIT_SIZE;
+    wanted = ((size + DMA_MEM_UNIT_SIZE - 1) / DMA_MEM_UNIT_SIZE);
 
-    for (i = 0; i < DMA_MEM_UNIT_NUM - wanted + 1; i++)
+    for (i = 0; i < (DMA_MEM_UNIT_NUM - wanted + 1); i++)
     {
-        if (_dma_unit_used[i] == 0)
+        if (_dma_unit_used[i] == 0U)
         {
             if (found == 0)
+            {
                 start = i;
+            }
 
             found++;
 
             if (found >= wanted)
+            {
                 break;
+            }
         }
         else
         {
@@ -178,11 +187,11 @@ void *usbh_alloc_mem(int size)
     {
         USB_error("%s failed to allocate %d KB!!! (%d / %d)\n", __func__,
                   size / 1024, _dma_men_pool_used, DMA_MEM_UNIT_NUM);
-        return NULL;
+        return USBNULL;
     }
 
     /* Go allocate it */
-    for (i = start; found > 0; i++, found--)
+    for (i = start; i < (start + wanted); i++)
     {
         _dma_unit_used[i] = 1;
     }
@@ -190,27 +199,30 @@ void *usbh_alloc_mem(int size)
     _dma_men_pool_used += wanted;
 
 
-    memset(&_dma_mem_pool[start], 0, DMA_MEM_UNIT_SIZE * wanted);
+    (void)memset(&_dma_mem_pool[start], 0, DMA_MEM_UNIT_SIZE * wanted);
     memory_counter(size);
     p = (void *)&_dma_mem_pool[start];
     return p;
 }
 
-int usbh_free_mem(void *p, int size)
+int usbh_free_mem(const void *p, int size)
 {
-    int i, start, wanted;
-    uint32_t paddr, base;
+    int i;
+    int start;
+    int wanted;
+    uint32_t paddr;
+    uint32_t base;
 
     paddr = (uint32_t)(p);
     base = (uint32_t)(&_dma_mem_pool[0]);
 
-    if ((paddr < base) || (paddr > base + (DMA_MEM_UNIT_NUM - 1) * DMA_MEM_UNIT_SIZE))
+    if ((paddr < base) || (paddr > (base + (((uint32_t)DMA_MEM_UNIT_NUM - 1U) * ((uint32_t)DMA_MEM_UNIT_SIZE)))))
     {
         USB_error("%s - invalid DMA address 0x%x!\n", __func__, (uint32_t)paddr);
         return USBH_ERR_MEM_FREE_INVALID;
     }
 
-    start = (paddr - base) / DMA_MEM_UNIT_SIZE;
+    start = (paddr - base) / ((uint32_t)DMA_MEM_UNIT_SIZE);
 
     if ((uint32_t)&_dma_mem_pool[start] != paddr)
     {
@@ -220,23 +232,25 @@ int usbh_free_mem(void *p, int size)
 
     wanted = (size + DMA_MEM_UNIT_SIZE - 1) / DMA_MEM_UNIT_SIZE;
 
-    if ((paddr + wanted * DMA_MEM_UNIT_SIZE) > (base + DMA_MEM_UNIT_NUM * DMA_MEM_UNIT_SIZE))
+    if ((paddr + (((uint32_t)wanted) * (uint32_t)DMA_MEM_UNIT_SIZE)) > (base + ((uint32_t)DMA_MEM_UNIT_NUM * (uint32_t)DMA_MEM_UNIT_SIZE)))
     {
         USB_error("%s - invalid DMA address 0x%x, size %d!\n", __func__, (uint32_t)paddr, size);
         return USBH_ERR_MEM_FREE_INVALID;
     }
 
-    for (i = start; i < start + wanted; i++)
+    for (i = start; i < (start + wanted); i++)
     {
         if (!_dma_unit_used[i])
+        {
             USB_error("%s warning - try to free an unused block %d!\n", __func__, i);
+        }
 
         _dma_unit_used[i] = 0;
     }
 
     _dma_men_pool_used -= wanted;
 
-    memory_counter(0 - size);
+    memory_counter(-size);
 
     return USBH_OK;
 }
@@ -251,13 +265,13 @@ UDEV_T *alloc_device(void)
 
     udev = usbh_alloc_mem(sizeof(*udev));
 
-    if (udev == NULL)
+    if (udev == USBNULL)
     {
         USB_error("alloc_device failed!\n");
-        return NULL;
+        return USBNULL;
     }
 
-    memset(udev, 0, sizeof(*udev));
+    (void)memset(udev, 0, sizeof(*udev));
     memory_counter(sizeof(*udev));
     udev->cur_conf = -1;                    /* must! used to identify the first SET CONFIGURATION */
     udev->next = g_udev_list;               /* chain to global device list */
@@ -269,11 +283,15 @@ void free_device(UDEV_T *udev)
 {
     UDEV_T  *d;
 
-    if (udev == NULL)
+    if (udev == USBNULL)
+    {
         return;
+    }
 
-    if (udev->cfd_buff != NULL)
-        usbh_free_mem(udev->cfd_buff, MAX_DESC_BUFF_SIZE);
+    if (udev->cfd_buff != USBNULL)
+    {
+        (void)usbh_free_mem(udev->cfd_buff, MAX_DESC_BUFF_SIZE);
+    }
 
     /*
      *  Remove it from the global device list
@@ -286,7 +304,7 @@ void free_device(UDEV_T *udev)
     {
         d = g_udev_list;
 
-        while (d != NULL)
+        while (d != USBNULL)
         {
             if (d->next == udev)
             {
@@ -298,7 +316,7 @@ void free_device(UDEV_T *udev)
         }
     }
 
-    usbh_free_mem(udev, sizeof(*udev));
+    (void)usbh_free_mem(udev, sizeof(*udev));
 
     memory_counter(-sizeof(*udev));
 }
@@ -308,11 +326,13 @@ int  alloc_dev_address(void)
     _device_addr++;
 
     if (_device_addr >= 128)
+    {
         _device_addr = 1;
+    }
 
     while (1)
     {
-        if (_dev_addr_pool[_device_addr] == 0)
+        if (_dev_addr_pool[_device_addr] == 0U)
         {
             _dev_addr_pool[_device_addr] = 1;
             return _device_addr;
@@ -321,14 +341,18 @@ int  alloc_dev_address(void)
         _device_addr++;
 
         if (_device_addr >= 128)
+        {
             _device_addr = 1;
+        }
     }
 }
 
 void  free_dev_address(int dev_addr)
 {
     if (dev_addr < 128)
+    {
         _dev_addr_pool[dev_addr] = 0;
+    }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -341,27 +365,29 @@ UTR_T *alloc_utr(UDEV_T *udev)
 
     utr = usbh_alloc_mem(sizeof(*utr));
 
-    if (utr == NULL)
+    if (utr == USBNULL)
     {
         USB_error("alloc_utr failed!\n");
-        return NULL;
+        return USBNULL;
     }
 
     memory_counter(sizeof(*utr));
-    memset(utr, 0, sizeof(*utr));
+    (void)memset(utr, 0, sizeof(*utr));
     utr->udev = udev;
     mem_debug("[ALLOC] [UTR] - 0x%x\n", (int)utr);
     return utr;
 }
 
-void free_utr(UTR_T *utr)
+void free_utr(const UTR_T *utr)
 {
-    if (utr == NULL)
+    if (utr == USBNULL)
+    {
         return;
+    }
 
     mem_debug("[FREE] [UTR] - 0x%x\n", (int)utr);
-    usbh_free_mem(utr, sizeof(*utr));
-    memory_counter(0 - (int)sizeof(*utr));
+    (void)usbh_free_mem(utr, sizeof(*utr));
+    memory_counter(-(int)sizeof(*utr));
 }
 
 /*--------------------------------------------------------------------------*/
@@ -370,39 +396,30 @@ void free_utr(UTR_T *utr)
 
 ED_T *alloc_ohci_ED(void)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int    i;
     ED_T   *ed;
 
-    __disable_irq();
-
     for (i = 0; i < HW_MEM_UNIT_NUM; i++)
     {
-        if (_hw_unit_used[i] == 0)
+        if (_hw_unit_used[i] == 0U)
         {
             _hw_unit_used[i] = 1;
             _hw_mem_pool_used++;
 
-            __set_PRIMASK(irq_state);
-
             ed = (ED_T *)&_hw_mem_pool[i];
-            memset(ed, 0, sizeof(*ed));
+            (void)memset(ed, 0, sizeof(*ed));
             mem_debug("[ALLOC] [ED] - 0x%x\n", (int)ed);
             return ed;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_error("alloc_ohci_ED failed!\n");
-    return NULL;
+    return USBNULL;
 }
 
-void free_ohci_ED(ED_T *ed)
+void free_ohci_ED(const ED_T *ed)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int      i;
-
-    __disable_irq();
 
     for (i = 0; i < HW_MEM_UNIT_NUM; i++)
     {
@@ -410,13 +427,11 @@ void free_ohci_ED(ED_T *ed)
         {
             _hw_unit_used[i] = 0;
             _hw_mem_pool_used--;
-            __set_PRIMASK(irq_state);
             mem_debug("[FREE]  [ED] - 0x%x\n", (int)ed);
             return;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_debug("free_ohci_ED - not found! (ignored in case of multiple UTR)\n");
 }
 
@@ -425,41 +440,32 @@ void free_ohci_ED(ED_T *ed)
 /*--------------------------------------------------------------------------*/
 TD_T *alloc_ohci_TD(UTR_T *utr)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int    i;
     TD_T   *td;
 
-    __disable_irq();
-
     for (i = 0; i < HW_MEM_UNIT_NUM; i++)
     {
-        if (_hw_unit_used[i] == 0)
+        if (_hw_unit_used[i] == 0U)
         {
             _hw_unit_used[i] = 1;
             _hw_mem_pool_used++;
 
-            __set_PRIMASK(irq_state);
-
             td = (TD_T *)&_hw_mem_pool[i];
 
-            memset(td, 0, sizeof(*td));
+            (void)memset(td, 0, sizeof(*td));
             td->utr = utr;
             mem_debug("[ALLOC] [TD] - 0x%x\n", (int)td);
             return td;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_error("alloc_ohci_TD failed!\n");
-    return NULL;
+    return USBNULL;
 }
 
-void free_ohci_TD(TD_T *td)
+void free_ohci_TD(const TD_T *td)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int   i;
-
-    __disable_irq();
 
     for (i = 0; i < HW_MEM_UNIT_NUM; i++)
     {
@@ -467,7 +473,6 @@ void free_ohci_TD(TD_T *td)
         {
             _hw_unit_used[i] = 0;
             _hw_mem_pool_used--;
-            __set_PRIMASK(irq_state);
             mem_debug("[FREE]  [TD] - 0x%x\n", (int)td);
             return;
         }
@@ -481,35 +486,28 @@ void free_ohci_TD(TD_T *td)
 /*--------------------------------------------------------------------------*/
 QH_T *alloc_ehci_QH(void)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int    i;
-    QH_T   *qh = NULL;
-
-    __disable_irq();
+    QH_T   *qh = USBNULL;
 
     for (i = (_sidx + 1) % HW_MEM_UNIT_NUM; i != _sidx; i = (i + 1) % HW_MEM_UNIT_NUM)
     {
-        if (_hw_unit_used[i] == 0)
+        if (_hw_unit_used[i] == 0U)
         {
             _hw_unit_used[i] = 1;
             _sidx = i;
             _hw_mem_pool_used++;
 
-            __set_PRIMASK(irq_state);
-
             qh = (QH_T *)&_hw_mem_pool[i];
-            memset(qh, 0, sizeof(*qh));
+            (void)memset(qh, 0, sizeof(*qh));
             mem_debug("[ALLOC] [QH] - 0x%x\n", (int)qh);
             break;
         }
     }
 
-    if (qh == NULL)
+    if (qh == USBNULL)
     {
-        __set_PRIMASK(irq_state);
-
         USB_error("alloc_ehci_QH failed!\n");
-        return NULL;
+        return USBNULL;
     }
 
     qh->Curr_qTD        = QTD_LIST_END;
@@ -519,12 +517,9 @@ QH_T *alloc_ehci_QH(void)
     return qh;
 }
 
-void free_ehci_QH(QH_T *qh)
+void free_ehci_QH(QH_T const *qh)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int      i;
-
-    __disable_irq();
 
     for (i = 0; i < HW_MEM_UNIT_NUM; i++)
     {
@@ -533,13 +528,10 @@ void free_ehci_QH(QH_T *qh)
             _hw_unit_used[i] = 0;
             _hw_mem_pool_used--;
 
-            __set_PRIMASK(irq_state);
             mem_debug("[FREE]  [QH] - 0x%x\n", (int)qh);
             return;
         }
     }
-
-    __set_PRIMASK(irq_state);
 
     USB_debug("free_ehci_QH - not found! (ignored in case of multiple UTR)\n");
 }
@@ -549,25 +541,21 @@ void free_ehci_QH(QH_T *qh)
 /*--------------------------------------------------------------------------*/
 qTD_T *alloc_ehci_qTD(UTR_T *utr)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int     i;
-    qTD_T   *qtd;
 
-    __disable_irq();
 
     for (i = (_sidx + 1) % HW_MEM_UNIT_NUM; i != _sidx; i = (i + 1) % HW_MEM_UNIT_NUM)
     {
-        if (_hw_unit_used[i] == 0)
+        if (_hw_unit_used[i] == 0U)
         {
             _hw_unit_used[i] = 1;
             _sidx = i;
             _hw_mem_pool_used++;
 
-            __set_PRIMASK(irq_state);
-
+            qTD_T   *qtd;
             qtd = (qTD_T *)&_hw_mem_pool[i];
 
-            memset(qtd, 0, sizeof(*qtd));
+            (void)memset(qtd, 0, sizeof(*qtd));
             qtd->Next_qTD     = QTD_LIST_END;
             qtd->Alt_Next_qTD = QTD_LIST_END;
             qtd->Token        = 0x11197B7F;//0x1197B3F; // QTD_STS_HALT;  visit_qtd() will not remove a qTD with this mark. It means the qTD still not ready for transfer.
@@ -577,18 +565,13 @@ qTD_T *alloc_ehci_qTD(UTR_T *utr)
         }
     }
 
-    __set_PRIMASK(irq_state);
-
     USB_error("alloc_ehci_qTD failed!\n");
-    return NULL;
+    return USBNULL;
 }
 
 void free_ehci_qTD(qTD_T *qtd)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int   i;
-
-    __disable_irq();
 
     for (i = 0; i < HW_MEM_UNIT_NUM; i++)
     {
@@ -596,13 +579,11 @@ void free_ehci_qTD(qTD_T *qtd)
         {
             _hw_unit_used[i] = 0;
             _hw_mem_pool_used--;
-            __set_PRIMASK(irq_state);
             mem_debug("[FREE]  [qTD] - 0x%x\n", (int)qtd);
             return;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_error("free_ehci_qTD 0x%x - not found!\n", (int)qtd);
 }
 
@@ -611,99 +592,86 @@ void free_ehci_qTD(qTD_T *qtd)
 /*--------------------------------------------------------------------------*/
 iTD_T *alloc_ehci_iTD(void)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int     i;
     iTD_T   *itd;
 
-    __disable_irq();
-
     for (i = (_sidx + 1) % HW_MEM_UNIT_NUM; i != _sidx; i = (i + 1) % HW_MEM_UNIT_NUM)
     {
-        if (i + 2 >= HW_MEM_UNIT_NUM)
-            continue;
-
-        if ((_hw_unit_used[i] == 0) && (_hw_unit_used[i + 1] == 0))
+        if ((i + 2) >= HW_MEM_UNIT_NUM)
         {
-            _hw_unit_used[i] = _hw_unit_used[i + 1] = 1;
+            continue;
+        }
+
+        if ((_hw_unit_used[i] == 0U) && (_hw_unit_used[i + 1] == 0U))
+        {
+            _hw_unit_used[i] = 1U;
+            _hw_unit_used[i + 1] = 1U;
             _sidx = i + 1;
             _hw_mem_pool_used += 2;
-            __set_PRIMASK(irq_state);
+
             itd = (iTD_T *)&_hw_mem_pool[i];
-            memset(itd, 0, sizeof(*itd));
+            (void)memset(itd, 0, sizeof(*itd));
             mem_debug("[ALLOC] [iTD] - 0x%x\n", (int)itd);
             return itd;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_error("alloc_ehci_iTD failed!\n");
-    return NULL;
+    return USBNULL;
 }
 
 void free_ehci_iTD(iTD_T *itd)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int   i;
 
-    __disable_irq();
-
-    for (i = 0; i + 1 < HW_MEM_UNIT_NUM; i++)
+    for (i = 0; (i + 1) < HW_MEM_UNIT_NUM; i++)
     {
         if ((uint32_t)&_hw_mem_pool[i] == (uint32_t)itd)
         {
 
-            _hw_unit_used[i] = _hw_unit_used[i + 1] = 0;
+            _hw_unit_used[i] = 0U;
+            _hw_unit_used[i + 1] = 0U;
             _hw_mem_pool_used -= 2;
 
-            __set_PRIMASK(irq_state);
             mem_debug("[FREE]  [iTD] - 0x%x\n", (int)itd);
             return;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_error("free_ehci_iTD 0x%x - not found!\n", (int)itd);
 }
 
 /*--------------------------------------------------------------------------*/
-/*   EHCI iTD allocate/free                                                 */
+/*   EHCI siTD allocate/free                                                 */
 /*--------------------------------------------------------------------------*/
 siTD_T *alloc_ehci_siTD(void)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int     i;
     siTD_T  *sitd;
 
-    __disable_irq();
-
     for (i = (_sidx + 1) % HW_MEM_UNIT_NUM; i != _sidx; i = (i + 1) % HW_MEM_UNIT_NUM)
     {
-        if (_hw_unit_used[i] == 0)
+        if (_hw_unit_used[i] == 0U)
         {
-            _hw_unit_used[i] = 1;
+            _hw_unit_used[i] = 1U;
             _sidx = i;
             _hw_mem_pool_used ++;
 
-            __set_PRIMASK(irq_state);
 
             sitd = (siTD_T *)&_hw_mem_pool[i];
-            memset(sitd, 0, sizeof(*sitd));
+            (void)memset(sitd, 0, sizeof(*sitd));
             mem_debug("[ALLOC] [siTD] - 0x%x\n", (int)sitd);
             return sitd;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_error("alloc_ehci_siTD failed!\n");
-    return NULL;
+    return USBNULL;
 }
 
 void free_ehci_siTD(siTD_T *sitd)
 {
-    uint32_t irq_state = __get_PRIMASK();
     int   i;
-
-    __disable_irq();
 
     for (i = 0; i < HW_MEM_UNIT_NUM; i++)
     {
@@ -711,13 +679,11 @@ void free_ehci_siTD(siTD_T *sitd)
         {
             _hw_unit_used[i] = 0;
             _hw_mem_pool_used--;
-            __set_PRIMASK(irq_state);
             mem_debug("[FREE]  [siTD] - 0x%x\n", (int)sitd);
             return;
         }
     }
 
-    __set_PRIMASK(irq_state);
     USB_error("free_ehci_siTD 0x%x - not found!\n", (int)sitd);
 }
 

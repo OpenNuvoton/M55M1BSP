@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wno-extra -Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wno-extra -Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define></Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\Library\StdDriver\inc;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\StdDriver\src\npu;..\..\..\..\Library\StdDriver\inc\npu</IncludePath>

@@ -33,7 +33,7 @@ project:
       misc:
         - for-compiler: AC6
           C: [-std=c11]
-          C-CPP: [-fno-rtti, -funsigned-char, -fshort-enums, -fshort-wchar, -ffunction-sections, -fdata-sections, -Wall, -D__MICROLIB, -Wconditional-uninitialized]
+          C-CPP: [-fno-rtti, -funsigned-char, -fshort-enums, -fshort-wchar, -ffunction-sections, -fdata-sections, -Wall, -D__MICROLIB, -Wconditional-uninitialized, -mno-unaligned-access]
           CPP: [-xc++, -std=c++11]
           ASM: [-masm=auto]
           Link:
@@ -42,6 +42,10 @@ project:
             - --strict --summary_stderr --info summarysizes
             - --pd="-DSTACK_SIZE=0x1000" --pd="-DHEAP_SIZE=0x20000"
     # SDH - GCC
+        - for-compiler: GCC
+          C-CPP:
+            - -mno-unaligned-access
+            - -Wmaybe-uninitialized
     - setup: Options for SDH_GNUC
       for-context: +SDH_GNUC
       processor: {fpu: dp, mve: fp, endian: little, trustzone: "off"}
@@ -61,15 +65,19 @@ project:
       misc:
         - for-compiler: GCC
           C: [-std=gnu11, -Wno-stringop-overflow]
-          C-CPP: [-mthumb, -masm-syntax-unified, -fmessage-length=0, -fsigned-char, -ffunction-sections, -fdata-sections, -Wmaybe-uninitialized]
+          C-CPP: [-mthumb, -masm-syntax-unified, -fmessage-length=0, -fsigned-char, -ffunction-sections, -fdata-sections, -Wmaybe-uninitialized, -mno-unaligned-access]
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
             - -Wl,--no-warn-rwx-segments
             - -Wl,-defsym=STACK_SIZE=0x1000 -Wl,-defsym=HEAP_SIZE=0x20000
           Library: ["m"]
+        - for-compiler: AC6
+          C-CPP:
+            - -mno-unaligned-access
 
     # USBH - AC6
+            - -Wconditional-uninitialized
     - setup: Options for USBH_ARMCLANG
       for-context: +USBH_ARMCLANG
       processor: {fpu: dp, mve: fp, endian: little, trustzone: "off"}
@@ -89,7 +97,7 @@ project:
       misc:
         - for-compiler: AC6
           C: [-std=c11]
-          C-CPP: [-fno-rtti, -funsigned-char, -fshort-enums, -fshort-wchar, -ffunction-sections, -fdata-sections, -Wall, -D__MICROLIB, -Wconditional-uninitialized]
+          C-CPP: [-fno-rtti, -funsigned-char, -fshort-enums, -fshort-wchar, -ffunction-sections, -fdata-sections, -Wall, -D__MICROLIB, -Wconditional-uninitialized, -mno-unaligned-access]
           CPP: [-xc++, -std=c++11]
           ASM: [-masm=auto]
           Link:
@@ -99,6 +107,10 @@ project:
             - --pd="-DSTACK_SIZE=0x1000" --pd="-DHEAP_SIZE=0x20000"
 
     # USBH - GCC
+        - for-compiler: GCC
+          C-CPP:
+            - -mno-unaligned-access
+            - -Wmaybe-uninitialized
     - setup: Options for USBH_GNUC
       for-context: +USBH_GNUC
       processor: {fpu: dp, mve: fp, endian: little, trustzone: "off"}
@@ -118,14 +130,18 @@ project:
       misc:
         - for-compiler: GCC
           C: [-std=gnu11, -Wno-stringop-overflow]
-          C-CPP: [-mthumb, -masm-syntax-unified, -fmessage-length=0, -fsigned-char, -ffunction-sections, -fdata-sections, -Wmaybe-uninitialized]
+          C-CPP: [-mthumb, -masm-syntax-unified, -fmessage-length=0, -fsigned-char, -ffunction-sections, -fdata-sections, -Wmaybe-uninitialized, -mno-unaligned-access]
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
             - -Wl,--no-warn-rwx-segments
             - -Wl,-defsym=STACK_SIZE=0x1000 -Wl,-defsym=HEAP_SIZE=0x20000
           Library: ["m"]
+        - for-compiler: AC6
+          C-CPP:
+            - -mno-unaligned-access
 
+            - -Wconditional-uninitialized
   linker:
     - script: ../../../../Library/Device/Nuvoton/M55M1/Source/ARM/M55M1.scf
       for-compiler: AC6

@@ -16,5 +16,5 @@ solution:
       compiler: GCC
       device: Nuvoton::M55M1H2LJAE
   projects:
-    - project: ./XOMLib/XOMLib.cproject.yml
     - project: ./XOMLib_Code/XOMLib_Code.cproject.yml
+    - project: ./XOMLib/XOMLib.cproject.yml

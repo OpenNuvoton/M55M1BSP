@@ -11,7 +11,7 @@
 
 <div class="para func">
 <h2>f_getlabel</h2>
-<p>The f_getlabel function returns volume label and volume serial number of a volume.</p>
+<p>The f_getlabel function retrieves volume label and volume serial number of a volume.</p>
 <pre>
 FRESULT f_getlabel (
   const TCHAR* <span class="arg">path</span>,  <span class="c">/* [IN] Drive number */</span>
@@ -69,10 +69,10 @@ FRESULT f_getlabel (
     char str[12];
 
     <span class="c">/* Get volume label of the default drive */</span>
-    <em>f_getlabel</em>("", str, 0);
+    <em>f_getlabel</em>("", str, NULL);
 
     <span class="c">/* Get volume label of the drive 2 */</span>
-    <em>f_getlabel</em>("2:", str, 0);
+    <em>f_getlabel</em>("2:", str, NULL);
 </pre>
 </div>
 
@@ -83,6 +83,6 @@ FRESULT f_getlabel (
 </div>
 
 
-<p class="foot"><a href="../00index_e.html">Return</a></p>
+<p class="foot"><a href="../index.html">Return</a></p>
 </body>
 </html>

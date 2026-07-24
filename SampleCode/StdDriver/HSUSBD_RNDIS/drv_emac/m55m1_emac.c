@@ -9,7 +9,7 @@
 #include "string.h"
 #include "m55m1_emac.h"
 #include "m55m1_mii.h"
-
+#include "rndis.h"
 
 #if (LWIP_USING_HW_CHECKSUM == 1)
     #define USING_HW_CHECKSUM
@@ -292,8 +292,6 @@ NVT_ITCM void EMAC0_IRQHandler(void)
 
 }
 
-extern uint8_t rndis_indata[EMAC_RX_DESC_SIZE + 1][1580];
-extern uint32_t u32CurrentRxBuf;
 uint32_t EMAC_ReceivePkt(void)
 {
     uint32_t len = 0;
@@ -302,7 +300,8 @@ uint32_t EMAC_ReceivePkt(void)
     if ((len = synop_handle_received_data(&GMACdev, &psPktFrame)) > 0)
     {
         synopGMAC_set_rx_qptr(&GMACdev, (u32)psPktFrame, PKT_FRAME_BUF_SIZE, 0);
-        memcpy((uint8_t *)&rndis_indata[u32CurrentRxBuf][44], psPktFrame, len);
+        memcpy((uint8_t *)&_rrxq.data[_rrxq.eth_idx][44], psPktFrame, len);
+        _rrxq.eth_idx = (_rrxq.eth_idx + 1) % RQ_SZ;
         synopGMAC_enable_interrupt(&GMACdev, DmaIntEnable);
     }
 
@@ -337,12 +336,8 @@ int32_t EMAC_TransmitPkt(uint8_t *pbuf, uint32_t len)
 uint32_t My_EMAC_SendPkt(uint8_t *pu8Data, uint32_t u32Size)
 {
     int32_t ret = -1;
-    uint8_t *buf = NULL;
 
-    buf = EMAC_AllocatePktBuf();
-
-    memcpy((uint8_t *)buf, pu8Data, u32Size);
-    ret = EMAC_TransmitPkt((uint8_t *)buf, u32Size);
+    ret = EMAC_TransmitPkt((uint8_t *)pu8Data, u32Size);
 
     if (ret == -1)
         return 0;
@@ -353,46 +348,11 @@ uint32_t My_EMAC_SendPkt(uint8_t *pu8Data, uint32_t u32Size)
 uint32_t EMAC_CheckLinkStatus(void)
 {
     uint32_t linkstatus;
-    (void)linkstatus;
+
     linkstatus = (uint32_t)mii_ethtool_gset(&GMACdev, 0);
 
-    return GMACdev.LinkState;
-}
+    if (GMACdev.LinkState == LINKDOWN)
+        return LINKDOWN;
 
-uint32_t EMAC_CheckLinkSpeed(void)
-{
-    uint32_t linkspeed;
-
-    linkspeed = (uint32_t)mii_ethtool_gset(&GMACdev, 0);
-
-    if (linkspeed != 0)
-        return 0;//Fail
-
-    if ((GMACdev.Speed & SPEED100) && (GMACdev.DuplexMode & FULLDUPLEX))
-    {
-        printf("mii:: 100M FULLDUPLEX\n");
-        linkspeed = LPA_100FULL;
-    }
-    else if ((GMACdev.Speed & SPEED100) && (GMACdev.DuplexMode & HALFDUPLEX))
-    {
-        printf("mii:: 100M HALFDUPLEX\n");
-        linkspeed = LPA_100HALF;
-    }
-    else if ((GMACdev.Speed & SPEED10) && (GMACdev.DuplexMode & FULLDUPLEX))
-    {
-        printf("mii:: 10M FULLDUPLEX\n");
-        linkspeed = LPA_10FULL;
-    }
-    else if ((GMACdev.Speed & SPEED10) && (GMACdev.DuplexMode & HALFDUPLEX))
-    {
-        printf("mii:: 10M HALFDUPLEX\n");
-        linkspeed = LPA_10FULL;
-    }
-    else
-    {
-        printf("mii:: 100M FULLDUPLEX (Default: LPA)\n");
-        linkspeed = LPA_100FULL;
-    }
-
-    return linkspeed;
+    return linkstatus;
 }

@@ -8,6 +8,7 @@
  *****************************************************************************/
 
 #include <arm_cmse.h>
+#include <stdio.h>
 #include "NuMicro.h"
 
 #define LOOP_HERE       0xE7FEE7FF      /* Instruction Code of "B ." */

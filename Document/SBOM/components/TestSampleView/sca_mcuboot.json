@@ -1,0 +1,81 @@
+{
+  "components": [
+    {
+      "type": "application",
+      "bom-ref": "pkg:generic/mcuboot-imgtool@2.4.0?source=vendored&path=Tool/mcuboot",
+      "name": "MCUboot imgtool",
+      "version": "2.4.0",
+      "scope": "optional",
+      "author": "MCUboot project",
+      "purl": "pkg:generic/mcuboot-imgtool@2.4.0",
+      "description": "Host-side MCUboot image signing and image management tool bundled under Tool/mcuboot. The BSP includes imgtool only, not the MCUboot bootloader.",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/mcu-tools/mcuboot"
+        }
+      ],
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "Tool/mcuboot"
+        },
+        {
+          "name": "bsp:entry-point",
+          "value": "Tool/mcuboot/imgtool.py"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_tool_source"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "third-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "MCUboot project"
+        },
+        {
+          "name": "bsp:upstream-repository",
+          "value": "https://github.com/mcu-tools/mcuboot"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/components/sca_mcuboot.json"
+        },
+        {
+          "name": "bsp:evidence-path",
+          "value": "Tool/mcuboot/README.md"
+        },
+        {
+          "name": "bsp:version-evidence",
+          "value": "Tool/mcuboot/README.md"
+        },
+        {
+          "name": "bsp:license-evidence",
+          "value": "Tool/mcuboot/README.md; Tool/mcuboot/imgtool.py"
+        },
+        {
+          "name": "bsp:included-in-product-firmware",
+          "value": "false"
+        },
+        {
+          "name": "bsp:runtime-dependency",
+          "value": "false"
+        },
+        {
+          "name": "bsp:usage",
+          "value": "host-side image signing and image management tool"
+        }
+      ]
+    }
+  ]
+}

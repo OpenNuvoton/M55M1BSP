@@ -10,12 +10,17 @@
 #ifndef  _USBH_CONFIG_H_
 #define  _USBH_CONFIG_H_
 
+#include <stdarg.h>
+
+#define USBNULL                ((void*)0)                 ///< For USB Library Usage: USBNULL pointer
+extern int usbh_printf(const char *fmt, ...);        ///< For USB Library Usage: debug print function
+
 /// @cond HIDDEN_SYMBOLS
 
 /*----------------------------------------------------------------------------------------*/
 /*   Hardware settings                                                                    */
 /*----------------------------------------------------------------------------------------*/
-#define HCLK_MHZ               180       /* used for loop-delay. must be larger than
+#define HCLK_MHZ               220       /* used for loop-delay. must be larger than
                                             true HCLK clock MHz                        */
 
 #define ENABLE_OHCI0                      /* Enable OHCI host controller                */
@@ -70,7 +75,7 @@
    May allocate one or more units depend on hardware descriptor type.                                 */
 
 #define HW_MEM_UNIT_SIZE       64       /*!< A fixed hard coding setting. Do not change it!            */
-#define HW_MEM_UNIT_NUM        64      /*!< Increase this or heap size if memory allocate failed.     */
+#define HW_MEM_UNIT_NUM        128      /*!< Increase this or heap size if memory allocate failed.     */
 
 /* USB transfer memory pool. For non-cache DMA memory allocation. */
 
@@ -93,15 +98,15 @@
 //#define DUMP_DESCRIPTOR                   /* dump descriptors                           */
 
 #ifdef ENABLE_ERROR_MSG
-    #define USB_error            printf
+    #define USB_error            (void)usbh_printf
 #else
     #define USB_error(...)
 #endif
 
 #ifdef ENABLE_DEBUG_MSG
-    #define USB_debug            printf
+    #define USB_debug            (void)usbh_printf
     #ifdef ENABLE_VERBOSE_DEBUG
-        #define USB_vdebug         printf
+        #define USB_vdebug         (void)usbh_printf
     #else
         #define USB_vdebug(...)
     #endif

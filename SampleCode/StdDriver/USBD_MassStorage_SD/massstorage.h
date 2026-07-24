@@ -145,8 +145,6 @@ extern uint32_t g_u32TotalSectors;
 extern uint8_t volatile g_u8Suspend;
 
 /*-------------------------------------------------------------*/
-void DataFlashWrite(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer);
-void DataFlashRead(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer);
 void MSC_Init(void);
 void MSC_RequestSense(void);
 void MSC_ReadFormatCapacity(void);

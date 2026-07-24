@@ -70,7 +70,7 @@ extern "C"
 #define GPIO_PUSEL_PULL_DOWN        0x2UL           /*!< GPIO PUSEL setting for Pull-down Mode \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
-/*  GPIO_DBCTL Constant Definitions                                                                          */
+/*  GPIO_DBCTL Constant Definitions                                                                        */
 /*---------------------------------------------------------------------------------------------------------*/
 #define GPIO_DBCTL_ICLK_ON            0x00000020UL /*!< GPIO_DBCTL setting for all IO pins edge detection circuit is always active after reset \hideinitializer */
 #define GPIO_DBCTL_ICLK_OFF           0x00000000UL /*!< GPIO_DBCTL setting for edge detection circuit is active only if IO pin corresponding GPIOx_IEN bit is set to 1 \hideinitializer */

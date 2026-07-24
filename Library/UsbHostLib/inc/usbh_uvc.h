@@ -30,17 +30,17 @@
 /*  Capability settings                                                                 */
 /*--------------------------------------------------------------------------------------*/
 
-#define UVC_MAX_DEVICE          1           /* Allowed maximum number of UVC device connected  */
-#define UVC_MAX_STREAM          1           /* Allowed maximum number of streaming interface per UVC device   */
+#define UVC_MAX_DEVICE          1U           /* Allowed maximum number of UVC device connected  */
+#define UVC_MAX_STREAM          1U           /* Allowed maximum number of streaming interface per UVC device   */
 
-#define UVC_MAX_ALT_IF          32//12          /* Maximum number of alternative interface per UVC streaming interface supported */
-#define UVC_MAX_FORMAT          24           /* Maximum number of video stream format supported in an UVC device.    */
-#define UVC_MAX_FRAME           32          /* Maximum number of video stream frame supported in an UVC device.    */
-#define UVC_MAX_STILL_IMAGE     16          /* Maximum number of still image supported in an UVC device.    */
+#define UVC_MAX_ALT_IF          32U          /* Maximum number of alternative interface per UVC streaming interface supported */
+#define UVC_MAX_FORMAT          24U           /* Maximum number of video stream format supported in an UVC device.    */
+#define UVC_MAX_FRAME           32U          /* Maximum number of video stream frame supported in an UVC device.    */
+#define UVC_MAX_STILL_IMAGE     16U          /* Maximum number of still image supported in an UVC device.    */
 
-#define UVC_UTR_PER_STREAM      2
+#define UVC_UTR_PER_STREAM      2U
 // #define IF_PER_UTR           8           /* defined in usb.h                        */
-#define UVC_UTR_INBUF_SIZE      (IF_PER_UTR * 3072)
+#define UVC_UTR_INBUF_SIZE      ((uint32_t)(IF_PER_UTR) * 3072U)
 
 #define UVC_REQ_TIMEOUT         50          /*!< UVC control request timeout value in tick (10ms unit)     */
 
@@ -50,9 +50,9 @@
 /*--------------------------------------------------------------------------------------*/
 //#define UVC_DEBUG
 
-#define UVC_ERRMSG      printf
+#define UVC_ERRMSG      (void)usbh_printf
 #ifdef UVC_DEBUG
-    #define UVC_DBGMSG      printf
+    #define UVC_DBGMSG      (void)usbh_printf
 #else
     #define UVC_DBGMSG(...)
 #endif
@@ -62,58 +62,58 @@
 //#define USB_CLASS_VIDEO       0x0E
 
 /* Video Interface Subclass Codes */
-#define UVC_SC_UNDEFINED            0x00    /* Undefined                                 */
-#define UVC_SC_VIDEOCONTROL         0x01    /* Video control interface                   */
-#define UVC_SC_VIDEOSTREAMING       0x02    /* Video streaming                           */
-#define UVC_SC_VIDEO_IF_COLLECT     0x03    /* Video interface collection                */
+#define UVC_SC_UNDEFINED            ((uint8_t)0x00U)    /* Undefined                                 */
+#define UVC_SC_VIDEOCONTROL         ((uint8_t)0x01U)    /* Video control interface                   */
+#define UVC_SC_VIDEOSTREAMING       ((uint8_t)0x02U)    /* Video streaming                           */
+#define UVC_SC_VIDEO_IF_COLLECT     ((uint8_t)0x03U)    /* Video interface collection                */
 
 /* Video Interface Protocol Codes */
 #define UVC_PC_PROT_UNDEFINED       0x00    /* Undefined                                 */
 #define UVC_PC_PROT_15              0x01    /* Video Class version 1.5                   */
 
 /* UVC Class-specific descritpor types */
-#define UVC_CS_UNDEFINED            0x20
-#define UVC_CS_DEVICE               0x21
-#define UVC_CS_CONFIGURATION        0x22
-#define UVC_CS_STRING               0x23
-#define UVC_CS_INTERFACE            0x24
-#define UVC_CS_ENDPOINT             0x25
+#define UVC_CS_UNDEFINED            ((uint8_t)0x20U)
+#define UVC_CS_DEVICE               ((uint8_t)0x21U)
+#define UVC_CS_CONFIGURATION        ((uint8_t)0x22U)
+#define UVC_CS_STRING               ((uint8_t)0x23U)
+#define UVC_CS_INTERFACE            ((uint8_t)0x24U)
+#define UVC_CS_ENDPOINT             ((uint8_t)0x25U)
 
 /*
  * Video Class-Specific VC Interface Descriptor Subtypes
  */
-#define VC_DESCRIPTOR_UNDEFINED     0x00
-#define VC_HEADER                   0x01
-#define VC_INPUT_TERMINAL           0x02
-#define VC_OUTPUT_TERMINAL          0x03
-#define VC_SELECTOR_UNIT            0x04
-#define VC_PROCESSING_UNIT          0x05
-#define VC_EXTENSION_UNIT           0x06
-#define VC_ENCODING_UNIT            0x07
+#define VC_DESCRIPTOR_UNDEFINED     ((uint8_t)0x00U)
+#define VC_HEADER                   ((uint8_t)0x01U)
+#define VC_INPUT_TERMINAL           ((uint8_t)0x02U)
+#define VC_OUTPUT_TERMINAL          ((uint8_t)0x03U)
+#define VC_SELECTOR_UNIT            ((uint8_t)0x04U)
+#define VC_PROCESSING_UNIT          ((uint8_t)0x05U)
+#define VC_EXTENSION_UNIT           ((uint8_t)0x06U)
+#define VC_ENCODING_UNIT            ((uint8_t)0x07U)
 
 /*
  * Video Class-Specific VS Interface Descriptor Subtypes
  */
-#define VS_UNDEFINED                0x00
-#define VS_INPUT_HEADER             0x01
-#define VS_OUTPUT_HEADER            0x02
-#define VS_STILL_IMAGE_FRAME        0x03
-#define VS_FORMAT_UNCOMPRESSED      0x04
-#define VS_FRAME_UNCOMPRESSED       0x05
-#define VS_FORMAT_MJPEG             0x06
-#define VS_FRAME_MJPEG              0x07
-#define VS_FORMAT_MPEG2TS           0x0A
-#define VS_FORMAT_DV                0x0C
-#define VS_COLORFORMAT              0x0D
-#define VS_FORMAT_FRAME_BASED       0x10
-#define VS_FRAME_FRAME_BASED        0x11
-#define VS_FORMAT_STREAM_BASED      0x12
-#define VS_FORMAT_H264              0x13
-#define VS_FRAME_H264               0x14
-#define VS_FORMAT_H264_SIMULCAST    0x15
-#define VS_FORMAT_VP8               0x16
-#define VS_FRAME_VP8                0x17
-#define VS_FORMAT_VP8_SIMULCAST     0x18
+#define VS_UNDEFINED                ((uint8_t)0x00U)
+#define VS_INPUT_HEADER             ((uint8_t)0x01U)
+#define VS_OUTPUT_HEADER            ((uint8_t)0x02U)
+#define VS_STILL_IMAGE_FRAME        ((uint8_t)0x03U)
+#define VS_FORMAT_UNCOMPRESSED      ((uint8_t)0x04U)
+#define VS_FRAME_UNCOMPRESSED       ((uint8_t)0x05U)
+#define VS_FORMAT_MJPEG             ((uint8_t)0x06U)
+#define VS_FRAME_MJPEG              ((uint8_t)0x07U)
+#define VS_FORMAT_MPEG2TS           ((uint8_t)0x0AU)
+#define VS_FORMAT_DV                ((uint8_t)0x0CU)
+#define VS_COLORFORMAT              ((uint8_t)0x0DU)
+#define VS_FORMAT_FRAME_BASED       ((uint8_t)0x10U)
+#define VS_FRAME_FRAME_BASED        ((uint8_t)0x11U)
+#define VS_FORMAT_STREAM_BASED      ((uint8_t)0x12U)
+#define VS_FORMAT_H264              ((uint8_t)0x13U)
+#define VS_FRAME_H264               ((uint8_t)0x14U)
+#define VS_FORMAT_H264_SIMULCAST    ((uint8_t)0x15U)
+#define VS_FORMAT_VP8               ((uint8_t)0x16U)
+#define VS_FRAME_VP8                ((uint8_t)0x17U)
+#define VS_FORMAT_VP8_SIMULCAST     ((uint8_t)0x18U)
 
 /*
  * Video Class-Specific Endpoint Descriptor Subtypes
@@ -128,15 +128,15 @@
  * Video Class-Specific Request Codes
  */
 #define UVC_RC_UNDEFINED            0x00
-#define UVC_SET_CUR                 0x01
+#define UVC_SET_CUR                 ((uint8_t)0x01U)
 #define UVC_SET_CUR_ALL             0x11
-#define UVC_GET_CUR                 0x81
-#define UVC_GET_MIN                 0x82
-#define UVC_GET_MAX                 0x83
-#define UVC_GET_RES                 0x84
-#define UVC_GET_LEN                 0x85
-#define UVC_GET_INFO                0x86
-#define UVC_GET_DEF                 0x87
+#define UVC_GET_CUR                 ((uint8_t)0x81U)
+#define UVC_GET_MIN                 ((uint8_t)0x82U)
+#define UVC_GET_MAX                 ((uint8_t)0x83U)
+#define UVC_GET_RES                 ((uint8_t)0x84U)
+#define UVC_GET_LEN                 ((uint8_t)0x85U)
+#define UVC_GET_INFO                ((uint8_t)0x86U)
+#define UVC_GET_DEF                 ((uint8_t)0x87U)
 #define UVC_GET_CUR_ALL             0x91
 #define UVC_GET_MIN_ALL             0x92
 #define UVC_GET_MAX_ALL             0x93
@@ -571,14 +571,14 @@ struct uvc_dev_t;
 /*
  *  Payload Header
  */
-#define UVC_PL_EOH    0x80
-#define UVC_PL_ERR    0x40
-#define UVC_PL_STI    0x20
-#define UVC_PL_RES    0x10
-#define UVC_PL_SCR    0x08
-#define UVC_PL_PTS    0x04
-#define UVC_PL_EOF    0x02
-#define UVC_PL_FID    0x01
+#define UVC_PL_EOH    ((uint8_t)0x80U)
+#define UVC_PL_ERR    ((uint8_t)0x40U)
+#define UVC_PL_STI    ((uint8_t)0x20U)
+#define UVC_PL_RES    ((uint8_t)0x10U)
+#define UVC_PL_SCR    ((uint8_t)0x08U)
+#define UVC_PL_PTS    ((uint8_t)0x04U)
+#define UVC_PL_EOF    ((uint8_t)0x02U)
+#define UVC_PL_FID    ((uint8_t)0x01U)
 
 typedef struct uvc_ctrl_t
 {
@@ -677,6 +677,13 @@ typedef struct uvc_dev_t
 }   UVC_DEV_T;
 
 /** @} end of group USBH_EXPORTED_STRUCTURES */
+
+/// @cond HIDDEN_SYMBOLS
+//export functions
+extern int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface);
+extern int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface);
+extern int usbh_uvc_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_CTRL_PARAM_T *param);
+/// @endcond HIDDEN_SYMBOLS
 
 #ifdef __cplusplus
 extern "C" {

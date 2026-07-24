@@ -7,7 +7,6 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
-#include <stdio.h>
 #include <string.h>
 
 #include "NuMicro.h"
@@ -17,12 +16,9 @@
 #include "usbh_hid.h"
 
 /// @cond HIDDEN_SYMBOLS
-
-extern int hid_parse_report_descriptor(HID_DEV_T *hdev, IFACE_T *iface);
-
 static HID_DEV_T  g_hid_dev[CONFIG_HID_MAX_DEV];
 
-static HID_DEV_T *g_hdev_list = NULL;
+static HID_DEV_T *g_hdev_list = USBNULL;
 
 static HID_DEV_T *alloc_hid_device(void)
 {
@@ -30,37 +26,40 @@ static HID_DEV_T *alloc_hid_device(void)
 
     for (i = 0; i < CONFIG_HID_MAX_DEV; i++)
     {
-        if (g_hid_dev[i].iface == NULL)
+        if (g_hid_dev[i].iface == USBNULL)
         {
-            memset((char *)&g_hid_dev[i], 0, sizeof(HID_DEV_T));
+            (void)memset((char *)&g_hid_dev[i], 0, sizeof(HID_DEV_T));
             g_hid_dev[i].uid = get_ticks();
             return &g_hid_dev[i];
         }
     }
 
-    return NULL;
+    return USBNULL;
 }
 
-void  free_hid_device(HID_DEV_T *hid_dev)
+static void  free_hid_device(HID_DEV_T *hid_dev)
 {
-    hid_dev->iface = NULL;
-    memset((char *)hid_dev, 0, sizeof(HID_DEV_T));
+    hid_dev->iface = USBNULL;
+    (void)memset((char *)hid_dev, 0, sizeof(HID_DEV_T));
 }
 
 static int hid_probe(IFACE_T *iface)
 {
     UDEV_T       *udev = iface->udev;
     ALT_IFACE_T  *aif = iface->aif;
-    DESC_IF_T    *ifd;
-    EP_INFO_T    *ep = NULL;
-    HID_DEV_T    *hdev, *p;
+    const DESC_IF_T    *ifd;
+    const EP_INFO_T    *ep = USBNULL;
+    HID_DEV_T    *hdev;
+    HID_DEV_T    *p;
     int          i;
 
     ifd = aif->ifd;
 
     /* Is this interface HID class? */
     if (ifd->bInterfaceClass != USB_CLASS_HID)
+    {
         return USBH_ERR_NOT_MATCHED;
+    }
 
     HID_DBGMSG("hid_probe - device (vid=0x%x, pid=0x%x), interface %d, subclass 0x%x, protocol 0x%x.\n",
                udev->descriptor.idVendor, udev->descriptor.idProduct, ifd->bInterfaceNumber,
@@ -78,33 +77,41 @@ static int hid_probe(IFACE_T *iface)
         }
     }
 
-    if (ep == NULL)
+    if (ep == USBNULL)
+    {
         return USBH_ERR_NOT_MATCHED;   // No endpoints, Ignore this interface
+    }
 
     hdev = alloc_hid_device();
 
-    if (hdev == NULL)
+    if (hdev == USBNULL)
+    {
         return HID_RET_OUT_OF_MEMORY;
+    }
 
     hdev->iface = iface;
     hdev->idVendor  = udev->descriptor.idVendor;
     hdev->idProduct = udev->descriptor.idProduct;
     hdev->bSubClassCode = ifd->bInterfaceSubClass;
     hdev->bProtocolCode = ifd->bInterfaceProtocol;
-    hdev->next = NULL;
+    hdev->next = USBNULL;
     iface->context = (void *)hdev;
 
-    hid_parse_report_descriptor(hdev, iface);
+    (void)hid_parse_report_descriptor(hdev, iface);
 
     /*
      *  Chaining newly found HID device to end of HID device list.
      */
-    if (g_hdev_list == NULL)
+    if (g_hdev_list == USBNULL)
+    {
         g_hdev_list = hdev;
+    }
     else
     {
-        for (p = g_hdev_list; p->next != NULL; p = p->next)
+        for (p = g_hdev_list; p->next != USBNULL; p = p->next)
+        {
             ;
+        }
 
         p->next = hdev;
     }
@@ -116,16 +123,17 @@ static int hid_probe(IFACE_T *iface)
 
 static void  hid_disconnect(IFACE_T *iface)
 {
-    HID_DEV_T   *hdev, *p;
-    UTR_T       *utr;
-    RP_INFO_T   *rp, *next_rp;
+    HID_DEV_T   *hdev;
+    HID_DEV_T   *p;
+    RP_INFO_T   *rp;
+    RP_INFO_T   *next_rp;
     int         i;
 
     hdev = (HID_DEV_T *)(iface->context);
 
     for (i = 0; i < iface->aif->ifd->bNumEndpoints; i++)
     {
-        iface->udev->hc_driver->quit_xfer(NULL, &(iface->aif->ep[i]));
+        iface->udev->hc_driver->quit_xfer(USBNULL, &(iface->aif->ep[i]));
     }
 
     /*
@@ -133,28 +141,31 @@ static void  hid_disconnect(IFACE_T *iface)
      */
     for (i = 0; i < CONFIG_HID_DEV_MAX_PIPE; i++)
     {
+        UTR_T       *utr;
         utr = hdev->utr_list[i];
 
-        if (utr != NULL)
+        if (utr != USBNULL)
         {
-            usbh_quit_utr(utr);             /* Quit the UTR                               */
-            usbh_free_mem(utr->buff, utr->ep->wMaxPacketSize);
+            (void)usbh_quit_utr(utr);             /* Quit the UTR                               */
+            (void)usbh_free_mem(utr->buff, utr->ep->wMaxPacketSize);
             free_utr(utr);
         }
     }
 
-    if (hdev->rpd.utr_led != NULL)
+    if (hdev->rpd.utr_led != USBNULL)
     {
-        usbh_quit_utr(hdev->rpd.utr_led);   /* Quit the UTR                               */
+        (void)usbh_quit_utr(hdev->rpd.utr_led);   /* Quit the UTR                               */
         free_utr(hdev->rpd.utr_led);
     }
 
-    if (hdev->rpd.report != NULL)
+    if (hdev->rpd.report != USBNULL)
     {
-        for (rp = hdev->rpd.report; rp != NULL;)
+        rp = hdev->rpd.report;
+
+        while (rp != USBNULL)
         {
             next_rp = rp->next;
-            usbh_free_mem(rp, sizeof(RP_INFO_T));
+            (void)usbh_free_mem(rp, sizeof(RP_INFO_T));
             rp = next_rp;
         }
     }
@@ -174,7 +185,7 @@ static void  hid_disconnect(IFACE_T *iface)
             }
             else
             {
-                for (p = g_hdev_list; p != NULL; p = p->next)
+                for (p = g_hdev_list; p != USBNULL; p = p->next)
                 {
                     if (p->next == hdev)
                     {
@@ -191,15 +202,9 @@ static void  hid_disconnect(IFACE_T *iface)
     }
 }
 
-UDEV_DRV_T  hid_driver =
-{
-    hid_probe,
-    hid_disconnect,
-    NULL,                       /* suspend */
-    NULL                        /* resume */
-};
 
-/// @endcond /* HIDDEN_SYMBOLS */
+
+/// @endcond HIDDEN_SYMBOLS
 
 /**
   * @brief    Initialize USB Host HID driver.
@@ -207,15 +212,23 @@ UDEV_DRV_T  hid_driver =
   */
 void usbh_hid_init(void)
 {
-    memset((char *)&g_hid_dev[0], 0, sizeof(g_hid_dev));
-    g_hdev_list = NULL;
-    usbh_register_driver(&hid_driver);
+    static UDEV_DRV_T  hid_driver =
+    {
+        hid_probe,
+        hid_disconnect,
+        USBNULL,                       /* suspend */
+        USBNULL                        /* resume */
+    };
+
+    (void)memset((char *)&g_hid_dev[0], 0, sizeof(g_hid_dev));
+    g_hdev_list = USBNULL;
+    (void)usbh_register_driver(&hid_driver);
 }
 
 /**
  *  @brief   Get a list of currently connected USB Hid devices.
  *  @return  A list HID_DEV_T pointer reference to connected HID devices.
- *  @retval  NULL       There's no HID device found.
+ *  @retval  USBNULL       There's no HID device found.
  *  @retval  Otherwise  A list of connected HID devices.
  *
  *  The HID devices are chained by the "next" member of HID_DEV_T.

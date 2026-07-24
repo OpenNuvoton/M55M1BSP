@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define>NVT_CMSE_NON_SECURE, NVT_VECTOR_ON_FLASH, DEBUG_PORT=UART1_NS, NVT_DBG_UART_OFF, SYSTEM_CORE_CLOCK=220000000</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\..\Library\StdDriver\inc;..\..;..\..\tz_demo;..\..\..\..\..\ThirdParty\FreeRTOS\Source\include;..\..\..\..\..\ThirdParty\FreeRTOS\Source\portable\GCC\ARM_CM55\non_secure;..\..\..\..\..\ThirdParty\FreeRTOS\Source\portable\GCC\ARM_CM55\secure;..\..\..\..\..\ThirdParty\FreeRTOS\Demo\Common\include</IncludePath>

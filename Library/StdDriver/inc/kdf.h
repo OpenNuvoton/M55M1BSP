@@ -89,7 +89,7 @@ void KDF_SetKeyInput(const uint8_t pu8KeyInput[], uint32_t u32ByteCnt);
 void KDF_SetSalt(const uint8_t pu8Salt    [], uint32_t u32ByteCnt);
 void KDF_SetLabel(const uint8_t pu8Label   [], uint32_t u32ByteCnt);
 void KDF_SetContext(const uint8_t pu8Context [], uint32_t u32ByteCnt);
-int32_t KDF_GetKeyBitSize(uint32_t u32KeySizeOpt);
+int32_t KDF_GetKeyBitSize(uint32_t u32KeySizeSel);
 int32_t KDF_DeriveKey(E_KDF_MODE eMode, uint32_t u32DeriveKeyParam, uint32_t u32KeyBitSize, uint32_t *pu32KeyOut);
 int32_t KDF_DeriveKeyToKS(KS_MEM_Type eMemType, E_KDF_MODE eMode, uint32_t u32DeriveKeyParam, uint32_t u32KeySizeSel, uint32_t u32KeyMeta);
 

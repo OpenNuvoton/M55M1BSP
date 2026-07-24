@@ -27,10 +27,10 @@ extern "C"
   @{
 */
 
-#define USPI_MODE_0                   (0x0 << USPI_PROTCTL_SCLKMODE_Pos)  /*!< SCLK idle low; data transmit with falling edge and receive with rising edge \hideinitializer */
-#define USPI_MODE_1                   (0x1 << USPI_PROTCTL_SCLKMODE_Pos)  /*!< SCLK idle low; data transmit with rising edge and receive with falling edge \hideinitializer */
-#define USPI_MODE_2                   (0x2 << USPI_PROTCTL_SCLKMODE_Pos)  /*!< SCLK idle high; data transmit with rising edge and receive with falling edge \hideinitializer */
-#define USPI_MODE_3                   (0x3 << USPI_PROTCTL_SCLKMODE_Pos)  /*!< SCLK idle high; data transmit with falling edge and receive with rising edge \hideinitializer */
+#define USPI_MODE_0                   ((uint32_t)((uint32_t)0x0 << USPI_PROTCTL_SCLKMODE_Pos))  /*!< SCLK idle low; data transmit with falling edge and receive with rising edge \hideinitializer */
+#define USPI_MODE_1                   ((uint32_t)((uint32_t)0x1 << USPI_PROTCTL_SCLKMODE_Pos))  /*!< SCLK idle low; data transmit with rising edge and receive with falling edge \hideinitializer */
+#define USPI_MODE_2                   ((uint32_t)((uint32_t)0x2 << USPI_PROTCTL_SCLKMODE_Pos))  /*!< SCLK idle high; data transmit with rising edge and receive with falling edge \hideinitializer */
+#define USPI_MODE_3                   ((uint32_t)((uint32_t)0x3 << USPI_PROTCTL_SCLKMODE_Pos))  /*!< SCLK idle high; data transmit with falling edge and receive with rising edge \hideinitializer */
 
 #define USPI_SLAVE                    (USPI_PROTCTL_SLAVE_Msk)            /*!< Set as slave \hideinitializer */
 #define USPI_MASTER                   (0x0UL)                             /*!< Set as master \hideinitializer */
@@ -129,12 +129,21 @@ extern "C"
   * @details    Disable automatic slave selection function and set USCI_SPI_SS pin to high state. Only available in Master mode.
   * \hideinitializer
   */
-#define USPI_SET_SS_HIGH(uspi)                                                              \
-    do                                                                                      \
-    {                                                                                       \
-        (uspi)->LINECTL &= ~(USPI_LINECTL_CTLOINV_Msk);                                       \
-        (uspi)->PROTCTL = ((uspi)->PROTCTL & ~(USPI_PROTCTL_AUTOSS_Msk)) | USPI_PROTCTL_SS_Msk; \
-    } while (0)
+static inline void USPI_SET_SS_HIGH(USPI_T *uspi)
+{
+    uint32_t u32LineCtl = uspi->LINECTL;
+    uint32_t u32ProtCtl = uspi->PROTCTL & ~USPI_PROTCTL_AUTOSS_Msk;
+    uint32_t u32CtlInvSet = u32LineCtl & USPI_LINECTL_CTLOINV_Msk;
+
+    if (u32CtlInvSet != 0UL)
+    {
+        uspi->PROTCTL = u32ProtCtl & ~USPI_PROTCTL_SS_Msk;
+    }
+    else
+    {
+        uspi->PROTCTL = u32ProtCtl | USPI_PROTCTL_SS_Msk;
+    }
+}
 
 /**
   * @brief      Set USCI_SPI_SS pin to low state.
@@ -143,12 +152,21 @@ extern "C"
   * @details    Disable automatic slave selection function and set USCI_SPI_SS pin to low state. Only available in Master mode.
   * \hideinitializer
   */
-#define USPI_SET_SS_LOW(uspi)                                              \
-    do                                                                     \
-    {                                                                      \
-        (uspi)->LINECTL |= USPI_LINECTL_CTLOINV_Msk;                         \
-        (uspi)->PROTCTL &= ~(USPI_PROTCTL_AUTOSS_Msk | USPI_PROTCTL_SS_Msk); \
-    } while (0)
+static inline void USPI_SET_SS_LOW(USPI_T *uspi)
+{
+    uint32_t u32LineCtl = uspi->LINECTL;
+    uint32_t u32ProtCtl = uspi->PROTCTL & ~USPI_PROTCTL_AUTOSS_Msk;
+    uint32_t u32CtlInvSet = u32LineCtl & USPI_LINECTL_CTLOINV_Msk;
+
+    if (u32CtlInvSet != 0UL)
+    {
+        uspi->PROTCTL = u32ProtCtl | USPI_PROTCTL_SS_Msk;
+    }
+    else
+    {
+        uspi->PROTCTL = u32ProtCtl & ~USPI_PROTCTL_SS_Msk;
+    }
+}
 
 /**
   * @brief  Set the length of suspend interval.
@@ -156,9 +174,11 @@ extern "C"
   * @param[in]  u32SuspCycle Decide the length of suspend interval.
   * \hideinitializer
   */
-#define USPI_SET_SUSPEND_CYCLE(uspi, u32SuspCycle)  \
-    ((uspi)->PROTCTL = ((uspi)->PROTCTL & ~(USPI_PROTCTL_SUSPITV_Msk)) | \
-                       ((u32SuspCycle) << USPI_PROTCTL_SUSPITV_Pos))
+static inline void USPI_SET_SUSPEND_CYCLE(USPI_T *uspi, uint32_t u32SuspCycle)
+{
+    uspi->PROTCTL = (uspi->PROTCTL & ~USPI_PROTCTL_SUSPITV_Msk) |
+                    ((u32SuspCycle << USPI_PROTCTL_SUSPITV_Pos) & USPI_PROTCTL_SUSPITV_Msk);
+}
 
 /**
   * @brief  Set the USCI_SPI transfer sequence with LSB first.
@@ -180,15 +200,26 @@ extern "C"
   * @param[in]  u32Width The data width
   * \hideinitializer
   */
-#define USPI_SET_DATA_WIDTH(uspi, u32Width)                           \
-    do                                                                \
-    {                                                                 \
-        (uspi)->LINECTL &= ~(USPI_LINECTL_DWIDTH_Msk);                  \
-        if ((u32Width) != 16UL)                                       \
-        {                                                             \
-            (uspi)->LINECTL |= ((u32Width) << USPI_LINECTL_DWIDTH_Pos); \
-        }                                                             \
-    } while (0)
+static inline void USPI_SET_DATA_WIDTH(USPI_T *uspi, uint32_t u32Width)
+{
+    uint32_t u32WidthTmp = u32Width;
+
+    if ((u32WidthTmp > 0UL) && (u32WidthTmp < 4UL))
+    {
+        u32WidthTmp = 4UL;
+    }
+    else if (u32WidthTmp >= 16UL)
+    {
+        u32WidthTmp = 0UL;
+    }
+    else
+    {
+        u32WidthTmp &= 0xFUL;
+    }
+
+    uspi->LINECTL = (uspi->LINECTL & ~USPI_LINECTL_DWIDTH_Msk) |
+                    (u32WidthTmp << USPI_LINECTL_DWIDTH_Pos);
+}
 
 /**
   * @brief  Get the USCI_SPI busy state.
@@ -217,7 +248,7 @@ extern "C"
   * @param[in] uspi The pointer of the specified USCI_SPI module.
   * \hideinitializer
   */
-#define USPI_CLR_WAKEUP_FLAG(uspi)  ((uspi)->WKSTS |= USPI_WKSTS_WKF_Msk)
+#define USPI_CLR_WAKEUP_FLAG(uspi)  ((uspi)->WKSTS = USPI_WKSTS_WKF_Msk)
 
 /**
   * @brief Get protocol interrupt flag/status.
@@ -259,7 +290,7 @@ extern "C"
   *                                  - \ref USPI_BUFSTS_RXOVIF_Msk
   * \hideinitializer
   */
-#define USPI_CLR_BUF_INT_FLAG(uspi, u32IntTypeFlag) ((uspi)->BUFSTS |= (u32IntTypeFlag))
+#define USPI_CLR_BUF_INT_FLAG(uspi, u32IntTypeFlag) ((uspi)->BUFSTS = (u32IntTypeFlag))
 
 /**
   * @brief Enable specified protocol interrupt.
@@ -400,7 +431,7 @@ void USPI_ClearTxBuf(USPI_T *uspi);
 void USPI_DisableAutoSS(USPI_T *uspi);
 void USPI_EnableAutoSS(USPI_T *uspi, uint32_t u32SSPinMask, uint32_t u32ActiveLevel);
 uint32_t USPI_SetBusClock(USPI_T *uspi, uint32_t u32BusClock);
-uint32_t USPI_GetBusClock(USPI_T *uspi);
+uint32_t USPI_GetBusClock(const USPI_T *uspi);
 void USPI_EnableInt(USPI_T *uspi, uint32_t u32Mask);
 void USPI_DisableInt(USPI_T *uspi, uint32_t u32Mask);
 uint32_t USPI_GetIntFlag(const USPI_T *uspi, uint32_t u32Mask);

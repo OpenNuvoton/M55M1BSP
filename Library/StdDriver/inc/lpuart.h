@@ -415,8 +415,8 @@ extern "C"
 /* static inline functions                                                                                 */
 /*---------------------------------------------------------------------------------------------------------*/
 
-static __INLINE void LPUART_CLEAR_RTS(LPUART_T *lpuart);
-static __INLINE void LPUART_SET_RTS(LPUART_T *lpuart);
+__STATIC_INLINE void LPUART_CLEAR_RTS(LPUART_T *lpuart);
+__STATIC_INLINE void LPUART_SET_RTS(LPUART_T *lpuart);
 
 
 /**

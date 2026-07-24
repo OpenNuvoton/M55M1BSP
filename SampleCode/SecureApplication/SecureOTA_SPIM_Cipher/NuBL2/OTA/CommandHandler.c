@@ -35,8 +35,8 @@ uint32_t CMDLIB_VERSION(void)
 #define ECC_KEY_SIZE        256             /* 256-bits */
 #define ALL_ONE_2KB_CHKS    0x3F55D17Ful    /* 2K all CRC32 checksum value */
 
-void Hex2Reg(char input[], uint32_t volatile reg[]);
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
+//void Hex2Reg(char input[], uint32_t volatile reg[]);
+//void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
 uint32_t GetMaxAPROMSize(void);
 int32_t _IsValidFlashRegion(uint32_t u32Addr, uint32_t u32ByteSize);
 

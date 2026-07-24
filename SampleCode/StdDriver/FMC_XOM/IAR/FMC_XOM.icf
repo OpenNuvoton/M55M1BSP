@@ -6,12 +6,26 @@ define symbol __ICFEDIT_intvec_start__ = 0x00100000;
 
 /*-Memory Regions-*/
 define symbol __ICFEDIT_region_ROM_start__  = 0x00100000;
-define symbol __ICFEDIT_region_ROM_end__    = 0x002FFFFF;
+define symbol __ICFEDIT_region_ROM_end__    = 0x001FFFFF;
 define symbol __ICFEDIT_region_XOM_start__  = 0x00110000;
 define symbol __ICFEDIT_region_XOM_end__    = 0x00111FFF;
 
 define symbol __ICFEDIT_region_RAM_start__  = 0x20100000;
 define symbol __ICFEDIT_region_RAM_end__    = 0x2022FFFF;
+
+/* Validate memory ranges to avoid wrapped regions caused by end < start */
+if (__ICFEDIT_region_ROM_end__ < __ICFEDIT_region_ROM_start__) {
+    error "Invalid ROM region: __ICFEDIT_region_ROM_end__ must be >= __ICFEDIT_region_ROM_start__";
+}
+
+if (__ICFEDIT_region_RAM_end__ < __ICFEDIT_region_RAM_start__) {
+    error "Invalid RAM region: __ICFEDIT_region_RAM_end__ must be >= __ICFEDIT_region_RAM_start__";
+}
+
+/* Validate vector table location is inside ROM range */
+if ((__ICFEDIT_intvec_start__ < __ICFEDIT_region_ROM_start__) || (__ICFEDIT_intvec_start__ > __ICFEDIT_region_ROM_end__)) {
+    error "Invalid vector table location: __ICFEDIT_intvec_start__ must be inside ROM region";
+}
 
 /*-Sizes-*/
 define symbol __ICFEDIT_size_cstack__ = 0x00000800;

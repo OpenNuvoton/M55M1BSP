@@ -26,7 +26,7 @@ extern "C"
   @{
 */
 
-#define FVC_WVCODE   (0x7710 << FVC_CTL_WVCODE_Pos)  /*!< The key code for FVC_CTL write. */
+#define FVC_WVCODE   (0x7710UL << FVC_CTL_WVCODE_Pos)  /*!< The key code for FVC_CTL write. */
 
 /** @} end of group FVC_EXPORTED_CONSTANTS */
 

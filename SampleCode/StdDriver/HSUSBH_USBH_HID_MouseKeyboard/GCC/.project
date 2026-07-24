@@ -125,6 +125,11 @@
 			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_hid/hid_driver.c</locationURI>
 		</link>
 		<link>
+			<name>UsbHostLib_HID/hid_parser.c</name>
+			<type>1</type>
+			<locationURI>PARENT-4-PROJECT_LOC/Library/UsbHostLib/src_hid/hid_parser.c</locationURI>
+		</link>
+		<link>
 			<name>User/keycode_xlate.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/keycode_xlate.c</locationURI>

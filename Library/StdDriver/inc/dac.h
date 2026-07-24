@@ -258,7 +258,7 @@ extern "C"
   *          12 bit right alignment: user has to load data into GRPDAT[11:0] bits.
   * \hideinitializer
   */
-#define DAC_GROUP_WRITE_DATA(u32Data0, u32Data1) (DAC0->GRPDAT = ((u32Data1 << DAC_GRPDAT_DAC1DAT_Pos) | u32Data0))
+#define DAC_GROUP_WRITE_DATA(u32Data0, u32Data1) (DAC0->GRPDAT = (((u32Data1) << DAC_GRPDAT_DAC1DAT_Pos) | (u32Data0)))
 
 void DAC_Open(DAC_T *dac, uint32_t u32Ch, uint32_t u32TrgSrc);
 void DAC_Close(DAC_T *dac, uint32_t u32Ch);

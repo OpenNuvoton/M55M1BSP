@@ -112,6 +112,9 @@ struct CSW
 };
 
 /*-------------------------------------------------------------*/
+#define MASS_BUFFER_SIZE           256         /* Mass Storage command buffer size */
+
+/*-------------------------------------------------------------*/
 void MSC_Init(void);
 void MSC_InitForHighSpeed(void);
 void MSC_InitForFullSpeed(void);

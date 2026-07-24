@@ -71,14 +71,14 @@ __STATIC_INLINE int32_t PLM_SetStage(PLM_STAGE_T eStage)
 {
 
     /* Do nothing when stage is not changed */
-    if (PLM_GetStage() == eStage)
+    if (PLM_GetStage() == (uint32_t)eStage)
         return 0;
 
     /* If dirty bit is set, it means previous update need cold reset to take effect */
     if (PLM->STS & PLM_STS_DIRTY_Msk)
         return -1;
 
-    PLM->CTL = PLM_WVCODE | (eStage);
+    PLM->CTL = PLM_WVCODE | (uint32_t)(eStage);
 
     /* The dirty flag should be set when PLM stage set successfully. */
     if (PLM->STS & PLM_STS_DIRTY_Msk)

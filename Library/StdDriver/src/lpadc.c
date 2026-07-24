@@ -42,7 +42,7 @@ void LPADC_Open(LPADC_T *lpadc, uint32_t u32InputMode, uint32_t u32OpMode, uint3
 {
 
     /*Start the LPADC calibration function*/
-    LPADC_Calibration(lpadc);
+    (void)LPADC_Calibration(lpadc);
 
     lpadc->ADCR = (lpadc->ADCR & (~(LPADC_ADCR_DIFFEN_Msk | LPADC_ADCR_ADMD_Msk))) | (u32InputMode) | (u32OpMode);
 
@@ -166,7 +166,7 @@ void LPADC_EnableHWTrigger(LPADC_T *lpadc, uint32_t u32Source, uint32_t u32Param
     if (u32Source == LPADC_STADC_TRIGGER)
     {
         lpadc->ADCR = (lpadc->ADCR & ~(LPADC_ADCR_TRGS_Msk | LPADC_ADCR_TRGCOND_Msk | LPADC_ADCR_TRGEN_Msk)) |
-                      ((u32Source) | (u32Param) | LPADC_ADCR_TRGEN_Msk);
+                      ((u32Param) | LPADC_ADCR_TRGEN_Msk);
     }
     else
     {

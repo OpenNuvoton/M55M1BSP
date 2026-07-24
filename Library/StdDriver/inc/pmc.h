@@ -281,7 +281,7 @@ int32_t PMC_SetDMIC_SRAMPowerMode(uint32_t u32PowerMode);
 int32_t PMC_SetKS_SRAMPowerMode(uint32_t u32PowerMode);
 void PMC_PowerDown(void);
 void PMC_Idle(void);
-int32_t PMC_SetPowerDownMode(uint32_t u32PDMode, uint32_t u32PowerLevel);
+int32_t PMC_SetPowerDownMode(uint32_t u32PowerDownMode, uint32_t u32PowerLevel);
 void PMC_EnableWKPIN(uint32_t u32TriggerType);
 uint32_t PMC_GetPMCWKSrc(void);
 int32_t PMC_EnableTGPin(uint32_t u32Port, uint32_t u32Pin, uint32_t u32TriggerType, uint32_t u32DebounceEn, uint32_t u32WakeupEn);

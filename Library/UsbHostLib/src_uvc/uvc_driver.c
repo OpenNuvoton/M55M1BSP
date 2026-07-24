@@ -29,49 +29,49 @@
 /// @cond HIDDEN_SYMBOLS
 
 
-extern int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface);
-extern int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface);
-
-extern int usbh_uvc_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_CTRL_PARAM_T *param);
 
 #if (NVT_DCACHE_ON == 1)
-    NVT_DTCM uint8_t g_uvc_buff_pool[UVC_MAX_DEVICE][UVC_UTR_PER_STREAM * UVC_UTR_INBUF_SIZE] __attribute__((aligned(32)));
+    NVT_DTCM static uint8_t g_uvc_buff_pool[UVC_MAX_DEVICE][UVC_UTR_PER_STREAM * UVC_UTR_INBUF_SIZE] __attribute__((aligned(32)));
 #else
-    uint8_t g_uvc_buff_pool[UVC_MAX_DEVICE][UVC_UTR_PER_STREAM * UVC_UTR_INBUF_SIZE] __attribute__((aligned(32)));
+    static uint8_t g_uvc_buff_pool[UVC_MAX_DEVICE][UVC_UTR_PER_STREAM * UVC_UTR_INBUF_SIZE] __attribute__((aligned(32)));
 #endif
 
 static uint8_t g_uvc_buff_used[UVC_MAX_DEVICE];
 
-static UVC_DEV_T *g_vdev_list = NULL;
+static UVC_DEV_T *g_vdev_list = USBNULL;
 
-static UVC_DEV_T *alloc_uvc_device(UDEV_T *udev)
+static UVC_DEV_T *alloc_uvc_device(UDEV_T const *udev)
 {
     UVC_DEV_T  *vdev;
-    int        i;
+    uint32_t        i;
 
     /*
      *  Search UVC device list check if this device already allocated.
      */
     vdev = g_vdev_list;
 
-    while (vdev != NULL)
+    while (vdev != USBNULL)
     {
         if (vdev->udev == udev)
+        {
             return vdev;
+        }
 
         vdev = vdev->next;
     }
 
     vdev = (UVC_DEV_T *)usbh_alloc_mem(sizeof(UVC_DEV_T));
 
-    if (vdev == NULL)
-        return NULL;
+    if (vdev == USBNULL)
+    {
+        return USBNULL;
+    }
 
-    memset((char *)vdev, 0, sizeof(UVC_DEV_T));
+    (void)memset((char *)vdev, 0, sizeof(UVC_DEV_T));
 
     for (i = 0; i < UVC_MAX_DEVICE; i++)
     {
-        if (g_uvc_buff_used[i] == 0)
+        if (g_uvc_buff_used[i] == (uint8_t)0U)
         {
             //vdev->in_buff = nc_ptr(&g_uvc_buff_pool[i][0]);
             vdev->in_buff = &g_uvc_buff_pool[i][0];
@@ -80,23 +80,21 @@ static UVC_DEV_T *alloc_uvc_device(UDEV_T *udev)
         }
     }
 
-    if (vdev->in_buff == NULL)
+    if (vdev->in_buff == USBNULL)
     {
         UVC_DBGMSG("Failed to allocate UVC iso-in buffer!\n");
-        usbh_free_mem(vdev, sizeof(UVC_DEV_T));
-        return NULL;
+        (void)usbh_free_mem(vdev, sizeof(UVC_DEV_T));
+        return USBNULL;
     }
 
     return vdev;
 }
 
-void  free_uvc_device(UVC_DEV_T *vdev)
+static void  free_uvc_device(UVC_DEV_T const *vdev)
 {
-    int   i;
-
-    if (vdev->in_buff != NULL)
+    if (vdev->in_buff != USBNULL)
     {
-        for (i = 0; i < UVC_MAX_DEVICE; i++)
+        for (uint32_t i = 0; i < UVC_MAX_DEVICE; i++)
         {
             //if (vdev->in_buff == nc_ptr(&g_uvc_buff_pool[i][0]))
             if (vdev->in_buff == &g_uvc_buff_pool[i][0])
@@ -107,26 +105,28 @@ void  free_uvc_device(UVC_DEV_T *vdev)
         }
     }
 
-    usbh_free_mem(vdev, sizeof(UVC_DEV_T));
+    (void)usbh_free_mem(vdev, sizeof(UVC_DEV_T));
 }
 
 static void add_device_to_list(UVC_DEV_T *vdev)
 {
-    UVC_DEV_T  *v;
+    UVC_DEV_T  const *v;
 
     v = g_vdev_list;                        /* Search UVC device list. If this device     */
 
-    while (v != NULL)                       /* found in list, do nothing.                 */
+    while (v != USBNULL)                       /* found in list, do nothing.                 */
     {
         if (v == vdev)
+        {
             return;
+        }
 
         v = v->next;
     }
 
-    if (g_vdev_list == NULL)                /* Add the UVC device into list.              */
+    if (g_vdev_list == USBNULL)                /* Add the UVC device into list.              */
     {
-        vdev->next = NULL;
+        vdev->next = USBNULL;
         g_vdev_list = vdev;
     }
     else
@@ -148,7 +148,7 @@ static void remove_device_from_list(UVC_DEV_T *vdev)
 
     p = g_vdev_list;
 
-    while (p != NULL)
+    while (p != USBNULL)
     {
         if (p->next == vdev)
         {
@@ -168,7 +168,6 @@ static int  uvc_probe(IFACE_T *iface)
     UDEV_T         *udev = iface->udev;
     ALT_IFACE_T    *aif = iface->aif;
     DESC_IF_T      *ifd;
-    DESC_VC_IAD_T  *iad;
     UVC_DEV_T      *vdev;
     int            ret;
 
@@ -176,13 +175,16 @@ static int  uvc_probe(IFACE_T *iface)
 
     /* Is this interface UVC class? */
     if (ifd->bInterfaceClass != USB_CLASS_VIDEO)
+    {
         return USBH_ERR_NOT_MATCHED;
+    }
 
     if (ifd->bInterfaceSubClass == UVC_SC_VIDEO_IF_COLLECT)
     {
+        DESC_VC_IAD_T  const *iad;
         iad = (DESC_VC_IAD_T *)ifd;
 
-        if (iad->bInterfaceCount != 2)
+        if (iad->bInterfaceCount != (uint8_t)2U)
         {
             UVC_DBGMSG("Warning UVC IAD - interface count is not 2!\n");
         }
@@ -196,8 +198,10 @@ static int  uvc_probe(IFACE_T *iface)
 
         vdev = alloc_uvc_device(udev);
 
-        if (vdev == NULL)
+        if (vdev == USBNULL)
+        {
             return USBH_ERR_NOT_FOUND;
+        }
 
         vdev->udev = udev;
         iface->context = (void *)vdev;
@@ -219,8 +223,10 @@ static int  uvc_probe(IFACE_T *iface)
 
         vdev = alloc_uvc_device(udev);
 
-        if (vdev == NULL)
+        if (vdev == USBNULL)
+        {
             return USBH_ERR_NOT_FOUND;
+        }
 
         vdev->udev = udev;
         iface->context = (void *)vdev;
@@ -243,7 +249,7 @@ static int  uvc_probe(IFACE_T *iface)
 
     add_device_to_list(vdev);
 
-    if ((vdev->iface_ctrl != NULL) && (vdev->iface_stream != NULL))
+    if ((vdev->iface_ctrl != USBNULL) && (vdev->iface_stream != USBNULL))
     {
         ret = usbh_uvc_probe_control(vdev, UVC_GET_CUR, &vdev->param);
 
@@ -263,58 +269,51 @@ static int  uvc_probe(IFACE_T *iface)
 static void  uvc_disconnect(IFACE_T *iface)
 {
     UVC_DEV_T   *vdev;
-    int         i;
 
     UVC_DBGMSG("UVC device interface %d disconnected!\n", iface->if_num);
     vdev = (UVC_DEV_T *)(iface->context);
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
+    {
         return;                                     /* should have been disconnected.     */
+    }
 
     vdev->is_streaming = 0;                         /* inhibit isochronous transfer       */
 
     if (iface == vdev->iface_ctrl)
     {
-        vdev->iface_ctrl = NULL;
+        vdev->iface_ctrl = USBNULL;
     }
 
     if (iface == vdev->iface_stream)
     {
+        uint32_t         i;
+
         for (i = 0; i < UVC_UTR_PER_STREAM; i++)
         {
-            usbh_quit_utr(vdev->utr_rx[i]);          /* quit all UTRs                      */
+            (void)usbh_quit_utr(vdev->utr_rx[i]);    /* quit all UTRs                      */
         }
 
         for (i = 0; i < UVC_UTR_PER_STREAM; i++)    /* free all UTRs                      */
         {
-            if (vdev->utr_rx[i] != NULL)
+            if (vdev->utr_rx[i] != USBNULL)
             {
                 free_utr(vdev->utr_rx[i]);
-                vdev->utr_rx[i] = NULL;
+                vdev->utr_rx[i] = USBNULL;
             }
         }
 
-        vdev->iface_stream = NULL;
+        vdev->iface_stream = USBNULL;
     }
 
-    if ((vdev->iface_ctrl == NULL) && (vdev->iface_stream == NULL))
+    if ((vdev->iface_ctrl == USBNULL) && (vdev->iface_stream == USBNULL))
     {
         remove_device_from_list(vdev);
         free_uvc_device(vdev);
     }
 }
 
-
-static UDEV_DRV_T  uvc_driver =
-{
-    uvc_probe,
-    uvc_disconnect,
-    NULL,
-    NULL,
-};
-
-
-/// @endcond /* HIDDEN_SYMBOLS */
+/// @endcond HIDDEN_SYMBOLS
 
 
 /**
@@ -323,16 +322,24 @@ static UDEV_DRV_T  uvc_driver =
   */
 void usbh_uvc_init(void)
 {
-    memset(g_uvc_buff_used, 0, sizeof(g_uvc_buff_used));
-    g_vdev_list = NULL;
-    usbh_register_driver(&uvc_driver);
+    static UDEV_DRV_T  uvc_driver =
+    {
+        uvc_probe,
+        uvc_disconnect,
+        USBNULL,
+        USBNULL,
+    };
+
+    (void)memset(g_uvc_buff_used, 0, sizeof(g_uvc_buff_used));
+    g_vdev_list = USBNULL;
+    (void)usbh_register_driver(&uvc_driver);
 }
 
 
 /**
  *  @brief   Get a list of currently connected USB Hid devices.
  *  @return  List of CDC devices.
- *  @retval  NULL       There's no CDC device found.
+ *  @retval  USBNULL       There's no CDC device found.
  *  @retval  Otherwise  A list of connected CDC devices.
  *
  *  The CDC devices are chained by the "next" member of UVC_DEV_T.

@@ -64,7 +64,7 @@ uint32_t volatile gSdInit = 0;
 #endif
 
 //Used by libjpeg, decode
-__attribute__((section(".bss.sram.data"), aligned(32))) static uint8_t g_au8RGB888ImageBuffer [PATH_IMAGE_RESOLUTION_WIDTH * PATH_IMAGE_RESOLUTION_HEIGHT * 3 + 512];
+__attribute__((section(".bss.sram.data"), aligned(32))) static uint8_t g_au8DecodeImageBuffer [PATH_IMAGE_RESOLUTION_WIDTH * PATH_IMAGE_RESOLUTION_HEIGHT * RGB565_COMPONENTS + 512];
 
 
 // Used by omv library
@@ -361,6 +361,7 @@ int32_t main(void)
     //Display image on LCD
     S_DISP_RECT sDispRect;
 
+
     //For Jpeg image check
     uint16_t w, h;
 
@@ -432,21 +433,20 @@ int32_t main(void)
             {
                 DBG_msg("Find: %s\n", target_file);
 
-                JpegDecode((unsigned char *)target_file, (uint8_t *)(g_au8RGB888ImageBuffer));
+                //Do Jpeg Decode and Color format conversion in situ
+                //to releive memory usage.
+                JpegDecode((unsigned char *)target_file, (uint8_t *)(g_au8DecodeImageBuffer));
 
                 //Get the output width and size for centering the pic
                 jpeg_get_output_size(&w, &h);
                 DBG_msg("decode output size() : w(%d), h(%d) \r\n", w, h);
-
-                //Color format conversion to fit panel requirement.
-                jpeg_convert_RGB888toRGB565_SW((uint8_t *)(g_au8RGB888ImageBuffer), w * h);
 
                 //Find coordinate that centering the image
                 jpeg_compute_roi_centering(&sDispRect, w, h);
 
                 //Flush black and update iamge
                 Display_ClearLCD(C_BLACK);
-                Display_FillRect((uint16_t *)g_au8RGB888ImageBuffer, &sDispRect, IMAGE_DISP_UPSCALE_FACTOR);
+                Display_FillRect((uint16_t *)g_au8DecodeImageBuffer, &sDispRect, IMAGE_DISP_UPSCALE_FACTOR);
 
                 //Update file name on omv framebuffer
                 char szDisplayText[64];

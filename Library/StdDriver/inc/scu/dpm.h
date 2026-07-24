@@ -70,7 +70,7 @@ extern int32_t g_DPM_i32ErrCode;
   * @details    This macro waits DPM_STS busy flag is cleared and skips when time-out.
   * @note       This macro sets g_DPM_i32ErrCode to DPM_TIMEOUT_ERR if waiting DPM time-out.
   */
-__STATIC_INLINE void DPM_WAIT_STS_BUSY(DPM_T *psDPM)
+__STATIC_INLINE void DPM_WAIT_STS_BUSY(const DPM_T *psDPM)
 {
     uint32_t u32TimeOutCnt = DPM_TIMEOUT;
 
@@ -98,7 +98,9 @@ __STATIC_INLINE void DPM_ENABLE_INT(void)
     DPM_WAIT_STS_BUSY(DPM);
 
     if (g_DPM_i32ErrCode == 0)
+    {
         DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_INTEN_Msk)) | (DPM_CTL_WVCODE | DPM_CTL_INTEN_Msk);
+    }
 }
 
 /**
@@ -113,7 +115,9 @@ __STATIC_INLINE void DPM_DISABLE_INT(void)
     DPM_WAIT_STS_BUSY(DPM);
 
     if (g_DPM_i32ErrCode == 0)
+    {
         DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_INTEN_Msk)) | DPM_CTL_WVCODE;
+    }
 }
 
 /**
@@ -129,7 +133,9 @@ __STATIC_INLINE void DPM_ENABLE_DBG_ACCESS(void)
     DPM_WAIT_STS_BUSY(DPM);
 
     if (g_DPM_i32ErrCode == 0)
+    {
         DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_DACCDIS_Msk)) | DPM_CTL_WVCODE;
+    }
 }
 
 /**
@@ -145,7 +151,9 @@ __STATIC_INLINE void DPM_DISABLE_DBG_ACCESS(void)
     DPM_WAIT_STS_BUSY(DPM);
 
     if (g_DPM_i32ErrCode == 0)
+    {
         DPM->CTL = (DPM->CTL & ~(DPM_CTL_RWVCODE_Msk | DPM_CTL_DACCDIS_Msk)) | (DPM_CTL_WVCODE | DPM_CTL_DACCDIS_Msk);
+    }
 }
 
 /**
@@ -155,25 +163,27 @@ __STATIC_INLINE void DPM_DISABLE_DBG_ACCESS(void)
   *                    - \ref DPM_NS is for Non-secure DPM
   * @return     DPM Password Update Count
   */
-__STATIC_INLINE int32_t DPM_GetPasswordUpdateCnt(DPM_T *psDPM)
+__STATIC_INLINE int32_t DPM_GetPasswordUpdateCnt(const DPM_T *psDPM)
 {
     int32_t i32RetVal = DPM_TIMEOUT_ERR;
 
     DPM_WAIT_STS_BUSY(psDPM);
 
     if (g_DPM_i32ErrCode == 0)
+    {
         i32RetVal = (psDPM->STS & DPM_STS_PWUCNT_Msk) >> DPM_STS_PWUCNT_Pos;
+    }
 
     return i32RetVal;
 }
 
 void DPM_SetDebugDisable(DPM_T *psDPM);
 void DPM_SetDebugLock(DPM_T *psDPM);
-int32_t DPM_GetDebugDisable(DPM_T *psDPM);
-int32_t DPM_GetDebugLock(DPM_T *psDPM);
-int32_t DPM_SetPasswordUpdate(DPM_T *psDPM, uint32_t au32Pwd[]);
-int32_t DPM_SetPasswordCompare(DPM_T *psDPM, uint32_t au32Pwd[]);
-int32_t DPM_GetPasswordErrorFlag(DPM_T *psDPM);
+int32_t DPM_GetDebugDisable(const DPM_T *psDPM);
+int32_t DPM_GetDebugLock(const DPM_T *psDPM);
+int32_t DPM_SetPasswordUpdate(DPM_T *psDPM, const uint32_t au32Pwd[]);
+int32_t DPM_SetPasswordCompare(DPM_T *psDPM, const uint32_t au32Pwd[]);
+int32_t DPM_GetPasswordErrorFlag(const DPM_T *psDPM);
 int32_t DPM_GetIntFlag(void);
 void DPM_ClearPasswordErrorFlag(DPM_T *psDPM);
 void DPM_EnableDebuggerWriteAccess(DPM_T *psDPM);

@@ -45,22 +45,22 @@ typedef struct
 /*---------------------------------------------------------------------------------------------------------*/
 /*  KPI_CTL constant definitions.                                                                            */
 /*---------------------------------------------------------------------------------------------------------*/
-#define KPI_ROW_SCAN_DELAY4CLK      (0x0 << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
-#define KPI_ROW_SCAN_DELAY8CLK      (0x1 << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
-#define KPI_ROW_SCAN_DELAY16CLK     (0x2 << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
-#define KPI_ROW_SCAN_DELAY32CLK     (0x3 << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
+#define KPI_ROW_SCAN_DELAY4CLK      (0x0UL << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
+#define KPI_ROW_SCAN_DELAY8CLK      (0x1UL << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
+#define KPI_ROW_SCAN_DELAY16CLK     (0x2UL << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
+#define KPI_ROW_SCAN_DELAY32CLK     (0x3UL << KPI_CTL_ROWDLY_Pos) /*!< Delay cycle when row change */
 
-#define KPI_COL_SAMPLE_8CLK         (0x3 << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_16CLK        (0x4 << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_32CLK        (0x5 << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_64CLK        (0x6 << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_128CLK       (0x7 << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_256CLK       (0x8 << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_512CLK       (0x9 << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_1024CLK      (0xA << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_2048CLK      (0xB << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_4096CLK      (0xC << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
-#define KPI_COL_SAMPLE_8192CLK      (0xD << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_8CLK         (0x3UL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_16CLK        (0x4UL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_32CLK        (0x5UL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_64CLK        (0x6UL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_128CLK       (0x7UL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_256CLK       (0x8UL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_512CLK       (0x9UL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_1024CLK      (0xAUL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_2048CLK      (0xBUL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_4096CLK      (0xCUL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
+#define KPI_COL_SAMPLE_8192CLK      (0xDUL << KPI_CTL_DBCLKSEL_Pos) /*!< Scan in De-bounce Sampling Cycle Selection */
 
 /** @} end of group KPI_EXPORTED_CONSTANTS */
 

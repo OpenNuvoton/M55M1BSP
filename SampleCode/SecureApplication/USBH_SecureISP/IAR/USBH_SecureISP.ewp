@@ -304,11 +304,11 @@
                 </option>
                 <option>
                     <name>IExtraOptionsCheck</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>IExtraOptions</name>
-                    <state></state>
+                    <state>--no_unaligned_access</state>
                 </option>
                 <option>
                     <name>CCLangConformance</name>
@@ -1157,6 +1157,9 @@
         <name>USBH_HID_Lib</name>
         <file>
             <name>$PROJ_DIR$\..\..\..\..\Library\UsbHostLib\src_hid\hid_driver.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\..\..\..\Library\UsbHostLib\src_hid\hid_parser.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\user_hid_core.c</name>

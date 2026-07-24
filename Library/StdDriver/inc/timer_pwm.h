@@ -236,7 +236,7 @@ extern "C"
   * @details    This macro is used to set Timer PWM counter type.
   * \hideinitializer
   */
-#define TPWM_SET_COUNTER_TYPE(timer, type)      ((timer)->PWMCTL = ((timer)->PWMCTL & ~TIMER_PWMCTL_CNTTYPE_Msk) | (type))
+#define TPWM_SET_COUNTER_TYPE(timer, type)      ((timer)->PWMCTL = ((timer)->PWMCTL & ~TIMER_PWMCTL_CNTTYPE_Msk) | (type & TIMER_PWMCTL_CNTTYPE_Msk))
 
 /**
   * @brief      Start PWM Counter
@@ -756,7 +756,7 @@ extern "C"
   *
   * @details    This macro is used to select timer Counter Mode.
   */
-#define TPWM_SET_CNT_MODE(timer, mode)      ((timer)->PWMCTL = ((timer)->PWMCTL&~TIMER_PWMCTL_CNTMODE_Msk) | (mode<<TIMER_PWMCTL_CNTMODE_Pos))
+#define TPWM_SET_CNT_MODE(timer, mode)      ((timer)->PWMCTL = ((timer)->PWMCTL & ~TIMER_PWMCTL_CNTMODE_Msk) | (((mode) & 0x1UL) << TIMER_PWMCTL_CNTMODE_Pos))
 
 void TPWM_SetCounterClockSource(TIMER_T *timer, uint32_t u32CntClkSrc);
 uint32_t TPWM_ConfigOutputFreqAndDuty(TIMER_T *timer, uint32_t u32Frequency, uint32_t u32DutyCycle);
@@ -770,7 +770,7 @@ void TPWM_DisableTriggerEADC(TIMER_T *timer);
 void TPWM_EnableFaultBrake(TIMER_T *timer, uint32_t u32CH0Level, uint32_t u32CH1Level, uint32_t u32BrakeSource);
 void TPWM_EnableFaultBrakeInt(TIMER_T *timer, uint32_t u32IntSource);
 void TPWM_DisableFaultBrakeInt(TIMER_T *timer, uint32_t u32IntSource);
-uint32_t TPWM_GetFaultBrakeIntFlag(TIMER_T *timer, uint32_t u32IntSource);
+uint32_t TPWM_GetFaultBrakeIntFlag(const TIMER_T *timer, uint32_t u32IntSource);
 void TPWM_ClearFaultBrakeIntFlag(TIMER_T *timer, uint32_t u32IntSource);
 void TPWM_SetLoadMode(TIMER_T *timer, uint32_t u32LoadMode);
 void TPWM_EnableBrakePinDebounce(TIMER_T *timer, uint32_t u32BrakePinSrc, uint32_t u32DebounceCnt, uint32_t u32ClkSrcSel);
@@ -783,7 +783,7 @@ void TPWM_DisableAcc(TIMER_T *timer);
 void TPWM_EnableAccInt(TIMER_T *timer);
 void TPWM_DisableAccInt(TIMER_T *timer);
 void TPWM_ClearAccInt(TIMER_T *timer);
-uint32_t TPWM_GetAccInt(TIMER_T *timer);
+uint32_t TPWM_GetAccInt(const TIMER_T *timer);
 void TPWM_EnableAccPDMA(TIMER_T *timer);
 void TPWM_DisableAccPDMA(TIMER_T *timer);
 void TPWM_EnableAccStopMode(TIMER_T *timer);

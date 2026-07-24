@@ -96,6 +96,7 @@ void SYS_Init(void)
 /*---------------------------------------------------------------------------------------------------------*/
 int32_t main(void)
 {
+    uint32_t u32I2SClock;
     uint32_t u32RxValue1, u32RxValue2;
 
     /* Unlock protected registers */
@@ -131,7 +132,14 @@ int32_t main(void)
 
     /* Slave mode, 16-bit word width, stereo mode, I2S format. Set TX FIFO threshold to 2 and RX FIFO threshold to 1. */
     /* I2S peripheral clock rate is equal to PCLK1 clock rate. */
-    SPII2S_Open(SPI0, SPII2S_MODE_SLAVE, 0, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+    u32I2SClock = SPII2S_Open(SPI0, SPII2S_MODE_SLAVE, 0, SPII2S_DATABIT_16, SPII2S_STEREO, SPII2S_FORMAT_I2S);
+
+    if (u32I2SClock == 0U)
+    {
+        printf("SPII2S_Open failed.\n");
+
+        while (1);
+    }
 
     /* Initiate data counter */
     g_u32DataCount = 0;

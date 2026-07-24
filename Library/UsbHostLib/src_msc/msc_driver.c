@@ -7,7 +7,6 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,18 +25,18 @@ MSC_T  *g_msc_list;       /* Global list of Mass Storage Class device. A multi-l
 static volatile uint8_t  g_fat_drv_used[USBDRV_CNT];
 static TCHAR    _path[3] = { '3', ':', 0 };
 
-static void  fatfs_drive_int()
+static void  fatfs_drive_int(void)
 {
-    memset((uint8_t *)g_fat_drv_used, 0, sizeof(g_fat_drv_used));
+    (void)memset((uint8_t *)g_fat_drv_used, 0, sizeof(g_fat_drv_used));
 }
 
-static int fatfs_drive_alloc()
+static int fatfs_drive_alloc(void)
 {
     int  i;
 
     for (i = 0; i < USBDRV_CNT; i++)
     {
-        if (g_fat_drv_used[i] == 0)
+        if (g_fat_drv_used[i] == 0U)
         {
             g_fat_drv_used[i] = 1;
             return USBDRV_0 + i;
@@ -50,8 +49,10 @@ static int fatfs_drive_alloc()
 
 static void  fatfs_drive_free(int drv_no)
 {
-    _path[0] =  drv_no + '0';
-    f_mount(NULL, _path, 1);
+    _path[0] = (TCHAR)((int32_t)'0' + drv_no);
+    /* Deviation: f_mount is declared in ff.h which is not parsed by cppcheck MISRA config */
+    // cppcheck-suppress misra-c2012-17.3
+    f_mount(USBNULL, _path, 1);
     g_fat_drv_used[drv_no - USBDRV_0] = 0;
 }
 
@@ -59,22 +60,24 @@ static MSC_T *find_msc_by_drive(int drv_no)
 {
     MSC_T  *msc = g_msc_list;
 
-    while (msc != NULL)
+    while (msc != USBNULL)
     {
         if (msc->drv_no == drv_no)
+        {
             return msc;
+        }
 
         msc = msc->next;
     }
 
-    return NULL;
+    return USBNULL;
 }
 
 static void msc_list_add(MSC_T *msc)
 {
-    if (g_msc_list == NULL)
+    if (g_msc_list == USBNULL)
     {
-        msc->next = NULL;
+        msc->next = USBNULL;
         g_msc_list = msc;
     }
     else
@@ -96,7 +99,7 @@ static void msc_list_remove(MSC_T *msc)
     {
         p = g_msc_list;
 
-        while ((p->next != msc) && (p->next != NULL))
+        while ((p->next != msc) && (p->next != USBNULL))
         {
             p = p->next;
         }
@@ -117,10 +120,12 @@ static void get_max_lun(MSC_T *msc)
 
     msc->max_lun = 0;
 
-    buff = usbh_alloc_mem(8);
+    buff = (uint8_t *)usbh_alloc_mem(8);
 
-    if (buff == NULL)
+    if (buff == USBNULL)
+    {
         return;
+    }
 
     /*------------------------------------------------------------------------------------*/
     /* Issue GET MAXLUN MSC class command to get the maximum lun number                   */
@@ -134,18 +139,20 @@ static void get_max_lun(MSC_T *msc)
         msc->max_lun = 0;
 
         if (ret == USBH_ERR_STALL)
-            usbh_clear_halt(udev, 0);
+        {
+            (void)usbh_clear_halt(udev, 0);
+        }
 
-        usbh_free_mem(buff, 8);
+        (void)usbh_free_mem(buff, 8);
         return;
     }
 
     msc->max_lun = buff[0];
     msc_debug_msg("Max lun is %d\n", msc->max_lun);
-    usbh_free_mem(buff, 8);
+    (void)usbh_free_mem(buff, 8);
 }
 
-void msc_reset(MSC_T *msc)
+static void msc_reset(MSC_T *msc)
 {
     UDEV_T    *udev = msc->iface->udev;
     uint32_t  read_len;
@@ -154,15 +161,15 @@ void msc_reset(MSC_T *msc)
     msc_debug_msg("Reset MSC device...\n");
 
     ret = usbh_ctrl_xfer(udev, REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE,
-                         0xFF, 0, msc->iface->if_num, 0, NULL, &read_len, 100);
+                         0xFF, 0, msc->iface->if_num, 0, USBNULL, &read_len, 100);
 
     if (ret < 0)
     {
         msc_debug_msg("UAMSS reset request failed!\n");
     }
 
-    usbh_clear_halt(udev, msc->ep_bulk_out->bEndpointAddress);
-    usbh_clear_halt(udev, msc->ep_bulk_in->bEndpointAddress);
+    (void)usbh_clear_halt(udev, msc->ep_bulk_out->bEndpointAddress);
+    (void)usbh_clear_halt(udev, msc->ep_bulk_in->bEndpointAddress);
 }
 
 static int  msc_inquiry(MSC_T *msc)
@@ -171,7 +178,7 @@ static int  msc_inquiry(MSC_T *msc)
     int  ret;
 
     msc_debug_msg("INQUIRY...\n");
-    memset(cmd_blk, 0, sizeof(*cmd_blk));
+    (void)memset(cmd_blk, 0, sizeof(*cmd_blk));
 
     cmd_blk->Flags   = 0x80;
     cmd_blk->Length  = 6;
@@ -200,7 +207,7 @@ static int  msc_request_sense(MSC_T *msc)
     int  ret;
 
     msc_debug_msg("REQUEST_SENSE...\n");
-    memset(cmd_blk, 0, sizeof(*cmd_blk));
+    (void)memset(cmd_blk, 0, sizeof(*cmd_blk));
 
     cmd_blk->Flags   = 0x80;
     cmd_blk->Length  = 6;
@@ -215,7 +222,9 @@ static int  msc_request_sense(MSC_T *msc)
         msc_debug_msg("REQUEST_SENSE command failed.\n");
 
         if (ret == USBH_ERR_STALL)
+        {
             msc_reset(msc);
+        }
 
         return ret;
     }
@@ -223,7 +232,7 @@ static int  msc_request_sense(MSC_T *msc)
     {
         msc_debug_msg("REQUEST_SENSE command success.\n");
 
-        if (msc->scsi_buff[2] != 0x6)
+        if (msc->scsi_buff[2] != 0x6U)
         {
             msc_debug_msg("Device is still not attention. 0x%x\n", msc->scsi_buff[2]);
             return -1;
@@ -239,7 +248,7 @@ static int  msc_test_unit_ready(MSC_T *msc)
     int  ret;
 
     msc_debug_msg("TEST_UNIT_READY...\n");
-    memset(cmd_blk, 0, sizeof(*cmd_blk));
+    (void)memset(cmd_blk, 0, sizeof(*cmd_blk));
 
     cmd_blk->Flags   = 0x80;
     cmd_blk->Length  = 6;
@@ -251,7 +260,9 @@ static int  msc_test_unit_ready(MSC_T *msc)
     if (ret < 0)
     {
         if (ret == USBH_ERR_STALL)
+        {
             msc_reset(msc);
+        }
 
         return ret;
     }
@@ -285,24 +296,26 @@ int  usbh_umas_read(int drv_no, uint32_t sec_no, int sec_cnt, uint8_t *buff)
 
     msc = find_msc_by_drive(drv_no);
 
-    if (msc == NULL)
+    if (msc == USBNULL)
+    {
         return UMAS_ERR_DRIVE_NOT_FOUND;
+    }
 
     cmd_blk = &msc->cmd_blk;
 
     //msc_debug_msg("read sector 0x%x\n", sector_no);
-    memset(cmd_blk, 0, sizeof(*cmd_blk));
+    (void)memset(cmd_blk, 0, sizeof(*cmd_blk));
 
     cmd_blk->Flags   = 0x80;
     cmd_blk->Length  = 10;
     cmd_blk->CDB[0]  = READ_10;
     cmd_blk->CDB[1]  = msc->lun << 5;
-    cmd_blk->CDB[2]  = (sec_no >> 24) & 0xFF;
-    cmd_blk->CDB[3]  = (sec_no >> 16) & 0xFF;
-    cmd_blk->CDB[4]  = (sec_no >> 8) & 0xFF;
-    cmd_blk->CDB[5]  = sec_no & 0xFF;
-    cmd_blk->CDB[7]  = (sec_cnt >> 8) & 0xFF;
-    cmd_blk->CDB[8]  = sec_cnt & 0xFF;
+    cmd_blk->CDB[2]  = (sec_no >> 24) & 0xFFU;
+    cmd_blk->CDB[3]  = (sec_no >> 16) & 0xFFU;
+    cmd_blk->CDB[4]  = (sec_no >> 8) & 0xFFU;
+    cmd_blk->CDB[5]  = sec_no & 0xFFU;
+    cmd_blk->CDB[7]  = ((uint32_t)sec_cnt >> 8U) & 0xFFU;
+    cmd_blk->CDB[8]  = (uint32_t)sec_cnt & 0xFFU;
 
     ret = run_scsi_command(msc, buff, sec_cnt * 512, 1, 500);
 
@@ -337,22 +350,24 @@ int  usbh_umas_write(int drv_no, uint32_t sec_no, int sec_cnt, uint8_t *buff)
 
     msc = find_msc_by_drive(drv_no);
 
-    if (msc == NULL)
+    if (msc == USBNULL)
+    {
         return UMAS_ERR_DRIVE_NOT_FOUND;
+    }
 
     cmd_blk = &msc->cmd_blk;
-    memset((uint8_t *) & (msc->cmd_blk), 0, sizeof(msc->cmd_blk));
+    (void)memset((uint8_t *) & (msc->cmd_blk), 0, sizeof(msc->cmd_blk));
 
     cmd_blk->Flags   = 0;
     cmd_blk->Length  = 10;
     cmd_blk->CDB[0]  = WRITE_10;
     cmd_blk->CDB[1]  = msc->lun << 5;
-    cmd_blk->CDB[2]  = (sec_no >> 24) & 0xFF;
-    cmd_blk->CDB[3]  = (sec_no >> 16) & 0xFF;
-    cmd_blk->CDB[4]  = (sec_no >> 8) & 0xFF;
-    cmd_blk->CDB[5]  = sec_no & 0xFF;
-    cmd_blk->CDB[7]  = (sec_cnt >> 8) & 0xFF;
-    cmd_blk->CDB[8]  = sec_cnt & 0xFF;
+    cmd_blk->CDB[2]  = (sec_no >> 24) & 0xFFU;
+    cmd_blk->CDB[3]  = (sec_no >> 16) & 0xFFU;
+    cmd_blk->CDB[4]  = (sec_no >> 8) & 0xFFU;
+    cmd_blk->CDB[5]  = sec_no & 0xFFU;
+    cmd_blk->CDB[7]  = ((uint32_t)sec_cnt >> 8U) & 0xFFU;
+    cmd_blk->CDB[8]  = (uint32_t)sec_cnt & 0xFFU;
 
     ret = run_scsi_command(msc, buff, sec_cnt * 512, 0, 500);
 
@@ -378,12 +393,14 @@ int  usbh_umas_write(int drv_no, uint32_t sec_no, int sec_cnt, uint8_t *buff)
   */
 int  usbh_umas_ioctl(int drv_no, int cmd, void *buff)
 {
-    MSC_T   *msc;
+    const MSC_T   *msc;
 
     msc = find_msc_by_drive(drv_no);
 
-    if (msc == NULL)
+    if (msc == USBNULL)
+    {
         return UMAS_ERR_DRIVE_NOT_FOUND;
+    }
 
     switch (cmd)
     {
@@ -391,7 +408,8 @@ int  usbh_umas_ioctl(int drv_no, int cmd, void *buff)
             return RES_OK;
 
         case GET_SECTOR_COUNT:
-            *(uint32_t *)buff = msc->uTotalSectorN;
+            // Because the READ CAPACITY (10) command returns the last sector number, the total sector count is that number plus one.
+            *(uint32_t *)buff = msc->uTotalSectorN + 1U;
             return RES_OK;
 
         case GET_SECTOR_SIZE:
@@ -401,6 +419,9 @@ int  usbh_umas_ioctl(int drv_no, int cmd, void *buff)
         case GET_BLOCK_SIZE:
             *(uint32_t *)buff = msc->nSectorSize;
             return RES_OK;
+
+        default:
+            break;
 
             //case CTRL_ERASE_SECTOR:
             //    return RES_OK;
@@ -417,8 +438,10 @@ int  usbh_umas_ioctl(int drv_no, int cmd, void *buff)
  */
 int  usbh_umas_disk_status(int drv_no)
 {
-    if (find_msc_by_drive(drv_no) == NULL)
+    if (find_msc_by_drive(drv_no) == USBNULL)
+    {
         return STA_NODISK;
+    }
 
     return 0;
 }
@@ -436,16 +459,18 @@ int  usbh_umas_reset_disk(int drv_no)
 
     msc_debug_msg("usbh_umas_reset_disk ...\n");
 
-    usbh_pooling_hubs();
+    (void)usbh_pooling_hubs();
 
     msc = find_msc_by_drive(drv_no);
 
-    if (msc == NULL)
+    if (msc == USBNULL)
+    {
         return UMAS_ERR_DRIVE_NOT_FOUND;
+    }
 
     udev = msc->iface->udev;
 
-    usbh_reset_device(udev);
+    (void)usbh_reset_device(udev);
 
     return 0;
 }
@@ -454,12 +479,16 @@ static int  umass_init_device(MSC_T *msc)
 {
     MSC_T     *try_msc = msc;
     struct bulk_cb_wrap  *cmd_blk;         /* MSC Bulk-only command block */
-    int       retries, lun;
+    int       retries;
+    int       lun;
     int8_t    bHasMedia = 0;
+    int8_t    bMemOut = 0;
     int       ret = USBH_ERR_NOT_FOUND;
 
-    for (lun = 0; lun <= msc->max_lun; lun++)
+    for (lun = 0; lun <= (int)msc->max_lun; lun++)
     {
+        int8_t bDiskFound = 0;
+
         msc_debug_msg("\n******* Read lun %d ******\n\n", lun);
 
         try_msc->lun = lun;
@@ -468,25 +497,28 @@ static int  umass_init_device(MSC_T *msc)
         for (retries = 0; retries < 3; retries++)
         {
             if (msc_inquiry(try_msc) == USBH_ERR_STALL)
+            {
                 msc_reset(try_msc);
+            }
 
             if (msc_inquiry(try_msc) == USBH_ERR_STALL)
-                msc_reset(try_msc);
-
-            if (msc_test_unit_ready(try_msc) == 0)
-                goto disk_found;
-
-            if (msc_request_sense(try_msc) == 0)
             {
-                goto disk_found;
+                msc_reset(try_msc);
+            }
+
+            if ((msc_test_unit_ready(try_msc) == 0) || (msc_request_sense(try_msc) == 0))
+            {
+                bDiskFound = 1;
+                break;
             }
 
             delay_us(100000);       /* delay 100ms, retry later */
         }
 
-        continue;
-
-disk_found:
+        if (bDiskFound == 0)
+        {
+            continue;
+        }
 
         /*
          *  Valid disk found in this lun. Go...
@@ -495,30 +527,32 @@ disk_found:
         {
             msc_debug_msg("READ CAPACITY ==>\n");
 
-            memset(cmd_blk, 0, sizeof(*cmd_blk));
+            (void)memset(cmd_blk, 0, sizeof(*cmd_blk));
 
             cmd_blk->Flags   = 0x80;
             cmd_blk->Length  = 10;
             cmd_blk->CDB[0]  = READ_CAPACITY;
-            cmd_blk->CDB[1]  = lun << 5;
+            cmd_blk->CDB[1]  = (uint8_t)((uint32_t)lun << 5U);
 
             ret = run_scsi_command(try_msc, try_msc->scsi_buff, 8, 1, 100);
 
-            if (ret < 0)
+            if (ret >= 0)
             {
-                msc_debug_msg("READ_CAPACITY failed!\n");
-
-                if (ret == USBH_ERR_STALL)
-                    msc_reset(try_msc);
-
-                continue;
-            }
-            else
                 break;
+            }
+
+            msc_debug_msg("READ_CAPACITY failed!\n");
+
+            if (ret == USBH_ERR_STALL)
+            {
+                msc_reset(try_msc);
+            }
         }
 
         if (retries >= 3)
+        {
             continue;              /* try next lun */
+        }
 
         try_msc->uTotalSectorN = (try_msc->scsi_buff[0] << 24) | (try_msc->scsi_buff[1] << 16) |
                                  (try_msc->scsi_buff[2] << 8) | try_msc->scsi_buff[3];
@@ -527,38 +561,51 @@ disk_found:
 
         try_msc->drv_no = fatfs_drive_alloc();
 
-        if (try_msc->drv_no < 0)        /* should be failed, unless drive free slot is empty */
+        if (try_msc->drv_no < 0)
         {
             ret = USBH_ERR_MEMORY_OUT;
-            break;
+            bMemOut = 1;
         }
-
-        msc_debug_msg("USB disk [%c] found: size=%d MB, uTotalSectorN=%d\n", msc->drv_no + '0', try_msc->uTotalSectorN / 2048, try_msc->uTotalSectorN);
-
-        msc_list_add(try_msc);
-
-        _path[0] =  try_msc->drv_no + '0';
-        f_mount(&try_msc->fatfs_vol, _path, 1);
-        bHasMedia = 1;
-
-        /*
-         *  duplicate another MSC for next try
-         */
-        try_msc = usbh_alloc_mem(sizeof(*try_msc));
-
-        if (try_msc == NULL)
+        else
         {
-            ret = USBH_ERR_MEMORY_OUT;
-            break;
+            msc_debug_msg("USB disk [%c] found: size=%d MB, uTotalSectorN=%d\n", msc->drv_no + '0', try_msc->uTotalSectorN / 2048, try_msc->uTotalSectorN);
+
+            msc_list_add(try_msc);
+
+            _path[0] = (TCHAR)((int32_t)'0' + try_msc->drv_no);
+            /* Deviation: f_mount is declared in ff.h which is not parsed by cppcheck MISRA config */
+            // cppcheck-suppress misra-c2012-17.3
+            f_mount(&try_msc->fatfs_vol, _path, 1);
+            bHasMedia = 1;
+
+            /*
+             *  duplicate another MSC for next try
+             */
+            try_msc = (MSC_T *)usbh_alloc_mem(sizeof(*try_msc));
+
+            if (try_msc == USBNULL)
+            {
+                ret = USBH_ERR_MEMORY_OUT;
+                bMemOut = 1;
+            }
+            else
+            {
+                (void)memcpy(try_msc, msc, sizeof(*msc));
+            }
         }
 
-        memcpy(try_msc, msc, sizeof(*msc));
+        if (bMemOut != 0)
+        {
+            break;
+        }
     }
 
     if (bHasMedia)
     {
         if (try_msc)
-            usbh_free_mem(try_msc, sizeof(*try_msc));
+        {
+            (void)usbh_free_mem(try_msc, sizeof(*try_msc));
+        }
 
         return 0;
     }
@@ -569,7 +616,7 @@ disk_found:
 static int msc_probe(IFACE_T *iface)
 {
     ALT_IFACE_T   *aif = iface->aif;
-    DESC_IF_T     *ifd;
+    const DESC_IF_T     *ifd;
     MSC_T         *msc;
     int           i;
 
@@ -577,12 +624,16 @@ static int msc_probe(IFACE_T *iface)
 
     /* Is this interface mass storage class? */
     if (ifd->bInterfaceClass != USB_CLASS_MASS_STORAGE)
+    {
         return USBH_ERR_NOT_MATCHED;
+    }
 
     /* Is supported sub-class? */
     if ((ifd->bInterfaceSubClass != MSC_SCLASS_SCSI) && (ifd->bInterfaceSubClass != MSC_SCLASS_8070) &&
             (ifd->bInterfaceSubClass != MSC_SCLASS_RBC))
+    {
         return USBH_ERR_NOT_SUPPORTED;
+    }
 
     /* Is bulk-only protocol? */
     if (ifd->bInterfaceProtocol != MSC_SPROTO_BULK)
@@ -591,10 +642,12 @@ static int msc_probe(IFACE_T *iface)
         return USBH_ERR_NOT_SUPPORTED;
     }
 
-    msc = usbh_alloc_mem(sizeof(*msc));
+    msc = (MSC_T *)usbh_alloc_mem(sizeof(*msc));
 
-    if (msc == NULL)
+    if (msc == USBNULL)
+    {
         return USBH_ERR_MEMORY_OUT;
+    }
 
     msc->uid = get_ticks();
 
@@ -604,15 +657,19 @@ static int msc_probe(IFACE_T *iface)
         if ((aif->ep[i].bmAttributes & EP_ATTR_TT_MASK) == EP_ATTR_TT_BULK)
         {
             if ((aif->ep[i].bEndpointAddress & EP_ADDR_DIR_MASK) == EP_ADDR_DIR_IN)
+            {
                 msc->ep_bulk_in = &aif->ep[i];
+            }
             else
+            {
                 msc->ep_bulk_out = &aif->ep[i];
+            }
         }
     }
 
-    if ((msc->ep_bulk_in == NULL) || (msc->ep_bulk_out == NULL))
+    if ((msc->ep_bulk_in == USBNULL) || (msc->ep_bulk_out == USBNULL))
     {
-        usbh_free_mem(msc, sizeof(*msc));
+        (void)usbh_free_mem(msc, sizeof(*msc));
         return USBH_ERR_NOT_EXPECTED;
     }
 
@@ -629,7 +686,8 @@ static int msc_probe(IFACE_T *iface)
 static void msc_disconnect(IFACE_T *iface)
 {
     int    i;
-    MSC_T  *msc_p, *msc;
+    MSC_T  *msc_p;
+    MSC_T  *msc;
 
     /*
      *  Remove any hardware EP/QH from Host Controller hardware list.
@@ -637,7 +695,7 @@ static void msc_disconnect(IFACE_T *iface)
      */
     for (i = 0; i < iface->aif->ifd->bNumEndpoints; i++)
     {
-        iface->udev->hc_driver->quit_xfer(NULL, &(iface->aif->ep[i]));
+        iface->udev->hc_driver->quit_xfer(USBNULL, &(iface->aif->ep[i]));
     }
 
     /*
@@ -645,7 +703,7 @@ static void msc_disconnect(IFACE_T *iface)
      */
     msc = g_msc_list;
 
-    while (msc != NULL)
+    while (msc != USBNULL)
     {
         msc_p = msc->next;
 
@@ -653,20 +711,12 @@ static void msc_disconnect(IFACE_T *iface)
         {
             fatfs_drive_free(msc->drv_no);
             msc_list_remove(msc);
-            usbh_free_mem(msc, sizeof(*msc));
+            (void)usbh_free_mem(msc, sizeof(*msc));
         }
 
         msc = msc_p;
     }
 }
-
-UDEV_DRV_T  msc_driver =
-{
-    msc_probe,
-    msc_disconnect,
-    NULL,
-    NULL
-};
 
 /// @endcond HIDDEN_SYMBOLS
 
@@ -678,7 +728,15 @@ UDEV_DRV_T  msc_driver =
   */
 int  usbh_umas_init(void)
 {
+    static UDEV_DRV_T  msc_driver =
+    {
+        msc_probe,
+        msc_disconnect,
+        USBNULL,
+        USBNULL
+    };
+
     fatfs_drive_int();
-    g_msc_list = NULL;
+    g_msc_list = USBNULL;
     return usbh_register_driver(&msc_driver);
 }

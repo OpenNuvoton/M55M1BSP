@@ -106,7 +106,7 @@ extern "C"
   * @return     None
   * \hideinitializer
   */
-#define TTMR_SET_OPMODE(ttmr, u32OpMode)   ((ttmr)->CTL = ((ttmr)->CTL & ~TTMR_CTL_OPMODE_Msk) | (u32OpMode))
+#define TTMR_SET_OPMODE(ttmr, u32OpMode)   ((ttmr)->CTL = ((ttmr)->CTL & ~TTMR_CTL_OPMODE_Msk) | (u32OpMode & TTMR_CTL_OPMODE_Msk))
 
 /* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
 __STATIC_INLINE void TTMR_Start(TTMR_T *ttmr);
@@ -115,11 +115,11 @@ __STATIC_INLINE void TTMR_EnableWakeup(TTMR_T *ttmr);
 __STATIC_INLINE void TTMR_DisableWakeup(TTMR_T *ttmr);
 __STATIC_INLINE void TTMR_EnableInt(TTMR_T *ttmr);
 __STATIC_INLINE void TTMR_DisableInt(TTMR_T *ttmr);
-__STATIC_INLINE uint32_t TTMR_GetIntFlag(TTMR_T *ttmr);
+__STATIC_INLINE uint32_t TTMR_GetIntFlag(const TTMR_T *ttmr);
 __STATIC_INLINE void TTMR_ClearIntFlag(TTMR_T *ttmr);
-__STATIC_INLINE uint32_t TTMR_GetWakeupFlag(TTMR_T *ttmr);
+__STATIC_INLINE uint32_t TTMR_GetWakeupFlag(const TTMR_T *ttmr);
 __STATIC_INLINE void TTMR_ClearWakeupFlag(TTMR_T *ttmr);
-__STATIC_INLINE uint32_t TTMR_GetCounter(TTMR_T *ttmr);
+__STATIC_INLINE uint32_t TTMR_GetCounter(const TTMR_T *ttmr);
 __STATIC_INLINE void TTMR_EnablePDCLK(TTMR_T *ttmr);
 __STATIC_INLINE void TTMR_DisablePDCLK(TTMR_T *ttmr);
 
@@ -221,7 +221,7 @@ __STATIC_INLINE void TTMR_DisableInt(TTMR_T *ttmr)
   *
   * @details    This function indicates ttmr time-out interrupt occurred or not.
   */
-__STATIC_INLINE uint32_t TTMR_GetIntFlag(TTMR_T *ttmr)
+__STATIC_INLINE uint32_t TTMR_GetIntFlag(const TTMR_T *ttmr)
 {
     return ((ttmr->INTSTS & TTMR_INTSTS_TIF_Msk) ? 1UL : 0UL);
 }
@@ -251,9 +251,9 @@ __STATIC_INLINE void TTMR_ClearIntFlag(TTMR_T *ttmr)
   *
   * @details    This function indicates ttmr interrupt event has waked up system or not.
   */
-__STATIC_INLINE uint32_t TTMR_GetWakeupFlag(TTMR_T *ttmr)
+__STATIC_INLINE uint32_t TTMR_GetWakeupFlag(const TTMR_T *ttmr)
 {
-    return (ttmr->INTSTS & TTMR_INTSTS_TWKF_Msk ? 1UL : 0UL);
+    return (((ttmr->INTSTS & TTMR_INTSTS_TWKF_Msk) != 0UL) ? 1UL : 0UL);
 }
 
 /**
@@ -280,7 +280,7 @@ __STATIC_INLINE void TTMR_ClearWakeupFlag(TTMR_T *ttmr)
   *
   * @details    This function reports the current 24-bit ttmr counter value.
   */
-__STATIC_INLINE uint32_t TTMR_GetCounter(TTMR_T *ttmr)
+__STATIC_INLINE uint32_t TTMR_GetCounter(const TTMR_T *ttmr)
 {
     return ttmr->CNT;
 }
@@ -316,7 +316,7 @@ __STATIC_INLINE void TTMR_DisablePDCLK(TTMR_T *ttmr)
 uint32_t TTMR_Open(TTMR_T *ttmr, uint32_t u32Mode, uint32_t u32Freq);
 void TTMR_Close(TTMR_T *ttmr);
 int32_t TTMR_Delay(TTMR_T *ttmr, uint32_t u32Usec);
-uint32_t TTMR_GetModuleClock(TTMR_T *ttmr);
+uint32_t TTMR_GetModuleClock(const TTMR_T *ttmr);
 void TTMR_SetTriggerTarget(TTMR_T *ttmr, uint32_t u32Mask);
 int32_t TTMR_ResetCounter(TTMR_T *ttmr);
 

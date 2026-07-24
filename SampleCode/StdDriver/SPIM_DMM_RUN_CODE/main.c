@@ -402,9 +402,12 @@ int main()
     InitDebugUart();
 
     /**
-     * GCC project users must use the ICP tool to burn binary to APROM and
-     * SPI flash separately, and after entering the debugger, only APROM code can source debug.
-    */
+     * NuEclipse GCC requires additional post-build and debugger settings
+     * to generate and download ER_ROM.hex and SPIM.hex separately.
+     *
+     * Refer to the GCC project README for configuration details.
+     * Source-level debugging is supported only for APROM code.
+     */
     printf("+--------------------------------------------------+\n");
     printf("|      SPIM DMM mode running program on flash      |\n");
     printf("+--------------------------------------------------+\n");

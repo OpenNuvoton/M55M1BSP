@@ -56,7 +56,7 @@ __HEAP_SIZE  = 0x00000800;
 MEMORY
 {
   ITCM   (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00010000
-  FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x00200000
+  FLASH  (rx)  : ORIGIN = 0x00100000, LENGTH = 0x00100000
   XOM    (x)   : ORIGIN = 0x00110000, LENGTH = 0x00002000
   DTCM   (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00020000
   SRAM   (rwx) : ORIGIN = 0x20100000, LENGTH = 0x00130000
@@ -103,7 +103,8 @@ SECTIONS
   . = ORIGIN(XOM);
   .xom :
   {
-    *(.xom)
+    __region_XOM_start__ = .;
+    ./User/xom_add.o(.text*)
   } > XOM
 
   .text :

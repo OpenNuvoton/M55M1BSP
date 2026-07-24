@@ -102,7 +102,7 @@ extern "C"
   * @details This macro will set the sampling frequency of the noise filter clock.
   * \hideinitializer
   */
-#define ECAP_SET_NOISE_FILTER_CLKDIV(ecap, u32ClkSel) ((ecap)->CTL0 = ((ecap)->CTL0 & ~ECAP_CTL0_NFCLKSEL_Msk)|(u32ClkSel))
+#define ECAP_SET_NOISE_FILTER_CLKDIV(ecap, u32ClkSel) ((ecap)->CTL0 = ((ecap)->CTL0 & ~ECAP_CTL0_NFCLKSEL_Msk)|(u32ClkSel & ECAP_CTL0_NFCLKSEL_Msk))
 
 /**
   * @brief This macro is used to disable noise filter
@@ -127,7 +127,7 @@ extern "C"
   * @details This macro will enable the noise filter of input capture and set noise filter clock divide.
   * \hideinitializer
   */
-#define ECAP_NOISE_FILTER_ENABLE(ecap, u32ClkSel) ((ecap)->CTL0 = ((ecap)->CTL0 & ~(ECAP_CTL0_CAPNFDIS_Msk|ECAP_CTL0_NFCLKSEL_Msk))|(u32ClkSel))
+#define ECAP_NOISE_FILTER_ENABLE(ecap, u32ClkSel) ((ecap)->CTL0 = ((ecap)->CTL0 & ~(ECAP_CTL0_CAPNFDIS_Msk|ECAP_CTL0_NFCLKSEL_Msk))|(u32ClkSel & ECAP_CTL0_NFCLKSEL_Msk))
 
 /**
   * @brief This macro is used to enable input channel unit
@@ -269,13 +269,14 @@ extern "C"
   * @details This macro will enable and select compare or capture event that can clear capture counter.
   * \hideinitializer
   */
-#define ECAP_SET_CNT_CLEAR_EVENT(ecap, u32Event) do{ \
-        if((u32Event) & ECAP_CTL0_CMPCLREN_Msk) \
+#define ECAP_SET_CNT_CLEAR_EVENT(ecap, u32Event) do { \
+        if (((u32Event) & ECAP_CTL0_CMPCLREN_Msk) != 0UL) { \
             (ecap)->CTL0 |= ECAP_CTL0_CMPCLREN_Msk; \
-        else \
+        } else { \
             (ecap)->CTL0 &= ~ECAP_CTL0_CMPCLREN_Msk; \
-        (ecap)->CTL1 = ((ecap)->CTL1 &~0x00700F00) | ((u32Event) & 0x00700F00); \
-    }while(0);
+        } \
+        (ecap)->CTL1 = ((ecap)->CTL1 & ~0x00700F00UL) | ((u32Event) & 0x00700F00UL); \
+    } while (0)
 #define ECAP_SET_CNT_CLRRLD_EVENT  ECAP_SET_CNT_CLEAR_EVENT
 
 /**
@@ -389,7 +390,7 @@ extern "C"
   * @details This macro will select capture timer clock has a pre-divider with eight divided option.
   * \hideinitializer
   */
-#define ECAP_SEL_TIMER_CLK_DIV(ecap, u32Clkdiv) ((ecap)->CTL1 = ((ecap)->CTL1 & ~ECAP_CTL1_CLKSEL_Msk)|(u32Clkdiv))
+#define ECAP_SEL_TIMER_CLK_DIV(ecap, u32Clkdiv) ((ecap)->CTL1 = ((ecap)->CTL1 & ~ECAP_CTL1_CLKSEL_Msk)|(u32Clkdiv & ECAP_CTL1_CLKSEL_Msk))
 
 /**
   * @brief This macro is used to select capture timer/counter clock source
@@ -403,7 +404,7 @@ extern "C"
   * @details This macro will select capture timer/clock clock source.
   * \hideinitializer
   */
-#define ECAP_SEL_TIMER_CLK_SRC(ecap, u32ClkSrc) ((ecap)->CTL1 = ((ecap)->CTL1 & ~ECAP_CTL1_CNTSRCSEL_Msk)|(u32ClkSrc))
+#define ECAP_SEL_TIMER_CLK_SRC(ecap, u32ClkSrc) ((ecap)->CTL1 = ((ecap)->CTL1 & ~ECAP_CTL1_CNTSRCSEL_Msk)|(u32ClkSrc & ECAP_CTL1_CNTSRCSEL_Msk))
 
 /**
   * @brief This macro is used to read input capture status

@@ -4,7 +4,7 @@ project:
   setups:
     - output:
         # bin, elf, hex, lib
-        type: bin
+        type: ["elf", "bin"]
     - setup: Options for NuBL2
       processor:
         fpu: dp
@@ -33,6 +33,7 @@ project:
             - -fno-rtti -funsigned-char -fshort-enums -fshort-wchar -ffunction-sections -fdata-sections -Wall
             - -D__MICROLIB
             - -Wconditional-uninitialized
+            - -mno-unaligned-access
           CPP:
             - -xc++
             - -std=c++11
@@ -49,6 +50,7 @@ project:
           C-CPP:
             - -mthumb -masm-syntax-unified -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections
             - -Wmaybe-uninitialized
+            - -mno-unaligned-access
           Link:
             - -mthumb -fmessage-length=0 -fsigned-char --specs=nano.specs --specs=nosys.specs
             - -Wl,--gc-sections,-Map="$elf()$.map"
@@ -64,11 +66,13 @@ project:
             - --pd="-DSIGNED_HDR_SIZE=0x0"
           C-CPP:
             - -Wconditional-uninitialized
+            - -mno-unaligned-access
         - for-compiler: GCC
           Link:
             - -Wl,--defsym="SIGNED_HDR_SIZE=0x0"
           C-CPP:
             - -Wmaybe-uninitialized
+            - -mno-unaligned-access
     - setup: Options for SecureBoot
       for-context: .SecureBoot
       output:
@@ -79,11 +83,13 @@ project:
             - --pd="-DSIGNED_HDR_SIZE=0x400"
           C-CPP:
             - -Wconditional-uninitialized
+            - -mno-unaligned-access
         - for-compiler: GCC
           Link:
             - -Wl,--defsym="SIGNED_HDR_SIZE=0x400"
           C-CPP:
             - -Wmaybe-uninitialized
+            - -mno-unaligned-access
   linker:
     - script: ./NuBL2.scf
       for-compiler: AC6
@@ -127,16 +133,9 @@ project:
         - file: ../OTA/ota_api.c
         - file: ../OTA/ota_transfer.c
         - file: ../OTA/CommandHandler.c
-
   executes:
-    - execute: HelloPython
-      run: python -V
-      always: # always generate signed fw image
     - execute: GenerateSignedImage
       for-context: .SecureBoot
-      run: python ../../../../../../Tool/imgtool.py sign -k ../../FwKey/ECC-P256.pem --public-key-format hash --align 4 -v 1.2.3 -H 0x400 --pad-header -S 0x40000 -s 0 $input$ $output$
-      always: # always generate signed fw image
+      run: python ../../../FwSign.py $input$ ../../UNSAFE_DEV_ONLY_KEY/ECC-P256.pem 0
       input:
-        - $bin(NuBL2)$
-      output:
-        - $OutDir()$/NuBL2_signed.bin # signed fw image binary
+        - $bin()$

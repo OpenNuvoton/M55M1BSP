@@ -708,7 +708,6 @@ void USBD_CtrlOut(void)
 void USBD_SwReset(void)
 {
     uint32_t i;
-    uint32_t u32CFG;
 
     /* Reset all variables for protocol */
     g_usbd_CtrlInPointer = ((void *)0);
@@ -729,7 +728,7 @@ void USBD_SwReset(void)
         else
         {
             /* Reset double buffer setting */
-            u32CFG = USBD->EP[i].CFG;
+            uint32_t u32CFG = USBD->EP[i].CFG;
             USBD->EP[i].CFG = u32CFG;
         }
     }

@@ -1,0 +1,82 @@
+{
+  "components": [
+    {
+      "type": "application",
+      "bom-ref": "pkg:generic/otaserverdemo-android@2.2.1?source=vendored&path=Tool",
+      "name": "OTAServerDemo Android App",
+      "version": "2.2.1",
+      "scope": "optional",
+      "author": "Nuvoton Technology Corporation",
+      "purl": "pkg:generic/otaserverdemo-android@2.2.1",
+      "description": "Nuvoton OTAServerDemo Android application distributed as a pre-built APK for Secure OTA sample workflows.",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "Tool"
+        },
+        {
+          "name": "bsp:file-path",
+          "value": "Tool"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_binary"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "first-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "Nuvoton Technology Corporation"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/components/sca_otaserverdemo_android.json"
+        },
+        {
+          "name": "bsp:evidence-path",
+          "value": "Tool"
+        },
+        {
+          "name": "bsp:application-id",
+          "value": "com.nuvoton.otaserverdemo"
+        },
+        {
+          "name": "bsp:version-evidence",
+          "value": "Tool/OTAServerDemo_v2.2.1.apk"
+        },
+        {
+          "name": "bsp:binary-file",
+          "value": "Tool/OTAServerDemo_v2.2.1.apk"
+        },
+        {
+          "name": "bsp:sha256:Tool/OTAServerDemo_v2.2.1.apk",
+          "value": "6eeaad0e51fdb3107faf022f0a8c2557a2623c2478a5231c5cc2e75f092cc0fe"
+        },
+        {
+          "name": "bsp:sha1:Tool/OTAServerDemo_v2.2.1.apk",
+          "value": "0012194aad5f690dde59c9971171b1f5daf27ad8"
+        },
+        {
+          "name": "bsp:source-repository",
+          "value": "https://github.com/OpenNuvoton/NuOTADemo-Android.git"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/OpenNuvoton/NuOTADemo-Android.git",
+          "comment": "Public source repository for the OTAServerDemo Android application"
+        }
+      ]
+    }
+  ]
+}

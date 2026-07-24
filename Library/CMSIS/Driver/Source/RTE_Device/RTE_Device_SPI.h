@@ -53,7 +53,7 @@
 //     <o2> Channel(0~15) <0-15>
 //     <i>  Selects PDMA Channel
 //   </e>
-#define RTE_SPI0_RX_PDMA                    1
+#define RTE_SPI0_RX_PDMA                    0
 #define RTE_SPI0_RX_PDMA_PORT               0
 #define RTE_SPI0_RX_PDMA_CHANNEL            0
 
@@ -63,7 +63,7 @@
 //     <o2> Channel(0~15) <0-15>
 //     <i>  Selects PDMA Channel
 //   </e>
-#define RTE_SPI0_TX_PDMA                    1
+#define RTE_SPI0_TX_PDMA                    0
 #define RTE_SPI0_TX_PDMA_PORT               0
 #define RTE_SPI0_TX_PDMA_CHANNEL            1
 
@@ -212,7 +212,7 @@
 //     <o2> Channel(0~15) <0-15>
 //     <i>  Selects PDMA Channel
 //   </e>
-#define RTE_QSPI0_RX_PDMA                   0
+#define RTE_QSPI0_RX_PDMA                   1
 #define RTE_QSPI0_RX_PDMA_PORT              0
 #define RTE_QSPI0_RX_PDMA_CHANNEL           0
 
@@ -222,7 +222,7 @@
 //     <o2> Channel(0~15) <0-15>
 //     <i>  Selects PDMA Channel
 //   </e>
-#define RTE_QSPI0_TX_PDMA                   0
+#define RTE_QSPI0_TX_PDMA                   1
 #define RTE_QSPI0_TX_PDMA_PORT              0
 #define RTE_QSPI0_TX_PDMA_CHANNEL           1
 
@@ -295,7 +295,7 @@
 //     <o2> Channel(0~4) <0-4>
 //     <i>  Selects LPPDMA Channel
 //   </e>
-#define RTE_LPSPI0_RX_PDMA                  0
+#define RTE_LPSPI0_RX_PDMA                  1
 #define RTE_LPSPI0_RX_PDMA_PORT             0
 #define RTE_LPSPI0_RX_PDMA_CHANNEL          0
 
@@ -305,7 +305,7 @@
 //     <o2> Channel(0~4) <0-4>
 //     <i>  Selects LPPDMA Channel
 //   </e>
-#define RTE_LPSPI0_TX_PDMA                  0
+#define RTE_LPSPI0_TX_PDMA                  1
 #define RTE_LPSPI0_TX_PDMA_PORT             0
 #define RTE_LPSPI0_TX_PDMA_CHANNEL          1
 

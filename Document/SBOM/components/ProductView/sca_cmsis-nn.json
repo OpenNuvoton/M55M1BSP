@@ -1,0 +1,67 @@
+{
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:github/arm-software/CMSIS-NN@6.0.0?source=vendored&path=Library/CMSIS/NN",
+      "name": "CMSIS-NN",
+      "version": "6.0.0",
+      "scope": "optional",
+      "author": "Arm Limited",
+      "purl": "pkg:github/arm-software/CMSIS-NN@6.0.0",
+      "description": "Arm CMSIS-NN source subset vendored in Library/CMSIS/NN, providing optimized neural-network kernels and support functions for Cortex-M processors.",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "Library/CMSIS/NN"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_source_subset"
+        },
+        {
+          "name": "bsp:included-paths",
+          "value": "Library/CMSIS/NN/Include; Library/CMSIS/NN/Source"
+        },
+        {
+          "name": "bsp:upstream-repository",
+          "value": "https://github.com/ARM-software/CMSIS-NN"
+        },
+        {
+          "name": "bsp:upstream-tag",
+          "value": "v6.0.0"
+        },
+        {
+          "name": "bsp:upstream-commit",
+          "value": "69823017d0973440e311dcf900b2162b17609fb0"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "third-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "Arm CMSIS-NN"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/cmsis/sca_cmsis-nn.json"
+        },
+        {
+          "name": "bsp:evidence-path",
+          "value": "Library/CMSIS/NN"
+        },
+        {
+          "name": "bsp:license-evidence",
+          "value": "Library/CMSIS/NN/Include/arm_nnfunctions.h"
+        }
+      ]
+    }
+  ]
+}

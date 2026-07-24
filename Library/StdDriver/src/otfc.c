@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
 *****************************************************************************/
-
+#include <stddef.h>
 #include "NuMicro.h"
 
 /** @addtogroup Standard_Driver Standard Driver
@@ -20,6 +20,22 @@
 /** @addtogroup OTFC_EXPORTED_FUNCTIONS OTFC Exported Functions
   @{
 */
+
+static int32_t otfc_check_region(const OTFC_T *otfc, uint32_t u32PR)
+{
+    if (otfc == (OTFC_T *)NULL)
+    {
+        return OTFC_ERR_FAIL;
+    }
+
+    if (u32PR > (uint32_t)OTFC_PR_3)
+    {
+        return OTFC_ERR_FAIL;
+    }
+
+    return OTFC_OK;
+}
+
 static int32_t otfc_wait_busy(const OTFC_T *otfc, uint32_t u32PR)
 {
     volatile int32_t i32Timeout = OTFC_TIMEOUT;
@@ -50,6 +66,11 @@ static int32_t otfc_wait_busy(const OTFC_T *otfc, uint32_t u32PR)
  */
 int32_t OTFC_SetScrambleNum(OTFC_T *otfc, uint32_t u32PR, uint32_t u32Scramble)
 {
+    if (otfc_check_region(otfc, u32PR) != OTFC_OK)
+    {
+        return OTFC_ERR_FAIL;
+    }
+
     /* Wait Protection Region 0 ~ 3 not Busy*/
     if (otfc_wait_busy(otfc, u32PR) != OTFC_OK)
     {
@@ -79,6 +100,11 @@ int32_t OTFC_SetScrambleNum(OTFC_T *otfc, uint32_t u32PR, uint32_t u32Scramble)
 int32_t OTFC_SetNonceNum(OTFC_T *otfc, uint32_t u32PR,
                          uint32_t u32Nonce0, uint32_t u32Nonce1, uint32_t u32Nonce2)
 {
+    if (otfc_check_region(otfc, u32PR) != OTFC_OK)
+    {
+        return OTFC_ERR_FAIL;
+    }
+
     /* Wait Protection Region 0 ~ 3 not Busy*/
     if (otfc_wait_busy(otfc, u32PR) != OTFC_OK)
     {
@@ -115,6 +141,21 @@ int32_t OTFC_SetKeyFromKeyStore(OTFC_T *otfc, uint32_t u32PR,
                                 uint32_t u32SAddr, uint32_t u32PRSize,
                                 uint32_t u32KeyNum, uint32_t u32KeySrc)
 {
+    if (otfc_check_region(otfc, u32PR) != OTFC_OK)
+    {
+        return OTFC_ERR_FAIL;
+    }
+
+    if ((u32PRSize == 0UL) || ((UINT32_MAX - u32SAddr) < u32PRSize))
+    {
+        return OTFC_ERR_FAIL;
+    }
+
+    if ((u32KeySrc != OTFC_KS_SRC_SRAM) && (u32KeySrc != OTFC_KS_SRC_OTP))
+    {
+        return OTFC_ERR_FAIL;
+    }
+
     /* Wait Protection Region 0 ~ 3 not Busy*/
     if (otfc_wait_busy(otfc, u32PR) != OTFC_OK)
     {
@@ -123,6 +164,11 @@ int32_t OTFC_SetKeyFromKeyStore(OTFC_T *otfc, uint32_t u32PR,
 
     /* Reset Protection Region 0 ~ 3 */
     OTFC_RESET_PR(otfc, u32PR);
+
+    if (otfc_wait_busy(otfc, u32PR) != OTFC_OK)
+    {
+        return OTFC_ERR_TIMEOUT;
+    }
 
     /* Set Protection Region Start and End Address */
     OTFC_SET_START_ADDR(otfc, u32PR, u32SAddr);
@@ -159,6 +205,21 @@ int32_t OTFC_SetKeyFromKeyStore(OTFC_T *otfc, uint32_t u32PR,
 int32_t OTFC_SetKeyFromKeyReg(OTFC_T *otfc, const uint32_t *pau32KeyTable, uint32_t u32PR,
                               uint32_t u32SAddr, uint32_t u32PRSize)
 {
+    if (otfc_check_region(otfc, u32PR) != OTFC_OK)
+    {
+        return OTFC_ERR_FAIL;
+    }
+
+    if (pau32KeyTable == (uint32_t *)NULL)
+    {
+        return OTFC_ERR_FAIL;
+    }
+
+    if ((u32PRSize == 0UL) || ((UINT32_MAX - u32SAddr) < u32PRSize))
+    {
+        return OTFC_ERR_FAIL;
+    }
+
     /* Wait Protection Region 0 ~ 3 not Busy*/
     if (otfc_wait_busy(otfc, u32PR) != OTFC_OK)
     {
@@ -167,6 +228,11 @@ int32_t OTFC_SetKeyFromKeyReg(OTFC_T *otfc, const uint32_t *pau32KeyTable, uint3
 
     /* Reset Protection Region 0 ~ 3 Setting*/
     OTFC_RESET_PR(otfc, u32PR);
+
+    if (otfc_wait_busy(otfc, u32PR) != OTFC_OK)
+    {
+        return OTFC_ERR_TIMEOUT;
+    }
 
     OTFC_CLEAR_KSCTRL(otfc, u32PR);
 

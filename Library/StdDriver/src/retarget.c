@@ -10,16 +10,47 @@
 #include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
-#ifdef _RTE_
+
+#if defined (_RTE_) || __has_include("RTE_Components.h")
     #include "RTE_Components.h"
 #endif
 
+// -------- <<< Use Configuration Wizard in Context Menu >>> --------
+
 #ifndef STDIN_ECHO
-    #define STDIN_ECHO         0    // STDIN: echo to STDOUT
+    // <q> Echo STDIN to STDOUT
+    // <i> Enable echoing of characters typed on STDIN back to STDOUT
+    #define STDIN_ECHO         0
 #endif
 
 #ifndef TRACK_HARDFAULT
-    #define TRACK_HARDFAULT    0    // Set to 1 to enable hardfault status tracking; set to 0 to disable.
+    // <q> Enable HardFault Status Tracking
+    // <i> Set to 1 to enable HardFault status tracking; set to 0 to disable.
+    #define TRACK_HARDFAULT    0
+#endif
+
+// -------- <<< End of Configuration Wizard Context Menu >>> --------
+
+#if !defined (RTE_CMSIS_Compiler_STDOUT) && !defined (RTE_CMSIS_Compiler_STDIN) && \
+    !defined (RTE_CMSIS_Compiler_STDERR) && !defined (RTE_CMSIS_Compiler_TTY)   && \
+    !defined (RTE_CMSIS_Compiler_File_Interface) && !defined (RTE_CMSIS_Compiler_OS_Interface)
+
+    #if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+        #ifndef NVT_ISP_FUNC
+            #include "../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c"
+        #else
+            // To reduce code size
+        #endif
+    #endif
+
+    #if defined (__ARMCC_VERSION)
+        #include "../../Device/Nuvoton/M55M1/Source/ARM/retarget_ARMCC.c"
+    #endif
+
+    #if defined (__ICCARM__)
+        #include "../../Device/Nuvoton/M55M1/Source/IAR/retarget_ICC.c"
+    #endif
+
 #endif
 
 #if defined(DEBUG_ENABLE_SEMIHOST)
@@ -52,7 +83,9 @@ int32_t SH_Return(int32_t n32In_R0, int32_t n32In_R1, int32_t *pn32Out_R0)
     if (g_ICE_Connected)
     {
         if (pn32Out_R0)
+        {
             *pn32Out_R0 = n32In_R0;
+        }
 
         return 1;
     }
@@ -120,7 +153,10 @@ static void SendChar_ToUART(int ch)
         {
             i32Tmp = i32Head + 1;
 
-            if (i32Tmp > BUF_SIZE) i32Tmp = 0;
+            if (i32Tmp > BUF_SIZE)
+            {
+                i32Tmp = 0;
+            }
 
             if (i32Tmp != i32Tail)
             {
@@ -132,7 +168,10 @@ static void SendChar_ToUART(int ch)
         // Push char
         i32Tmp = i32Head + 1;
 
-        if (i32Tmp > BUF_SIZE) i32Tmp = 0;
+        if (i32Tmp > BUF_SIZE)
+        {
+            i32Tmp = 0;
+        }
 
         if (i32Tmp != i32Tail)
         {
@@ -143,7 +182,9 @@ static void SendChar_ToUART(int ch)
     else
     {
         if (i32Tail == i32Head)
+        {
             return;
+        }
     }
 
     // pop char
@@ -151,7 +192,10 @@ static void SendChar_ToUART(int ch)
     {
         i32Tmp = i32Tail + 1;
 
-        if (i32Tmp > BUF_SIZE) i32Tmp = 0;
+        if (i32Tmp > BUF_SIZE)
+        {
+            i32Tmp = 0;
+        }
 
         if ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk) == 0)
         {
@@ -159,7 +203,9 @@ static void SendChar_ToUART(int ch)
             i32Tail = i32Tmp;
         }
         else
+        {
             break; // FIFO full
+        }
     } while (i32Tail != i32Head);
 }
 #endif
@@ -195,7 +241,9 @@ static void SendChar(int ch)
             int i;
 
             for (i = 0; i < g_buf_len; i++)
+            {
                 SendChar_ToUART(g_buf[i]);
+            }
 
             g_buf_len = 0;
 # endif
@@ -227,7 +275,9 @@ static char GetChar(void)
         while (SH_DoCommand(0x7, 0, &nRet) != 0)
         {
             if (nRet != 0)
+            {
                 return (char)nRet;
+            }
         }
 
 #else
@@ -426,9 +476,17 @@ static void TrackHardFault(void)
 
 __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 {
-    uint32_t inst, addr, taddr, tdata;
-    uint32_t rm, rn, rt, imm5, imm8;
-    uint32_t u32CFSR, u32BFAR;
+    uint32_t inst;
+    uint32_t addr;
+    uint32_t taddr;
+    uint32_t tdata;
+    uint32_t rm;
+    uint32_t rn;
+    uint32_t rt;
+    uint32_t imm5;
+    uint32_t imm8;
+    uint32_t u32CFSR;
+    uint32_t u32BFAR;
 
     // It is caused by hardfault. Just process the hard fault.
     /*
@@ -442,8 +500,10 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
         psr = pu32StackFrame[7]
     */
 
-    if (pu32StackFrame == NULL)
-        return 0;
+    if (pu32StackFrame == (uint32_t *)NULL)
+    {
+        return 0U;
+    }
 
     /* Read volatile registers into temporary variables to fix IAR [Pa082] the order of volatile accesses is undefined */
     u32CFSR = SCB->CFSR;
@@ -453,9 +513,8 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
     addr = pu32StackFrame[6];
     inst = M16(addr);
 
-    if (inst == 0xBEAB)
+    if (inst == 0xBEABU)
     {
-        //printf("Execute BKPT without ICE connected\n");
         /*
             If the instruction is 0xBEAB, it means it is caused by BKPT without ICE connected.
             We still return for output/input message to UART.
@@ -463,7 +522,7 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 #if defined(DEBUG_ENABLE_SEMIHOST)
         g_ICE_Connected = 0;        // Set a flag for ICE offline
 #endif
-        pu32StackFrame[6] += 2;     // Return to next instruction
+        pu32StackFrame[6] += 2U;    // Return to next instruction
         return pu32StackFrame[5];   // Keep lr in R0
     }
 
@@ -474,12 +533,12 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
     printf("    CFSR: 0x%08X, BFAR: 0x%08X, MMFAR: 0x%08X\n", u32CFSR, u32BFAR, SCB->MMFAR);
     printf("Instruction code = %x\n", inst);
 
-    if ((inst >> 12) == 5)
+    if ((inst >> 12U) == 5U)
     {
         // 0101xx Load/store (register offset) on page C2-327 of Armv8-M ref
-        rm = (inst >> 6) & 0x7;
-        rn = (inst >> 3) & 0x7;
-        rt = inst & 0x7;
+        rm = (inst >> 6U) & 0x7U;
+        rn = (inst >> 3U) & 0x7U;
+        rt = inst & 0x7U;
 
         printf("LDR/STR rt=%x rm=%x rn=%x\n", rt, rm, rn);
         taddr = pu32StackFrame[rn] + pu32StackFrame[rm];
@@ -487,12 +546,12 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
         printf("[0x%08x] 0x%04x %s 0x%x [0x%x]\n", addr, inst,
                (inst & BIT11) ? "LDR" : "STR", tdata, taddr);
     }
-    else if ((inst >> 13) == 3)
+    else if ((inst >> 13U) == 3U)
     {
         // 011xxx    Load/store word/byte (immediate offset) on page C2-327 of Armv8-M ref
-        imm5 = (inst >> 6) & 0x1f;
-        rn = (inst >> 3) & 0x7;
-        rt = inst & 0x7;
+        imm5 = (inst >> 6U) & 0x1fU;
+        rn = (inst >> 3U) & 0x7U;
+        rt = inst & 0x7U;
 
         printf("LDR/STR rt=%x rn=%x imm5=%x\n", rt, rn, imm5);
         taddr = pu32StackFrame[rn] + imm5;
@@ -500,12 +559,12 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
         printf("[0x%08x] 0x%04x %s 0x%x [0x%x]\n", addr, inst,
                (inst & BIT11) ? "LDR" : "STR", tdata, taddr);
     }
-    else if ((inst >> 12) == 8)
+    else if ((inst >> 12U) == 8U)
     {
         // 1000xx    Load/store halfword (immediate offset) on page C2-328
-        imm5 = (inst >> 6) & 0x1f;
-        rn = (inst >> 3) & 0x7;
-        rt = inst & 0x7;
+        imm5 = (inst >> 6U) & 0x1fU;
+        rn = (inst >> 3U) & 0x7U;
+        rt = inst & 0x7U;
 
         printf("LDRH/STRH rt=%x rn=%x imm5=%x\n", rt, rn, imm5);
         taddr = pu32StackFrame[rn] + imm5;
@@ -513,11 +572,11 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
         printf("[0x%08x] 0x%04x %s 0x%x [0x%x]\n", addr, inst,
                (inst & BIT11) ? "LDR" : "STR", tdata, taddr);
     }
-    else if ((inst >> 12) == 9)
+    else if ((inst >> 12U) == 9U)
     {
         // 1001xx    Load/store (SP-relative) on page C2-328
-        imm8 = inst & 0xff;
-        rt = (inst >> 8) & 0x7;
+        imm8 = inst & 0xffU;
+        rt = (inst >> 8U) & 0x7U;
 
         printf("LDRH/STRH rt=%x imm8=%x\n", rt, imm8);
         taddr = pu32StackFrame[6] + imm8;
@@ -541,7 +600,7 @@ __WEAK uint32_t ProcessHardFault(uint32_t *pu32StackFrame)
 #else
 
     // Halt here
-    while (1);
+    while (1) {}
 
 #endif
 }
@@ -565,25 +624,3 @@ int stderr_putchar(int ch)
     SendChar(ch);
     return 0;
 }
-
-#if !defined (RTE_CMSIS_Compiler_STDOUT) && !defined (RTE_CMSIS_Compiler_STDIN) && \
-    !defined (RTE_CMSIS_Compiler_STDERR) && !defined (RTE_CMSIS_Compiler_TTY)   && \
-    !defined (RTE_CMSIS_Compiler_File_Interface) && !defined (RTE_CMSIS_Compiler_OS_Interface)
-
-    #if defined (__GNUC__) && !defined(__ARMCC_VERSION)
-        #ifndef NVT_ISP_FUNC
-            #include "../../Device/Nuvoton/M55M1/Source/GCC/retarget_GCC.c"
-        #else
-            // To reduce code size
-        #endif
-    #endif
-
-    #if defined (__ARMCC_VERSION)
-        #include "../../Device/Nuvoton/M55M1/Source/ARM/retarget_ARMCC.c"
-    #endif
-
-    #if defined (__ICCARM__)
-        #include "../../Device/Nuvoton/M55M1/Source/IAR/retarget_ICC.c"
-    #endif
-
-#endif

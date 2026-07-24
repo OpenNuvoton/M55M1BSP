@@ -59,10 +59,10 @@ extern "C"
 #define OTFC_STS_IF_Pos(pr)             (((pr) * OTFC_CTL_PR_Pos) + 7)
 #define OTFC_STS_IF_Msk(pr)             ((uint32_t)0x1U << OTFC_STS_IF_Pos(pr))
 
-#define OTFC_PR_0                       (0)     /*!< OTFC Protection Region 0 */
-#define OTFC_PR_1                       (1)     /*!< OTFC Protection Region 1 */
-#define OTFC_PR_2                       (2)     /*!< OTFC Protection Region 2 */
-#define OTFC_PR_3                       (3)     /*!< OTFC Protection Region 3 */
+#define OTFC_PR_0                       (0UL)     /*!< OTFC Protection Region 0 */
+#define OTFC_PR_1                       (1UL)     /*!< OTFC Protection Region 1 */
+#define OTFC_PR_2                       (2UL)     /*!< OTFC Protection Region 2 */
+#define OTFC_PR_3                       (3UL)     /*!< OTFC Protection Region 3 */
 
 #define OTFC_KEY_SRC_REG                (0x00)    /*!< OTFC Protection Region key source from register */
 #define OTFC_KEY_SRC_KS                 (0x01)    /*!< OTFC Protection Region key source from key store */
@@ -209,7 +209,7 @@ extern "C"
   * \hideinitializer
   */
 #define OTFC_GET_IF(otfc, pr)   \
-    (((otfc)->STS & (OTFC_STS_IF_Msk(pr))) >> (OTFC_STS_IF_Msk(pr)))
+    (((otfc)->STS & (OTFC_STS_IF_Msk(pr))) >> (OTFC_STS_IF_Pos(pr)))
 
 /**
   * @brief  Set Protection Start Address.
@@ -254,7 +254,7 @@ extern "C"
   * \hideinitializer
   */
 #define OTFC_CLEAR_KSCTRL(otfc, pr) \
-    ((otfc)->PR[(pr)].KSCTL &= ~(0xFFUL << OTFC_PR_KSCTL_NUM_Pos))
+    ((otfc)->PR[(pr)].KSCTL = 0UL)
 
 /**
   * @brief  Read the key source from the register.
@@ -267,7 +267,7 @@ extern "C"
   * \hideinitializer
   */
 #define OTFC_ENABLE_REG_KEY(otfc, pr)   \
-    ((otfc)->PR[(pr)].KSCTL &= ~(OTFC_PR_KSCTL_NUM_Msk | OTFC_PR_KSCTL_RSRC_Msk))
+    ((otfc)->PR[(pr)].KSCTL = 0UL)
 
 /**
   * @brief  Read the key source from the key store in SRAM.
@@ -281,8 +281,8 @@ extern "C"
   * \hideinitializer
   */
 #define OTFC_ENABLE_KS_SRAM(otfc, pr, key_num)                                    \
-    ((otfc)->PR[(pr)].KSCTL = ((otfc)->PR[(pr)].KSCTL & ~(OTFC_PR_KSCTL_NUM_Msk)) |   \
-                              (((key_num) << OTFC_PR_KSCTL_NUM_Pos) | OTFC_PR_KSCTL_RSRC_Msk))
+    ((otfc)->PR[(pr)].KSCTL = ((((uint32_t)(key_num)) & 0x1FUL) << OTFC_PR_KSCTL_NUM_Pos) | \
+                              OTFC_PR_KSCTL_RSRC_Msk)
 
 /**
   * @brief  Read the key source from the key store in OTP.
@@ -296,10 +296,9 @@ extern "C"
   * \hideinitializer
   */
 #define OTFC_ENABLE_KS_OTP(otfc, pr, key_num)                                        \
-    ((otfc)->PR[(pr)].KSCTL = ((otfc)->PR[(pr)].KSCTL & ~(OTFC_PR_KSCTL_NUM_Msk)) |      \
-                              (((key_num) << OTFC_PR_KSCTL_NUM_Pos) |                  \
-                               (OTFC_KS_SRC_OTP << OTFC_PR_KSCTL_RSSRC_Pos) |          \
-                               OTFC_PR_KSCTL_RSRC_Msk))
+    ((otfc)->PR[(pr)].KSCTL = ((((uint32_t)(key_num)) & 0x1FUL) << OTFC_PR_KSCTL_NUM_Pos) | \
+                              (OTFC_KS_SRC_OTP << OTFC_PR_KSCTL_RSSRC_Pos) |           \
+                              OTFC_PR_KSCTL_RSRC_Msk)
 
 /**
   * @brief  The KEY keeps the security key for AES .

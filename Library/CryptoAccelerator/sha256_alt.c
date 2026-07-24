@@ -27,6 +27,8 @@
  */
 
 #ifdef MBEDTLS_ALLOW_PRIVATE_ACCESS
+    /* Deviation: MISRA C:2012 Rule 20.5 - #undef is required to revoke MBEDTLS_ALLOW_PRIVATE_ACCESS and enforce private struct member encapsulation in this compilation unit. */
+    // cppcheck-suppress misra-c2012-20.5
     #undef MBEDTLS_ALLOW_PRIVATE_ACCESS
 #endif
 
@@ -48,9 +50,8 @@
 #define SHA256_VALIDATE(cond)  MBEDTLS_INTERNAL_VALIDATE( cond )
 
 #ifndef ARG_UNUSED
-    #define ARG_UNUSED(arg)  ((void)arg)
+    #define ARG_UNUSED(arg)  ((void)(arg))
 #endif
-
 
 static void mbedtls_zeroize(void *v, size_t n)
 {
@@ -100,9 +101,13 @@ int mbedtls_sha256_starts(mbedtls_sha256_context *ctx, int is224)
     ctx->first = 1;
 
     if (ctx->MBEDTLS_PRIVATE(is224))
+    {
         u32OpMode = SHA_MODE_SHA224;
+    }
     else
+    {
         u32OpMode = SHA_MODE_SHA256;
+    }
 
     //[2025-05-05]
     /* Stop SHA */
@@ -130,13 +135,6 @@ int mbedtls_sha256_starts(mbedtls_sha256_context *ctx, int is224)
     return 0;
 }
 
-int mbedtls_internal_sha256_process(mbedtls_sha256_context *ctx, const unsigned char data[NU_SHA256_BLOCK_SIZE])
-{
-    ARG_UNUSED(ctx);
-    ARG_UNUSED(data);
-
-    return MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED;
-}
 
 int mbedtls_sha256_update(mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen)
 {
@@ -169,13 +167,17 @@ int mbedtls_sha256_update(mbedtls_sha256_context *ctx, const unsigned char *inpu
             while ((CRYPTO->INTSTS & CRYPTO_INTSTS_HMACIF_Msk) == 0)
             {
                 if (timeout-- <= 0)
+                {
                     break;
+                }
             }
 
             ctx->buffer_len = 0;
 
             if (timeout == 0)
+            {
                 return MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
+            }
 
             CRYPTO->INTSTS = CRYPTO_INTSTS_HMACIF_Msk;
 
@@ -208,6 +210,14 @@ int mbedtls_sha256_update(mbedtls_sha256_context *ctx, const unsigned char *inpu
     return 0;
 }
 
+int mbedtls_internal_sha256_process(mbedtls_sha256_context *ctx, const unsigned char data[NU_SHA256_BLOCK_SIZE])
+{
+    ARG_UNUSED(ctx);
+    ARG_UNUSED(data);
+
+    return MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED;
+}
+
 int mbedtls_sha256_finish(mbedtls_sha256_context *ctx, unsigned char output[32])
 {
     int32_t timeout = 0x1000;
@@ -234,13 +244,17 @@ int mbedtls_sha256_finish(mbedtls_sha256_context *ctx, unsigned char output[32])
         while ((CRYPTO->INTSTS & CRYPTO_INTSTS_HMACIF_Msk) == 0)
         {
             if (timeout-- <= 0)
+            {
                 break;
+            }
         }
 
         ctx->buffer_len = 0;
 
         if (timeout == 0)
+        {
             return MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
+        }
 
         CRYPTO->INTSTS = CRYPTO_INTSTS_HMACIF_Msk;
 

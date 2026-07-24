@@ -19,14 +19,32 @@
  */
 void spim_putc(int ch)
 {
+    volatile int32_t i32Timeout;
+
     if ((char)ch == '\n')
     {
-        while (DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk) {}
+        i32Timeout = (int32_t)SPIM_TIMEOUT;
+
+        while ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk) != 0U)
+        {
+            if (--i32Timeout <= 0)
+            {
+                return;
+            }
+        }
 
         DEBUG_PORT->DAT = '\r';
     }
 
-    while (DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk) {}
+    i32Timeout = (int32_t)SPIM_TIMEOUT;
+
+    while ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_TXFULL_Msk) != 0U)
+    {
+        if (--i32Timeout <= 0)
+        {
+            return;
+        }
+    }
 
     DEBUG_PORT->DAT = (uint32_t)ch;
 }
@@ -36,11 +54,18 @@ void spim_putc(int ch)
  */
 char spim_getc(void)
 {
+    volatile int32_t i32Timeout = (int32_t)SPIM_TIMEOUT;
+
     while (1)
     {
         if ((DEBUG_PORT->FIFOSTS & UART_FIFOSTS_RXEMPTY_Msk) == 0U)
         {
             return ((char)DEBUG_PORT->DAT);
+        }
+
+        if (--i32Timeout <= 0)
+        {
+            return (char)0;
         }
     }
 }

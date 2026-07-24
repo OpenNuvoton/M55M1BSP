@@ -135,18 +135,16 @@ struct CSW
 
 extern uint32_t g_au32MassBlock[];
 extern uint32_t g_au32StorageBlock[];
-extern uint32_t Storage[];
+extern uint32_t g_au32Storage[];
 
 #define MassCMD_BUF        ((uint32_t)&g_au32MassBlock[0])
 #define STORAGE_DATA_BUF   ((uint32_t)&g_au32StorageBlock[0])
-#define STORAGE_BASE       ((uint32_t)&Storage[0])
+#define STORAGE_BASE       ((uint32_t)&g_au32Storage[0])
 
 /*-------------------------------------------------------------*/
 extern uint8_t volatile g_u8Suspend;
 
 /*-------------------------------------------------------------*/
-void DataFlashWrite(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer);
-void DataFlashRead(uint32_t u32Addr, uint32_t u32Size, uint32_t u32Buffer);
 void MSC_Init(void);
 void MSC_RequestSense(void);
 void MSC_ReadFormatCapacity(void);

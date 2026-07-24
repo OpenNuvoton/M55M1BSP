@@ -16,32 +16,6 @@
  * limitations under the License.
  */
 
-/**************************************************************************//**
-* @file     Driver_USBD_HSUSBD.c
-* @version  V1.00
-* @brief    HSUSBD driver for Nuvoton M55M1
-*
-* @copyright SPDX-License-Identifier: Apache-2.0
-* @copyright Copyright (C) 2024 Nuvoton Technology Corp. All rights reserved.
-******************************************************************************/
-
-/*! \page Dirver_USBD HSUSBD
-
-# Revision History
-
-  - Initial release
-
-# Requirements
-
-This driver requires the M55M1 BSP.
-The driver instance is mapped to hardware as shown in the table below:
-
-  CMSIS Driver Instance | Hardware Resource
-  :---------------------|:-----------------------
-  Driver_USBD1          | HSUSBD0
-
-*/
-
 #ifdef _RTE_
     #include "RTE_Components.h"
 #endif
@@ -77,6 +51,9 @@ The driver instance is mapped to hardware as shown in the table below:
     #define USBD_BUF_SIZE                   (8192)
 #endif
 
+#ifndef _USBD_USE_DMA
+    #define _USBD_USE_DMA                   (1)
+#endif
 // *****************************************************************************
 
 // Macros
@@ -214,7 +191,7 @@ static const uint8_t eprspctl_eptype_table[] =
                                        [ARM_USB_ENDPOINT_BULK]        = 0 << HSUSBD_EPRSPCTL_MODE_Pos, /* Auto-Validate Mode */
                                        [ARM_USB_ENDPOINT_INTERRUPT]   = 1 << HSUSBD_EPRSPCTL_MODE_Pos, /* Manual-Validate Mode */
 };
-// centralized location for USBD interrupt enable bit masks
+// Centralized location for USBD interrupt enable bit masks
 static const uint32_t enabled_irqs = HSUSBD_GINTEN_USBIEN_Msk | HSUSBD_GINTEN_CEPIEN_Msk | \
                                      HSUSBD_GINTEN_EPAIEN_Msk | HSUSBD_GINTEN_EPBIEN_Msk | HSUSBD_GINTEN_EPCIEN_Msk | HSUSBD_GINTEN_EPDIEN_Msk | HSUSBD_GINTEN_EPEIEN_Msk | HSUSBD_GINTEN_EPFIEN_Msk | \
                                      HSUSBD_GINTEN_EPGIEN_Msk | HSUSBD_GINTEN_EPHIEN_Msk | HSUSBD_GINTEN_EPIIEN_Msk | HSUSBD_GINTEN_EPJIEN_Msk | HSUSBD_GINTEN_EPKIEN_Msk | HSUSBD_GINTEN_EPLIEN_Msk | \
@@ -245,8 +222,16 @@ typedef struct
     uint16_t                      max_packet_size;        // Maximum packet size (in bytes)
     volatile uint32_t             num_transferred_total;  // Number of totally transferred bytes
     uint8_t                       ep_addr;                // Endpoint address
-    uint8_t                       reserved[3];            // Reserved (for padding)
+    volatile uint8_t              short_packet;           // Set on short packet detection
+    volatile uint8_t              dma_request;            // DMA transfer pending flag for this endpoint
+    uint8_t                       reserved[1];            // Reserved (for padding)
 } EP_Info_t;
+
+// DMA information
+typedef struct
+{
+    volatile EP_Info_t           *current_ep;             // Current endpoint being served by DMA (NULL when idle)
+} DMA_Info_t;
 
 // Instance run-time information (RW)
 typedef struct
@@ -259,8 +244,9 @@ typedef struct
     volatile int32_t              cep_event;              // Control endpoint event
     volatile uint32_t             setup_received;         // Setup Packet received flag (0 - not received or read already, 1 - received and unread yet)
     volatile uint8_t              setup_packet[8];        // Setup Packet data
-    EP_Info_t                     ep_info[PERIPH_MAX_EP];         // Endpoint information
-    EP_Info_t                     cep_info[2];               // Control Endpoint information.(0 - out, 1 - in)
+    EP_Info_t                     ep_info[PERIPH_MAX_EP]; // Endpoint information
+    EP_Info_t                     cep_info[2];            // Control Endpoint information (0 - out, 1 - in)
+    DMA_Info_t                    dma_info;               // DMA controller state
 } RW_Info_t;
 
 // Instance compile-time information (RO)
@@ -358,7 +344,7 @@ static const USBD_Info_t *USBD_GetInfo(const USBD_t *husbd)
 }
 
 /**
-  \fn          USBD_EP_t *USBD_EndpointEntry(const USBD_Info_t *const ptr_usbd_info uint8_t ep_addr, bool add)
+  \fn          USBD_EP_t *USBD_EndpointEntry(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr, bool add)
   \brief       Find or allocate a peripheral endpoint entry.
   \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
@@ -397,7 +383,7 @@ static USBD_EP_t *USBD_EndpointEntry(const USBD_Info_t *const ptr_usbd_info, uin
 /**
   \fn          USBD_WriteEpBuffer(uint32_t u32EpDat[], uint8_t u8Src[], uint32_t num)
   \brief       Write data into the USB endpoint buffer (IN transaction).
-  \detail      This function writes data from a source buffer into the USB endpoint data(DAT) buffer.
+  \details     This function writes data from a source buffer into the USB endpoint data (DAT) buffer.
   \param[out]  u32EpDat   Pointer to the endpoint DAT register (Endpoint Data Buffer).
   \param[in]   u8Src      Pointer to the source data buffer in system memory.
   \param[in]   num        Number of bytes to read from the endpoint buffer.
@@ -406,17 +392,38 @@ void USBD_WriteEpBuffer(uint32_t u32EpDat[], uint8_t u8Src[], uint32_t num)
 {
     uint32_t i = 0;
 
-    for (; i + 4 <= num; i += 4, u8Src += 4)
-        outpw(u32EpDat, *((uint32_t *)u8Src));
-
-    for (; i < num; i++)
+    /* align src to 4-byte boundary */
+    for (; ((uint32_t)(uintptr_t)u8Src & 3u) && (i < num); i++)
+    {
         outpb(u32EpDat, *u8Src++);
+    }
+
+    /* word write */
+    {
+        uint32_t *pu32Src = (uint32_t *)u8Src;
+        uint32_t u32Words = (num - i) / 4u;
+        uint32_t j;
+
+        for (j = 0; j < u32Words; j++)
+        {
+            outpw(u32EpDat, pu32Src[j]);
+        }
+
+        i      += u32Words * 4u;
+        u8Src  += u32Words * 4u;
+    }
+
+    /* tail */
+    for (; i < num; i++)
+    {
+        outpb(u32EpDat, *u8Src++);
+    }
 }
 
 /**
   \fn          USBD_ReadEpBuffer(uint8_t u8Dst[], uint32_t u32EpDat[], uint32_t num)
   \brief       Read data from the USB endpoint buffer (OUT transaction).
-  \detail      This function reads data from a USB endpoint data buffer(DAT) into a destination buffer.
+  \details     This function reads data from a USB endpoint data buffer (DAT) into a destination buffer.
   \param[out]  u8Dst      Pointer to the destination buffer in system memory.
   \param[in]   u32EpDat   Pointer to the endpoint DAT register (Endpoint Data Buffer).
   \param[in]   num        Number of bytes to read from the endpoint buffer.
@@ -426,25 +433,46 @@ void USBD_ReadEpBuffer(uint8_t u8Dst[], uint32_t u32EpDat[], uint32_t num)
 {
     uint32_t i = 0;
 
-    for (; i + 4 <= num; i += 4, u8Dst += 4)
-        * ((uint32_t *)u8Dst) = inpw(u32EpDat);
-
-    for (; i < num; i++)
+    /* align dst to 4-byte boundary */
+    for (; ((uint32_t)(uintptr_t)u8Dst & 3u) && (i < num); i++)
+    {
         *u8Dst++ = inpb(u32EpDat);
+    }
+
+    /* word read */
+    {
+        uint32_t *pu32Dst = (uint32_t *)u8Dst;
+        uint32_t u32Words = (num - i) / 4u;
+        uint32_t j;
+
+        for (j = 0; j < u32Words; j++)
+        {
+            pu32Dst[j] = inpw(u32EpDat);
+        }
+
+        i      += u32Words * 4u;
+        u8Dst  += u32Words * 4u;
+    }
+
+    /* tail */
+    for (; i < num; i++)
+    {
+        *u8Dst++ = inpb(u32EpDat);
+    }
 }
 
 /**
   \fn          void USBD_EndpointConfigureBuffer (const USBD_Info_t *const ptr_usbd_info)
   \brief       Configure and reassign USB endpoint buffer addresses in USB SRAM.
-  \detail      This function resets the buffer allocation pointer and reconfigures the buffer segmentation for all enabled endpoints.
+  \details     This function resets the buffer allocation pointer and reconfigures the buffer segmentation for all enabled endpoints.
   \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
 */
 static void USBD_EndpointConfigureBuffer(const USBD_Info_t *const ptr_usbd_info)
 {
-    // USB RAM beyond what we've allocated above is available to the user(Control endpoint used.)
+    // USB RAM beyond what we've allocated above is available to the user (Control endpoint used).
     ptr_usbd_info->ptr_rw_info->bufseg_addr = USBD_EP0_MAX_PACKET_SIZE;
 
-    // Reconfigures the buffer segmentation for all enabled endpoints.
+    // Reconfigure the buffer segmentation for all enabled endpoints.
     EP_Num_t ep_index;
     USBD_EP_t *ep;
 
@@ -452,7 +480,7 @@ static void USBD_EndpointConfigureBuffer(const USBD_Info_t *const ptr_usbd_info)
     {
         if (0 == (ep->EPCFG & HSUSBD_EPCFG_EPEN_Msk)) continue;
 
-        // Update the Endpoint Buffer Segmentation
+        // Update the endpoint buffer segmentation
         ep->EPBUFSTART = ptr_usbd_info->ptr_rw_info->bufseg_addr;
         ep->EPBUFEND = ptr_usbd_info->ptr_rw_info->bufseg_addr + ptr_usbd_info->ptr_rw_info->ep_info[ep_index].max_packet_size - 1U;
         ptr_usbd_info->ptr_rw_info->bufseg_addr += ptr_usbd_info->ptr_rw_info->ep_info[ep_index].max_packet_size;
@@ -572,10 +600,10 @@ static int32_t USBDn_PowerControl(const USBD_Info_t *const ptr_usbd_info, ARM_PO
             ptr_usbd_info->ptr_rw_info->drv_status.powered = 1U;
 
             uint32_t u32TimeOutCnt = SystemCoreClock;
-            // Initial USB engine
+            // Initialize USB engine
             husbd->PHYCTL |= HSUSBD_PHYCTL_PHYEN_Msk;
 
-            // wait PHY clock ready
+            // Wait PHY clock ready
             while (!(husbd->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
             {
                 if (--u32TimeOutCnt == 0) return ARM_DRIVER_ERROR_TIMEOUT;
@@ -836,7 +864,7 @@ static int32_t USBDn_EndpointConfigure(const USBD_Info_t *const ptr_usbd_info, u
     // Store max packet size information
     ptr_ep->max_packet_size = ep_max_packet_size;
 
-    // Reconfigures the buffer segmentation for all enabled endpoints(must configure EP before configure buffer segmentation)
+    // Reconfigure the buffer segmentation for all enabled endpoints (must configure EP before configuring buffer segmentation)
     USBD_EndpointConfigureBuffer(ptr_usbd_info);
 
     // Update endpoint configured status
@@ -875,7 +903,7 @@ static int32_t USBDn_EndpointUnconfigure(const USBD_Info_t *const ptr_usbd_info,
             ptr_ep->data = NULL;
             ptr_ep->num = 0U;
 
-            // Clear Endpoint configure
+            // Clear Endpoint configuration
             ep->EPCFG = 0;
             ep->EPRSPCTL = HSUSBD_EP_RSPCTL_TOGGLE;
         }
@@ -983,10 +1011,14 @@ static int32_t USBDn_EndpointTransfer(const USBD_Info_t *const ptr_usbd_info, ui
     ptr_ep->num = num;
 
     // Prepare to transfer
-    if (EP_DIR(ep_addr))//IN
+    if (EP_DIR(ep_addr))    // IN
     {
         if (EP_NUM(ep_addr) != 0)
         {
+#if (_USBD_USE_DMA==1 && NVT_DCACHE_ON == 1)
+            // Clean cache to SRAM
+            SCB_CleanDCache_by_Addr((uint8_t *)ptr_ep->data, DCACHE_ALIGN_LINE_SIZE(ptr_ep->num));
+#endif
             ep->EPINTEN = HSUSBD_EPINTEN_BUFEMPTYIEN_Msk;
         }
         else
@@ -997,7 +1029,7 @@ static int32_t USBDn_EndpointTransfer(const USBD_Info_t *const ptr_usbd_info, ui
                 husbd->CEPINTSTS = HSUSBD_CEPINTSTS_INTKIF_Msk;
                 husbd->CEPINTEN = HSUSBD_CEPINTEN_INTKIEN_Msk;
             }
-            else//Zero Length Packet
+            else    // Zero Length Packet
             {
                 ptr_usbd_info->ptr_rw_info->cep_event |= ARM_USBD_EVENT_IN;
                 husbd->CEPINTSTS = HSUSBD_CEPINTSTS_STSDONEIF_Msk;
@@ -1006,7 +1038,7 @@ static int32_t USBDn_EndpointTransfer(const USBD_Info_t *const ptr_usbd_info, ui
             }
         }
     }
-    else//OUT
+    else    // OUT
     {
         if (EP_NUM(ep_addr) != 0)
         {
@@ -1105,81 +1137,152 @@ static uint16_t USBDn_GetFrameNumber(const USBD_Info_t *const ptr_usbd_info)
 
 // Event functions *****************************************************************
 /**
-  \fn          void USBD_DataOutStage(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
-  \brief       Data OUT stage.
+  \fn          void USBD_DataStage_DMA (const USBD_Info_t *const ptr_usbd_info)
+  \brief       Handle data stage for DMA transfer.
   \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
-  \param[in]   ep_addr  Endpoint Address
-                - ep_addr.0..3: Address
-                - ep_addr.7:    Direction
 */
-static void USBD_DataOutStage(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
+__attribute__((unused)) static void USBD_DataStage_DMA(const USBD_Info_t *const ptr_usbd_info)
 {
+    EP_Num_t ep_index;
     EP_Info_t *ptr_ep;
-    uint32_t   num_transferred;
+    USBD_t *husbd = ptr_usbd_info->ptr_ro_info->ptr_USBD;
     USBD_EP_t *ep;
 
-    ep = USBD_EndpointEntry(ptr_usbd_info, ep_addr, false);
-    ptr_ep = &ptr_usbd_info->ptr_rw_info->ep_info[ep - ptr_usbd_info->ptr_ro_info->ptr_USBD->EP];
+    DMA_Info_t *ptr_dma = &ptr_usbd_info->ptr_rw_info->dma_info;
 
-    num_transferred = ep->EPDATCNT & HSUSBD_EPDATCNT_DATCNT_Msk;
-    ptr_ep->num_transferred_total += num_transferred;
+    // While DMA is busy, do not start another transfer
+    if (ptr_dma->current_ep) return;
 
-    USBD_ReadEpBuffer((uint8_t *)ptr_ep->data, (uint32_t *)&ep->EPDAT, num_transferred);
-
-    if ((ptr_usbd_info->ptr_rw_info->cb_endpoint_event != NULL))
+    for (ep_index = PERIPH_EPA, ptr_ep = &ptr_usbd_info->ptr_rw_info->ep_info[PERIPH_EPA], ep = husbd->EP;
+            ep_index < PERIPH_MAX_EP; ep_index++, ptr_ep++, ep++)
     {
-        ptr_usbd_info->ptr_rw_info->cb_endpoint_event(ep_addr, ARM_USBD_EVENT_OUT);
+        uint32_t num_to_transfer;
+        uint32_t dmactl;
+        uint8_t  ep_dir;
+
+        if (!ptr_ep->dma_request) continue;
+
+        ep_dir = EP_DIR(ptr_ep->ep_addr);
+
+        husbd->BUSINTEN = (HSUSBD_BUSINTEN_RSTIEN_Msk | HSUSBD_BUSINTEN_RESUMEIEN_Msk | HSUSBD_BUSINTEN_SUSPENDIEN_Msk | HSUSBD_BUSINTEN_DMADONEIEN_Msk);
+
+        if (ep_dir)
+        {
+            if (ptr_ep->num_transferred_total == ptr_ep->num) continue;
+
+            num_to_transfer = ptr_ep->num - ptr_ep->num_transferred_total;
+
+            if (num_to_transfer > ptr_ep->max_packet_size)
+            {
+                num_to_transfer = ptr_ep->max_packet_size;
+            }
+
+            dmactl = (husbd->DMACTL & ~HSUSBD_DMACTL_EPNUM_Msk) | HSUSBD_DMACTL_DMARD_Msk | EP_NUM(ptr_ep->ep_addr) | HSUSBD_DMACTL_SVINEP_Msk;
+        }
+        else
+        {
+            num_to_transfer = ep->EPDATCNT & HSUSBD_EPDATCNT_DATCNT_Msk;
+
+            if (!num_to_transfer) continue;
+
+            dmactl = (husbd->DMACTL & ~(HSUSBD_DMACTL_EPNUM_Msk | HSUSBD_DMACTL_DMARD_Msk | HSUSBD_DMACTL_SVINEP_Msk)) | EP_NUM(ptr_ep->ep_addr);
+        }
+
+        if (num_to_transfer < ptr_ep->max_packet_size)
+        {
+            ptr_ep->short_packet = true;
+        }
+
+        // Program and start the DMA transfer (common to IN and OUT)
+        husbd->DMACTL = dmactl;
+        husbd->DMAADDR = (uint32_t)ptr_ep->data + ptr_ep->num_transferred_total;
+        husbd->DMACNT = num_to_transfer;
+        husbd->BUSINTSTS = HSUSBD_BUSINTSTS_DMADONEIF_Msk;
+        ptr_ep->num_transferred_total += num_to_transfer;
+        ptr_dma->current_ep = ptr_ep;
+
+        // For IN transfers, arm the TX-packet interrupt when the last packet is queued
+        if (ep_dir && (ptr_ep->num_transferred_total == ptr_ep->num))
+        {
+            ep->EPINTSTS = HSUSBD_EPINTSTS_TXPKIF_Msk;
+            ep->EPINTEN = HSUSBD_EPINTEN_TXPKIEN_Msk;
+        }
+
+        husbd->DMACTL |= HSUSBD_DMACTL_DMAEN_Msk;
+
+        return;
     }
 }
 
 /**
-  \fn          void USBD_DataInStage(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
-  \brief       Data IN stage.
+  \fn          void USBD_DataStage_PIO(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
+  \brief       Handle data stage for CPU transfer.
   \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
   \param[in]   ep_addr  Endpoint Address
                 - ep_addr.0..3: Address
                 - ep_addr.7:    Direction
 */
-static void USBD_DataInStage(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
+__attribute__((unused)) static void USBD_DataStage_PIO(const USBD_Info_t *const ptr_usbd_info, uint8_t ep_addr)
 {
     EP_Info_t *ptr_ep;
     uint32_t   num_to_transfer;
-    uint8_t   *data_to_transfer;
+    uint8_t   *data;
     USBD_EP_t *ep;
 
     ep = USBD_EndpointEntry(ptr_usbd_info, ep_addr, false);
     ptr_ep = &ptr_usbd_info->ptr_rw_info->ep_info[ep - ptr_usbd_info->ptr_ro_info->ptr_USBD->EP];
 
+    data = ptr_ep->data + ptr_ep->num_transferred_total;
 
-    // If there is more data to transfer
-    data_to_transfer = ptr_ep->data + ptr_ep->num_transferred_total;
-    num_to_transfer  = ptr_ep->num - ptr_ep->num_transferred_total;
-
-    if (num_to_transfer > ptr_ep->max_packet_size)
+    if (EP_DIR(ep_addr))
     {
-        num_to_transfer = ptr_ep->max_packet_size;
+        // If there is more data to transfer
+        num_to_transfer = ptr_ep->num - ptr_ep->num_transferred_total;
+
+        if (num_to_transfer > ptr_ep->max_packet_size)
+        {
+            num_to_transfer = ptr_ep->max_packet_size;
+        }
+
+        // Update transferred number
+        ptr_ep->num_transferred_total += num_to_transfer;
+
+        if (ptr_ep->num_transferred_total == ptr_ep->num)
+        {
+            ep->EPINTSTS = HSUSBD_EPINTSTS_TXPKIF_Msk;
+            ep->EPINTEN = HSUSBD_EPINTEN_TXPKIEN_Msk;
+        }
+
+        USBD_WriteEpBuffer((uint32_t *)&ep->EPDAT, data, num_to_transfer);
+
+        if (num_to_transfer != ptr_ep->max_packet_size) ep->EPRSPCTL = HSUSBD_EPRSPCTL_SHORTTXEN_Msk;
     }
-
-    // Update transferred number
-    ptr_ep->num_transferred_total += num_to_transfer;
-
-    if (ptr_ep->num_transferred_total == ptr_ep->num)
+    else
     {
-        ep->EPINTSTS = HSUSBD_EPINTSTS_TXPKIF_Msk;
-        ep->EPINTEN = HSUSBD_EPINTEN_TXPKIEN_Msk;
+        num_to_transfer = ep->EPDATCNT & HSUSBD_EPDATCNT_DATCNT_Msk;
+
+        USBD_ReadEpBuffer(data, (uint32_t *)&ep->EPDAT, num_to_transfer);
+
+        // Update transferred number
+        ptr_ep->num_transferred_total += num_to_transfer;
+
+        if ((ptr_ep->num_transferred_total >= ptr_ep->num) || (num_to_transfer < ptr_ep->max_packet_size))
+        {
+            ep->EPINTEN = 0;
+
+            if (ptr_usbd_info->ptr_rw_info->cb_endpoint_event != NULL)
+            {
+                ptr_usbd_info->ptr_rw_info->cb_endpoint_event(ep_addr, ARM_USBD_EVENT_OUT);
+            }
+        }
     }
-
-    USBD_WriteEpBuffer((uint32_t *)&ep->EPDAT, (uint8_t *)data_to_transfer, num_to_transfer);
-
-    if (num_to_transfer != ptr_ep->max_packet_size) ep->EPRSPCTL = HSUSBD_EPRSPCTL_SHORTTXEN_Msk;
-
 }
 
 /**
-  \fn          USBD_SetupStage(const USBD_Info_t *const ptr_usbd_info)
+  \fn          void USBD_SetupStage(const USBD_Info_t *const ptr_usbd_info)
   \brief       Setup stage.
   \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
-  */
+*/
 static void USBD_SetupStage(const USBD_Info_t *const ptr_usbd_info)
 {
     ptr_usbd_info->ptr_rw_info->setup_packet[0] = (uint8_t)((ptr_usbd_info->ptr_ro_info->ptr_USBD->SETUP1_0 >> 0) & 0xFF);
@@ -1203,7 +1306,7 @@ static void USBD_SetupStage(const USBD_Info_t *const ptr_usbd_info)
   \fn          void USBD_BusReset (const USBD_Info_t *const ptr_usbd_info)
   \brief       USBD Bus Reset.
   \param[in]   ptr_usbd_info    Pointer to USBD info structure (USBD_Info_t)
-  */
+*/
 static void USBD_BusReset(const USBD_Info_t *const ptr_usbd_info)
 {
     USBD_t *husbd = ptr_usbd_info->ptr_ro_info->ptr_USBD;
@@ -1230,7 +1333,7 @@ static void USBD_BusReset(const USBD_Info_t *const ptr_usbd_info)
         ptr_usbd_info->ptr_ro_info->ptr_USBD->EP[ep_index].EPCFG = 0U;
     }
 
-    // Buffer for control endpoint.
+    // Buffer for control endpoint
     husbd->CEPBUFSTART = 0U;
     husbd->CEPBUFEND = USBD_EP0_MAX_PACKET_SIZE - 1U;
 
@@ -1286,7 +1389,7 @@ NVT_ITCM void HSUSBDn_IRQHandler(const USBD_Info_t *const ptr_usbd_info)
         if (u32BusSts & HSUSBD_BUSINTSTS_RESUMEIF_Msk)
         {
             husbd->PHYCTL |= (HSUSBD_PHYCTL_PHYEN_Msk | HSUSBD_PHYCTL_DPPUEN_Msk);
-            u32TimeOutCnt = SystemCoreClock; /* 1 second time-out */
+            u32TimeOutCnt = SystemCoreClock; // 1 second time-out
 
             while (!(ptr_usbd_info->ptr_ro_info->ptr_USBD->PHYCTL & HSUSBD_PHYCTL_PHYCLKSTB_Msk))
                 if (--u32TimeOutCnt == 0) break;
@@ -1312,7 +1415,48 @@ NVT_ITCM void HSUSBDn_IRQHandler(const USBD_Info_t *const ptr_usbd_info)
 
         if (u32BusSts & HSUSBD_BUSINTSTS_DMADONEIF_Msk)
         {
+
             husbd->BUSINTSTS = HSUSBD_BUSINTSTS_DMADONEIF_Msk;
+#if(_USBD_USE_DMA==1)
+            volatile EP_Info_t *current_ep = ptr_usbd_info->ptr_rw_info->dma_info.current_ep;
+
+            if (current_ep)
+            {
+                current_ep->dma_request = false;
+
+                if (ptr_usbd_info->ptr_rw_info->cb_endpoint_event != NULL)
+                {
+                    if (EP_DIR(current_ep->ep_addr))
+                    {
+                        if (current_ep->short_packet == true)
+                        {
+                            USBD_EP_t *ep = USBD_EndpointEntry(ptr_usbd_info, current_ep->ep_addr, false);
+                            ep->EPRSPCTL = (ep->EPRSPCTL & 0x10) | HSUSBD_EP_RSPCTL_SHORTTXEN;
+                            current_ep->short_packet = false;
+                        }
+                    }
+                    else
+                    {
+                        if ((current_ep->num_transferred_total >= current_ep->num) || (current_ep->short_packet != 0U))
+                        {
+                            USBD_EP_t *ep = USBD_EndpointEntry(ptr_usbd_info, current_ep->ep_addr, false);
+                            ep->EPINTEN = 0;
+                            current_ep->short_packet = 0U;
+#if (_USBD_USE_DMA==1 && NVT_DCACHE_ON == 1)
+                            // Invalidate D-cache for DMA-received data from USB endpoint
+                            SCB_InvalidateDCache_by_Addr((uint8_t *)current_ep->data, DCACHE_ALIGN_LINE_SIZE(current_ep->num_transferred_total));
+#endif
+                            ptr_usbd_info->ptr_rw_info->cb_endpoint_event(current_ep->ep_addr, ARM_USBD_EVENT_OUT);
+                        }
+                    }
+                }
+
+                ptr_usbd_info->ptr_rw_info->dma_info.current_ep = NULL;
+                // If more data to transfer, start next DMA transfer
+                USBD_DataStage_DMA(ptr_usbd_info);
+            }
+
+#endif
         }
 
         if (u32BusSts & HSUSBD_BUSINTSTS_PHYCLKVLDIF_Msk)
@@ -1336,7 +1480,7 @@ NVT_ITCM void HSUSBDn_IRQHandler(const USBD_Info_t *const ptr_usbd_info)
             }
             else
             {
-                // USB Un-plug
+                // USB Unplug
                 husbd->PHYCTL &= ~HSUSBD_PHYCTL_DPPUEN_Msk;
                 husbd->OPER &= ~HSUSBD_OPER_HISHSEN_Msk;
                 event |= ARM_USBD_EVENT_VBUS_OFF;
@@ -1514,8 +1658,8 @@ NVT_ITCM void HSUSBDn_IRQHandler(const USBD_Info_t *const ptr_usbd_info)
         uint32_t mask;
         USBD_EP_t *ep;
 
-        for (ep_index = PERIPH_EPA, mask = HSUSBD_GINTSTS_EPAIF_Msk, ep = &husbd->EP[PERIPH_EPA]; ep_index < PERIPH_MAX_EP;
-                ep_index++, mask <<= 1U, ep++)
+        for (ep_index = PERIPH_EPA, mask = HSUSBD_GINTSTS_EPAIF_Msk, ep = &husbd->EP[PERIPH_EPA], ptr_ep = &ptr_usbd_info->ptr_rw_info->ep_info[PERIPH_EPA]; ep_index < PERIPH_MAX_EP;
+                ep_index++, mask <<= 1U, ptr_ep++, ep++)
         {
             if (u32IntSts & mask)
             {
@@ -1528,21 +1672,34 @@ NVT_ITCM void HSUSBDn_IRQHandler(const USBD_Info_t *const ptr_usbd_info)
                 {
                     if (u32EpIntSts & HSUSBD_EPINTSTS_BUFEMPTYIF_Msk)
                     {
-                        USBD_DataInStage(ptr_usbd_info, ep_addr);
+#if(_USBD_USE_DMA==1)
+                        ptr_ep->dma_request = true;
+                        USBD_DataStage_DMA(ptr_usbd_info);
+#else
+                        USBD_DataStage_PIO(ptr_usbd_info, ep_addr);
+#endif
                     }
                     else if (u32EpIntSts & HSUSBD_EPINTSTS_TXPKIF_Msk)
                     {
-                        if ((ptr_usbd_info->ptr_rw_info->cb_endpoint_event != NULL))
+                        if (ptr_usbd_info->ptr_rw_info->cb_endpoint_event != NULL)
                         {
-                            ptr_usbd_info->ptr_rw_info->cb_endpoint_event(ep_addr, ARM_USBD_EVENT_IN);
                             ep->EPINTEN = 0;
+                            ptr_usbd_info->ptr_rw_info->cb_endpoint_event(ep_addr, ARM_USBD_EVENT_IN);
                         }
                     }
+
                 }
                 else
                 {
-                    USBD_DataOutStage(ptr_usbd_info, ep_addr);
+
+#if(_USBD_USE_DMA==1)
+                    ptr_ep->dma_request = true;
+                    USBD_DataStage_DMA(ptr_usbd_info);
+#else
+                    USBD_DataStage_PIO(ptr_usbd_info, ep_addr);
+#endif
                 }
+
             }
         }
     }
@@ -1562,6 +1719,6 @@ NVT_ITCM void HSUSBD_IRQHandler(void)
 }
 
 #endif
-#endif  // DRIVER_CONFIG_VALID
+#endif  // RTE_USBD1
 
 /*! \endcond */

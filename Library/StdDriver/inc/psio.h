@@ -113,29 +113,43 @@ extern "C"
   @{
 */
 /**
-  * @brief  A structure holds psio configuration
-  */
+ * @brief PSIO check point configuration.
+ *
+ * CKPTxSLT valid values:
+ * - PSIO_SLOT_DISABLE
+ * - PSIO_SLOT0 ~ PSIO_SLOT7
+ *
+ * CKPTxACT valid values:
+ * - PSIO_NO_ACTION
+ * - PSIO_OUT_LOW
+ * - PSIO_OUT_HIGH
+ * - PSIO_OUT_BUFFER
+ * - PSIO_OUT_TOGGLE
+ * - PSIO_IN_BUFFER
+ * - PSIO_IN_STATUS
+ * - PSIO_IN_STATUS_UPDATE
+ */
 typedef struct
 {
-    unsigned CKPT0SLT:
-    4;   ///< Link check point and slot controller slot. \ref PSIO_SLOT_DISABLE, \ref PSIO_SLOT0, \ref PSIO_SLOT1, \ref PSIO_SLOT2, \ref PSIO_SLOT3, \ref PSIO_SLOT4, \ref PSIO_SLOT5, \ref PSIO_SLOT6, \ref PSIO_SLOT7
-    unsigned CKPT1SLT: 4;   ///< Link check point and slot controller slot. Reference to \ref S_PSIO_CP_CONFIG::CKPT0SLT
-    unsigned CKPT2SLT: 4;   ///< Link check point and slot controller slot. Reference to \ref S_PSIO_CP_CONFIG::CKPT0SLT
-    unsigned CKPT3SLT: 4;   ///< Link check point and slot controller slot. Reference to \ref S_PSIO_CP_CONFIG::CKPT0SLT
-    unsigned CKPT4SLT: 4;   ///< Link check point and slot controller slot. Reference to \ref S_PSIO_CP_CONFIG::CKPT0SLT
-    unsigned CKPT5SLT: 4;   ///< Link check point and slot controller slot. Reference to \ref S_PSIO_CP_CONFIG::CKPT0SLT
-    unsigned CKPT6SLT: 4;   ///< Link check point and slot controller slot. Reference to \ref S_PSIO_CP_CONFIG::CKPT0SLT
-    unsigned CKPT7SLT: 4;   ///< Link check point and slot controller slot. Reference to \ref S_PSIO_CP_CONFIG::CKPT0SLT
-    unsigned CKPT0ACT:
-    4;   ///< Select action at check point0. \ref PSIO_NO_ACTION, \ref PSIO_OUT_LOW, \ref PSIO_OUT_HIGH, \ref PSIO_OUT_BUFFER, \ref PSIO_OUT_TOGGLE, \ref PSIO_IN_BUFFER, \ref PSIO_IN_STATUS, \ref PSIO_IN_STATUS_UPDATE
-    unsigned CKPT1ACT: 4;   ///< Select action at check point1. Reference to \ref S_PSIO_CP_CONFIG::CKPT0ACT
-    unsigned CKPT2ACT: 4;   ///< Select action at check point2. Reference to \ref S_PSIO_CP_CONFIG::CKPT0ACT
-    unsigned CKPT3ACT: 4;   ///< Select action at check point3. Reference to \ref S_PSIO_CP_CONFIG::CKPT0ACT
-    unsigned CKPT4ACT: 4;   ///< Select action at check point4. Reference to \ref S_PSIO_CP_CONFIG::CKPT0ACT
-    unsigned CKPT5ACT: 4;   ///< Select action at check point5. Reference to \ref S_PSIO_CP_CONFIG::CKPT0ACT
-    unsigned CKPT6ACT: 4;   ///< Select action at check point6. Reference to \ref S_PSIO_CP_CONFIG::CKPT0ACT
-    unsigned CKPT7ACT: 4;   ///< Select action at check point7. Reference to \ref S_PSIO_CP_CONFIG::CKPT0ACT
+    unsigned CKPT0SLT : 4;   ///< Check point 0 slot selection.
+    unsigned CKPT1SLT : 4;   ///< Same as CKPT0SLT.
+    unsigned CKPT2SLT : 4;   ///< Same as CKPT0SLT.
+    unsigned CKPT3SLT : 4;   ///< Same as CKPT0SLT.
+    unsigned CKPT4SLT : 4;   ///< Same as CKPT0SLT.
+    unsigned CKPT5SLT : 4;   ///< Same as CKPT0SLT.
+    unsigned CKPT6SLT : 4;   ///< Same as CKPT0SLT.
+    unsigned CKPT7SLT : 4;   ///< Same as CKPT0SLT.
+
+    unsigned CKPT0ACT : 4;   ///< Check point 0 action.
+    unsigned CKPT1ACT : 4;   ///< Same as CKPT0ACT.
+    unsigned CKPT2ACT : 4;   ///< Same as CKPT0ACT.
+    unsigned CKPT3ACT : 4;   ///< Same as CKPT0ACT.
+    unsigned CKPT4ACT : 4;   ///< Same as CKPT0ACT.
+    unsigned CKPT5ACT : 4;   ///< Same as CKPT0ACT.
+    unsigned CKPT6ACT : 4;   ///< Same as CKPT0ACT.
+    unsigned CKPT7ACT : 4;   ///< Same as CKPT0ACT.
 } S_PSIO_CP_CONFIG;
+
 /** @} end of group PSIO_EXPORTED_STRUCTS */
 
 /** @addtogroup PSIO_EXPORTED_FUNCTIONS PSIO Exported Functions
@@ -225,7 +239,7 @@ typedef struct
  * @details     This macro clear specified interrupt flag or interrupt indicator status.
  * \hideinitializer
  */
-#define PSIO_CLEAR_INT_FLAG(psio, u32IntTypeFlag)    ((psio)->INTSTS = u32IntTypeFlag)
+#define PSIO_CLEAR_INT_FLAG(psio, u32IntTypeFlag)    ((psio)->INTSTS = (u32IntTypeFlag))
 
 /**
  * @brief       Get specified transfer status
@@ -300,7 +314,7 @@ typedef struct
  * @details     This macro clear specified transfer status.
  * \hideinitializer
  */
-#define PSIO_CLEAR_TRANSFER_STATUS(psio, u32Status)    ((psio)->TRANSTS = u32Status)
+#define PSIO_CLEAR_TRANSFER_STATUS(psio, u32Status)    ((psio)->TRANSTS = (u32Status))
 
 /**
  * @brief       Get specified input status state
@@ -351,7 +365,7 @@ typedef struct
  * @details     This macro clear input status state.
  * \hideinitializer
  */
-#define PSIO_CLEAR_INPUT_STATUS_STATE(psio, u32Status)    ((psio)->ISSTS = u32Status)
+#define PSIO_CLEAR_INPUT_STATUS_STATE(psio, u32Status)    ((psio)->ISSTS = (u32Status))
 
 /**
  * @brief       Set PSIO PDMA control input
@@ -399,7 +413,7 @@ typedef struct
  * @details     This macro clear PSIO input with PDMA.
  * \hideinitializer
  */
-#define PSIO_CLEAR_PDMA_INPUT(psio, u32InPin)    ((psio)->PDMACTL = (psio)->PDMACTL & ~PSIO_PDMACTL_INSCSEL_Msk & ~(u32InPin))
+#define PSIO_CLEAR_PDMA_INPUT(psio, u32InPin)    ((psio)->PDMACTL &= ~(u32InPin))
 
 /**
  * @brief       Set PSIO PDMA control output
@@ -447,7 +461,7 @@ typedef struct
  * @details     This macro clear PSIO output with PDMA.
  * \hideinitializer
  */
-#define PSIO_CLEAR_PDMA_OUTPUT(psio, u32OutPin)    ((psio)->PDMACTL = (psio)->PDMACTL & ~PSIO_PDMACTL_OUTSCSEL_Msk & ~(u32OutPin))
+#define PSIO_CLEAR_PDMA_OUTPUT(psio, u32OutPin)    ((psio)->PDMACTL &= ~(u32OutPin))
 
 /**
  * @brief       Set slot controller trigger source
@@ -542,7 +556,7 @@ typedef struct
 #define PSIO_GET_IDLE_FLAG(psio, u32SC)    (((psio)->SCCT[(u32SC)].SCCTL & PSIO_SCCT_SCCTL_IDLE_Msk)?1:0)
 
 /**
-* @brief       Clear PSIO idle flag
+* @brief       Set PSIO idle flag
 *
 * @param[in]   psio    The pointer of the specified PSIO module
 * @param[in]   u32SC   The selected slot controller. Valid values are
@@ -553,7 +567,7 @@ typedef struct
 *
 * @return      None
 *
-* @details     This macro clear PSIO idle flag.
+* @details     This macro sets the IDLE flag by software.
 * \hideinitializer
 */
 #define PSIO_SET_IDLE_FLAG(psio, u32SC)    ((psio)->SCCT[(u32SC)].SCCTL |= PSIO_SCCT_SCCTL_IDLE_Msk)
@@ -583,8 +597,18 @@ typedef struct
 * @details     This macro set PSIO slot tick count.
 * \hideinitializer
 */
-#define PSIO_SCSLOT_SET_SLOT(psio, u32SC, u32Slot, u32Cnt) ((psio)->SCCT[(u32SC)].SCSLOT= \
-                                                                                          ((psio)->SCCT[(u32SC)].SCSLOT & ~(PSIO_SCCT_SCSLOT_SLOT0CNT_Msk<<((u32Slot-1)*PSIO_SCCT_SCSLOT_SLOT1CNT_Pos)))|((u32Cnt&0xF)<<((u32Slot-1)*PSIO_SCCT_SCSLOT_SLOT1CNT_Pos)))
+#define PSIO_SCSLOT_SET_SLOT(psio, u32SC, u32Slot, u32Cnt)                 \
+    do {                                                                   \
+        if (((u32Slot) >= PSIO_SLOT0) && ((u32Slot) <= PSIO_SLOT7))        \
+        {                                                                  \
+            (psio)->SCCT[(u32SC)].SCSLOT =                                 \
+                                                                           ((psio)->SCCT[(u32SC)].SCSLOT &                            \
+                                                                            ~(PSIO_SCCT_SCSLOT_SLOT0CNT_Msk <<                        \
+                                                                              (((u32Slot) - 1U) * PSIO_SCCT_SCSLOT_SLOT1CNT_Pos))) | \
+                                                                           (((u32Cnt) & 0xFUL) <<                                     \
+                                                                            (((u32Slot) - 1U) * PSIO_SCCT_SCSLOT_SLOT1CNT_Pos));      \
+        }                                                                  \
+    } while (0)
 
 /**
  * @brief       Set PSIO all slot tick count
@@ -700,7 +724,7 @@ typedef struct
  * \hideinitializer
  */
 #define PSIO_SET_ORDER(psio, u32Pin, u32Order) (((psio)->GNCT[(u32Pin)].DATCTL)= \
-                                                                                 (PSIO->GNCT[(u32Pin)].DATCTL & ~PSIO_GNCT_DATCTL_ORDER_Msk)|(u32Order))
+                                                                                 ((psio)->GNCT[(u32Pin)].DATCTL & ~PSIO_GNCT_DATCTL_ORDER_Msk)|(u32Order))
 
 /**
  * @brief       Set specified pin output data depth
@@ -727,7 +751,7 @@ typedef struct
  * \hideinitializer
  */
 #define PSIO_SET_OUTPUT_DEPTH(psio, u32Pin, u32Depth) ((psio)->GNCT[(u32Pin)].DATCTL= \
-                                                                                      (PSIO->GNCT[(u32Pin)].DATCTL & ~PSIO_GNCT_DATCTL_OUTDEPTH_Msk)|((u32Depth)<<PSIO_GNCT_DATCTL_OUTDEPTH_Pos))
+                                                                                      ((psio)->GNCT[(u32Pin)].DATCTL & ~PSIO_GNCT_DATCTL_OUTDEPTH_Msk)|((u32Depth)<<PSIO_GNCT_DATCTL_OUTDEPTH_Pos))
 
 /**
  * @brief       Set specified pin input data depth
@@ -754,7 +778,7 @@ typedef struct
  * \hideinitializer
  */
 #define PSIO_SET_INPUT_DEPTH(psio, u32Pin, u32Depth) ((psio)->GNCT[(u32Pin)].DATCTL= \
-                                                                                     (PSIO->GNCT[(u32Pin)].DATCTL & ~PSIO_GNCT_DATCTL_INDEPTH_Msk)|((u32Depth)<<PSIO_GNCT_DATCTL_INDEPTH_Pos))
+                                                                                     ((psio)->GNCT[(u32Pin)].DATCTL & ~PSIO_GNCT_DATCTL_INDEPTH_Msk)|((u32Depth)<<PSIO_GNCT_DATCTL_INDEPTH_Pos))
 
 /**
  * @brief       Get specified pin input status
@@ -772,10 +796,10 @@ typedef struct
  *
  * @return      The specified pin input status
  *
- * @details     This macro get specified pin input status.
+ * @details     This macro gets and clears the specified pin input status.
  * \hideinitializer
  */
-#define PSIO_GET_INPUT_STATUS(psio, u32Pin) (psio->GNCT[u32Pin].INSTS&0xFF)
+#define PSIO_GET_INPUT_STATUS(psio, u32Pin) (((psio)->GNCT[(u32Pin)].INSTS) & 0xFFUL)
 
 /**
  * @brief       Get specified pin input data
@@ -793,10 +817,10 @@ typedef struct
  *
  * @return      The specified pin input data
  *
- * @details     This macro get specified pin input data.
+ * @details     This macro gets and clears the specified pin input data.
  * \hideinitializer
  */
-#define PSIO_GET_INPUT_DATA(psio, u32Pin) (psio->GNCT[u32Pin].INDAT)
+#define PSIO_GET_INPUT_DATA(psio, u32Pin) ((psio)->GNCT[(u32Pin)].INDAT)
 
 /**
 * @brief       Set specified pin output data
@@ -818,7 +842,7 @@ typedef struct
 * @details     This macro set specified pin output data.
 * \hideinitializer
 */
-#define PSIO_SET_OUTPUT_DATA(psio, u32Pin, u32Data) (psio->GNCT[u32Pin].OUTDAT = (uint32_t)(u32Data))
+#define PSIO_SET_OUTPUT_DATA(psio, u32Pin, u32Data) ((psio)->GNCT[(u32Pin)].OUTDAT = (uint32_t)(u32Data))
 
 /**
 * @brief       Set specified pin check point and slot link
@@ -857,9 +881,9 @@ typedef struct
 * @details     This macro used to link check point and slot.
 * \hideinitializer
 */
-#define PSIO_SET_CHECKPOINT(psio, u32Pin, u32CheckPoint, u32Slot) (psio->GNCT[(u32Pin)].CPCTL0= \
-                                                                                                (psio->GNCT[(u32Pin)].CPCTL0 & ~(PSIO_GNCT_CPCTL0_CKPT0_Msk<<((u32CheckPoint)*PSIO_GNCT_CPCTL0_CKPT1_Pos))) \
-                                                                                                |((u32Slot)<<((u32CheckPoint)*PSIO_GNCT_CPCTL0_CKPT1_Pos)))
+#define PSIO_SET_CHECKPOINT(psio, u32Pin, u32CheckPoint, u32Slot) ((psio)->GNCT[(u32Pin)].CPCTL0= \
+                                                                                                  ((psio)->GNCT[(u32Pin)].CPCTL0 & ~(PSIO_GNCT_CPCTL0_CKPT0_Msk<<((u32CheckPoint)*PSIO_GNCT_CPCTL0_CKPT1_Pos))) \
+                                                                                                  |((u32Slot)<<((u32CheckPoint)*PSIO_GNCT_CPCTL0_CKPT1_Pos)))
 
 /**
  * @brief       Clear specified pin check point and slot link
@@ -889,8 +913,8 @@ typedef struct
  * @details     This macro used to clear the link of check point and slot.
  * \hideinitializer
  */
-#define PSIO_CLEAR_CHECKPOINT(psio, u32Pin, u32CheckPoint) (psio->GNCT[(u32Pin)].CPCTL0= \
-                                                                                         psio->GNCT[(u32Pin)].CPCTL0 & ~(PSIO_GNCT_CPCTL0_CKPT0_Msk<<((u32CheckPoint)*PSIO_GNCT_CPCTL0_CKPT1_Pos)))
+#define PSIO_CLEAR_CHECKPOINT(psio, u32Pin, u32CheckPoint) ((psio)->GNCT[(u32Pin)].CPCTL0= \
+                                                                                           (psio)->GNCT[(u32Pin)].CPCTL0 & ~(PSIO_GNCT_CPCTL0_CKPT0_Msk<<((u32CheckPoint)*PSIO_GNCT_CPCTL0_CKPT1_Pos)))
 
 /**
  * @brief       Set specified pin action of check point
@@ -928,9 +952,9 @@ typedef struct
  * @details     This macro used to set specified pin action of check point.
  * \hideinitializer
  */
-#define PSIO_SET_ACTION(psio, u32Pin, u32CheckPoint, u32Action) (psio->GNCT[(u32Pin)].CPCTL1= \
-                                                                                              (psio->GNCT[(u32Pin)].CPCTL1 & ~(PSIO_GNCT_CPCTL1_CKPT0ACT_Msk<<((u32CheckPoint)*PSIO_GNCT_CPCTL1_CKPT1ACT_Pos))) \
-                                                                                              |((u32Action)<<((u32CheckPoint)*PSIO_GNCT_CPCTL1_CKPT1ACT_Pos)))
+#define PSIO_SET_ACTION(psio, u32Pin, u32CheckPoint, u32Action) ((psio)->GNCT[(u32Pin)].CPCTL1= \
+                                                                                                ((psio)->GNCT[(u32Pin)].CPCTL1 & ~(PSIO_GNCT_CPCTL1_CKPT0ACT_Msk<<((u32CheckPoint)*PSIO_GNCT_CPCTL1_CKPT1ACT_Pos))) \
+                                                                                                |(((u32Action) & 0x7UL)<<((u32CheckPoint)*PSIO_GNCT_CPCTL1_CKPT1ACT_Pos)))
 
 /*---------------------------------------------------------------------------------------------------------*/
 /* inline functions                                                                                        */
@@ -966,7 +990,7 @@ __STATIC_INLINE void PSIO_SET_INTCTL(PSIO_T *psio, uint32_t u32SC, uint32_t u32I
                           | ((u32SC) << PSIO_INTCTL_CONI0SCS_Pos)
                           | ((u32Slot) << PSIO_INTCTL_CONI0SS_Pos));
     }
-    else if (u32Int == PSIO_INT1)
+    else
     {
         (psio)->INTCTL = (((psio)->INTCTL & ~PSIO_INTCTL_CONI1SS_Msk & ~PSIO_INTCTL_CONI1SCS_Msk)
                           | ((u32SC) << PSIO_INTCTL_CONI1SCS_Pos)
@@ -993,7 +1017,7 @@ __STATIC_INLINE void PSIO_CLEAR_INTCTL(PSIO_T *psio, uint32_t u32Int)
     {
         (psio)->INTCTL = ((psio)->INTCTL & ~PSIO_INTCTL_CONI0SS_Msk & ~PSIO_INTCTL_CONI0SCS_Msk);
     }
-    else if (u32Int == PSIO_INT1)
+    else
     {
         (psio)->INTCTL = ((psio)->INTCTL & ~PSIO_INTCTL_CONI1SS_Msk & ~PSIO_INTCTL_CONI1SCS_Msk);
     }
@@ -1037,15 +1061,19 @@ __STATIC_INLINE void PSIO_CLEAR_INTCTL(PSIO_T *psio, uint32_t u32Int)
  */
 __STATIC_INLINE void PSIO_SET_SCCTL(PSIO_T *psio, uint32_t u32SC, uint32_t u32InitSlot, uint32_t u32EndSlot, uint32_t u32LoopCnt, uint32_t u32Repeat)
 {
-    (psio)->SCCT[u32SC].SCCTL = ((psio)->SCCT[u32SC].SCCTL & ~PSIO_SCCT_SCCTL_INISLOT_Msk & ~PSIO_SCCT_SCCTL_ENDSLOT_Msk & ~PSIO_SCCT_SCCTL_SPLCNT_Msk)
-                                | ((u32InitSlot) << PSIO_SCCT_SCCTL_INISLOT_Pos)
-                                | ((u32EndSlot) << PSIO_SCCT_SCCTL_ENDSLOT_Pos)
-                                | ((u32LoopCnt & 0x3F) << PSIO_SCCT_SCCTL_SPLCNT_Pos);
+    (psio)->SCCT[(u32SC)].SCCTL = ((psio)->SCCT[(u32SC)].SCCTL & ~PSIO_SCCT_SCCTL_INISLOT_Msk & ~PSIO_SCCT_SCCTL_ENDSLOT_Msk & ~PSIO_SCCT_SCCTL_SPLCNT_Msk)
+                                  | ((u32InitSlot) << PSIO_SCCT_SCCTL_INISLOT_Pos)
+                                  | ((u32EndSlot) << PSIO_SCCT_SCCTL_ENDSLOT_Pos)
+                                  | ((u32LoopCnt & 0x3FUL) << (uint32_t)PSIO_SCCT_SCCTL_SPLCNT_Pos);
 
     if (u32Repeat == PSIO_REPEAT_ENABLE)
-        (psio)->SCCT[u32SC].SCCTL |= PSIO_SCCT_SCCTL_REPEAT_Msk;
-    else if (u32Repeat == PSIO_REPEAT_DISABLE)
-        (psio)->SCCT[u32SC].SCCTL &= ~PSIO_SCCT_SCCTL_REPEAT_Msk;
+    {
+        (psio)->SCCT[(u32SC)].SCCTL |= PSIO_SCCT_SCCTL_REPEAT_Msk;
+    }
+    else
+    {
+        (psio)->SCCT[(u32SC)].SCCTL &= ~PSIO_SCCT_SCCTL_REPEAT_Msk;
+    }
 }
 
 /**
@@ -1092,15 +1120,19 @@ __STATIC_INLINE void PSIO_SET_SCCTL(PSIO_T *psio, uint32_t u32SC, uint32_t u32In
  */
 __STATIC_INLINE void PSIO_SET_GENCTL(PSIO_T *psio, uint32_t u32Pin, uint32_t u32PinEn, uint32_t u32SC, uint32_t u32IOMode, uint32_t u32PinInit, uint32_t u32PinInterval)
 {
-    (psio)->GNCT[u32Pin].GENCTL = ((psio)->GNCT[u32Pin].GENCTL & ~PSIO_GNCT_GENCTL_SCSEL_Msk & ~PSIO_GNCT_GENCTL_IOMODE_Msk
+    (psio)->GNCT[u32Pin].GENCTL = ((psio)->GNCT[(u32Pin)].GENCTL & ~PSIO_GNCT_GENCTL_SCSEL_Msk & ~PSIO_GNCT_GENCTL_IOMODE_Msk
                                    & ~PSIO_GNCT_GENCTL_INITIAL_Msk & ~PSIO_GNCT_GENCTL_INTERVAL_Msk)
                                   | ((u32SC) << PSIO_GNCT_GENCTL_SCSEL_Pos) | ((u32IOMode) << PSIO_GNCT_GENCTL_IOMODE_Pos)
                                   | ((u32PinInit) << PSIO_GNCT_GENCTL_INITIAL_Pos) | ((u32PinInterval) << PSIO_GNCT_GENCTL_INTERVAL_Pos);
 
     if (u32PinEn == PSIO_PIN_ENABLE)
-        (psio)->GNCT[u32Pin].GENCTL |= PSIO_GNCT_GENCTL_PINEN_Msk;
-    else if (u32PinEn == PSIO_PIN_DISABLE)
-        (psio)->GNCT[u32Pin].GENCTL &= ~PSIO_GNCT_GENCTL_PINEN_Msk;
+    {
+        (psio)->GNCT[(u32Pin)].GENCTL |= PSIO_GNCT_GENCTL_PINEN_Msk;
+    }
+    else
+    {
+        (psio)->GNCT[(u32Pin)].GENCTL &= ~PSIO_GNCT_GENCTL_PINEN_Msk;
+    }
 }
 
 /**
@@ -1142,13 +1174,13 @@ __STATIC_INLINE void PSIO_SWITCH_MODE(PSIO_T *psio, uint32_t u32Pin, uint32_t u3
 {
     if (u32SwPoint == PSIO_SWITCH_P0)
     {
-        (psio)->GNCT[u32Pin].GENCTL = ((psio)->GNCT[u32Pin].GENCTL & ~PSIO_GNCT_GENCTL_MODESW0_Msk & ~PSIO_GNCT_GENCTL_SW0CP_Msk)
-                                      | ((u32SwMode) << PSIO_GNCT_GENCTL_MODESW0_Pos) | ((u32SwCP + 1) << PSIO_GNCT_GENCTL_SW0CP_Pos);
+        (psio)->GNCT[(u32Pin)].GENCTL = ((psio)->GNCT[(u32Pin)].GENCTL & ~PSIO_GNCT_GENCTL_MODESW0_Msk & ~PSIO_GNCT_GENCTL_SW0CP_Msk)
+                                        | ((u32SwMode) << PSIO_GNCT_GENCTL_MODESW0_Pos) | ((u32SwCP + 1UL) << (uint32_t)PSIO_GNCT_GENCTL_SW0CP_Pos);
     }
-    else if (u32SwPoint == PSIO_SWITCH_P1)
+    else
     {
-        (psio)->GNCT[u32Pin].GENCTL = ((psio)->GNCT[u32Pin].GENCTL & ~PSIO_GNCT_GENCTL_MODESW1_Msk & ~PSIO_GNCT_GENCTL_SW1CP_Msk)
-                                      | ((u32SwMode) << PSIO_GNCT_GENCTL_MODESW1_Pos) | ((u32SwCP + 1) << PSIO_GNCT_GENCTL_SW1CP_Pos);
+        (psio)->GNCT[(u32Pin)].GENCTL = ((psio)->GNCT[(u32Pin)].GENCTL & ~PSIO_GNCT_GENCTL_MODESW1_Msk & ~PSIO_GNCT_GENCTL_SW1CP_Msk)
+                                        | ((u32SwMode) << PSIO_GNCT_GENCTL_MODESW1_Pos) | ((u32SwCP + 1UL) << (uint32_t)PSIO_GNCT_GENCTL_SW1CP_Pos);
     }
 }
 
@@ -1174,10 +1206,32 @@ __STATIC_INLINE void PSIO_SWITCH_MODE(PSIO_T *psio, uint32_t u32Pin, uint32_t u3
 */
 __STATIC_INLINE void PSIO_SET_CP_CONFIG(PSIO_T *psio, uint32_t u32Pin, const S_PSIO_CP_CONFIG *sConfig)
 {
-    const uint32_t *pu32Config = (const uint32_t *)sConfig;
+    uint32_t u32Cpctl0;
+    uint32_t u32Cpctl1;
+    uint32_t u32Shift;
 
-    psio->GNCT[u32Pin].CPCTL0 = pu32Config[0];
-    psio->GNCT[u32Pin].CPCTL1 = pu32Config[1];
+    u32Shift = (uint32_t)PSIO_GNCT_CPCTL0_CKPT1_Pos;
+    u32Cpctl0 = ((((uint32_t)(sConfig->CKPT0SLT & 0xFUL)) << (0UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT1SLT & 0xFUL)) << (1UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT2SLT & 0xFUL)) << (2UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT3SLT & 0xFUL)) << (3UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT4SLT & 0xFUL)) << (4UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT5SLT & 0xFUL)) << (5UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT6SLT & 0xFUL)) << (6UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT7SLT & 0xFUL)) << (7UL * u32Shift)));
+
+    u32Shift = (uint32_t)PSIO_GNCT_CPCTL1_CKPT1ACT_Pos;
+    u32Cpctl1 = ((((uint32_t)(sConfig->CKPT0ACT & 0x7UL)) << (0UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT1ACT & 0x7UL)) << (1UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT2ACT & 0x7UL)) << (2UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT3ACT & 0x7UL)) << (3UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT4ACT & 0x7UL)) << (4UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT5ACT & 0x7UL)) << (5UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT6ACT & 0x7UL)) << (6UL * u32Shift)) |
+                 (((uint32_t)(sConfig->CKPT7ACT & 0x7UL)) << (7UL * u32Shift)));
+
+    (psio)->GNCT[(u32Pin)].CPCTL0 = u32Cpctl0;
+    (psio)->GNCT[(u32Pin)].CPCTL1 = u32Cpctl1;
 }
 
 /** @} end of group PSIO_EXPORTED_FUNCTIONS */

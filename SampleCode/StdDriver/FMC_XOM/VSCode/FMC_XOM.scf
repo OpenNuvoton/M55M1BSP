@@ -54,7 +54,7 @@
 ; </h>
  *----------------------------------------------------------------------------*/
 #define FLASH_START     0x00100000
-#define FLASH_SIZE      0x00200000
+#define FLASH_SIZE      0x00100000
 
 /*--------------------- Cacheable SRAM Configuration ---------------------------
 ; <h> Cacheable SRAM Configuration

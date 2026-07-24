@@ -108,7 +108,7 @@ SECTIONS
     KEEP(*(.vectors))
     *startup_*.o(.text*)
 
-    *(.text*)
+    *(EXCLUDE_FILE(*spim_code.c.obj) .text*)
 
     KEEP(*(.init))
     KEEP(*(.fini))
@@ -134,7 +134,7 @@ SECTIONS
 
   .rodata : {
     . = ALIGN(8);
-    *(.rodata*)
+    *(EXCLUDE_FILE(*spim_code.c.obj) .rodata*)
     . = ALIGN(8);
   } >FLASH
 
@@ -332,6 +332,7 @@ SECTIONS
   . = ORIGIN(SPIM0);
   .spim_code :
   {
+    *spim_code.c.obj (.text*)
     *spim_code.c.obj (.rodata*)
   } > SPIM0
 

@@ -20,7 +20,7 @@ typedef volatile struct {
     uint32_t last_tid;
 } omv_mutex_t;
 
-//Modify by chchen59
+//Modify by chchen59. Move to _mutex.h(internal header)
 //void mutex_init0(omv_mutex_t *mutex);
 //void mutex_lock(omv_mutex_t *mutex, uint32_t tid);
 //int mutex_try_lock(omv_mutex_t *mutex, uint32_t tid);

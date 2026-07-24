@@ -22,8 +22,8 @@ static const char gacPrivKey[] = "d0ab2cb9eb88976e82f107598077ce50d8c7b67def7039
 static const char gacPubKey0[] = "d32438a1b4428541c564eeed79669b4bd3bf601c758469545e013c8fe8af7ef6";
 static const char gacPubKey1[] = "476de8f3c6e6c48a8bacf1e1827cfb82501833c2bb816344f996533b1b031706";
 
-void Hex2Reg(char input[], uint32_t volatile reg[]);
-void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
+//void Hex2Reg(char input[], uint32_t volatile reg[]);
+//void Reg2Hex(int32_t count, uint32_t volatile reg[], char output[]);
 void UART1_IRQHandler(void);
 void CRYPTO_IRQHandler(void);
 void SendUART1DataOut(uint8_t *pu8Buf);

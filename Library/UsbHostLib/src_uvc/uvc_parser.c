@@ -38,37 +38,42 @@
  */
 int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
 {
-    DESC_CONF_T    *config;
-    DESC_IF_T      *ifd = NULL;
+    DESC_CONF_T    const *config;
+    DESC_IF_T      const *ifd = USBNULL;
     DESC_VC_HDR_T  *ifd_vc_hdr;
-    uint8_t        *bptr;
+    uint8_t        *cfg_buff;
+    uint32_t       offset;
     int            size;
 
     UVC_DBGMSG("UVC parsing video control interface %d...\n", iface->if_num);
 
     vdev->iface_ctrl = iface;
 
-    bptr = vdev->udev->cfd_buff;
-    config = (DESC_CONF_T *)bptr;
+    cfg_buff = vdev->udev->cfd_buff;
+    config = (DESC_CONF_T *)cfg_buff;
 
     /* step over configuration descritpor */
-    bptr += config->bLength;
-    size = config->wTotalLength - config->bLength;
+    offset = config->bLength;
+    size = (int)config->wTotalLength - (int)config->bLength;
 
     /*------------------------------------------------------------------------------------*/
     /*  Find this Standard Video Control Interface Descriptor                             */
     /*------------------------------------------------------------------------------------*/
     while (size >= (int)sizeof(DESC_IF_T))
     {
-        ifd = (DESC_IF_T *)bptr;
+        ifd = (DESC_IF_T *)&cfg_buff[offset];
 
         if ((ifd->bDescriptorType == USB_DT_INTERFACE) && (ifd->bInterfaceNumber == iface->if_num))
+        {
             break;
+        }
 
         if (ifd->bLength == 0)
+        {
             return UVC_RET_PARSER;          /* prevent infinit loop                       */
+        }
 
-        bptr += ifd->bLength;
+        offset += ifd->bLength;
         size -= ifd->bLength;
     }
 
@@ -81,13 +86,12 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
 
     vdev->version = ifd->bInterfaceProtocol;
 
-    bptr += ifd->bLength;
-    size -= ifd->bLength;
+    offset += ifd->bLength;
 
     /*------------------------------------------------------------------------------------*/
     /*  Parsing Video Control interface VC header descriptor                              */
     /*------------------------------------------------------------------------------------*/
-    ifd_vc_hdr = (DESC_VC_HDR_T *)bptr;
+    ifd_vc_hdr = (DESC_VC_HDR_T *)&cfg_buff[offset];
 
     if ((ifd_vc_hdr->bDescriptorType != UVC_CS_INTERFACE) || (ifd_vc_hdr->bDescriptorSubType != VC_HEADER))
     {
@@ -95,7 +99,7 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         return UVC_RET_PARSER;
     }
 
-    if (ifd_vc_hdr->bInCollection != 1)
+    if (ifd_vc_hdr->bInCollection != (uint8_t)1U)
     {
         UVC_ERRMSG("UVC - number of streaming interface is not 1! Not supported!! %d\n", ifd_vc_hdr->bInCollection);
         return UVC_RET_DRV_NOT_SUPPORTED;
@@ -106,8 +110,8 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     UVC_DBGMSG("    baInterfaceNr: 0%x\n", ifd_vc_hdr->baInterfaceNr);
 
     // ifnum_strm = ifd_vc_hdr->baInterfaceNr;
-    bptr += ifd_vc_hdr->bLength;
-    size = ifd_vc_hdr->wTotalLength - ifd_vc_hdr->bLength;
+    offset += ifd_vc_hdr->bLength;
+    size = (int)ifd_vc_hdr->wTotalLength - (int)ifd_vc_hdr->bLength;
 
     /*------------------------------------------------------------------------------------*/
     /*  Walk though Video Control interface descriptor group                              */
@@ -124,12 +128,14 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         int           i;
 #endif
 
-        ifd = (DESC_IF_T *)bptr;
+        ifd = (DESC_IF_T *)&cfg_buff[offset];
 
-        //UVC_DBGMSG("Parse VC - [%d] [0x%x] [0x%x]\n", ((CS_HDR_T *)bptr)->bLength, ((CS_HDR_T *)bptr)->bDescriptorType, ((CS_HDR_T *)bptr)->bDescriptorSubtype);
+        //UVC_DBGMSG("Parse VC - [%d] [0x%x] [0x%x]\n", ((CS_HDR_T *)&cfg_buff[offset])->bLength, ((CS_HDR_T *)&cfg_buff[offset])->bDescriptorType, ((CS_HDR_T *)&cfg_buff[offset])->bDescriptorSubtype);
 
         if (ifd->bDescriptorType == USB_DT_ENDPOINT)
+        {
             break;
+        }
 
         if (ifd->bDescriptorType != UVC_CS_INTERFACE)
         {
@@ -172,7 +178,9 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
                 UVC_DBGMSG("    bNrInPins:  0x%x\n", ifd_su->bNrInPins);
 
                 for (i = 0; i < ifd_su->bNrInPins; i++)
+                {
                     UVC_DBGMSG("    bSourceID:  0x%x\n", ifd_su->bSourceID[i]);
+                }
 
                 break;
 
@@ -206,10 +214,12 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
 #endif
 
         if (ifd->bLength == 0)
+        {
             return UVC_RET_PARSER;          /* prevent infinite loop                      */
+        }
 
-        bptr += ifd->bLength;
-        size -= ifd->bLength;
+        offset += ifd->bLength;
+        size -= (int)ifd->bLength;
     }
 
     /*------------------------------------------------------------------------------------*/
@@ -217,9 +227,9 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     while (size > (int)sizeof(DESC_HDR_T))
     {
-        DESC_EP_T   *epd;
+        DESC_EP_T const *epd;
 
-        epd = (DESC_EP_T *)bptr;
+        epd = (DESC_EP_T *)&cfg_buff[offset];
 
         if (epd->bDescriptorType != USB_DT_ENDPOINT)
         {
@@ -230,23 +240,19 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         if ((epd->bDescriptorType == USB_DT_ENDPOINT) && (epd->bmAttributes == 0x03))
         {
             //vdev->ep_sts = usbh_iface_find_ep(iface, epd->bEndpointAddress, 0);
-            //if (vdev->ep_sts == NULL)
+            //if (vdev->ep_sts == USBNULL)
             //  UVC_DBGMSG("UVC find interrupt in endpoint failed!\n");
             //else
             //    UVC_DBGMSG("UVC interrupt in endpoint 0x%x foudn.\n", epd->bEndpointAddress);
         }
 
         if (ifd->bLength == 0)
-            return UVC_RET_PARSER;          /* prevent infinite loop                      */
-
-        bptr += epd->bLength;
-        size -= epd->bLength;
-
-        if (epd->bDescriptorType != USB_DT_ENDPOINT)
         {
-            UVC_DBGMSG("UVC VC interface endpoint parsing error, remain %d bytes!\n", size);
-            break;
+            return UVC_RET_PARSER;          /* prevent infinite loop                      */
         }
+
+        offset += epd->bLength;
+        size -= (int)epd->bLength;
     }
 
     if (size != 0)
@@ -268,41 +274,48 @@ int uvc_parse_control_interface(UVC_DEV_T *vdev, IFACE_T *iface)
  */
 int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
 {
-    DESC_CONF_T    *config;
-    DESC_IF_T      *ifd = NULL;
-    DESC_EP_T      *epd;
+    DESC_CONF_T    const *config;
+    DESC_IF_T      const *ifd = USBNULL;
+    DESC_EP_T      const *epd;
     DESC_VSI_HDR_T *ifd_vs_hdr;
     UVC_CTRL_T     *vc = &vdev->vc;
     UVC_STRM_T     *vs = &vdev->vs;
-    uint8_t        *bptr;
-    int            i, idx, size;
+    uint8_t        *cfg_buff;
+    uint32_t       offset;
+    int            i;
+    int            idx;
+    int            size;
 
     UVC_DBGMSG("UVC parsing video streaming interface %d...\n", iface->if_num);
 
     vdev->iface_stream = iface;
 
-    bptr = vdev->udev->cfd_buff;
-    config = (DESC_CONF_T *)bptr;
+    cfg_buff = vdev->udev->cfd_buff;
+    config = (DESC_CONF_T *)cfg_buff;
 
     /* step over configuration descritpor */
-    bptr += config->bLength;
-    size = config->wTotalLength - config->bLength;
+    offset = config->bLength;
+    size = (int)config->wTotalLength - (int)config->bLength;
 
     /*------------------------------------------------------------------------------------*/
     /*  Find the starting of Standard Video Streaming Interface Descriptor                */
     /*------------------------------------------------------------------------------------*/
     while (size >= (int)sizeof(DESC_IF_T))
     {
-        ifd = (DESC_IF_T *)bptr;
+        ifd = (DESC_IF_T *)&cfg_buff[offset];
 
         if ((ifd->bDescriptorType == USB_DT_INTERFACE) && (ifd->bInterfaceNumber == iface->if_num) &&
                 (ifd->bInterfaceClass == USB_CLASS_VIDEO) && (ifd->bInterfaceSubClass == UVC_SC_VIDEOSTREAMING))
+        {
             break;
+        }
 
         if (ifd->bLength == 0)
+        {
             return UVC_RET_PARSER;          /* prevent infinite loop                      */
+        }
 
-        bptr += ifd->bLength;
+        offset += ifd->bLength;
         size -= ifd->bLength;
     }
 
@@ -312,7 +325,7 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         return UVC_RET_PARSER;
     }
 
-    bptr += ifd->bLength;
+    offset += ifd->bLength;
     size -= ifd->bLength;
 
     /*------------------------------------------------------------------------------------*/
@@ -321,19 +334,22 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     while (size >= (int)sizeof(DESC_IF_T))
     {
         DESC_STILL_IMAGE_FRAME_T   *vs_still_image_frame;
-        DESC_VSU_FORMAT_T   *vsu_format;
-        DESC_VSU_FRAME_T    *vsu_frame;
-        DESC_MJPG_FORMAT_T  *mjpg_format;
-        DESC_MJPG_FRAME_T   *mjpg_frame;
+        DESC_VSU_FORMAT_T   const *vsu_format;
+        DESC_VSU_FRAME_T    const *vsu_frame;
+        DESC_MJPG_FORMAT_T  const *mjpg_format;
+        DESC_MJPG_FRAME_T   const *mjpg_frame;
+        uint8_t            current_format_slot;
 
-        ifd = (DESC_IF_T *)bptr;
+        ifd = (DESC_IF_T *)&cfg_buff[offset];
 
-        // sysprintf("[%d] 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n", size, bptr[0], bptr[1], bptr[2], bptr[3], bptr[4], bptr[5], bptr[6], bptr[7]);
+        // sysprintf("[%d] 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n", size, cfg_buff[offset], cfg_buff[offset + 1U], cfg_buff[offset + 2U], cfg_buff[offset + 3U], cfg_buff[offset + 4U], cfg_buff[offset + 5U], cfg_buff[offset + 6U], cfg_buff[offset + 7U]);
 
         if (ifd->bDescriptorType != UVC_CS_INTERFACE)
+        {
             break;
+        }
 
-        ifd_vs_hdr = (DESC_VSI_HDR_T *)bptr;
+        ifd_vs_hdr = (DESC_VSI_HDR_T *)&cfg_buff[offset];
 
         switch (ifd_vs_hdr->bDescriptorSubType)
         {
@@ -360,34 +376,40 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
                 idx = vc->num_of_formats;
                 vc->format_idx[idx] = vsu_format->bFormatIndex;
 
-                if (vsu_format->guidFormat[0] == 0x32595559)
+                if (vsu_format->guidFormat[0] == (uint32_t)0x32595559UL)
                 {
                     vc->format[idx] = UVC_FORMAT_YUY2;
                 }
-                else if (vsu_format->guidFormat[0] == 0x3231564E)
+                else if (vsu_format->guidFormat[0] == (uint32_t)0x3231564EUL)
                 {
                     vc->format[idx] = UVC_FORMAT_NV12;
                 }
-                else if (vsu_format->guidFormat[0] == 0x3032344D)
+                else if (vsu_format->guidFormat[0] == (uint32_t)0x3032344DUL)
                 {
                     vc->format[idx] = UVC_FORMAT_M420;
                 }
-                else if (vsu_format->guidFormat[0] == 0x30323449)
+                else if (vsu_format->guidFormat[0] == (uint32_t)0x30323449UL)
                 {
                     vc->format[idx] = UVC_FORMAT_I420;
                 }
+                else
+                {
+                    /* No action */
+                }
 
                 vc->num_of_formats++;
+                current_format_slot = vc->num_of_formats;
+                current_format_slot--;
 
                 /*------------------------------------------------------------------------*/
                 /*  Parsing all frame descriptors under this format descriptor            */
                 /*------------------------------------------------------------------------*/
-                bptr += vsu_format->bLength;
-                size -= vsu_format->bLength;
+                offset += vsu_format->bLength;
+                size -= (int)vsu_format->bLength;
 
-                for (i = 0; (i < vsu_format->bNumFrameDescriptors) && (vc->num_of_frames < UVC_MAX_FRAME); i++)
+                for (i = 0; (i < (int)vsu_format->bNumFrameDescriptors) && (vc->num_of_frames < (uint8_t)UVC_MAX_FRAME); i++)
                 {
-                    vsu_frame = (DESC_VSU_FRAME_T *)bptr;
+                    vsu_frame = (DESC_VSU_FRAME_T *)&cfg_buff[offset];
 
                     if ((vsu_frame->bDescriptorType != UVC_CS_INTERFACE) ||
                             (vsu_frame->bDescriptorSubType != VS_FRAME_UNCOMPRESSED))
@@ -406,25 +428,25 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
 
                     idx = vc->num_of_frames;
                     vc->frame_idx[idx] = vsu_frame->bFrameIndex;
-                    vc->frame_format[idx] = vc->format[vc->num_of_formats - 1];
+                    vc->frame_format[idx] = vc->format[current_format_slot];
                     vc->width[idx] = vsu_frame->wWidth;
                     vc->height[idx] = vsu_frame->wHeight;
                     vc->num_of_frames++;
 
-                    bptr += vsu_frame->bLength;
-                    size -= vsu_frame->bLength;
+                    offset += vsu_frame->bLength;
+                    size -= (int)vsu_frame->bLength;
                 }
 
                 /*--------------------------------------------------------------------------*/
                 /*  Parsing all still image frame descriptors under this format descriptor  */
                 /*--------------------------------------------------------------------------*/
-                vs_still_image_frame = (DESC_STILL_IMAGE_FRAME_T *)bptr;
+                vs_still_image_frame = (DESC_STILL_IMAGE_FRAME_T *)&cfg_buff[offset];
 
                 if ((vs_still_image_frame->bDescriptorType != UVC_CS_INTERFACE) ||
                         (vs_still_image_frame->bDescriptorSubType != VS_STILL_IMAGE_FRAME))
                 {
                     UVC_DBGMSG("No VS_STILL_IMAGE_FRAME found (optional), skipping.\n");
-                    ifd = (DESC_IF_T *)bptr;  /* must */
+                    ifd = (DESC_IF_T *)&cfg_buff[offset];  /* must */
                     break;
                 }
 
@@ -432,34 +454,33 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
                 UVC_DBGMSG("    bEndpointAddress:        0x%x\n", vs_still_image_frame->bEndpointAddress);
                 UVC_DBGMSG("    bNumImageSizePatterns:   0x%x\n", vs_still_image_frame->bNumImageSizePatterns);
 
-                for (i = 0; (i < vs_still_image_frame->bNumImageSizePatterns); i++)
+                for (i = 0; i < (int)vs_still_image_frame->bNumImageSizePatterns; i++)
                 {
                     idx = vc->num_of_still_frames;
 
                     vc->still_image_width[idx] = vs_still_image_frame->wSize[i].wWidth;
                     vc->still_image_height[idx] = vs_still_image_frame->wSize[i].wHeight;
-                    vc->still_image_format[idx] = vc->format[vc->num_of_formats - 1];
+                    vc->still_image_format[idx] = vc->format[current_format_slot];
 
                     UVC_DBGMSG("    [%d]wWidth x wHeight:     0x%x x 0x%x\n", (i + 1), vs_still_image_frame->wSize[i].wWidth, vs_still_image_frame->wSize[i].wHeight);
 
                     vc->num_of_still_frames++;
                 }
 
-                bptr += vs_still_image_frame->bLength;
-                size -= vs_still_image_frame->bLength;
+                offset += vs_still_image_frame->bLength;
+                size -= (int)vs_still_image_frame->bLength;
 
-                ifd = (DESC_IF_T *)bptr;  /* must */
+                ifd = (DESC_IF_T *)&cfg_buff[offset];  /* must */
                 break;
 
             case VS_FRAME_UNCOMPRESSED:
-                vsu_frame = (DESC_VSU_FRAME_T *)ifd_vs_hdr;
                 UVC_DBGMSG("VS Interface VS_FRAME_UNCOMPRESSED\n");
-                UVC_DBGMSG("    bFormatIndex: 0x%x\n", vsu_frame->bFrameIndex);
-                UVC_DBGMSG("    wWidth:       0x%x\n", vsu_frame->wWidth);
-                UVC_DBGMSG("    wHeight       0x%x\n", vsu_frame->wHeight);
-                UVC_DBGMSG("    dwMinBitRate: 0x%x\n", vsu_frame->dwMinBitRate);
-                UVC_DBGMSG("    dwMaxBitRate: 0x%x\n", vsu_frame->dwMaxBitRate);
-                UVC_DBGMSG("    dwDefaultFrameInterval:  0x%x\n", vsu_frame->dwDefaultFrameInterval);
+                UVC_DBGMSG("    bFormatIndex: 0x%x\n", ((DESC_VSU_FRAME_T *)ifd_vs_hdr)->bFrameIndex);
+                UVC_DBGMSG("    wWidth:       0x%x\n", ((DESC_VSU_FRAME_T *)ifd_vs_hdr)->wWidth);
+                UVC_DBGMSG("    wHeight       0x%x\n", ((DESC_VSU_FRAME_T *)ifd_vs_hdr)->wHeight);
+                UVC_DBGMSG("    dwMinBitRate: 0x%x\n", ((DESC_VSU_FRAME_T *)ifd_vs_hdr)->dwMinBitRate);
+                UVC_DBGMSG("    dwMaxBitRate: 0x%x\n", ((DESC_VSU_FRAME_T *)ifd_vs_hdr)->dwMaxBitRate);
+                UVC_DBGMSG("    dwDefaultFrameInterval:  0x%x\n", ((DESC_VSU_FRAME_T *)ifd_vs_hdr)->dwDefaultFrameInterval);
                 break;
 
             case VS_FORMAT_MJPEG:
@@ -474,16 +495,18 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
                 vc->format_idx[idx] = mjpg_format->bFormatIndex;
                 vc->format[idx] = UVC_FORMAT_MJPEG;
                 vc->num_of_formats++;
+                current_format_slot = vc->num_of_formats;
+                current_format_slot--;
 
                 /*------------------------------------------------------------------------*/
                 /*  Parsing all frame descriptors under this format descriptor            */
                 /*------------------------------------------------------------------------*/
-                bptr += mjpg_format->bLength;
-                size -= mjpg_format->bLength;
+                offset += mjpg_format->bLength;
+                size -= (int)mjpg_format->bLength;
 
-                for (i = 0; (i < mjpg_format->bNumFrameDescriptors) && (vc->num_of_frames < UVC_MAX_FRAME); i++)
+                for (i = 0; (i < (int)mjpg_format->bNumFrameDescriptors) && (vc->num_of_frames < (uint8_t)UVC_MAX_FRAME); i++)
                 {
-                    mjpg_frame = (DESC_MJPG_FRAME_T *)bptr;
+                    mjpg_frame = (DESC_MJPG_FRAME_T *)&cfg_buff[offset];
 
                     if ((mjpg_frame->bDescriptorType != UVC_CS_INTERFACE) ||
                             (mjpg_frame->bDescriptorSubType != VS_FRAME_MJPEG))
@@ -502,25 +525,25 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
 
                     idx = vc->num_of_frames;
                     vc->frame_idx[idx] = mjpg_frame->bFrameIndex;
-                    vc->frame_format[idx] = vc->format[vc->num_of_formats - 1];
+                    vc->frame_format[idx] = vc->format[current_format_slot];
                     vc->width[idx] = mjpg_frame->wWidth;
                     vc->height[idx] = mjpg_frame->wHeight;
                     vc->num_of_frames++;
 
-                    bptr += mjpg_frame->bLength;
-                    size -= mjpg_frame->bLength;
+                    offset += mjpg_frame->bLength;
+                    size -= (int)mjpg_frame->bLength;
                 }
 
                 /*--------------------------------------------------------------------------*/
                 /*  Parsing all still image frame descriptors under this format descriptor  */
                 /*--------------------------------------------------------------------------*/
-                vs_still_image_frame = (DESC_STILL_IMAGE_FRAME_T *)bptr;
+                vs_still_image_frame = (DESC_STILL_IMAGE_FRAME_T *)&cfg_buff[offset];
 
                 if ((vs_still_image_frame->bDescriptorType != UVC_CS_INTERFACE) ||
                         (vs_still_image_frame->bDescriptorSubType != VS_STILL_IMAGE_FRAME))
                 {
                     UVC_DBGMSG("No VS_STILL_IMAGE_FRAME found (optional), skipping.\n");
-                    ifd = (DESC_IF_T *)bptr;  /* must */
+                    ifd = (DESC_IF_T *)&cfg_buff[offset];  /* must */
                     break;
                 }
 
@@ -528,41 +551,39 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
                 UVC_DBGMSG("    bEndpointAddress:        0x%x\n", vs_still_image_frame->bEndpointAddress);
                 UVC_DBGMSG("    bNumImageSizePatterns:   0x%x\n", vs_still_image_frame->bNumImageSizePatterns);
 
-                for (i = 0; (i < vs_still_image_frame->bNumImageSizePatterns); i++)
+                for (i = 0; i < (int)vs_still_image_frame->bNumImageSizePatterns; i++)
                 {
                     idx = vc->num_of_still_frames;
                     vc->still_image_width[idx] = vs_still_image_frame->wSize[i].wWidth;
                     vc->still_image_height[idx] = vs_still_image_frame->wSize[i].wHeight;
-                    vc->still_image_format[idx] = vc->format[vc->num_of_formats - 1];
+                    vc->still_image_format[idx] = vc->format[current_format_slot];
 
                     UVC_DBGMSG("    [%d]wWidth x wHeight:     0x%x x 0x%x\n", (i + 1), vs_still_image_frame->wSize[i].wWidth, vs_still_image_frame->wSize[i].wHeight);
 
                     vc->num_of_still_frames++;
                 }
 
-                bptr += vs_still_image_frame->bLength;
-                size -= vs_still_image_frame->bLength;
+                offset += vs_still_image_frame->bLength;
+                size -= (int)vs_still_image_frame->bLength;
 
-                ifd = (DESC_IF_T *)bptr;  /* must */
+                ifd = (DESC_IF_T *)&cfg_buff[offset];  /* must */
                 break;
 
             case VS_FRAME_MJPEG:
-                mjpg_frame = (DESC_MJPG_FRAME_T *)ifd_vs_hdr;
                 UVC_DBGMSG("VS Interface VS_FRAME_MJPEG\n");
-                UVC_DBGMSG("    bFormatIndex: 0x%x\n", mjpg_frame->bFrameIndex);
-                UVC_DBGMSG("    wWidth:       0x%x\n", mjpg_frame->wWidth);
-                UVC_DBGMSG("    wHeight       0x%x\n", mjpg_frame->wHeight);
-                UVC_DBGMSG("    dwMinBitRate: 0x%x\n", mjpg_frame->dwMinBitRate);
-                UVC_DBGMSG("    dwMaxBitRate: 0x%x\n", mjpg_frame->dwMaxBitRate);
-                UVC_DBGMSG("    dwDefaultFrameInterval:  0x%x\n", mjpg_frame->dwDefaultFrameInterval);
+                UVC_DBGMSG("    bFormatIndex: 0x%x\n", ((DESC_MJPG_FRAME_T *)ifd_vs_hdr)->bFrameIndex);
+                UVC_DBGMSG("    wWidth:       0x%x\n", ((DESC_MJPG_FRAME_T *)ifd_vs_hdr)->wWidth);
+                UVC_DBGMSG("    wHeight       0x%x\n", ((DESC_MJPG_FRAME_T *)ifd_vs_hdr)->wHeight);
+                UVC_DBGMSG("    dwMinBitRate: 0x%x\n", ((DESC_MJPG_FRAME_T *)ifd_vs_hdr)->dwMinBitRate);
+                UVC_DBGMSG("    dwMaxBitRate: 0x%x\n", ((DESC_MJPG_FRAME_T *)ifd_vs_hdr)->dwMaxBitRate);
+                UVC_DBGMSG("    dwDefaultFrameInterval:  0x%x\n", ((DESC_MJPG_FRAME_T *)ifd_vs_hdr)->dwDefaultFrameInterval);
                 break;
 
             case VS_STILL_IMAGE_FRAME:
-                vs_still_image_frame = (DESC_STILL_IMAGE_FRAME_T *)ifd_vs_hdr;
                 UVC_DBGMSG("VS Interface VS_STILL_IMAGE_FRAME\n");
-                UVC_DBGMSG("    bEndpointAddress:        0x%x\n", vs_still_image_frame->bEndpointAddress);
-                UVC_DBGMSG("    bNumImageSizePatterns:   0x%x\n", vs_still_image_frame->bNumImageSizePatterns);
-                UVC_DBGMSG("    bNumCompressionPatterns: 0x%x\n", vs_still_image_frame->bNumCompressionPatterns);
+                UVC_DBGMSG("    bEndpointAddress:        0x%x\n", ((DESC_STILL_IMAGE_FRAME_T *)ifd_vs_hdr)->bEndpointAddress);
+                UVC_DBGMSG("    bNumImageSizePatterns:   0x%x\n", ((DESC_STILL_IMAGE_FRAME_T *)ifd_vs_hdr)->bNumImageSizePatterns);
+                UVC_DBGMSG("    bNumCompressionPatterns: 0x%x\n", ((DESC_STILL_IMAGE_FRAME_T *)ifd_vs_hdr)->bNumCompressionPatterns);
                 break;
 
             case VS_OUTPUT_HEADER:
@@ -588,10 +609,12 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         }
 
         if (ifd->bLength == 0)
+        {
             return UVC_RET_PARSER;          /* prevent infinite loop                      */
+        }
 
-        bptr += ifd->bLength;
-        size -= ifd->bLength;
+        offset += ifd->bLength;
+        size -= (int)ifd->bLength;
     }
 
 #if 0
@@ -601,16 +624,20 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     while (size >= sizeof(DESC_IF_T))
     {
-        ifd = (DESC_IF_T *)bptr;
+        ifd = (DESC_IF_T *)&cfg_buff[offset];
 
         if ((ifd->bDescriptorType == USB_DT_INTERFACE) && (ifd->bInterfaceNumber == ifnum) &&
                 (ifd->bAlternateSetting != 0))
+        {
             break;                              /* done, not alternative setting 0        */
+        }
 
         if (ifd->bLength == 0)
+        {
             return UVC_RET_PARSER;          /* prevent infinite loop                      */
+        }
 
-        bptr += ifd->bLength;
+        offset += ifd->bLength;
         size -= ifd->bLength;
     }
 
@@ -627,13 +654,17 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
     /*------------------------------------------------------------------------------------*/
     while (size >= (int)sizeof(DESC_IF_T))
     {
-        int   pksz;
+        uint16_t  pksz;
+        uint16_t  payload_size;
+        uint16_t  transaction_count;
 
-        ifd = (DESC_IF_T *)bptr;
+        ifd = (DESC_IF_T *)&cfg_buff[offset];
 
         if ((ifd->bDescriptorType != USB_DT_INTERFACE) || (ifd->bInterfaceNumber != iface->if_num) ||
                 (ifd->bInterfaceClass != USB_CLASS_VIDEO) || (ifd->bInterfaceSubClass != UVC_SC_VIDEOSTREAMING))
+        {
             break;                          /* done, the following content not belong to this interface */
+        }
 
         if (size < 8)
         {
@@ -650,12 +681,14 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
         }
 
         if (ifd->bLength == 0)
+        {
             return UVC_RET_PARSER;          /* prevent infinite loop                      */
+        }
 
-        bptr += ifd->bLength;
+        offset += ifd->bLength;
         size -= ifd->bLength;
 
-        epd = (DESC_EP_T *)bptr;
+        epd = (DESC_EP_T *)&cfg_buff[offset];
 
         if (epd->bDescriptorType != USB_DT_ENDPOINT)
         {
@@ -667,21 +700,25 @@ int uvc_parse_streaming_interface(UVC_DEV_T *vdev, IFACE_T *iface)
 
         vs->alt_no[vs->num_of_alt] = ifd->bAlternateSetting;
         pksz = epd->wMaxPacketSize;
-        pksz = (pksz & 0x07ff) * (1 + ((pksz >> 11) & 3));
+        payload_size = (uint16_t)(pksz & 0x07FFU);
+        transaction_count = (uint16_t)(1U + ((pksz >> 11U) & 0x3U));
+        pksz = (uint16_t)(payload_size * transaction_count);
         vs->max_pktsz[vs->num_of_alt] = pksz;
         vs->num_of_alt++;
 
         if (epd->bLength == 0)
+        {
             return UVC_RET_PARSER;      /* prevent infinite loop                      */
+        }
 
-        bptr += epd->bLength;
-        size -= epd->bLength;
+        offset += epd->bLength;
+        size -= (int)epd->bLength;
     }
 
     UVC_DBGMSG("\n\n----------------------------------------------------------\n");
     UVC_DBGMSG("[Video Streaming interface parsing result dump]\n");
 
-    for (i = 0; i < vs->num_of_alt; i++)
+    for (i = 0; i < (int)vs->num_of_alt; i++)
     {
         UVC_DBGMSG("  Alt %d, wMaxPacketSize = %d\n", vs->alt_no[i], vs->max_pktsz[i]);
     }

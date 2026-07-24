@@ -150,8 +150,8 @@ extern "C"
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Duty Interrupt Type Constant Definitions                                                               */
 /*---------------------------------------------------------------------------------------------------------*/
-#define EPWM_DUTY_INT_DOWN_COUNT_MATCH_CMP        (1U << EPWM_INTEN0_CMPDIEN0_Pos)   /*!< EPWM duty interrupt triggered if down count match comparator \hideinitializer */
-#define EPWM_DUTY_INT_UP_COUNT_MATCH_CMP          (1U << EPWM_INTEN0_CMPUIEN0_Pos)   /*!< EPWM duty interrupt triggered if up down match comparator \hideinitializer */
+#define EPWM_DUTY_INT_DOWN_COUNT_MATCH_CMP        (EPWM_INTEN0_CMPDIEN0_Msk)   /*!< EPWM duty interrupt triggered if down count match comparator \hideinitializer */
+#define EPWM_DUTY_INT_UP_COUNT_MATCH_CMP          (EPWM_INTEN0_CMPUIEN0_Msk)   /*!< EPWM duty interrupt triggered if up down match comparator \hideinitializer */
 
 /*---------------------------------------------------------------------------------------------------------*/
 /*  Interrupt Flag Accumulator Constant Definitions                                                        */
@@ -234,6 +234,12 @@ extern "C"
   @{
 */
 
+/* Declare these inline functions here to avoid MISRA C 2004 rule 8.1 error */
+__STATIC_INLINE void EPWM_DISABLE_TIMER_SYNC(EPWM_T *epwm, uint32_t u32ChannelMask);
+__STATIC_INLINE void EPWM_SET_ALIGNED_TYPE(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32AlignedType);
+__STATIC_INLINE void EPWM_SET_OUTPUT_LEVEL(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32ZeroLevel, uint32_t u32CmpUpLevel, uint32_t u32PeriodLevel, uint32_t u32CmpDownLevel);
+__STATIC_INLINE void EPWM_SET_DEADZONE_CLK_SRC(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32AfterPrescaler);
+
 /**
  * @brief This macro enable complementary mode
  * @param[in] epwm The pointer of the specified EPWM module
@@ -241,7 +247,7 @@ extern "C"
  * @details This macro is used to enable complementary mode of EPWM module.
  * \hideinitializer
  */
-#define EPWM_ENABLE_COMPLEMENTARY_MODE(epwm) ((epwm)->CTL1 = (epwm)->CTL1 | (0x7ul<<EPWM_CTL1_OUTMODE0_Pos))
+#define EPWM_ENABLE_COMPLEMENTARY_MODE(epwm) ((epwm)->CTL1 = (epwm)->CTL1 | (0x7UL << EPWM_CTL1_OUTMODE0_Pos))
 
 /**
  * @brief This macro disable complementary mode, and enable independent mode.
@@ -250,7 +256,7 @@ extern "C"
  * @details This macro is used to disable complementary mode of EPWM module.
  * \hideinitializer
  */
-#define EPWM_DISABLE_COMPLEMENTARY_MODE(epwm) ((epwm)->CTL1 = (epwm)->CTL1 & ~(0x7ul<<EPWM_CTL1_OUTMODE0_Pos))
+#define EPWM_DISABLE_COMPLEMENTARY_MODE(epwm) ((epwm)->CTL1 = (epwm)->CTL1 & ~(0x7UL << EPWM_CTL1_OUTMODE0_Pos))
 
 /**
  * @brief This macro enable group mode
@@ -299,12 +305,14 @@ __STATIC_INLINE void EPWM_DISABLE_TIMER_SYNC(EPWM_T *epwm, uint32_t u32ChannelMa
 {
     do
     {
-        int i;
+        uint32_t i;
 
-        for (i = 0; i < 6; i++)
+        for (i = 0UL; i < 6UL; i++)
         {
-            if ((u32ChannelMask) & (1 << i))
+            if (((u32ChannelMask) & (1UL << i)) != 0UL)
+            {
                 (epwm)->SSCTL &= ~(1UL << i);
+            }
         }
     } while (0);
 }
@@ -466,12 +474,16 @@ __STATIC_INLINE void EPWM_SET_ALIGNED_TYPE(EPWM_T *epwm, uint32_t u32ChannelMask
 {
     do
     {
-        int i;
+        uint32_t i;
 
-        for (i = 0; i < 6; i++)
+        for (i = 0UL; i < 6UL; i++)
         {
-            if ((u32ChannelMask) & (1 << i))
-                (epwm)->CTL1 = (((epwm)->CTL1 & ~(3UL << (i << 1))) | ((u32AlignedType) << (i << 1)));
+            uint32_t const u32Shift = i << 1U;
+
+            if (((u32ChannelMask) & (1UL << i)) != 0UL)
+            {
+                (epwm)->CTL1 = (((epwm)->CTL1 & ~(3UL << u32Shift)) | ((u32AlignedType) << u32Shift));
+            }
         }
     } while (0);
 }
@@ -496,7 +508,7 @@ __STATIC_INLINE void EPWM_SET_ALIGNED_TYPE(EPWM_T *epwm, uint32_t u32ChannelMask
  * @details This macro is used to trigger synchronous event from specified channel(s).
  * \hideinitializer
  */
-#define EPWM_TRIGGER_SYNC(epwm, u32ChannelNum) ((epwm)->SWSYNC |= (1 << ((u32ChannelNum) >> 1)))
+#define EPWM_TRIGGER_SYNC(epwm, u32ChannelNum) ((epwm)->SWSYNC |= (1UL << ((u32ChannelNum) >> 1U)))
 
 /**
  * @brief Clear counter of specified channel(s)
@@ -542,16 +554,20 @@ __STATIC_INLINE void EPWM_SET_OUTPUT_LEVEL(EPWM_T *epwm, uint32_t u32ChannelMask
 {
     do
     {
-        int i;
+        uint32_t i;
 
-        for (i = 0; i < 6; i++)
+        for (i = 0UL; i < 6UL; i++)
         {
-            if ((u32ChannelMask) & (1 << i))
+            uint32_t const u32Shift = i << 1U;
+            uint32_t const u32PrdShift = ((uint32_t)EPWM_WGCTL0_PRDPCTL0_Pos) + u32Shift;
+            uint32_t const u32CmpdShift = ((uint32_t)EPWM_WGCTL1_CMPDCTL0_Pos) + u32Shift;
+
+            if (((u32ChannelMask) & (1UL << i)) != 0UL)
             {
-                (epwm)->WGCTL0 = (((epwm)->WGCTL0 & ~(3UL << (i << 1))) | ((u32ZeroLevel) << (i << 1)));
-                (epwm)->WGCTL0 = (((epwm)->WGCTL0 & ~(3UL << (EPWM_WGCTL0_PRDPCTL0_Pos + (i << 1)))) | ((u32PeriodLevel) << (EPWM_WGCTL0_PRDPCTL0_Pos + (i << 1))));
-                (epwm)->WGCTL1 = (((epwm)->WGCTL1 & ~(3UL << (i << 1))) | ((u32CmpUpLevel) << (i << 1)));
-                (epwm)->WGCTL1 = (((epwm)->WGCTL1 & ~(3UL << (EPWM_WGCTL1_CMPDCTL0_Pos + (i << 1)))) | ((u32CmpDownLevel) << (EPWM_WGCTL1_CMPDCTL0_Pos + (i << 1))));
+                (epwm)->WGCTL0 = (((epwm)->WGCTL0 & ~(3UL << u32Shift)) | ((u32ZeroLevel) << u32Shift));
+                (epwm)->WGCTL0 = (((epwm)->WGCTL0 & ~(3UL << u32PrdShift)) | ((u32PeriodLevel) << u32PrdShift));
+                (epwm)->WGCTL1 = (((epwm)->WGCTL1 & ~(3UL << u32Shift)) | ((u32CmpUpLevel) << u32Shift));
+                (epwm)->WGCTL1 = (((epwm)->WGCTL1 & ~(3UL << u32CmpdShift)) | ((u32CmpDownLevel) << u32CmpdShift));
             }
         }
     } while (0);
@@ -561,7 +577,7 @@ __STATIC_INLINE void EPWM_SET_OUTPUT_LEVEL(EPWM_T *epwm, uint32_t u32ChannelMask
  * @brief Trigger brake event from specified channel(s)
  * @param[in] epwm The pointer of the specified EPWM module
  * @param[in] u32ChannelMask Combination of enabled channels. Each bit corresponds to a channel
- *                           Bit 0 represents channel 0, bit 1 represents channel 2 and bit 2 represents channel 4
+ *                           Bit 0 represents channel 0_1, bit 1 represents channel 2_3 and bit 2 represents channel 4_5
  * @param[in] u32BrakeType Type of brake trigger.
  *              - \ref EPWM_FB_EDGE
  *              - \ref EPWM_FB_LEVEL
@@ -583,7 +599,7 @@ __STATIC_INLINE void EPWM_SET_OUTPUT_LEVEL(EPWM_T *epwm, uint32_t u32ChannelMask
  */
 __STATIC_INLINE void EPWM_SET_DEADZONE_CLK_SRC(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32AfterPrescaler)
 {
-    uint32_t u32DTCLKSrc = ((u32AfterPrescaler) << EPWM_DTCTL_DTCKSEL0_Pos) << (u32ChannelNum >> 1U);
+    uint32_t u32DTCLKSrc = ((u32AfterPrescaler & 0x1UL) << EPWM_DTCTL_DTCKSEL0_Pos) << (u32ChannelNum >> 1U);
     epwm->DTCTL = ((epwm->DTCTL & ~(EPWM_DTCTL_DTCKSEL0_Msk << (u32ChannelNum >> 1U))) | u32DTCLKSrc);
 }
 
@@ -600,12 +616,12 @@ void EPWM_DisableADCTrigger(EPWM_T *epwm, uint32_t u32ChannelNum);
 int32_t EPWM_EnableADCTriggerPrescale(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Prescale, uint32_t u32PrescaleCnt);
 void EPWM_DisableADCTriggerPrescale(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearADCTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Condition);
-uint32_t EPWM_GetADCTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetADCTriggerFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableDACTrigger(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Condition);
 void EPWM_DisableDACTrigger(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Condition);
-uint32_t EPWM_GetDACTriggerFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
-void EPWM_EnableFaultBrake(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32LevelMask, uint32_t u32BrakeSourceMask);
+uint32_t EPWM_GetDACTriggerFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
+void EPWM_EnableFaultBrake(EPWM_T *epwm, uint32_t u32ChannelMask, uint32_t u32LevelMask, uint32_t u32BrakeSource);
 void EPWM_EnableCapture(EPWM_T *epwm, uint32_t u32ChannelMask);
 void EPWM_DisableCapture(EPWM_T *epwm, uint32_t u32ChannelMask);
 void EPWM_EnableOutput(EPWM_T *epwm, uint32_t u32ChannelMask);
@@ -619,35 +635,35 @@ void EPWM_DisableRisingDeadZone(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableCaptureInt(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Edge);
 void EPWM_DisableCaptureInt(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Edge);
 void EPWM_ClearCaptureIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32Edge);
-uint32_t EPWM_GetCaptureIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetCaptureIntFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableDutyInt(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32IntDutyType);
 void EPWM_DisableDutyInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearDutyIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
-uint32_t EPWM_GetDutyIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetDutyIntFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableFaultBrakeInt(EPWM_T *epwm, uint32_t u32BrakeSource);
 void EPWM_DisableFaultBrakeInt(EPWM_T *epwm, uint32_t u32BrakeSource);
 void EPWM_ClearFaultBrakeIntFlag(EPWM_T *epwm, uint32_t u32BrakeSource);
-uint32_t EPWM_GetFaultBrakeIntFlag(EPWM_T *epwm, uint32_t u32BrakeSource);
+uint32_t EPWM_GetFaultBrakeIntFlag(const EPWM_T *epwm, uint32_t u32BrakeSource);
 void EPWM_EnablePeriodInt(EPWM_T *epwm, uint32_t u32ChannelNum,  uint32_t u32IntPeriodType);
 void EPWM_DisablePeriodInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearPeriodIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
-uint32_t EPWM_GetPeriodIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetPeriodIntFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableZeroInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_DisableZeroInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearZeroIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
-uint32_t EPWM_GetZeroIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetZeroIntFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableAcc(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32IntFlagCnt, uint32_t u32IntAccSrc);
 void EPWM_DisableAcc(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableAccInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_DisableAccInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearAccInt(EPWM_T *epwm, uint32_t u32ChannelNum);
-uint32_t EPWM_GetAccInt(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetAccInt(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableAccPDMA(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_DisableAccPDMA(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableAccStopMode(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_DisableAccStopMode(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearFTDutyIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
-uint32_t EPWM_GetFTDutyIntFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetFTDutyIntFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableLoadMode(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32LoadMode);
 void EPWM_DisableLoadMode(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32LoadMode);
 void EPWM_ConfigSyncPhase(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32SyncSrc, uint32_t u32Direction, uint32_t u32StartPhase);
@@ -664,7 +680,7 @@ void EPWM_EnableBrakePinInverse(EPWM_T *epwm, uint32_t u32BrakePinNum);
 void EPWM_DisableBrakePinInverse(EPWM_T *epwm, uint32_t u32BrakePinNum);
 void EPWM_SetBrakePinSource(EPWM_T *epwm, uint32_t u32BrakePinNum, uint32_t u32SelAnotherModule);
 void EPWM_SetLeadingEdgeBlanking(EPWM_T *epwm, uint32_t u32TrigSrcSel, uint32_t u32TrigType, uint32_t u32BlankingCnt, uint32_t u32BlankingEnable);
-uint32_t EPWM_GetWrapAroundFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetWrapAroundFlag(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearWrapAroundFlag(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableFaultDetect(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32AfterPrescaler, uint32_t u32ClkSel);
 void EPWM_DisableFaultDetect(EPWM_T *epwm, uint32_t u32ChannelNum);
@@ -677,12 +693,12 @@ void EPWM_DisableFaultDetectMask(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableFaultDetectInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_DisableFaultDetectInt(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_ClearFaultDetectInt(EPWM_T *epwm, uint32_t u32ChannelNum);
-uint32_t EPWM_GetFaultDetectInt(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetFaultDetectInt(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableCaptureInputNoiseFilter(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32FilterCount, uint32_t u32ClkSrcSel);
 void EPWM_DisableCaptureInputNoiseFilter(EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableExtEventTrigger(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32ExtEventSrc, uint32_t u32CounterAction);
 void EPWM_DisableExtEventTrigger(EPWM_T *epwm, uint32_t u32ChannelNum);
-uint32_t EPWM_GetAccCounter(EPWM_T *epwm, uint32_t u32ChannelNum);
+uint32_t EPWM_GetAccCounter(const EPWM_T *epwm, uint32_t u32ChannelNum);
 void EPWM_EnableSWEventOutput(EPWM_T *epwm, uint32_t u32ChannelNum, uint32_t u32OutputLevel);
 void EPWM_DisableSWEventOutput(EPWM_T *epwm, uint32_t u32ChannelNum);
 

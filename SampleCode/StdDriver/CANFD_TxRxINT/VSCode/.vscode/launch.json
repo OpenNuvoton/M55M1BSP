@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CMSIS_DAP@pyOCD (launch)",
+            "type": "cortex-debug-nuvoton",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${command:embedded-debug.getApplicationFile}",
+            "servertype": "openocd",
+            "serverpath": "${command:openocd-helper.getOpenOcdPath}",
+            "svdFile": "${command:openocd-helper.getSvdPath}",
+            "configFiles": [
+                "interface/cmsis-dap.cfg",
+                "${command:openocd-helper.getOpenOcdConfigPath}"
+            ],
+            "runToEntryPoint": "main",
+            "overrideLaunchCommands": [
+                "monitor reset halt"
+            ]
+        },
+        {
+            "name": "CMSIS_DAP@pyOCD (attach)",
+            "type": "gdbtarget",
+            "request": "attach",
+            "cwd": "${workspaceFolder}/",
+            "program": "out/CANFD_TxRxINT/ARMCLANG/Release/CANFD_TxRxINT.axf",
+            "gdb": "arm-none-eabi-gdb",
+            "auxiliaryGdb": true,
+            "initCommands": [
+                ""
+            ],
+            "customResetCommands": [
+                "monitor reset halt",
+                "maintenance flush register-cache",
+                "maintenance flush dcache",
+                "tbreak main",
+                "continue"
+            ],
+            "target": {
+                "port": "3333"
+            },
+            "cmsis": {
+                "cbuildRunFile": "${command:cmsis-csolution.getCbuildRunFile}",
+                "updateConfiguration": "auto"
+            }
+        }
+    ]
+}

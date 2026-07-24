@@ -47,6 +47,8 @@
     #endif /* MBEDTLS_SELF_TEST && MBEDTLS_AES_C */
 #endif /* MBEDTLS_PLATFORM_C */
 
+#include "NuMicro.h"
+
 #if (NVT_DCACHE_ON == 1)
     // DCache-line aligned buffer for improved performance when DCache is enabled
     uint8_t ccm_buf_array[DCACHE_ALIGN_LINE_SIZE(MAX_CCM_BUF)] __attribute__((aligned(DCACHE_LINE_SIZE)));
@@ -79,7 +81,9 @@ int mbedtls_ccm_setkey(mbedtls_ccm_context *ctx,
 
     /* Store the key to ctx */
     for (i = 0; i < keybits / 8; i++)
+    {
         ctx->key[i] = key[i];
+    }
 
     ctx->keybits = keybits;
 
@@ -92,7 +96,9 @@ int mbedtls_ccm_setkey(mbedtls_ccm_context *ctx,
 void mbedtls_ccm_free(mbedtls_ccm_context *ctx)
 {
     if (ctx == NULL)
+    {
         return;
+    }
 
     mbedtls_cipher_free(&ctx->cipher_ctx);
     mbedtls_platform_zeroize(ctx, sizeof(mbedtls_ccm_context));
@@ -121,7 +127,9 @@ static int ccm_calculate_first_block_if_ready(mbedtls_ccm_context *ctx)
      * mbedtls_ccm_starts() and mbedtls_ccm_set_lengths() have been executed
      */
     if (!(ctx->state & CCM_STATE__STARTED) || !(ctx->state & CCM_STATE__LENGHTS_SET))
+    {
         return 0;
+    }
 
     /* CCM expects non-empty tag.
      * CCM* allows empty tag. For CCM* without tag, ignore plaintext length.
@@ -155,7 +163,9 @@ static int ccm_calculate_first_block_if_ready(mbedtls_ccm_context *ctx)
     ctx->y[0] |= ctx->q - 1;
 
     for (i = 0, len_left = ctx->plaintext_len; i < ctx->q; i++, len_left >>= 8)
+    {
         ctx->y[15 - i] = MBEDTLS_BYTE_0(len_left);
+    }
 
     if (len_left > 0)
     {
@@ -173,7 +183,9 @@ int mbedtls_ccm_starts(mbedtls_ccm_context *ctx,
 {
     /* Also implies q is within bounds */
     if (iv_len < 7 || iv_len > 13)
+    {
         return (MBEDTLS_ERR_CCM_BAD_INPUT);
+    }
 
     ctx->mode = mode;
     ctx->q = 16 - 1 - (unsigned char) iv_len;
@@ -216,10 +228,14 @@ int mbedtls_ccm_set_lengths(mbedtls_ccm_context *ctx,
      * Also, loosen the requirements to enable support for CCM* (IEEE 802.15.4).
      */
     if (tag_len == 2 || tag_len > 16 || tag_len % 2 != 0)
+    {
         return (MBEDTLS_ERR_CCM_BAD_INPUT);
+    }
 
     if (total_ad_len >= 0xFF00)
+    {
         return (MBEDTLS_ERR_CCM_BAD_INPUT);
+    }
 
     ctx->plaintext_len = plaintext_len;
     ctx->add_len = total_ad_len;
@@ -270,20 +286,26 @@ static int ccm_auth_crypt(mbedtls_ccm_context *ctx, int mode, size_t length,
     int32_t timeout;
 
     if ((ret = mbedtls_ccm_starts(ctx, mode, iv, iv_len)) != 0)
+    {
         return (ret);
+    }
 
     /* The default value is 1 in mbedtls_ccm_starts but we need 0 */
     ctx->ctr[15] = 0;
 
     if ((ret = mbedtls_ccm_set_lengths(ctx, add_len, length, tag_len)) != 0)
+    {
         return (ret);
+    }
 
     /* Check size of input block */
     add_len_aligned = ((add_len + 2) & 0xf) ? (((add_len + 2) & (~0xf)) + 16) : (add_len + 2);
     length_aligned = (length & 0xf) ? ((length & (~0xf)) + 16) : (length);
 
     if (16 + add_len_aligned + length_aligned > MAX_CCM_BUF)
+    {
         return MBEDTLS_ERR_CCM_BAD_INPUT;
+    }
 
     /* Prepare input block for hardware CCM */
     memset(ctx->ccm_buf, 0, MAX_CCM_BUF);
@@ -346,7 +368,9 @@ static int ccm_auth_crypt(mbedtls_ccm_context *ctx, int mode, size_t length,
     {
         /* Check timeout */
         if (timeout-- <= 0)
+        {
             return MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
+        }
     }
 
 #if (NVT_DCACHE_ON == 1)
@@ -355,10 +379,14 @@ static int ccm_auth_crypt(mbedtls_ccm_context *ctx, int mode, size_t length,
 
     /* output */
     if (output != NULL)
+    {
         memcpy(output, ctx->out_buf, length);
+    }
 
     if (tag != NULL)
+    {
         memcpy(tag, ctx->out_buf + length_aligned, tag_len);
+    }
 
     mbedtls_ccm_clear_state(ctx);
 
@@ -398,7 +426,9 @@ static int mbedtls_ccm_compare_tags(const unsigned char *tag1, const unsigned ch
 
     /* Check tag in "constant-time" */
     for (diff = 0, i = 0; i < tag_len; i++)
+    {
         diff |= tag1[i] ^ tag2[i];
+    }
 
     if (diff != 0)
     {

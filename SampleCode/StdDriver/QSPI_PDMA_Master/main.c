@@ -97,15 +97,26 @@ void SYS_Init(void)
 
 void QSPI_Init(void)
 {
+    uint32_t u32BusClock;
+
     /*---------------------------------------------------------------------------------------------------------*/
     /* Init SPI                                                                                                */
     /*---------------------------------------------------------------------------------------------------------*/
     /* Configure QSPI0 */
     /* Enable QSPI0 Quad output mode */
     QSPI_ENABLE_QUAD_OUTPUT_MODE(QSPI0);
+
     /* Configure QSPI0 as a master, SPI clock rate 1MHz,
        clock idle low, 32-bit transaction, drive output on falling clock edge and latch input on rising edge. */
-    QSPI_Open(QSPI0, SPI_MASTER, SPI_MODE_0, 32, 1000000);
+    u32BusClock = QSPI_Open(QSPI0, SPI_MASTER, SPI_MODE_0, 32, 1000000);
+
+    if (u32BusClock == 0U)
+    {
+        printf("QSPI_Open failed.\n");
+
+        while (1);
+    }
+
     /* Enable the automatic hardware slave selection function. Select the QSPI0_SS pin and configure as low-active. */
     QSPI_EnableAutoSS(QSPI0, SPI_SS, SPI_SS_ACTIVE_LOW);
 }
@@ -113,7 +124,7 @@ void QSPI_Init(void)
 void QSPI_Master_Send(void)
 {
     uint32_t u32DataCount;
-    uint32_t u32RegValue, u32Abort;
+    uint32_t u32RegValue, u32Abort, u32TimeOutCnt;
     int32_t i32Err;
 
     printf("\nQSPI0 Master Quad mode with PDMA ");
@@ -158,6 +169,7 @@ void QSPI_Master_Send(void)
     QSPI_TRIGGER_TX_PDMA(QSPI0);
 
     i32Err = 0;
+    u32TimeOutCnt = SystemCoreClock;
 
     while (1)
     {
@@ -199,7 +211,18 @@ void QSPI_Master_Send(void)
             i32Err = 1;
             break;
         }
+
+        if (u32TimeOutCnt == 0U)
+        {
+            i32Err = 1;
+            break;
+        }
+
+        u32TimeOutCnt--;
     }
+
+    /* Disable QSPI master's PDMA transfer function on every exit path. */
+    QSPI_DISABLE_TX_PDMA(QSPI0);
 
     /* Disable all PDMA channels */
     PDMA_Close(PDMA0);

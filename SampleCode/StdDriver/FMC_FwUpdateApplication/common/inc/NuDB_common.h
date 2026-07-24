@@ -15,7 +15,7 @@ extern "C"
 #endif
 
 #define LOADER_BASE         (FMC_APROM_BASE)
-#define LOADER_SIZE         (FMC_FLASH_PAGE_SIZE * 2)
+#define LOADER_SIZE         (FMC_FLASH_PAGE_SIZE * 4)
 #define APP_BASE            (FMC_APROM_BASE + LOADER_SIZE)
 #define APP_SIZE            (FMC_FLASH_PAGE_SIZE * 4)
 

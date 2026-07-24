@@ -337,7 +337,7 @@
             <v6WtE>0</v6WtE>
             <v6Rtti>0</v6Rtti>
             <VariousControls>
-              <MiscControls>-Wno-unused-parameter -Wno-unused-variable -Wno-char-subscripts -Wconditional-uninitialized</MiscControls>
+              <MiscControls>-Wno-unused-parameter -Wno-unused-variable -Wno-char-subscripts -Wconditional-uninitialized -mno-unaligned-access</MiscControls>
               <Define>TEST_GRAYSCALE=0 ,WITH_JPEGACC, _PANEL_DISPLAY_320X240</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\..\Library\CMSIS\Core\Include;..\..\..\..\Library\CMSIS\DSP\Include;..\..\..\..\Library\Device\Nuvoton\M55M1\Include;..\..\..\..\Library\StdDriver\inc;..\..\..\..\Library\Storage;..\..\..\..\ThirdParty\FatFs\source;..\..\..\..\Library\JpegAcceleratorLib\include;..\..\..\..\ThirdParty\libjpeg;..\..\..\..\ThirdParty\openmv\omv\imlib;..\..\..\..\ThirdParty\openmv\omv\alloc;..\..\..\..\ThirdParty\openmv\omv\common;..\..\..\..\ThirdParty\openmv\omv\Lib;..\..\..\..\ThirdParty\openmv\omv;..\Device\Display\LCD;..\Device\include;..</IncludePath>

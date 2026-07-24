@@ -83,13 +83,19 @@ int usbh_uvc_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_CTRL_PARAM_T *param
     uint32_t    xfer_len;
     int         ret;
 
-    if (req & 0x80)
-        bmRequestType = REQ_TYPE_IN | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+    if (req & 0x80U)
+    {
+        uint32_t u32ReqRequestType_tmp = (uint32_t)REQ_TYPE_IN | (uint32_t)REQ_TYPE_CLASS_DEV | (uint32_t)REQ_TYPE_TO_IFACE;
+        bmRequestType = (uint8_t)u32ReqRequestType_tmp;
+    }
     else
-        bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+    {
+        uint32_t u32ReqRequestType_tmp = (uint32_t)REQ_TYPE_OUT | (uint32_t)REQ_TYPE_CLASS_DEV | (uint32_t)REQ_TYPE_TO_IFACE;
+        bmRequestType = (uint8_t)u32ReqRequestType_tmp;
+    }
 
     ret = usbh_ctrl_xfer(vdev->udev, bmRequestType, req,
-                         (VS_PROBE_CONTROL << 8),    /* wValue - Control Selector (CS)    */
+                         (uint16_t)((uint32_t)VS_PROBE_CONTROL << 8U),    /* wValue - Control Selector (CS)    */
                          vdev->iface_stream->if_num, /* wIndex - Zero and Interface       */
                          sizeof(UVC_CTRL_PARAM_T),   /* wLength - Length of parameter block */
                          (uint8_t *)param,           /* parameter block                   */
@@ -102,6 +108,10 @@ int usbh_uvc_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_CTRL_PARAM_T *param
     else if (req == UVC_GET_CUR)
     {
         dump_parameter_block(param);
+    }
+    else
+    {
+        /* No action */
     }
 
     return ret;
@@ -123,7 +133,7 @@ static int usbh_uvc_commit_control(UVC_DEV_T *vdev, UVC_CTRL_PARAM_T *param)
     bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
 
     return usbh_ctrl_xfer(vdev->udev, bmRequestType, UVC_SET_CUR,
-                          (VS_COMMIT_CONTROL << 8),   /* wValue - Control Selector (CS)    */
+                          (uint16_t)((uint32_t)VS_COMMIT_CONTROL << 8U),   /* wValue - Control Selector (CS)    */
                           vdev->iface_stream->if_num, /* wIndex - Zero and Interface       */
                           sizeof(UVC_CTRL_PARAM_T),   /* wLength - Length of parameter block */
                           (uint8_t *)param,           /* parameter block                   */
@@ -146,19 +156,25 @@ static int usbh_uvc_commit_control(UVC_DEV_T *vdev, UVC_CTRL_PARAM_T *param)
  *  @retval   0        Success
  *  @retval   Otheriwse  Error occurred
  */
-int usbh_uvc_still_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_STILL_CTRL_PARAM_T *param)
+static int usbh_uvc_still_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_STILL_CTRL_PARAM_T *param)
 {
     uint8_t     bmRequestType;
     uint32_t    xfer_len;
     int         ret;
 
-    if (req & 0x80)
-        bmRequestType = REQ_TYPE_IN | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+    if (req & 0x80U)
+    {
+        uint32_t u32ReqRequestType_tmp = (uint32_t)REQ_TYPE_IN | (uint32_t)REQ_TYPE_CLASS_DEV | (uint32_t)REQ_TYPE_TO_IFACE;
+        bmRequestType = (uint8_t)u32ReqRequestType_tmp;
+    }
     else
-        bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
+    {
+        uint32_t u32ReqRequestType_tmp = (uint32_t)REQ_TYPE_OUT | (uint32_t)REQ_TYPE_CLASS_DEV | (uint32_t)REQ_TYPE_TO_IFACE;
+        bmRequestType = (uint8_t)u32ReqRequestType_tmp;
+    }
 
     ret = usbh_ctrl_xfer(vdev->udev, bmRequestType, req,
-                         (VS_STILL_PROBE_CONTROL << 8), /* wValue - Control Selector (CS)    */
+                         (uint16_t)((uint32_t)VS_STILL_PROBE_CONTROL << 8U), /* wValue - Control Selector (CS)    */
                          vdev->iface_stream->if_num,    /* wIndex - Zero and Interface       */
                          sizeof(UVC_STILL_CTRL_PARAM_T),/* wLength - Length of parameter block */
                          (uint8_t *)param,              /* parameter block                   */
@@ -171,6 +187,10 @@ int usbh_uvc_still_probe_control(UVC_DEV_T *vdev, uint8_t req, UVC_STILL_CTRL_PA
     else if (req == UVC_GET_CUR)
     {
         dump_still_parameter_block(param);
+    }
+    else
+    {
+        /* No action */
     }
 
     return ret;
@@ -192,7 +212,7 @@ static int usbh_uvc_still_commit_control(struct uvc_dev_t *vdev, UVC_STILL_CTRL_
     bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
 
     return usbh_ctrl_xfer(vdev->udev, bmRequestType, UVC_SET_CUR,
-                          (VS_STILL_COMMIT_CONTROL << 8), /* wValue - Control Selector (CS)    */
+                          (uint16_t)((uint32_t)VS_STILL_COMMIT_CONTROL << 8U), /* wValue - Control Selector (CS)    */
                           vdev->iface_stream->if_num,     /* wIndex - Zero and Interface       */
                           sizeof(UVC_STILL_CTRL_PARAM_T), /* wLength - Length of parameter block */
                           (uint8_t *)param,               /* parameter block                   */
@@ -208,13 +228,15 @@ int usbh_uvc_still_image_trigger_control(struct uvc_dev_t *vdev, uint8_t capture
 
     bmRequestType = REQ_TYPE_OUT | REQ_TYPE_CLASS_DEV | REQ_TYPE_TO_IFACE;
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
+    {
         return UVC_RET_DEV_NOT_FOUND;
+    }
 
     bptr[0] = capture;
 
     ret = usbh_ctrl_xfer(vdev->udev, bmRequestType, UVC_SET_CUR,
-                         (VS_STILL_IMAGE_TRIGGER_CONTROL << 8),   /* wValue - Control Selector (CS)    */
+                         (uint16_t)((uint32_t)VS_STILL_IMAGE_TRIGGER_CONTROL << 8U),   /* wValue - Control Selector (CS)    */
                          vdev->iface_stream->if_num,              /* wIndex - Zero and Interface       */
                          1,                                       /* wLength - Length of the data phase*/
                          bptr,                                    /* Trigger capture                   */
@@ -230,31 +252,35 @@ int usbh_uvc_still_image_trigger_control(struct uvc_dev_t *vdev, uint8_t capture
 static int  usbh_uvc_select_alt_interface(struct uvc_dev_t *vdev)
 {
     IFACE_T      *iface;
-    UVC_STRM_T   *vs = &vdev->vs;
-    uint32_t     payload_size = vdev->param.dwMaxPayloadTransferSize;
-    int          i, ret, best = -1;
+    int          i;
+    int          ret;
+    int          best = -1;
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
     {
         UVC_DBGMSG("UVC_RET_DEV_NOT_FOUND \n");
         return UVC_RET_DEV_NOT_FOUND;
     }
 
+    UVC_STRM_T   const *vs = &vdev->vs;
+    uint32_t     payload_size = vdev->param.dwMaxPayloadTransferSize;
 
     /*------------------------------------------------------------------------------------*/
     /*  Find the streaming interface                                                      */
     /*------------------------------------------------------------------------------------*/
     iface = vdev->udev->iface_list;
 
-    while (iface != NULL)
+    while (iface != USBNULL)
     {
         if (iface->if_num == vdev->iface_stream->if_num)
+        {
             break;
+        }
 
         iface = iface->next;
     }
 
-    if (iface == NULL)
+    if (iface == USBNULL)
     {
         UVC_DBGMSG("Can't find UVC streaming interface!\n");
         return UVC_RET_NOT_SUPPORT;
@@ -263,38 +289,48 @@ static int  usbh_uvc_select_alt_interface(struct uvc_dev_t *vdev)
     /*------------------------------------------------------------------------------------*/
     /*  Find the the best alternative interface                                           */
     /*------------------------------------------------------------------------------------*/
-    if (payload_size > 3072)
-        payload_size = 3072;
+    if (payload_size > 3072U)
+    {
+        payload_size = 3072U;
+    }
 
     /*
      *  Find the largest one of those "wMaxPacketSize <= 3072" settings
      */
-    for (i = 0; i < vs->num_of_alt; i++)
+    for (i = 0; i < (int)vs->num_of_alt; i++)
     {
-        if (vs->max_pktsz[i] <= 3072)
+        if (vs->max_pktsz[i] <= 3072U)
         {
             if (best == -1)
+            {
                 best = i;
+            }
             else
             {
                 if (vs->max_pktsz[i] > vs->max_pktsz[best])
+                {
                     best = i;
+                }
             }
         }
     }
 
-    for (i = 0; i < vs->num_of_alt; i++)
+    for (i = 0; i < (int)vs->num_of_alt; i++)
     {
         UVC_DBGMSG("i=%d, best=%d, %d, %d\n", i, best, vs->max_pktsz[i], payload_size);
 
-        if ((vs->max_pktsz[i] >= payload_size) && (vs->max_pktsz[i] <= 3072))
+        if ((vs->max_pktsz[i] >= payload_size) && (vs->max_pktsz[i] <= 3072U))
         {
             if (best == -1)
+            {
                 best = i;
+            }
             else
             {
                 if (vs->max_pktsz[i] < vs->max_pktsz[best])
+                {
                     best = i;
+                }
             }
         }
     }
@@ -316,7 +352,7 @@ static int  usbh_uvc_select_alt_interface(struct uvc_dev_t *vdev)
 
     vdev->ep_iso_in = usbh_iface_find_ep(iface, 0, EP_ADDR_DIR_IN | EP_ATTR_TT_ISO);
 
-    if (vdev->ep_iso_in == NULL)
+    if (vdev->ep_iso_in == USBNULL)
     {
         UVC_DBGMSG("Can't find iso-in enpoint in the selected streaming interface! %d, %d\n", iface->if_num, best);
         return UVC_RET_NOT_SUPPORT;
@@ -343,13 +379,17 @@ int  usbh_get_video_format(UVC_DEV_T *vdev, int index, IMAGE_FORMAT_E *format, i
 {
     UVC_CTRL_T  *vc;
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
+    {
         return UVC_RET_DEV_NOT_FOUND;
+    }
 
     vc = &vdev->vc;
 
-    if (index >= vc->num_of_frames)
+    if ((index < 0) || (index >= (int)vc->num_of_frames))
+    {
         return -1;
+    }
 
     *format = vc->frame_format[index];
     *width  = vc->width[index];
@@ -372,11 +412,17 @@ int  usbh_set_video_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int width, in
 {
     UVC_CTRL_T       *vc;
     UVC_CTRL_PARAM_T *param;
-    int    format_index = -1, frame_index = -1;
-    int    i, ret;
+    uint8_t          format_index_u8;
+    uint8_t          frame_index_u8;
+    int    format_index = -1;
+    int    frame_index = -1;
+    int    i;
+    int    ret;
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
+    {
         return UVC_RET_DEV_NOT_FOUND;
+    }
 
     vc = &vdev->vc;
     param = &vdev->param;
@@ -384,7 +430,7 @@ int  usbh_set_video_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int width, in
     /*------------------------------------------------------------------------------------*/
     /*  Find video format index                                                           */
     /*------------------------------------------------------------------------------------*/
-    for (i = 0; i < vc->num_of_formats; i++)
+    for (i = 0; i < (int)vc->num_of_formats; i++)
     {
         if (vc->format[i] == format)
         {
@@ -402,12 +448,14 @@ int  usbh_set_video_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int width, in
     /*------------------------------------------------------------------------------------*/
     /*  Find video frame index                                                            */
     /*------------------------------------------------------------------------------------*/
-    for (i = 0; i < vc->num_of_frames; i++)
+    for (i = 0; i < (int)vc->num_of_frames; i++)
     {
         if (vc->frame_format[i] != format)
+        {
             continue;
+        }
 
-        if ((vc->width[i] == width) && (vc->height[i] == height))
+        if ((vc->width[i] == (uint16_t)width) && (vc->height[i] == (uint16_t)height))
         {
             frame_index = vc->frame_idx[i];
             break;
@@ -422,6 +470,9 @@ int  usbh_set_video_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int width, in
 
     UVC_DBGMSG("Video format found, bFormatIndex=%d, bFrameIndex=%d\n", format_index, frame_index);
 
+    format_index_u8 = (uint8_t)format_index;
+    frame_index_u8 = (uint8_t)frame_index;
+
     /*------------------------------------------------------------------------------------*/
     /*  Get Video Probe Control                                                           */
     /*------------------------------------------------------------------------------------*/
@@ -433,40 +484,37 @@ int  usbh_set_video_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int width, in
         return ret;
     }
 
-    if ((param->bFormatIndex == format_index) && (param->bFrameIndex == frame_index))
+    if (!((param->bFormatIndex == format_index_u8) && (param->bFrameIndex == frame_index_u8)))
     {
-        goto commit;
+        /*------------------------------------------------------------------------------------*/
+        /*  Set Video Probe Control                                                           */
+        /*------------------------------------------------------------------------------------*/
+
+        param->bFormatIndex = format_index_u8;
+        param->bFrameIndex = frame_index_u8;
+
+        ret = usbh_uvc_probe_control(vdev, UVC_SET_CUR, param);
+
+        if (ret < 0)
+        {
+            UVC_DBGMSG("Set Video Probe Control failed! %d\n", ret);
+            return ret;
+        }
+
+        ret = usbh_uvc_probe_control(vdev, UVC_GET_CUR, param);
+
+        if (ret < 0)
+        {
+            UVC_DBGMSG("Get Video Probe Control failed! %d\n", ret);
+            return ret;
+        }
+
+        if ((param->bFormatIndex != format_index_u8) || (param->bFrameIndex != frame_index_u8))
+        {
+            return UVC_RET_NOT_SUPPORT;
+        }
     }
 
-    /*------------------------------------------------------------------------------------*/
-    /*  Set Video Probe Control                                                           */
-    /*------------------------------------------------------------------------------------*/
-
-    param->bFormatIndex = format_index;
-    param->bFrameIndex = frame_index;
-
-    ret = usbh_uvc_probe_control(vdev, UVC_SET_CUR, param);
-
-    if (ret < 0)
-    {
-        UVC_DBGMSG("Set Video Probe Control failed! %d\n", ret);
-        return ret;
-    }
-
-    ret = usbh_uvc_probe_control(vdev, UVC_GET_CUR, param);
-
-    if (ret < 0)
-    {
-        UVC_DBGMSG("Get Video Probe Control failed! %d\n", ret);
-        return ret;
-    }
-
-    if ((param->bFormatIndex != format_index) && (param->bFrameIndex != frame_index))
-    {
-        return UVC_RET_NOT_SUPPORT;
-    }
-
-commit:
     /*------------------------------------------------------------------------------------*/
     /*  Set Video Commit Control                                                          */
     /*------------------------------------------------------------------------------------*/
@@ -485,20 +533,24 @@ int  usbh_get_video_still_format(UVC_DEV_T *vdev, int index, IMAGE_FORMAT_E *for
 {
     UVC_CTRL_T  *vc;
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
+    {
         return UVC_RET_DEV_NOT_FOUND;
+    }
 
     vc = &vdev->vc;
 
-    if (index >= vc->num_of_still_frames)
+    if ((index < 0) || (index >= (int)vc->num_of_still_frames))
+    {
         return -1;
+    }
 
     *format = vc->still_image_format[index];
     *width  = vc->still_image_width[index];
     *height = vc->still_image_height[index];
     return 0;
 }
-
+#if 0
 int usbh_get_still(UVC_DEV_T *vdev)
 {
     int ret = 0;
@@ -517,7 +569,7 @@ int usbh_get_still(UVC_DEV_T *vdev)
 
     return ret;
 }
-
+#endif
 /**
  *  @brief  Set video still format
  *  @param[in]  vdev    UVC device
@@ -533,11 +585,17 @@ int  usbh_set_video_still_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int wid
 {
     UVC_CTRL_T       *vc;
     UVC_STILL_CTRL_PARAM_T *still_param;
-    int    format_index = -1, frame_index = -1;
-    int    i, ret;
+    uint8_t          format_index_u8;
+    uint8_t          frame_index_u8;
+    int    format_index = -1;
+    int    frame_index = -1;
+    int    i;
+    int    ret;
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
+    {
         return UVC_RET_DEV_NOT_FOUND;
+    }
 
     vc = &vdev->vc;
     still_param = &vdev->still_param;
@@ -545,7 +603,7 @@ int  usbh_set_video_still_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int wid
     /*------------------------------------------------------------------------------------*/
     /*  Find video format index                                                           */
     /*------------------------------------------------------------------------------------*/
-    for (i = 0; i < vc->num_of_formats; i++)
+    for (i = 0; i < (int)vc->num_of_formats; i++)
     {
         if (vc->format[i] == format)
         {
@@ -563,19 +621,23 @@ int  usbh_set_video_still_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int wid
     /*------------------------------------------------------------------------------------*/
     /*  Find video frame index                                                            */
     /*------------------------------------------------------------------------------------*/
-    for (i = 0; i < vc->num_of_frames; i++)
+    for (i = 0; i < (int)vc->num_of_still_frames; i++)
     {
         if (vc->still_image_format[i] != format)
+        {
             continue;
+        }
 
-        if ((vc->still_image_width[i] == width) && (vc->still_image_height[i] == height))
+        if ((vc->still_image_width[i] == (uint16_t)width) && (vc->still_image_height[i] == (uint16_t)height))
         {
             int still_idx = 0;
 
             for (int k = 0; k <= i; k++)
             {
                 if (vc->still_image_format[k] == format)
+                {
                     still_idx++;
+                }
             }
 
             frame_index = still_idx;
@@ -591,6 +653,9 @@ int  usbh_set_video_still_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int wid
 
     UVC_DBGMSG("Video format found, bFormatIndex=%d, bFrameIndex=%d\n", format_index, frame_index);
 
+    format_index_u8 = (uint8_t)format_index;
+    frame_index_u8 = (uint8_t)frame_index;
+
     /*------------------------------------------------------------------------------------*/
     /*  Get Video Still Probe Control                                                           */
     /*------------------------------------------------------------------------------------*/
@@ -602,40 +667,37 @@ int  usbh_set_video_still_format(UVC_DEV_T *vdev, IMAGE_FORMAT_E format, int wid
         return ret;
     }
 
-    if ((still_param->bFormatIndex == format_index) && (still_param->bFrameIndex == frame_index))
+    if (!((still_param->bFormatIndex == format_index_u8) && (still_param->bFrameIndex == frame_index_u8)))
     {
-        goto commit;
+        /*------------------------------------------------------------------------------------*/
+        /*  Set Video Still Probe Control                                                           */
+        /*------------------------------------------------------------------------------------*/
+
+        still_param->bFormatIndex = format_index_u8;
+        still_param->bFrameIndex = frame_index_u8;
+
+        ret = usbh_uvc_still_probe_control(vdev, UVC_SET_CUR, still_param);
+
+        if (ret < 0)
+        {
+            UVC_DBGMSG("Set Video Still Probe Control failed! %d\n", ret);
+            return ret;
+        }
+
+        ret = usbh_uvc_still_probe_control(vdev, UVC_GET_CUR, still_param);
+
+        if (ret < 0)
+        {
+            UVC_DBGMSG("Get Video Still Probe Control failed! %d\n", ret);
+            return ret;
+        }
+
+        if ((still_param->bFormatIndex != format_index_u8) || (still_param->bFrameIndex != frame_index_u8))
+        {
+            return UVC_RET_NOT_SUPPORT;
+        }
     }
 
-    /*------------------------------------------------------------------------------------*/
-    /*  Set Video Still Probe Control                                                           */
-    /*------------------------------------------------------------------------------------*/
-
-    still_param->bFormatIndex = format_index;
-    still_param->bFrameIndex = frame_index;
-
-    ret = usbh_uvc_still_probe_control(vdev, UVC_SET_CUR, still_param);
-
-    if (ret < 0)
-    {
-        UVC_DBGMSG("Set Video Still Probe Control failed! %d\n", ret);
-        return ret;
-    }
-
-    ret = usbh_uvc_still_probe_control(vdev, UVC_GET_CUR, still_param);
-
-    if (ret < 0)
-    {
-        UVC_DBGMSG("Get Video Still Probe Control failed! %d\n", ret);
-        return ret;
-    }
-
-    if ((still_param->bFormatIndex != format_index) || (still_param->bFrameIndex != frame_index))
-    {
-        return UVC_RET_NOT_SUPPORT;
-    }
-
-commit:
     /*------------------------------------------------------------------------------------*/
     /*  Set Video Still Commit Control                                                          */
     /*------------------------------------------------------------------------------------*/
@@ -655,25 +717,34 @@ commit:
 /// @cond HIDDEN_SYMBOLS
 
 
-void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t *buff, int pkt_len)
+static void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t const *buff, int pkt_len)
 {
     UVC_STRM_T   *vs = &vdev->vs;
     //UVC_CTRL_T   *vc = &vdev->vc;
     int          data_len;
+    int          hdr_len;
+    uint8_t      payload_flags;
+
+    hdr_len = (int)buff[0];
+    payload_flags = buff[1];
 
     if (pkt_len < 2)
+    {
         return;                             /* invalid packet                             */
+    }
 
-    if (pkt_len < buff[0])
+    if (pkt_len < hdr_len)
+    {
         return;                             /* unlikely pakcet length error               */
+    }
 
-    data_len = pkt_len - buff[0];
+    data_len = pkt_len - hdr_len;
 
     if (vs->current_frame_error)
     {
-        if (buff[1] & UVC_PL_EOF)           /* error cleared only if EOF met              */
+        if ((payload_flags & UVC_PL_EOF) != 0U) /* error cleared only if EOF met              */
         {
-            vs->current_frame_error = 0;
+            vs->current_frame_error = 0U;
             vdev->img_size = 0;
         }
 
@@ -682,24 +753,26 @@ void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t *buff, int pkt_len)
 
     if (vdev->img_size == 0)                /* Start of a new image                       */
     {
-        if (buff[1] & UVC_PL_STI)
+        if ((payload_flags & UVC_PL_STI) != 0U)
         {
             vdev->img_sti = 1;
-            UVC_DBGMSG("[0x%x]STI bit detected!\n", buff[1]);
+            UVC_DBGMSG("[0x%x]STI bit detected!\n", payload_flags);
         }
 
-        vs->current_frame_toggle = buff[1] & UVC_PL_FID;
+        vs->current_frame_toggle = (uint8_t)(payload_flags & UVC_PL_FID);
 
         if (data_len > 0)
         {
-            memcpy(vdev->img_buff, buff + buff[0], data_len);
+            (void)memcpy(vdev->img_buff, &buff[hdr_len], (size_t)data_len);
             vdev->img_size = data_len;
 
             /* Single-packet video frame: EOF may be set in this same packet */
-            if (buff[1] & UVC_PL_EOF)
+            if ((payload_flags & UVC_PL_EOF) != 0U)
             {
-                if (vdev->func_rx && (vdev->img_size > 0))
-                    vdev->func_rx(vdev, vdev->img_buff, vdev->img_size);
+                if (vdev->func_rx != USBNULL)
+                {
+                    (void)vdev->func_rx(vdev, vdev->img_buff, vdev->img_size);
+                }
 
                 vdev->img_size = 0;
             }
@@ -709,39 +782,43 @@ void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t *buff, int pkt_len)
     }
     else
     {
-        if ((buff[1] & UVC_PL_FID) != vs->current_frame_toggle)
+        if ((uint8_t)(payload_flags & UVC_PL_FID) != vs->current_frame_toggle)
         {
             UVC_DBGMSG("FID toggle error!\n");
-            vs->current_frame_toggle = buff[1] & UVC_PL_FID;
+            vs->current_frame_toggle = (uint8_t)(payload_flags & UVC_PL_FID);
             vdev->img_size = 0;
 
             // Optionally, you can start accumulating new frame data here
             if (data_len > 0)
             {
-                memcpy(vdev->img_buff, buff + buff[0], data_len);
+                (void)memcpy(vdev->img_buff, &buff[hdr_len], (size_t)data_len);
                 vdev->img_size = data_len;
             }
 
             return;
         }
 
-        if (buff[1] & UVC_PL_ERR)
+        if ((payload_flags & UVC_PL_ERR) != 0U)
         {
             UVC_DBGMSG("Payload ERR bit error!\n");
             vs->current_frame_error = 1;
             return;
         }
 
-        if ((buff[1] & UVC_PL_RES) && (buff[1] & UVC_PL_PTS))
+        if (((payload_flags & UVC_PL_RES) != 0U) && ((payload_flags & UVC_PL_PTS) != 0U))
         {
             if (vdev->func_rx && (vdev->img_size > 0))
-                vdev->func_rx(vdev, vdev->img_buff, vdev->img_size);
+            {
+                (void)vdev->func_rx(vdev, vdev->img_buff, vdev->img_size);
+            }
 
             vdev->img_size = 0;
             return;
         }
 
-        if (vdev->img_size + data_len > vdev->img_buff_size)
+        int next_img_size = vdev->img_size + data_len;
+
+        if (next_img_size > vdev->img_buff_size)
         {
             UVC_DBGMSG("Image data overrun!\n");
             vs->current_frame_error = 1;
@@ -750,14 +827,16 @@ void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t *buff, int pkt_len)
 
         if (data_len > 0)
         {
-            memcpy(vdev->img_buff + vdev->img_size, buff + buff[0], data_len);
-            vdev->img_size += data_len;
+            (void)memcpy(&vdev->img_buff[vdev->img_size], &buff[hdr_len], (size_t)data_len);
+            vdev->img_size = next_img_size;
         }
 
-        if (buff[1] & UVC_PL_EOF)
+        if ((payload_flags & UVC_PL_EOF) != 0U)
         {
             if (vdev->func_rx && (vdev->img_size > 0))
-                vdev->func_rx(vdev, vdev->img_buff, vdev->img_size);
+            {
+                (void)vdev->func_rx(vdev, vdev->img_buff, vdev->img_size);
+            }
 
             vdev->img_size = 0;
         }
@@ -768,13 +847,15 @@ void  uvc_parse_streaming_data(UVC_DEV_T *vdev, uint8_t *buff, int pkt_len)
 static void iso_in_irq(UTR_T *utr)
 {
     UVC_DEV_T   *vdev = (UVC_DEV_T *)utr->context;
-    int         i, ret;
+    int         ret;
 
     /* We don't want to do anything if we are about to be removed! */
     if (!vdev || !vdev->udev)
+    {
         return;
+    }
 
-    if (vdev->is_streaming == 0)
+    if (vdev->is_streaming == 0U)
     {
         UVC_DBGMSG("iso_in_irq stop utr 0x%x\n", (int)utr);
         utr->status = USBH_ERR_ABORT;
@@ -783,13 +864,13 @@ static void iso_in_irq(UTR_T *utr)
 
     // UVC_DBGMSG("SF=%d, 0x%x\n", utr->iso_sf, (int)utr);
 
-    utr->bIsoNewSched = 0;
+    utr->bIsoNewSched = 0U;
 
-    for (i = 0; i < IF_PER_UTR; i++)
+    for (uint32_t i = 0; i < (uint32_t)IF_PER_UTR; i++)
     {
         if (utr->iso_status[i] == 0)
         {
-            if (utr->iso_xlen[i] > 2)  /* valid data packet should be larger than 2 bytes (header length) */
+            if (utr->iso_xlen[i] > 2U)  /* valid data packet should be larger than 2 bytes (header length) */
             {
                 uvc_parse_streaming_data(vdev, utr->iso_buff[i], utr->iso_xlen[i]);
             }
@@ -798,7 +879,9 @@ static void iso_in_irq(UTR_T *utr)
         {
             // UVC_DBGMSG("Iso %d err - %d\n", i, utr->iso_status[i]);
             if ((utr->iso_status[i] == USBH_ERR_NOT_ACCESS0) || (utr->iso_status[i] == USBH_ERR_NOT_ACCESS1))
-                utr->bIsoNewSched = 1;
+            {
+                utr->bIsoNewSched = 1U;
+            }
         }
 
         utr->iso_xlen[i] = utr->ep->wMaxPacketSize;
@@ -842,16 +925,26 @@ void usbh_uvc_set_video_buffer(UVC_DEV_T *vdev, uint8_t *image_buff, int img_buf
  */
 int usbh_uvc_start_streaming(UVC_DEV_T *vdev, UVC_CB_FUNC *func)
 {
-    UDEV_T       *udev = vdev->udev;
     EP_INFO_T    *ep;
     UTR_T        *utr;
-    int          i, j, ret;
+    int          ret;
+    uint32_t     i;
+    uint32_t     j;
+    uint32_t     utr_offset;
+    uint32_t     iso_offset;
+    uint8_t      started_xfer = 0U;
 
-    if ((vdev == NULL) || (func == NULL))
+    if ((vdev == USBNULL) || (func == USBNULL))
+    {
         return UVC_RET_INVALID;
+    }
+
+    UDEV_T       *udev = vdev->udev;
 
     if (vdev->is_streaming)
+    {
         return UVC_RET_IS_STREAMING;
+    }
 
     /*
      *  Select the best alternative streaming interface and also determine the endpoint.
@@ -878,7 +971,7 @@ int usbh_uvc_start_streaming(UVC_DEV_T *vdev, UVC_CB_FUNC *func)
     /*------------------------------------------------------------------------------------*/
     for (i = 0; i < UVC_UTR_PER_STREAM; i++)
     {
-        if (vdev->utr_rx[i] != NULL)
+        if (vdev->utr_rx[i] != USBNULL)
         {
             vdev->utr_rx[i]->status = 0;
             continue;
@@ -886,28 +979,45 @@ int usbh_uvc_start_streaming(UVC_DEV_T *vdev, UVC_CB_FUNC *func)
 
         utr = alloc_utr(udev);              /* allocate UTR                               */
 
-        if (utr == NULL)
+        if (utr == USBNULL)
         {
             ret = USBH_ERR_MEMORY_OUT;      /* memory allocate failed                     */
-            goto err_2;                     /* abort                                      */
+            break;                          /* abort                                      */
         }
+
+        utr_offset = i * UVC_UTR_INBUF_SIZE;
 
         vdev->utr_rx[i] = utr;
-        utr->buff = vdev->in_buff + i * UVC_UTR_INBUF_SIZE;
+        utr->buff = &vdev->in_buff[utr_offset];
         utr->data_len = UVC_UTR_INBUF_SIZE;
 
-        for (j = 0; j < IF_PER_UTR; j++)
+        for (j = 0; j < (uint32_t)IF_PER_UTR; j++)
         {
-            utr->iso_buff[j] = utr->buff + j * 3072;
+            iso_offset = j * 3072U;
+            utr->iso_buff[j] = &utr->buff[iso_offset];
             utr->iso_xlen[j] = ep->wMaxPacketSize;
         }
+    }
+
+    if (ret == USBH_ERR_MEMORY_OUT)
+    {
+        for (i = 0; i < UVC_UTR_PER_STREAM; i++)    /* free all UTRs                          */
+        {
+            if (vdev->utr_rx[i] != USBNULL)
+            {
+                free_utr(vdev->utr_rx[i]);
+                vdev->utr_rx[i] = USBNULL;
+            }
+        }
+
+        return ret;
     }
 
     /*------------------------------------------------------------------------------------*/
     /*  Start UTRs                                                                        */
     /*------------------------------------------------------------------------------------*/
 
-    vdev->utr_rx[0]->bIsoNewSched = 1;
+    vdev->utr_rx[0]->bIsoNewSched = 1U;
     vdev->is_streaming = 1;
 
     for (i = 0; i < UVC_UTR_PER_STREAM; i++)
@@ -921,27 +1031,30 @@ int usbh_uvc_start_streaming(UVC_DEV_T *vdev, UVC_CB_FUNC *func)
         if (ret < 0)
         {
             UVC_DBGMSG("Error - failed to start UTR %d isochronous-in transfer (%d)", i, ret);
-            goto err_1;
+            started_xfer = 1U;
+            break;
         }
     }
 
-    return UVC_RET_OK;
-
-err_1:
-
-    for (i = 0; i < UVC_UTR_PER_STREAM; i++)
+    if (ret >= 0)
     {
-        usbh_quit_utr(vdev->utr_rx[i]);         /* quit all UTRs                          */
+        return UVC_RET_OK;
     }
 
-err_2:
+    if (started_xfer != 0U)
+    {
+        for (i = 0; i < UVC_UTR_PER_STREAM; i++)
+        {
+            (void)usbh_quit_utr(vdev->utr_rx[i]);   /* quit all UTRs                          */
+        }
+    }
 
     for (i = 0; i < UVC_UTR_PER_STREAM; i++)    /* free all UTRs                          */
     {
-        if (vdev->utr_rx[i] != NULL)
+        if (vdev->utr_rx[i] != USBNULL)
         {
             free_utr(vdev->utr_rx[i]);
-            vdev->utr_rx[i] = NULL;
+            vdev->utr_rx[i] = USBNULL;
         }
     }
 
@@ -960,30 +1073,34 @@ int usbh_uvc_stop_streaming(UVC_DEV_T *vdev)
 {
     IFACE_T   *iface;
     int       ret;
-    int       i = 0;
+    uint32_t       i = 0;
 
-    if (vdev == NULL)
+    if (vdev == USBNULL)
+    {
         return UVC_RET_INVALID;
+    }
 
     if (!vdev->is_streaming)
+    {
         return UVC_RET_OK;                  /* UVC is currently not straming, do nothing  */
+    }
 
     vdev->is_streaming = 0;
 
     //quit iso utr and free utr when stop streaming.
     for (i = 0; i < UVC_UTR_PER_STREAM; i++)
     {
-        usbh_quit_utr(vdev->utr_rx[i]);         /* quit all UTRs                          */
+        (void)usbh_quit_utr(vdev->utr_rx[i]);   /* quit all UTRs                          */
     }
 
     delay_us(200 * 1000); //wait 200ms, host need time to quit UTRs.
 
     for (i = 0; i < UVC_UTR_PER_STREAM; i++)   /* free all UTRs                          */
     {
-        if (vdev->utr_rx[i] != NULL)
+        if (vdev->utr_rx[i] != USBNULL)
         {
             free_utr(vdev->utr_rx[i]);
-            vdev->utr_rx[i] = NULL;
+            vdev->utr_rx[i] = USBNULL;
         }
     }
 
@@ -992,15 +1109,17 @@ int usbh_uvc_stop_streaming(UVC_DEV_T *vdev)
     /*------------------------------------------------------------------------------------*/
     iface = vdev->udev->iface_list;
 
-    while (iface != NULL)
+    while (iface != USBNULL)
     {
         if (iface->if_num == vdev->iface_stream->if_num)
+        {
             break;
+        }
 
         iface = iface->next;
     }
 
-    if (iface == NULL)
+    if (iface == USBNULL)
     {
         UVC_DBGMSG("Can't find UVC streaming interface!\n");
         return UVC_RET_NOT_SUPPORT;

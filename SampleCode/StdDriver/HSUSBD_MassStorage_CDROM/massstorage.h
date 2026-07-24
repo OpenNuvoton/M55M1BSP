@@ -129,9 +129,9 @@ extern unsigned char eprom[MSC_ImageSize];      /* Disk Image */
 #define STORAGE_BUFFER_SIZE 4096                /* Data transfer buffer size in 4096 bytes alignment */
 #define CDROM_BLOCK_SIZE    2048                /* Logic sector size */
 
-extern uint8_t gStorageBuf[];
+extern uint8_t g_au8StorageBuf[];
 
-#define STORAGE_DATA_BUF   ((uint32_t)&gStorageBuf[0])
+#define STORAGE_DATA_BUF   ((uint32_t)&g_au8StorageBuf[0])
 
 /*-------------------------------------------------------------*/
 void MSC_Init(void);

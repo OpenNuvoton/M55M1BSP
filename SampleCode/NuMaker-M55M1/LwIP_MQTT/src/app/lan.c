@@ -114,11 +114,12 @@ typedef struct
 
 static _S_MQTT_CLIENT_INFO *subs_cinfo = 0;
 static TaskHandle_t subs_tsk_handle = 0;
+static SemaphoreHandle_t mqtt_mutex = 0;
 
 static void __connect_subscribe_failupcall(_S_MQTT_CLIENT_INFO *cinfo)
 {
-    TRACE("mqtt recv process could not re-connect when the connection failed");
-    xTaskNotify(subs_tsk_handle, 0, eSetValueWithoutOverwrite);
+    TRACE("mqtt connection failed, notifying main task for reconnection");
+    xTaskNotify(subs_tsk_handle, 1, eSetValueWithOverwrite);
 }
 
 static _S_MQTT_CLIENT_INFO *__client_init(const _S_MQTT_COMMON *s, _S_MQTT_CLIENT_INFO *c,
@@ -134,8 +135,14 @@ static _S_MQTT_CLIENT_INFO *__client_init(const _S_MQTT_COMMON *s, _S_MQTT_CLIEN
         if (c)
         {
             TRACE("Creating connection options...");
-            char unique_client_id[32];
-            sprintf(unique_client_id, "NuMaker_%lu", (unsigned long)xTaskGetTickCount());
+            static char unique_client_id[32];
+
+            SYS_UnlockReg();
+            FMC_Open();
+            sprintf(unique_client_id, "NuMaker_%lu", (unsigned long)(FMC_ReadUID(0)^FMC_ReadUID(1)^FMC_ReadUID(2)));
+            FMC_Close();
+            SYS_LockReg();
+
             TRACE("Using Client ID: %s", unique_client_id);
             options = mqtt_client_connect_options(unique_client_id, 60, 1, s->username, s->password);
         }
@@ -162,8 +169,8 @@ static _S_MQTT_CLIENT_INFO *__client_init(const _S_MQTT_COMMON *s, _S_MQTT_CLIEN
             break;
         }
 
-        TRACE("Connection failed, retrying in 50 seconds...");
-        vTaskDelay(50000);
+        TRACE("Connection failed, retrying in 10 seconds...");
+        vTaskDelay(10000);
     }
 
     TRACE("Client initialization completed, connection status: %s",
@@ -254,6 +261,16 @@ static void __mqtt_test(void *pv)
     tls_configuration_t *conf = lwip_tls_new_conf(TLS_AUTH_SSL_VERIFY_NONE, ENDNODE_CLIENT);
     tls_context_t *ssl; //clyu
 
+    // Create mutex for MQTT operations
+    mqtt_mutex = xSemaphoreCreateMutex();
+
+    if (mqtt_mutex == NULL)
+    {
+        TRACE("Failed to create MQTT mutex!");
+        vTaskSuspend(NULL);
+        return;
+    }
+
     TRACE("Current Heap in LAN:%d", xPortGetFreeHeapSize());
     TRACE("Starting MQTT client initialization...");
 
@@ -277,10 +294,18 @@ static void __mqtt_test(void *pv)
 
     do
     {
-        if (subs_cinfo)
+        // Check for notifications from MQTT recv process
+        uint32_t notification_value = 0;
+
+        if (xTaskNotifyWait(0, ULONG_MAX, &notification_value, 0) == pdTRUE)
         {
-            // Check connection status
-            if (mqtt_client_is_connected(subs_cinfo))
+            TRACE("Received notification: connection failure detected by recv process");
+        }
+
+        if (xSemaphoreTake(mqtt_mutex, pdMS_TO_TICKS(1000)) == pdTRUE)
+        {
+            // Always check connection status, even if subs_cinfo is NULL
+            if (subs_cinfo && mqtt_client_is_connected(subs_cinfo))
             {
                 TRACE("MQTT Client is connected. Publishing messages...");
                 static uint32_t test_counter = 0;
@@ -291,15 +316,38 @@ static void __mqtt_test(void *pv)
                 TRACE("Publishing: '%s' to topic 'test/message'", simple_msg);
                 _E_MQTT_ERRORS result1 = mqtt_client_publish(subs_cinfo, "test/message", simple_msg, strlen(simple_msg), 0);
                 TRACE("Result: %d", result1);
+
+                // If publish fails, treat as disconnection
+                if (result1 != MQTT_ERROR_NONE)
+                {
+                    TRACE("Publish failed with error %d, treating as disconnection", result1);
+                    // Force reconnection on next iteration
+                }
             }
             else
             {
+                // Either subs_cinfo is NULL or not connected - attempt reconnection
                 TRACE("MQTT client disconnected! Attempting reconnection...");
-                subs_cinfo = __client_init(&mc, subs_cinfo, __connect_subscribe_failupcall, conf);
+
+                // Always create a new client for reconnection to avoid any issues
+                TRACE("Creating new client for reconnection...");
+                subs_cinfo = __client_init(&mc, NULL, __connect_subscribe_failupcall, conf);
+
+                if (subs_cinfo && mqtt_client_is_connected(subs_cinfo))
+                {
+                    TRACE("Reconnection successful, re-subscribing to topics...");
+                    mqtt_client_subscribe(subs_cinfo, "office/light1", 2, __subscribe_upcall);
+                }
+                else
+                {
+                    TRACE("Reconnection failed, will retry in next cycle");
+                }
             }
+
+            xSemaphoreGive(mqtt_mutex);
         }
 
-        // Wait 10 seconds or receive notification
+        // Wait 10 seconds or receive notification for faster reconnection
         TRACE("Waiting for next publish cycle...");
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(10000));
     } while (1);

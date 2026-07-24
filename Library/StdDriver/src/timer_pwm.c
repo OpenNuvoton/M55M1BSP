@@ -55,11 +55,15 @@ void TPWM_SetCounterClockSource(TIMER_T *timer, uint32_t u32CntClkSrc)
   */
 uint32_t TPWM_ConfigOutputFreqAndDuty(TIMER_T *timer, uint32_t u32Frequency, uint32_t u32DutyCycle)
 {
-    uint32_t u32PWMClockFreq, u32TargetFreq;
-    uint32_t u32Prescaler = 0x1000UL, u32Period = 1UL;
+    uint32_t u32PWMClockFreq;
+    uint32_t u32TargetFreq;
+    uint32_t u32Prescaler = 0x1000UL;
+    uint32_t u32Period = 1UL;
 
-    if (u32Frequency == 0)
+    if (u32Frequency == 0UL)
+    {
         return u32Frequency;
+    }
 
     if ((timer == TIMER0) || (timer == TIMER1))
     {
@@ -71,7 +75,9 @@ uint32_t TPWM_ConfigOutputFreqAndDuty(TIMER_T *timer, uint32_t u32Frequency, uin
     }
 
     if (u32Frequency > u32PWMClockFreq)
-        return 0;
+    {
+        return 0UL;
+    }
 
     /* Calculate u32Period and u32Prescaler */
     for (u32Prescaler = 1UL; u32Prescaler <= 0x1000UL; u32Prescaler++)
@@ -201,7 +207,7 @@ void TPWM_DisableCounter(TIMER_T *timer)
   */
 void TPWM_EnableTriggerEADC(TIMER_T *timer, uint32_t u32Condition)
 {
-    timer->PWMTRGCTL = TIMER_PWMTRGCTL_TRGEADC_Msk | u32Condition;
+    timer->PWMTRGCTL = TIMER_PWMTRGCTL_TRGEADC_Msk | ((u32Condition) & TIMER_PWMTRGCTL_TRGSEL_Msk);
 }
 
 /**
@@ -314,7 +320,7 @@ void TPWM_DisableFaultBrakeInt(TIMER_T *timer, uint32_t u32IntSource)
   *
   * @details    This function is used to indicate fault brake interrupt flag occurred or not of selected source.
   */
-uint32_t TPWM_GetFaultBrakeIntFlag(TIMER_T *timer, uint32_t u32IntSource)
+uint32_t TPWM_GetFaultBrakeIntFlag(const TIMER_T *timer, uint32_t u32IntSource)
 {
     return ((timer->PWMINTSTS1 & (0x3UL << u32IntSource)) ? 1UL : 0UL);
 }
@@ -384,9 +390,9 @@ void TPWM_SetLoadMode(TIMER_T *timer, uint32_t u32LoadMode)
 void TPWM_EnableBrakePinDebounce(TIMER_T *timer, uint32_t u32BrakePinSrc, uint32_t u32DebounceCnt, uint32_t u32ClkSrcSel)
 {
     timer->PWMBNF = (timer->PWMBNF & ~(TIMER_PWMBNF_BKPINSRC_Msk | TIMER_PWMBNF_BRKFCNT_Msk | TIMER_PWMBNF_BRKNFSEL_Msk)) |
-                    (u32BrakePinSrc << TIMER_PWMBNF_BKPINSRC_Pos) |
-                    (u32DebounceCnt << TIMER_PWMBNF_BRKFCNT_Pos) |
-                    (u32ClkSrcSel << TIMER_PWMBNF_BRKNFSEL_Pos) | TIMER_PWMBNF_BRKNFEN_Msk;
+                    ((u32BrakePinSrc << TIMER_PWMBNF_BKPINSRC_Pos) & TIMER_PWMBNF_BKPINSRC_Msk) |
+                    ((u32DebounceCnt << TIMER_PWMBNF_BRKFCNT_Pos) & TIMER_PWMBNF_BRKFCNT_Msk) |
+                    ((u32ClkSrcSel << TIMER_PWMBNF_BRKNFSEL_Pos) & TIMER_PWMBNF_BRKNFSEL_Msk) | TIMER_PWMBNF_BRKNFEN_Msk;
 }
 
 /**
@@ -457,7 +463,7 @@ void TPWM_SetBrakePinSource(TIMER_T *timer, uint32_t u32BrakePinNum)
 void TPWM_EnableAcc(TIMER_T *timer, uint32_t u32IntFlagCnt, uint32_t u32IntAccSrc)
 {
     timer->PWMIFA = (((timer)->PWMIFA & ~(TIMER_PWMIFA_IFACNT_Msk | TIMER_PWMIFA_IFASEL_Msk | TIMER_PWMIFA_STPMOD_Msk))
-                     | (TIMER_PWMIFA_IFAEN_Msk | (u32IntFlagCnt << TIMER_PWMIFA_IFACNT_Pos) | (u32IntAccSrc << TIMER_PWMIFA_IFASEL_Pos)));
+                     | (TIMER_PWMIFA_IFAEN_Msk | (u32IntFlagCnt & TIMER_PWMIFA_IFACNT_Msk) | ((u32IntAccSrc & 0x3UL) << TIMER_PWMIFA_IFASEL_Pos)));
 }
 
 /**
@@ -511,7 +517,7 @@ void TPWM_ClearAccInt(TIMER_T *timer)
   * @retval     1   Accumulator interrupt occurred
   * @details    This function is used to get interrupt flag accumulator interrupt.
   */
-uint32_t TPWM_GetAccInt(TIMER_T *timer)
+uint32_t TPWM_GetAccInt(const TIMER_T *timer)
 {
     return (((timer)->PWMAINTSTS & TIMER_PWMAINTSTS_IFAIF_Msk) ? 1UL : 0UL);
 }
@@ -582,7 +588,8 @@ void TPWM_DisableAccStopMode(TIMER_T *timer)
 void TPWM_EnableExtEventTrigger(TIMER_T *timer, uint32_t u32ExtEventSrc, uint32_t u32CounterAction)
 {
     timer->PWMEXTETCTL = (((timer)->PWMEXTETCTL & ~(TIMER_PWMEXTETCTL_EXTTRGS_Msk | TIMER_PWMEXTETCTL_CNTACTS_Msk))
-                          | (TIMER_PWMEXTETCTL_EXTETEN_Msk | (u32ExtEventSrc << TIMER_PWMEXTETCTL_EXTTRGS_Pos) | (u32CounterAction << TIMER_PWMEXTETCTL_CNTACTS_Pos)));
+                          | (TIMER_PWMEXTETCTL_EXTETEN_Msk | ((u32ExtEventSrc << TIMER_PWMEXTETCTL_EXTTRGS_Pos) & TIMER_PWMEXTETCTL_EXTTRGS_Msk) | ((u32CounterAction << TIMER_PWMEXTETCTL_CNTACTS_Pos) &
+                              TIMER_PWMEXTETCTL_CNTACTS_Msk)));
 }
 
 /**

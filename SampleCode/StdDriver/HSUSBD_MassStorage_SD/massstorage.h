@@ -22,7 +22,7 @@
 // Define SD Card Maximum Transfer length
 // The real buffer space is from g_u32StorageBase to (g_u32StorageBase + USBD_MAX_SD_SECTOR * 512)
 #define USBD_MAX_SD_SECTOR  64      // unit is sector, 64 sectors = 32KB
-#define USBD_MAX_SD_LEN     32768   // unit is byte, MUST keep USBD_MAX_SD_LEN = USBD_MAX_SD_SECTOR * USBD_SECTOR_SIZE
+#define USBD_MAX_SD_LEN     32768   // unit is byte, MUST keep USBD_MAX_SD_LEN = USBD_MAX_SD_SECTOR * USBD_SECTOR_SIZE             
 
 /* Define EP maximum packet size */
 #define CEP_MAX_PKT_SIZE        64
@@ -115,6 +115,9 @@ struct CSW
     uint32_t  dCSWDataResidue;
     uint8_t   bCSWStatus;
 };
+
+/*-------------------------------------------------------------*/
+#define MASS_BUFFER_SIZE           256         /* Mass Storage command buffer size */
 
 /*-------------------------------------------------------------*/
 void MSC_Init(void);

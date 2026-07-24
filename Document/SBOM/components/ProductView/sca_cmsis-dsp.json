@@ -1,0 +1,72 @@
+{
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:github/arm-software/CMSIS-DSP@1.16.2?source=vendored&path=Library/CMSIS/DSP",
+      "name": "CMSIS-DSP",
+      "version": "1.16.2",
+      "scope": "optional",
+      "author": "Arm Limited",
+      "purl": "pkg:github/arm-software/CMSIS-DSP@1.16.2",
+      "description": "Arm CMSIS-DSP source subset vendored in Library/CMSIS/DSP, including DSP function headers and source files, private implementation headers, and ComputeLibrary-derived support files.",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        },
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "Library/CMSIS/DSP"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_source_subset"
+        },
+        {
+          "name": "bsp:included-paths",
+          "value": "Library/CMSIS/DSP/Include; Library/CMSIS/DSP/Source; Library/CMSIS/DSP/ComputeLibrary; Library/CMSIS/DSP/dsppp; Library/CMSIS/DSP/PrivateInclude"
+        },
+        {
+          "name": "bsp:upstream-repository",
+          "value": "https://github.com/ARM-software/CMSIS-DSP"
+        },
+        {
+          "name": "bsp:upstream-tag",
+          "value": "v1.16.2"
+        },
+        {
+          "name": "bsp:upstream-commit",
+          "value": "d5717e454fec0337bef114a21f1d2d01d74f2701"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "third-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "Arm CMSIS-DSP"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/cmsis/sca_cmsis-dsp.json"
+        },
+        {
+          "name": "bsp:evidence-path",
+          "value": "Library/CMSIS/DSP"
+        },
+        {
+          "name": "bsp:license-evidence",
+          "value": "Library/CMSIS/DSP/Include/arm_math.h (Apache-2.0); Library/CMSIS/DSP/ComputeLibrary/README.md and Library/CMSIS/DSP/ComputeLibrary/Include/NEMath.h (MIT)"
+        }
+      ]
+    }
+  ]
+}

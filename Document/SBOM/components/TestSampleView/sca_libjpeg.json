@@ -1,0 +1,60 @@
+{
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/libjpeg@9b?source=vendored&path=ThirdParty/libjpeg",
+      "name": "libjpeg",
+      "version": "9b",
+      "scope": "required",
+      "author": "Independent JPEG Group",
+      "purl": "pkg:generic/libjpeg@9b",
+      "cpe": "cpe:2.3:a:ijg:libjpeg:9b:*:*:*:*:*:*:*",
+      "description": "Independent JPEG Group libjpeg vendored in ThirdParty/libjpeg, including JPEG compression/decompression library sources, command-line tools, build scripts, documentation, and test images.",
+      "licenses": [
+        {
+          "license": {
+            "name": "Independent JPEG Group license"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "src_path",
+          "value": "ThirdParty/libjpeg"
+        },
+        {
+          "name": "integration",
+          "value": "vendored_source"
+        },
+        {
+          "name": "libjpeg_release",
+          "value": "9b"
+        },
+        {
+          "name": "bsp:component-origin",
+          "value": "third-party"
+        },
+        {
+          "name": "bsp:component-source",
+          "value": "Independent JPEG Group libjpeg"
+        },
+        {
+          "name": "bsp:evidence-file",
+          "value": "Document/SBOM/components/sca_libjpeg.json"
+        },
+        {
+          "name": "bsp:evidence-path",
+          "value": "ThirdParty/libjpeg"
+        },
+        {
+          "name": "bsp:version-evidence",
+          "value": "ThirdParty/libjpeg/README; ThirdParty/libjpeg/jversion.h"
+        },
+        {
+          "name": "bsp:license-evidence",
+          "value": "ThirdParty/libjpeg/README"
+        }
+      ]
+    }
+  ]
+}

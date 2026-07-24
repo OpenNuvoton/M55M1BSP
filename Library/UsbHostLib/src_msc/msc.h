@@ -15,9 +15,8 @@
 /// @cond HIDDEN_SYMBOLS
 
 //#define MSC_DEBUG
-
 #ifdef MSC_DEBUG
-    #define msc_debug_msg       printf
+    #define msc_debug_msg       (void)usbh_printf
 #else
     #define msc_debug_msg(...)
 #endif
@@ -106,6 +105,7 @@ typedef struct msc_t
     struct msc_t  *next;                 /* point to next MSC device                      */
 }  MSC_T;
 
+extern MSC_T  *g_msc_list;
 extern int  run_scsi_command(MSC_T *msc, uint8_t *buff, uint32_t data_len, int bIsDataIn, int timeout_ticks);
 
 /// @endcond

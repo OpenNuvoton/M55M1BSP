@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 /*!<Includes */
+#include <stdio.h>
 #include <string.h>
 #include "NuMicro.h"
 #include "hid_transfer.h"

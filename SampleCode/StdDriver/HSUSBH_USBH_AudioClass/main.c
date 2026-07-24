@@ -17,6 +17,7 @@
 
 #define USE_USB_APLL1_CLOCK         1
 #define AUDIO_IN_BUFSIZ             8192
+#define UAC_SAMPLE_FREQUENCY        48000
 
 #ifdef DEBUG_ENABLE_SEMIHOST
     #error This sample cannot execute with semihost enabled
@@ -257,13 +258,20 @@ int audio_out_callback(UAC_DEV_T *dev, uint8_t *pu8Data, int i8Len)
 void uac_control_example(UAC_DEV_T *uac_dev)
 {
     uint16_t u16Val;
-    uint32_t au32SRate[4];
+    uint32_t au32SRate[16];
     uint8_t u8Val;
     uint8_t au8Data[8];
     int i8Cnt, i8Ret;
     uint32_t u32Val;
 
     s_u16VolMax = s_u16VolMin = s_u16VolRes = 0;
+
+    printf("\n====== UAC Control API Validation (Phase 6B) ======\n");
+    printf("UAC version: 0x%04x (%s)\n", uac_dev->acif.bcdADC,
+           (uac_dev->acif.bcdADC >= 0x0200) ? "UAC 2.0" : "UAC 1.0");
+
+    if (uac_dev->acif.bcdADC >= 0x0200)
+        printf("Clock Source ID: 0x%02x\n", uac_dev->acif.clk_src_id);
 
     printf("\nGet channel information ===>\n");
 
@@ -316,7 +324,7 @@ void uac_control_example(UAC_DEV_T *uac_dev)
     /*-------------------------------------------------------------*/
     /*  Get audio subframe bit resolution information              */
     /*-------------------------------------------------------------*/
-    i8Ret = usbh_uac_get_sampling_rate(uac_dev, UAC_SPEAKER, (uint32_t *)&au32SRate[0], 4, &u8Val);
+    i8Ret = usbh_uac_get_sampling_rate(uac_dev, UAC_SPEAKER, (uint32_t *)&au32SRate[0], 16, &u8Val);
 
     if (i8Ret < 0)
         printf("    Failed to get speaker's sampling rate.\n");
@@ -331,7 +339,7 @@ void uac_control_example(UAC_DEV_T *uac_dev)
         }
     }
 
-    i8Ret = usbh_uac_get_sampling_rate(uac_dev, UAC_MICROPHONE, (uint32_t *)&au32SRate[0], 4, &u8Val);
+    i8Ret = usbh_uac_get_sampling_rate(uac_dev, UAC_MICROPHONE, (uint32_t *)&au32SRate[0], 16, &u8Val);
 
     if (i8Ret < 0)
         printf("    Failed to get microphone's sampling rate.\n");
@@ -344,6 +352,83 @@ void uac_control_example(UAC_DEV_T *uac_dev)
             for (i8Cnt = 0; i8Cnt < u8Val; i8Cnt++)
                 printf("    Microphone sampling rate: %d\n", au32SRate[i8Cnt]);
         }
+    }
+
+    /*-------------------------------------------------------------*/
+    /*  UAC 2.0: Clock Source direct API tests                     */
+    /*-------------------------------------------------------------*/
+    if (uac_dev->acif.bcdADC >= 0x0200)
+    {
+        UAC2_FREQ_SUBRANGE_T ranges[16];
+        uint16_t num_ranges;
+        uint32_t freq;
+
+        printf("\n[UAC 2.0] Clock Source direct API tests ===>\n");
+
+        /* Get current clock frequency */
+        if (usbh_uac2_clock_get_freq(uac_dev, UAC_SPEAKER, &freq) == UAC_RET_OK)
+            printf("    Current clock frequency: %d Hz\n", freq);
+        else
+            printf("    Failed to get current clock frequency!\n");
+
+        /* Get supported frequency range */
+        i8Ret = usbh_uac2_clock_get_freq_range(uac_dev, ranges, 16, &num_ranges, UAC_SPEAKER);
+
+        if (i8Ret == UAC_RET_OK)
+        {
+            printf("    Supported frequency ranges (%d):\n", num_ranges);
+
+            for (i8Cnt = 0; i8Cnt < (int)num_ranges && i8Cnt < 16; i8Cnt++)
+                printf("      [%d] %d - %d Hz (res=%d)\n", i8Cnt,
+                       ranges[i8Cnt].dMIN, ranges[i8Cnt].dMAX, ranges[i8Cnt].dRES);
+        }
+        else
+            printf("    Failed to get frequency range! (ret=%d)\n", i8Ret);
+
+        /* Set frequency to 48000 Hz */
+        if (usbh_uac2_clock_set_freq(uac_dev, UAC_SPEAKER, UAC_SAMPLE_FREQUENCY) == UAC_RET_OK)
+            printf("    Set clock frequency: OK\n");
+        else
+            printf("    Set clock frequency: FAIL\n");
+
+        /* Verify frequency after set */
+        if (usbh_uac2_clock_get_freq(uac_dev, UAC_SPEAKER, &freq) == UAC_RET_OK)
+            printf("    Verify clock frequency: %d Hz\n", freq);
+        else
+            printf("    Failed to verify clock frequency!\n");
+
+        //Test Mircophone clock source if supported
+        /* Get current clock frequency */
+        if (usbh_uac2_clock_get_freq(uac_dev, UAC_MICROPHONE, &freq) == UAC_RET_OK)
+            printf("    Current clock frequency: %d Hz\n", freq);
+        else
+            printf("    Failed to get current clock frequency!\n");
+
+        /* Get supported frequency range */
+        i8Ret = usbh_uac2_clock_get_freq_range(uac_dev, ranges, 16, &num_ranges, UAC_MICROPHONE);
+
+        if (i8Ret == UAC_RET_OK)
+        {
+            printf("    Supported frequency ranges (%d):\n", num_ranges);
+
+            for (i8Cnt = 0; i8Cnt < (int)num_ranges && i8Cnt < 16; i8Cnt++)
+                printf("      [%d] %d - %d Hz (res=%d)\n", i8Cnt,
+                       ranges[i8Cnt].dMIN, ranges[i8Cnt].dMAX, ranges[i8Cnt].dRES);
+        }
+        else
+            printf("    Failed to get frequency range! (ret=%d)\n", i8Ret);
+
+        /* Set frequency to 48000 Hz */
+        if (usbh_uac2_clock_set_freq(uac_dev, UAC_MICROPHONE, UAC_SAMPLE_FREQUENCY) == UAC_RET_OK)
+            printf("    Mic    Set clock frequency: OK\n");
+        else
+            printf("    Mic    Set clock frequency: FAIL\n");
+
+        /* Verify frequency after set */
+        if (usbh_uac2_clock_get_freq(uac_dev, UAC_MICROPHONE, &freq) == UAC_RET_OK)
+            printf("    Mic    Verify clock frequency: %d Hz\n", freq);
+        else
+            printf("    Mic    Failed to verify clock frequency!\n");
     }
 
     printf("\nSpeaker mute control ===>\n");
@@ -539,7 +624,7 @@ void uac_control_example(UAC_DEV_T *uac_dev)
     /*-------------------------------------------------------------*/
     /*  Set new sampling rate value of UAC device's speaker.       */
     /*-------------------------------------------------------------*/
-    u32Val = 48000;
+    u32Val = UAC_SAMPLE_FREQUENCY;
 
     if (usbh_uac_sampling_rate_control(uac_dev, UAC_SPEAKER, UAC_SET_CUR, &u32Val) != UAC_RET_OK)
         printf("    Failed to set Speaker's current sampling rate %d.\n", u32Val);
@@ -560,7 +645,7 @@ void uac_control_example(UAC_DEV_T *uac_dev)
     /*-------------------------------------------------------------*/
     /*  Set new sampling rate value of UAC device's microphone.    */
     /*-------------------------------------------------------------*/
-    u32Val = 48000;
+    u32Val = UAC_SAMPLE_FREQUENCY;
 
     if (usbh_uac_sampling_rate_control(uac_dev, UAC_MICROPHONE, UAC_SET_CUR, &u32Val) != UAC_RET_OK)
         printf("    Failed to set microphone's current sampling rate!\n");

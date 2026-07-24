@@ -7,6 +7,8 @@
  * @copyright Copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
  ******************************************************************************/
 
+#if defined (__GNUC__) && !defined(__ARMCC_VERSION)
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -14,6 +16,34 @@
 #include <errno.h>
 #include "NuMicro.h"
 
+/* Add dummy definition to suppress cppcheck unknownMacro error. */
+#ifndef __ALIGNED
+    #define __ALIGNED(x)    __attribute__((aligned(x)))
+#endif
+
+#ifndef   __WEAK
+    #define __WEAK          __attribute__((weak))
+#endif
+
+#ifndef STDIN_ECHO
+    #define STDIN_ECHO      0
+#endif
+
+/* Standard IO device handles. */
+#ifndef STDIN_FILENO
+    #define STDIN_FILENO        0x00
+#endif
+
+#ifndef STDOUT_FILENO
+    #define STDOUT_FILENO       0x01
+#endif
+
+#ifndef STDERR_FILENO
+    #define STDERR_FILENO       0x02
+#endif
+
+#define RETARGET(fun)       fun
+#define IO_OUTPUT(len)      len
 
 /*
  * This type is used by the _ I/O functions to denote an open
@@ -26,19 +56,10 @@ typedef int FILEHANDLE;
  */
 extern FILEHANDLE _open(const char * /*name*/, int /*openmode*/);
 
-/* Standard IO device handles. */
-#define STDIN  0x00
-#define STDOUT 0x01
-#define STDERR 0x02
-
-#define RETARGET(fun)  fun
-#define IO_OUTPUT(len) len
-
-
 /* Standard IO device name defines. */
-const __WEAK __ALIGNED(4) char __stdin_name [] = "STDIN";
-const __WEAK __ALIGNED(4) char __stdout_name[] = "STDOUT";
-const __WEAK __ALIGNED(4) char __stderr_name[] = "STDERR";
+__WEAK __ALIGNED(4) const char __stdin_name [] = "STDIN";
+__WEAK __ALIGNED(4) const char __stdout_name[] = "STDOUT";
+__WEAK __ALIGNED(4) const char __stderr_name[] = "STDERR";
 
 #if defined (OS_USE_SEMIHOSTING)
 
@@ -49,17 +70,17 @@ FILEHANDLE RETARGET(_open)(const char *name, int openmode)
 
     if (strcmp(name, __stdin_name) == 0)
     {
-        return (STDIN);
+        return (STDIN_FILENO);
     }
 
     if (strcmp(name, __stdout_name) == 0)
     {
-        return (STDOUT);
+        return (STDOUT_FILENO);
     }
 
     if (strcmp(name, __stderr_name) == 0)
     {
-        return (STDERR);
+        return (STDERR_FILENO);
     }
 
     return -1;
@@ -71,14 +92,14 @@ int RETARGET(_write)(FILEHANDLE fh, const unsigned char *buf, unsigned int len, 
 
     switch (fh)
     {
-        case STDOUT:
-        case STDERR:
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
         {
             unsigned int i;
 
             for (i = 0; i < len; i++)
             {
-                SendChar(buf[i]);
+                stdout_putchar(buf[i]);
             }
 
             return IO_OUTPUT(len);
@@ -97,14 +118,16 @@ int RETARGET(_read)(FILEHANDLE fh, unsigned char *buf, unsigned int len, int mod
 
     switch (fh)
     {
-        case STDIN:
+        case STDIN_FILENO:
         {
             int c;
             unsigned int i;
 
-            for (i = 0; i < len; i++)
+            i = 0;
+
+            while (i < len)
             {
-                c = GetChar();
+                c = stdin_getchar();
 
                 if (c == EOF)
                 {
@@ -113,15 +136,16 @@ int RETARGET(_read)(FILEHANDLE fh, unsigned char *buf, unsigned int len, int mod
 
                 buf[i] = (unsigned char)c;
 #if (STDIN_ECHO != 0)
-                SendChar(c);
+                stdout_putchar(c);
 #endif
 
-                if ((c == '\n') || (c == '\r'))
+                if (((char)c == '\n') || ((char)c == '\r'))
                 {
                     i++;
                     break;
                 }
 
+                i++;
             }
 
             return i;
@@ -136,9 +160,9 @@ int RETARGET(_istty)(FILEHANDLE fh)
 {
     switch (fh)
     {
-        case STDIN:
-        case STDOUT:
-        case STDERR:
+        case STDIN_FILENO:
+        case STDOUT_FILENO:
+        case STDERR_FILENO:
             return 1;
 
         default:
@@ -199,8 +223,10 @@ char *RETARGET(_command_string)(char *cmd, int len)
 
 int RETARGET(_isatty)(int fd)
 {
-    if (fd >= STDIN_FILENO && fd <= STDERR_FILENO)
+    if ((fd >= STDIN_FILENO) && (fd <= STDERR_FILENO))
+    {
         return 1;
+    }
 
     errno = EBADF;
     return 0;
@@ -218,7 +244,7 @@ int RETARGET(_lseek)(int fd, int ptr, int dir)
 
 int RETARGET(_fstat)(int fd, struct stat *st)
 {
-    if (fd >= STDIN_FILENO && fd <= STDERR_FILENO)
+    if ((fd >= STDIN_FILENO) && (fd <= STDERR_FILENO))
     {
         st->st_mode = S_IFCHR;
         return 0;
@@ -230,12 +256,14 @@ int RETARGET(_fstat)(int fd, struct stat *st)
 
 int RETARGET(_kill)(int pid, int sig)
 {
+    (void)pid;
+    (void)sig;
     return (-1);
 }
 
-int RETARGET(_getpid)()
+int RETARGET(_getpid)(void)
 {
-    return (1);
+    return 1;
 }
 
 void RETARGET(_exit)(int return_code)
@@ -252,15 +280,16 @@ void RETARGET(_exit)(int return_code)
 
     while (*p != '\0')
     {
-        SendChar(*p++);
+        stdout_putchar(*p++);
     }
 
-    while (1) {}
+    for (;;) {}
 }
 
 int RETARGET(getchar)(void)
 {
-    return ((int)GetChar());
+    return ((int)stdin_getchar());
 }
 
-#endif
+#endif  // defined (OS_USE_SEMIHOSTING)
+#endif  // defined (__GNUC__) && !defined(__ARMCC_VERSION)

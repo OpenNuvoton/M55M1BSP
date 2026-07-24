@@ -5,7 +5,10 @@ solution:
     - compiler: AC6@>=5.19.0
     - compiler: GCC@>=10.3.1
   build-types:
-    - type: Release         # build-type name, used in context with: .Release
+    - type: Bank0           # build-type name, used in context with: .Bank0
+      optimize: balanced    # balanced optimization (size, speed, balanced, none, debug)
+      debug: on             # generate debug info. for the release build (Set off to disable)
+    - type: Bank1           # build-type name, used in context with: .Bank1
       optimize: balanced    # balanced optimization (size, speed, balanced, none, debug)
       debug: on             # generate debug info. for the release build (Set off to disable)
   target-types:

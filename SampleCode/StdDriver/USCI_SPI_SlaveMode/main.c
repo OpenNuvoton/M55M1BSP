@@ -25,7 +25,15 @@ void USCI_SPI_Init(void)
 
     /* Configure USCI_SPI0 as a slave, USCI_SPI0 clock rate = f_PCLK0,
        clock idle low, 16-bit transaction, drive output on falling clock edge and latch input on rising edge. */
-    USPI_Open(USPI0, USPI_SLAVE, USPI_MODE_0, 16, 0);
+    if (USPI_Open(USPI0, USPI_SLAVE, USPI_MODE_0, 16, 0U) == 0U)
+    {
+        printf("USPI_Open failed!\n");
+
+        while (1)
+        {
+        }
+    }
+
     /* Configure USCI_SPI_SS pin as low-active. */
     USPI0->CTLIN0 = (USPI0->CTLIN0 & ~USPI_CTLIN0_ININV_Msk) | USPI_CTLIN0_ININV_Msk;
 }
@@ -78,13 +86,14 @@ void SYS_Init(void)
     SET_USCI0_DAT1_PA9();
 
     /* USCI_SPI clock pin enable schmitt trigger */
-    PA->SMTEN |= GPIO_SMTEN_SMTEN0_Msk;
+    PA->SMTEN |= GPIO_SMTEN_SMTEN11_Msk;
 
 }
 
 int main()
 {
     uint32_t u32TxDataCount, u32RxDataCount;
+    uint32_t u32TimeOutCount;
 
     /* Unlock protected registers */
     SYS_UnlockReg();
@@ -127,6 +136,8 @@ int main()
     printf("\n");
 
     /* Access TX and RX Buffer */
+    u32TimeOutCount = SystemCoreClock;
+
     while (u32RxDataCount < TEST_COUNT)
     {
         /* Check TX FULL flag and TX data count */
@@ -135,7 +146,23 @@ int main()
 
         /* Check RX EMPTY flag */
         if (USPI_GET_RX_EMPTY_FLAG(USPI0) == 0)
+        {
             g_au32DestinationData[u32RxDataCount++] = USPI_READ_RX(USPI0); /* Read RX Buffer */
+            u32TimeOutCount = SystemCoreClock;
+        }
+        else
+        {
+            if (u32TimeOutCount == 0U)
+            {
+                printf("Wait for transfer done time-out!\n");
+
+                while (1)
+                {
+                }
+            }
+
+            u32TimeOutCount--;
+        }
     }
 
     /* Print the received data */
