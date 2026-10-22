@@ -1,40 +1,39 @@
-/**************************************************************************//**
+/***************************************************************************//**
  * @file    spim.c
  * @version V1.00
  * @brief   SPIM driver source file
  *
  * SPDX-License-Identifier: Apache-2.0
- * @copyright (C) 2022 Nuvoton Technology Corp. All rights reserved.
-*****************************************************************************/
+ * @copyright (C) 2023 Nuvoton Technology Corp. All rights reserved.
+ ******************************************************************************/
 
-#include <stdio.h>
+#define ENABLE_DEBUG                      0
+
+#if ENABLE_DEBUG
+    #include <stdio.h>
+    #define SPIM_DBGMSG   printf
+#else
+    #define SPIM_DBGMSG(...)   do { } while (0U != 0U)      /* disable debug */
+#endif
+
 #include <string.h>
 #include "NuMicro.h"
 
 
 /** @addtogroup Standard_Driver Standard Driver
-  @{
+    @{
 */
 
 /** @addtogroup SPIM_Driver SPIM Driver
-  @{
+    @{
 */
 
 /** @addtogroup SPIM_EXPORTED_FUNCTIONS SPIM Exported Functions
-  @{
+    @{
 */
 
 
 /** @cond HIDDEN_SYMBOLS */
-
-
-#define ENABLE_DEBUG                      0
-
-#if ENABLE_DEBUG
-    #define SPIM_DBGMSG   printf
-#else
-    #define SPIM_DBGMSG(...)   do { } while (0)      /* disable debug */
-#endif
 
 #ifndef SPIM_TRIM_HYPERDLL
     #define SPIM_TRIM_HYPERDLL            (1)
@@ -55,29 +54,29 @@
 #define SPIM_DLLTCTL_DLL0OLDOTRIM_Pos     (0)
 #define SPIM_DLLTCTL_DLL0OLDOTRIM_Msk     ((uint32_t)0xFU << SPIM_DLLTCTL_DLL0OLDOTRIM_Pos)
 
-#define SPIM_ENABLE_SYSDLL0TMEN()                                                       \
-    do{                                                                                 \
-        uint32_t u32Value = ((inpw(SYS_BASE + 0xE00UL)) | SPIM_ALTCTL0_DLL0TMEN_Msk);     \
-        outpw((SYS_BASE + 0xE00UL), u32Value);                                            \
-    }while(0)
+#define SPIM_ENABLE_SYSDLL0TMEN()                                                     \
+    do {                                                                              \
+        uint32_t u32Value = ((inpw(SYS_BASE + 0xE00UL)) | SPIM_ALTCTL0_DLL0TMEN_Msk); \
+        outpw((SYS_BASE + 0xE00UL), u32Value);                                        \
+    } while (0)
 
-#define SPIM_DISABLE_SYSDLL0TMEN()                                                      \
-    do{                                                                                 \
-        uint32_t u32Value = ((inpw(SYS_BASE + 0xE00UL)) & ~SPIM_ALTCTL0_DLL0TMEN_Msk);    \
-        outpw((SYS_BASE + 0xE00UL), u32Value);                                            \
-    }while(0)
+#define SPIM_DISABLE_SYSDLL0TMEN()                                                     \
+    do {                                                                               \
+        uint32_t u32Value = ((inpw(SYS_BASE + 0xE00UL)) & ~SPIM_ALTCTL0_DLL0TMEN_Msk); \
+        outpw((SYS_BASE + 0xE00UL), u32Value);                                         \
+    } while (0)
 
 #define SPIM_ENABLE_SYSDLL0ATCTL0_TRIMUPDOFF()                                          \
-    do{                                                                                 \
-        uint32_t u32Value = ((inpw(SYS_BASE + 0xF84UL)) & ~SPIM_DLL0ATCTL0_TUDOFF_Msk);   \
-        outpw((SYS_BASE + 0xF84UL), u32Value);                                            \
-    }while(0)
+    do {                                                                                \
+        uint32_t u32Value = ((inpw(SYS_BASE + 0xF84UL)) & ~SPIM_DLL0ATCTL0_TUDOFF_Msk); \
+        outpw((SYS_BASE + 0xF84UL), u32Value);                                          \
+    } while (0)
 
-#define SPIM_DISABLE_SYSDLL0ATCTL0_TRIMUPDOFF()                                         \
-    do{                                                                                 \
-        uint32_t u32Value = ((inpw(SYS_BASE + 0xF84UL)) | SPIM_DLL0ATCTL0_TUDOFF_Msk);    \
-        outpw((SYS_BASE + 0xF84UL), u32Value);                                            \
-    }while(0)
+#define SPIM_DISABLE_SYSDLL0ATCTL0_TRIMUPDOFF()                                        \
+    do {                                                                               \
+        uint32_t u32Value = ((inpw(SYS_BASE + 0xF84UL)) | SPIM_DLL0ATCTL0_TUDOFF_Msk); \
+        outpw((SYS_BASE + 0xF84UL), u32Value);                                         \
+    } while (0)
 
 #define SPIM_CEIL_DIV(x, y)               (((x) + (y) - 1U) / (y))
 
@@ -92,74 +91,101 @@ typedef struct
     uint32_t u32RxClkDly;
 } SPIM_DIV_CTX;
 
-//------------------------------------------------------------------------------
-static uint8_t gau8IDBuf[3] = {0};
+typedef enum
+{
+    SPIM_ADDR_TYPE_3BYTE = 0,
+    SPIM_ADDR_TYPE_4BYTE_MODE,
+    SPIM_ADDR_TYPE_4BYTE_OPCODE
+} SPIM_ADDR_TYPE_E;
 
-static int32_t _SPIM_WriteData(SPIM_T *spim, const uint8_t *pu8TxBuf, uint32_t u32NTx, uint32_t u32NBit);
-static int32_t _SPIM_ReadData(SPIM_T *spim, uint8_t *pu8RxBuf, uint32_t u32NRx, uint32_t u32NBit);
+typedef struct
+{
+    SPIM_T *spim;
+    uint8_t au8JedecId[3];
+    uint8_t u8IdValid;
+    SPIM_DIV_CTX sDivCtx;
+} SPIM_FLASH_CTX_T;
+
+#define SPIM_FLASH_CONTEXT_COUNT           (2UL)
+
+//------------------------------------------------------------------------------
+static SPIM_FLASH_CTX_T *_SPIM_GetFlashContext(SPIM_T *spim);
+static void _SPIM_UpdateJedecId(SPIM_T *spim, const uint8_t *pu8IdBuf, uint32_t u32Size);
+static uint8_t _SPIM_GetManufacturerId(SPIM_T *spim);
+static SPIM_ADDR_TYPE_E _SPIM_GetAddressType(uint32_t u32Cmd, uint32_t u32Is4ByteAddr);
+static int32_t _SPIM_PrepareAddressMode(SPIM_T *spim, uint32_t u32Cmd, uint32_t u32Is4ByteAddr, uint32_t u32CmdBit);
+static int32_t _SPIM_PrepareFlashTransfer(SPIM_T *spim, uint32_t u32Cmd, uint32_t u32Is4ByteAddr, uint32_t u32CmdBit, uint32_t u32QuadMode);
+
+
 static void _SPIM_WriteStatusRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit);
 static void _SPIM_ReadStatusRegister2(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit);
 static void _SPIM_WriteStatusRegister2(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit);
 static void _SPIM_ReadStatusRegister3(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit);
 static void _SPIM_ReadSecurityRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit);
-static int _SPIM_IsWriteDone(SPIM_T *spim, uint32_t u32NBit);
-static int _SPIM_WaitWriteDone(SPIM_T *spim, uint32_t u32NBit);
+static uint32_t _SPIM_IsWriteDone(SPIM_T *spim, uint32_t u32NBit);
+static int32_t _SPIM_WaitWriteDone(SPIM_T *spim, uint32_t u32NBit);
 static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn);
-static void _SPIM_EonSetQpiMode(SPIM_T *spim, int32_t i32IsEn);
+static void _SPIM_EonExitQpiMode(SPIM_T *spim);
 static void _SPIM_SPANSION4BytesEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit);
 static void _SPIM_WriteInPageDataByIo(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NTx, const uint8_t pu8TxBuf[], uint8_t u8WrCmd,
-                                      uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat, uint32_t u32IsSync);
+                                      uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat);
 static int32_t _SPIM_WriteInPageDataByPageWrite(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NTx,
                                                 const uint8_t *pu8TxBuf, uint8_t u8WrCmd, uint32_t u32IsSync);
 static void _SPIM_ClearContReadPhase(SPIM_T *spim, uint32_t u32OPMode);
 static int32_t _SPIM_Sync4ByteAddrMode(SPIM_T *spim, uint32_t u32Is4ByteAddr, uint32_t u32CmdBit);
 static uint32_t _SPIM_IsCrenAllowed(uint8_t u8Cmd);
 static uint32_t _SPIM_GetPageChunkSize(uint32_t u32Addr, uint32_t u32Remain);
-static int32_t _SPIM_ValidateDmaTransfer(uint32_t u32Addr, const void *pvBuf, uint32_t u32Count);
+static int32_t _SPIM_ValidateDmaTransfer(uint32_t u32Addr, const uint8_t *pu8Buf, uint32_t u32Count);
 static int32_t _SPIM_Validate4ByteAddrMode(uint32_t u32ApiIs4ByteAddr, uint32_t u32PhaseIs4ByteAddr);
 
-//------------------------------------------------------------------------------
+/*---------------------------------------------------------------------------------------------------------*/
+/* Basic SPIM Controller and Raw I/O Operations                                                            */
+/*---------------------------------------------------------------------------------------------------------*/
 /**
- * @brief    Switch SPIM output to the specified bit mode.
- * @param[in]  spim     Pointer to the SPIM peripheral.
- * @param[in]  u32NBit  Bit width to set for output mode.
- *                      - \ref SPIM_BITMODE_1 : 1-bit mode
- *                      - \ref SPIM_BITMODE_2 : 2-bit mode (dual)
- *                      - \ref SPIM_BITMODE_4 : 4-bit mode (quad)
- *                      - \ref SPIM_BITMODE_8 : 8-bit mode (octal)
- * @return   None
+ * @brief      Switch SPIM output to the specified bit mode.
+ *
+ * @param[in]  spim    Pointer to the SPIM peripheral.
+ * @param[in]  u32NBit Bit width to set for output mode.
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit mode (dual)
+ *                     - \ref SPIM_BITMODE_4 : 4-bit mode (quad)
+ *                     - \ref SPIM_BITMODE_8 : 8-bit mode (octal)
+ *
+ * @return     None
  */
 void SPIM_SwitchNBitOutput(SPIM_T *spim, uint32_t u32NBit)
 {
     switch (u32NBit)
     {
         case SPIM_BITMODE_2:
-            SPIM_ENABLE_DUAL_OUTPUT_MODE(spim);     /* 2-bit, Output. */
+            SPIM_ENABLE_DUAL_OUTPUT_MODE(spim); /* 2-bit, Output. */
             break;
 
         case SPIM_BITMODE_4:
-            SPIM_ENABLE_QUAD_OUTPUT_MODE(spim);     /* 4-bit, Output. */
+            SPIM_ENABLE_QUAD_OUTPUT_MODE(spim); /* 4-bit, Output. */
             break;
 
         case SPIM_BITMODE_8:
-            SPIM_ENABLE_OCTAL_OUTPUT_MODE(spim);    /* 8-bit, Output. */
+            SPIM_ENABLE_OCTAL_OUTPUT_MODE(spim); /* 8-bit, Output. */
             break;
 
         case SPIM_BITMODE_1:
         default:
-            SPIM_ENABLE_SING_OUTPUT_MODE(spim);     /* 1-bit, Output. */
+            SPIM_ENABLE_SING_OUTPUT_MODE(spim); /* 1-bit, Output. */
             break;
     }
 }
 
 /**
- * @brief    Switch SPIM input to the specified bit mode.
- * @param[in]  spim     Pointer to the SPIM peripheral.
- * @param[in]  u32NBit  Bit width to set for input mode.
- *                      - \ref SPIM_BITMODE_1 : 1-bit mode
- *                      - \ref SPIM_BITMODE_2 : 2-bit mode (dual)
- *                      - \ref SPIM_BITMODE_4 : 4-bit mode (quad)
- *                      - \ref SPIM_BITMODE_8 : 8-bit mode (octal)
+ * @brief      Switch SPIM input to the specified bit mode.
+ *
+ * @param[in]  spim    Pointer to the SPIM peripheral.
+ * @param[in]  u32NBit Bit width to set for input mode.
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit mode (dual)
+ *                     - \ref SPIM_BITMODE_4 : 4-bit mode (quad)
+ *                     - \ref SPIM_BITMODE_8 : 8-bit mode (octal)
+ *
  * @return     None
  */
 void SPIM_SwitchNBitInput(SPIM_T *spim, uint32_t u32NBit)
@@ -167,41 +193,183 @@ void SPIM_SwitchNBitInput(SPIM_T *spim, uint32_t u32NBit)
     switch (u32NBit)
     {
         case SPIM_BITMODE_2:
-            SPIM_ENABLE_DUAL_INPUT_MODE(spim);      /* 2-bit, Input.  */
+            SPIM_ENABLE_DUAL_INPUT_MODE(spim); /* 2-bit, Input.  */
             break;
 
         case SPIM_BITMODE_4:
-            SPIM_ENABLE_QUAD_INPUT_MODE(spim);      /* 4-bit, Input.  */
+            SPIM_ENABLE_QUAD_INPUT_MODE(spim); /* 4-bit, Input.  */
             break;
 
         case SPIM_BITMODE_8:
-            SPIM_ENABLE_OCTAL_INPUT_MODE(spim);     /* 8-bit, Input.  */
+            SPIM_ENABLE_OCTAL_INPUT_MODE(spim); /* 8-bit, Input.  */
             break;
 
         case SPIM_BITMODE_1:
         default:
-            SPIM_ENABLE_SING_INPUT_MODE(spim);      /* 1-bit, Input.  */
+            SPIM_ENABLE_SING_INPUT_MODE(spim); /* 1-bit, Input.  */
             break;
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+ * @brief      Get the flash context associated with the specified SPIM module.
+ *
+ * @param[in]  spim Pointer to the SPIM peripheral.
+ *
+ * @return     Pointer to the flash context associated with the specified SPIM module.
+ */
+static SPIM_FLASH_CTX_T *_SPIM_GetFlashContext(SPIM_T *spim)
+{
+    static SPIM_FLASH_CTX_T s_asFlashCtx[SPIM_FLASH_CONTEXT_COUNT];
+    uint32_t u32i = 0UL;
+    SPIM_FLASH_CTX_T *psFreeCtx = (SPIM_FLASH_CTX_T *)NULL;
+
+    for (u32i = 0UL; u32i < SPIM_FLASH_CONTEXT_COUNT; u32i++)
+    {
+        if (s_asFlashCtx[u32i].spim == spim)
+        {
+            return &s_asFlashCtx[u32i];
+        }
+
+        if ((psFreeCtx == (SPIM_FLASH_CTX_T *)NULL) &&
+                (s_asFlashCtx[u32i].spim == (SPIM_T *)NULL))
+        {
+            psFreeCtx = &s_asFlashCtx[u32i];
+        }
+    }
+
+    if (psFreeCtx != (SPIM_FLASH_CTX_T *)NULL)
+    {
+        psFreeCtx->spim = spim;
+        return psFreeCtx;
+    }
+
+    /* Preserve the legacy single-context behavior if all private slots are used. */
+    s_asFlashCtx[0].spim = spim;
+    s_asFlashCtx[0].u8IdValid = 0U;
+    s_asFlashCtx[0].sDivCtx.u32Saved = 0UL;
+
+    return &s_asFlashCtx[0];
+}
+
+/**
+ * @brief      Update the JEDEC ID of the flash device associated with the specified SPIM module.
+ *
+ * @param[in]  spim     Pointer to the SPIM peripheral.
+ * @param[in]  pu8IdBuf Pointer to the buffer containing the JEDEC ID.
+ * @param[in]  u32Size  Size of the JEDEC ID buffer.
+ *
+ * @return     None.
+ */
+static void _SPIM_UpdateJedecId(SPIM_T *spim, const uint8_t *pu8IdBuf, uint32_t u32Size)
+{
+    SPIM_FLASH_CTX_T *psCtx = _SPIM_GetFlashContext(spim);
+
+    if ((pu8IdBuf != (const uint8_t *)NULL) && (u32Size >= sizeof(psCtx->au8JedecId)))
+    {
+        (void)memcpy(psCtx->au8JedecId, pu8IdBuf, sizeof(psCtx->au8JedecId));
+        psCtx->u8IdValid = 1U;
+    }
+}
+
+/**
+ * @brief      Get the manufacturer ID of the flash device associated with the specified SPIM module.
+ *
+ * @param[in]  spim Pointer to the SPIM peripheral.
+ *
+ * @return     Manufacturer ID of the flash device, or MFGID_UNKNOW if the JEDEC ID is not valid.
+ */
+static uint8_t _SPIM_GetManufacturerId(SPIM_T *spim)
+{
+    SPIM_FLASH_CTX_T *psCtx = _SPIM_GetFlashContext(spim);
+
+    return (psCtx->u8IdValid != 0U) ? psCtx->au8JedecId[0] : (uint8_t)MFGID_UNKNOW;
+}
+
+/**
+ * @brief      Check if the command is a dedicated 4-byte address command.
+ *
+ * @param[in]  u32Cmd Command opcode.
+ *
+ * @return     SPIM_OP_ENABLE  : Dedicated 4-byte command.
+ *             SPIM_OP_DISABLE : Not a dedicated 4-byte command.
+ */
+static uint32_t _SPIM_IsDedicated4ByteCommand(uint32_t u32Cmd)
+{
+    uint8_t u8Cmd = (uint8_t)u32Cmd;
+    uint32_t u32IsDedicated = SPIM_OP_DISABLE;
+
+    switch (u8Cmd)
+    {
+        case (uint8_t)CMD_NORMAL_PAGE_PROGRAM_4B:
+        case (uint8_t)CMD_QUAD_PAGE_PROGRAM_WINBOND_4B:
+        case (uint8_t)CMD_OCTAL_PAGE_PROG_MICRON_4B:
+        case (uint8_t)CMD_OCTAL_EX_PAGE_PROG_MICRON_4B:
+        case (uint8_t)CMD_DMA_NORMAL_READ_4B:
+        case (uint8_t)CMD_DMA_FAST_READ_4B:
+        case (uint8_t)CMD_DMA_NORMAL_DUAL_READ_4B:
+        case (uint8_t)CMD_DMA_FAST_DUAL_READ_4B:
+        case (uint8_t)CMD_DMA_FAST_READ_QUAD_OUTPUT_4B:
+        case (uint8_t)CMD_DMA_FAST_QUAD_READ_4B:
+        case (uint8_t)CMD_OCTAL_FAST_READ_OUTPUT_4B:
+        case (uint8_t)CMD_OCTAL_FAST_IO_READ_4B:
+        {
+            u32IsDedicated = SPIM_OP_ENABLE;
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return u32IsDedicated;
+}
+
+/**
+ * @brief      Get the address type based on the command and 4-byte address mode.
+ *
+ * @param[in]  u32Cmd         Command opcode.
+ * @param[in]  u32Is4ByteAddr Indicates if 4-byte address mode is enabled.
+ *
+ * @return     Address type based on the command and 4-byte address mode.
+ */
+static SPIM_ADDR_TYPE_E _SPIM_GetAddressType(uint32_t u32Cmd, uint32_t u32Is4ByteAddr)
+{
+    if (u32Is4ByteAddr == SPIM_OP_DISABLE)
+    {
+        return SPIM_ADDR_TYPE_3BYTE;
+    }
+
+    if (_SPIM_IsDedicated4ByteCommand(u32Cmd) != SPIM_OP_DISABLE)
+    {
+        return SPIM_ADDR_TYPE_4BYTE_OPCODE;
+    }
+
+    return SPIM_ADDR_TYPE_4BYTE_MODE;
+}
+
 /**
  * @brief      Check if the command is allowed to enable continuous read mode in DMM mode.
- * @param[in]  u8Cmd   Command opcode.
+ *
+ * @param[in]  u8Cmd Command opcode.
+ *
  * @return     SPIM_OP_ENABLE  : Allowed to enable continuous read mode.
  *             SPIM_OP_DISABLE : Not allowed to enable continuous read mode.
  */
 static uint32_t _SPIM_IsCrenAllowed(uint8_t u8Cmd)
 {
-    uint32_t u32i;
+    uint32_t u32i = 0UL;
     const uint8_t au8CrenAllowedCmds[] =
     {
-        CMD_DMA_FAST_DUAL_READ,
-        CMD_DMA_FAST_QUAD_READ,
-        CMD_DMA_NORMAL_QUAD_READ,
-        CMD_DMA_FAST_DUAL_DTR_READ,
-        CMD_DMA_NORMAL_DTR_READ,
-        CMD_DMA_FAST_QUAD_DTR_READ,
+        (uint8_t)CMD_DMA_FAST_DUAL_READ,
+        (uint8_t)CMD_DMA_FAST_QUAD_READ,
+        (uint8_t)CMD_DMA_NORMAL_QUAD_READ,
+        (uint8_t)CMD_DMA_FAST_DUAL_DTR_READ,
+        (uint8_t)CMD_DMA_NORMAL_DTR_READ,
+        (uint8_t)CMD_DMA_FAST_QUAD_DTR_READ,
     };
     uint32_t u32CrenCmdCnt = (sizeof(au8CrenAllowedCmds) / sizeof(au8CrenAllowedCmds[0]));
 
@@ -216,6 +384,14 @@ static uint32_t _SPIM_IsCrenAllowed(uint8_t u8Cmd)
     return SPIM_OP_DISABLE;
 }
 
+/**
+ * @brief      Get the maximum chunk size that can be written to the current page based on the address and remaining data size.
+ *
+ * @param[in]  u32Addr   The starting address for the write operation.
+ * @param[in]  u32Remain The remaining number of bytes to write.
+ *
+ * @return     The maximum chunk size that can be written to the current page.
+ */
 static uint32_t _SPIM_GetPageChunkSize(uint32_t u32Addr, uint32_t u32Remain)
 {
     uint32_t u32PageRemain = SPIM_FLH_PAGE_SIZE - (u32Addr & (SPIM_FLH_PAGE_SIZE - 1UL));
@@ -223,9 +399,18 @@ static uint32_t _SPIM_GetPageChunkSize(uint32_t u32Addr, uint32_t u32Remain)
     return (u32Remain < u32PageRemain) ? u32Remain : u32PageRemain;
 }
 
-static int32_t _SPIM_ValidateDmaTransfer(uint32_t u32Addr, const void *pvBuf, uint32_t u32Count)
+/**
+ * @brief      Validate the DMA transfer parameters for alignment and address range.
+ *
+ * @param[in]  u32Addr  The starting address for the DMA transfer.
+ * @param[in]  pu8Buf   Pointer to the buffer for the DMA transfer.
+ * @param[in]  u32Count The number of bytes to transfer.
+ *
+ * @return     SPIM_OK if the parameters are valid; otherwise, return SPIM_ERR_FAIL.
+ */
+static int32_t _SPIM_ValidateDmaTransfer(uint32_t u32Addr, const uint8_t *pu8Buf, uint32_t u32Count)
 {
-    uintptr_t uPtr = (uintptr_t)pvBuf;
+    uintptr_t uPtr = (uintptr_t)pu8Buf;
 
     if (((u32Addr & 0x7UL) != 0UL) ||
             ((uPtr & 0x7UL) != 0UL) ||
@@ -246,6 +431,14 @@ static int32_t _SPIM_ValidateDmaTransfer(uint32_t u32Addr, const void *pvBuf, ui
     return SPIM_OK;
 }
 
+/**
+ * @brief      Validate the 4-byte address mode between the API and the flash phase.
+ *
+ * @param[in]  u32ApiIs4ByteAddr   Indicates if the API is using 4-byte address mode.
+ * @param[in]  u32PhaseIs4ByteAddr Indicates if the flash phase is using 4-byte address mode.
+ *
+ * @return     SPIM_OK if the 4-byte address mode is valid; otherwise, return SPIM_ERR_FAIL.
+ */
 static int32_t _SPIM_Validate4ByteAddrMode(uint32_t u32ApiIs4ByteAddr, uint32_t u32PhaseIs4ByteAddr)
 {
     return (((u32ApiIs4ByteAddr != 0UL) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE) == u32PhaseIs4ByteAddr) ? SPIM_OK : SPIM_ERR_FAIL;
@@ -254,35 +447,38 @@ static int32_t _SPIM_Validate4ByteAddrMode(uint32_t u32ApiIs4ByteAddr, uint32_t 
 /**
  * @brief      Set SPIM clock divider to 16 and RX clock delay number to 0.
  *             This configuration is used for SPI Flash read/write operations.
- * @param[in]  spim        Pointer to the SPIM peripheral.
- * @param[in]  u32Restore  Enable or disable restoring the original SPIM clock divider
- *                         and RX clock delay number after operation.
- *                         - \ref SPIM_OP_ENABLE
- *                         - \ref SPIM_OP_DISABLE
+ *
+ * @param[in]  spim       Pointer to the SPIM peripheral.
+ * @param[in]  u32Restore Enable or disable restoring the original SPIM clock divider
+ *                        and RX clock delay number after operation.
+ *                        - \ref SPIM_OP_ENABLE
+ *                        - \ref SPIM_OP_DISABLE
+ *
  * @return     None
  */
 static void SPIM_SetupConfigRegDiv(SPIM_T *spim, uint32_t u32Restore)
 {
-    static SPIM_DIV_CTX sSPIMCtx = {0};
+    SPIM_FLASH_CTX_T *psCtx = _SPIM_GetFlashContext(spim);
+    SPIM_DIV_CTX *psDivCtx = &psCtx->sDivCtx;
 
-    if (u32Restore)
+    if (u32Restore != 0UL)
     {
-        if (sSPIMCtx.u32Saved)
+        if (psDivCtx->u32Saved != 0UL)
         {
-            SPIM_SET_CLOCK_DIVIDER(spim, sSPIMCtx.u32Div);
-            SPIM_SET_RXCLKDLY_RDDLYSEL(spim, sSPIMCtx.u32RxClkDly);
-            SPIM_DBGMSG("SPIM restored: DIV=%u, RXDLY=%u\r\n", sSPIMCtx.u32Div, sSPIMCtx.u32RxClkDly);
-            sSPIMCtx.u32Saved = 0;
+            SPIM_SET_CLOCK_DIVIDER(spim, psDivCtx->u32Div);
+            SPIM_SET_RXCLKDLY_RDDLYSEL(spim, psDivCtx->u32RxClkDly);
+            SPIM_DBGMSG("SPIM restored: DIV=%u, RXDLY=%u\r\n", psDivCtx->u32Div, psDivCtx->u32RxClkDly);
+            psDivCtx->u32Saved = 0UL;
         }
     }
     else
     {
-        if (!sSPIMCtx.u32Saved)
+        if (psDivCtx->u32Saved == 0UL)
         {
-            sSPIMCtx.u32Div      = SPIM_GET_CLOCK_DIVIDER(spim);
-            sSPIMCtx.u32RxClkDly = SPIM_GET_RXCLKDLY_RDDLYSEL(spim);
-            sSPIMCtx.u32Saved    = 1U;
-            SPIM_DBGMSG("SPIM saved: DIV=%u, RXDLY=%u\r\n", sSPIMCtx.u32Div, sSPIMCtx.u32RxClkDly);
+            psDivCtx->u32Div = SPIM_GET_CLOCK_DIVIDER(spim);
+            psDivCtx->u32RxClkDly = SPIM_GET_RXCLKDLY_RDDLYSEL(spim);
+            psDivCtx->u32Saved = 1UL;
+            SPIM_DBGMSG("SPIM saved: DIV=%u, RXDLY=%u\r\n", psDivCtx->u32Div, psDivCtx->u32RxClkDly);
         }
 
         SPIM_SET_CLOCK_DIVIDER(spim, 16UL);
@@ -291,30 +487,33 @@ static void SPIM_SetupConfigRegDiv(SPIM_T *spim, uint32_t u32Restore)
 }
 
 /**
- * @brief      Write data to SPI slave in specified bit mode.
- * @param[in]  spim        Pointer to the SPIM peripheral.
- * @param[in]  pu8TxBuf    Pointer to the transmit buffer.
- * @param[in]  u32NTx      Number of bytes to transmit.
- * @param[in]  u32NBit     Bit mode for data transmission.
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ * @brief      Write raw data to SPI slave in the specified bit mode.
+ *
+ * @param[in]  spim     Pointer to the SPIM peripheral.
+ * @param[in]  pu8TxBuf Pointer to the transmit buffer.
+ * @param[in]  u32NTx   Number of bytes to transmit.
+ * @param[in]  u32NBit  Bit mode for data transmission.
+ *                      - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                      - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                      - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                      - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
  * @retval     SPIM_OK             Write operation completed successfully.
  * @retval     SPIM_ERR_TIMEOUT    Write operation failed due to timeout.
+ * @note       This function does not control slave select (SPIM_SS). The caller is responsible
+ *             for asserting and deasserting SPIM_SS around the complete transaction.
  */
-static int32_t _SPIM_WriteData(SPIM_T *spim, const uint8_t *pu8TxBuf, uint32_t u32NTx, uint32_t u32NBit)
+int32_t SPIM_WriteData(SPIM_T *spim, const uint8_t *pu8TxBuf, uint32_t u32NTx, uint32_t u32NBit)
 {
     /* Write data to TX FIFO */
-    uint32_t u32BufIdx = 0UL;   /* Transmit buffer index */
-    uint32_t u32Tmp;            /* Temporary variable */
-    uint32_t u32BurstSize;      /* Burst data number */
+    uint32_t u32BufIdx = 0UL; /* Transmit buffer index */
+    uint32_t u32Tmp = 0UL;    /* Temporary variable */
+    uint32_t u32BurstSize;    /* Burst data number */
     uint32_t u32NTxTmp = u32NTx;
 
     /* Switch between N-bit output mode */
     SPIM_SwitchNBitOutput(spim, u32NBit);
 
-    while (u32NTxTmp)
+    while (u32NTxTmp != 0UL)
     {
         /* Calculate the number of data to be transferred in one burst */
         uint32_t u32ChunkSize = (u32NTxTmp >= 16UL) ? 4UL :
@@ -323,12 +522,12 @@ static int32_t _SPIM_WriteData(SPIM_T *spim, const uint8_t *pu8TxBuf, uint32_t u
                                 (u32NTxTmp >= 4UL) ? 1UL :
                                 0UL; /* Data chunk size */
 
-        if (u32ChunkSize)
+        if (u32ChunkSize != 0UL)
         {
             /* Transfer data in burst mode */
             uint32_t u32i = u32ChunkSize; /* Loop index */
 
-            while (u32i)
+            while (u32i != 0UL)
             {
                 (void)memcpy((uint8_t *)&u32Tmp, &pu8TxBuf[u32BufIdx], sizeof(uint32_t));
                 u32i--;
@@ -368,42 +567,45 @@ static int32_t _SPIM_WriteData(SPIM_T *spim, const uint8_t *pu8TxBuf, uint32_t u
 }
 
 /**
- * @brief      Read data from SPI slave using the specified bit mode.
- * @param[in]  spim        Pointer to the SPIM peripheral.
- * @param[out] pu8RxBuf    Pointer to the receive buffer.
- * @param[in]  u32NRx      Number of bytes to receive.
- * @param[in]  u32NBit     Bit mode for SPI transmission/reception.
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ * @brief       Read raw data from SPI slave using the specified bit mode.
+ *
+ * @param[in]   spim     Pointer to the SPIM peripheral.
+ * @param[out]  pu8RxBuf Pointer to the receive buffer.
+ * @param[in]   u32NRx   Number of bytes to receive.
+ * @param[in]   u32NBit  Bit mode for SPI transmission/reception.
+ *                       - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                       - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                       - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                       - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
  * @retval     SPIM_OK             Read operation completed successfully.
  * @retval     SPIM_ERR_TIMEOUT    Read operation aborted due to timeout.
+ * @note       This function does not control slave select (SPIM_SS). The caller is responsible
+ *             for asserting and deasserting SPIM_SS around the complete transaction.
  */
-static int32_t _SPIM_ReadData(SPIM_T *spim, uint8_t *pu8RxBuf, uint32_t u32NRx, uint32_t u32NBit)
+int32_t SPIM_ReadData(SPIM_T *spim, uint8_t *pu8RxBuf, uint32_t u32NRx, uint32_t u32NBit)
 {
     /*
      * Read data in burst mode to improve performance.
      */
-    uint32_t u32BufIdx = 0UL;       /* Buffer index */
+    uint32_t u32BufIdx = 0UL; /* Buffer index */
     uint32_t u32NRxTmp = u32NRx;
     /* Configure SPIM to use N-bit input */
     SPIM_SwitchNBitInput(spim, u32NBit);
 
-    while (u32NRxTmp)
+    while (u32NRxTmp != 0UL)
     {
         /* Determine the number of data to be read in one burst */
         /* Number of data in one burst */
         uint32_t u32ChunkSize = (u32NRxTmp >= 16UL) ? 4UL : /* At least 16 bytes */
                                 (u32NRxTmp >= 12UL) ? 3UL : /* 12 <= N < 16 */
-                                (u32NRxTmp >= 8UL) ? 2UL : /* 8 <= N < 12 */
-                                (u32NRxTmp >= 4UL) ? 1UL : /* 4 <= N < 8 */
-                                0UL; /* N < 4 */
-        uint32_t u32TmpChunkSize = u32ChunkSize;    /* Temporary value for chunk_size */
-        uint32_t u32Tmp;                            /* Temporary variable for storing received data */
-        uint32_t u32BurstSize = 0UL;                /* Number of data in one burst */
+                                (u32NRxTmp >= 8UL) ? 2UL :  /* 8 <= N < 12 */
+                                (u32NRxTmp >= 4UL) ? 1UL :  /* 4 <= N < 8 */
+                                0UL;                        /* N < 4 */
+        uint32_t u32TmpChunkSize = u32ChunkSize;            /* Temporary value for chunk_size */
+        uint32_t u32Tmp;                                    /* Temporary variable for storing received data */
+        uint32_t u32BurstSize = 0UL;                        /* Number of data in one burst */
 
-        if (u32ChunkSize)
+        if (u32ChunkSize != 0UL)
         {
             /*
              * At least 2 data to be read in one burst, set burst size to
@@ -438,7 +640,7 @@ static int32_t _SPIM_ReadData(SPIM_T *spim, uint8_t *pu8RxBuf, uint32_t u32NRx, 
         if (u32ChunkSize >= 2UL)
         {
             /* Read multiple data in one burst */
-            while (u32ChunkSize)
+            while (u32ChunkSize != 0UL)
             {
                 u32Tmp = spim->RX[u32ChunkSize - 1UL];
                 (void)memcpy(&pu8RxBuf[u32BufIdx], (uint8_t *)&u32Tmp, sizeof(uint32_t));
@@ -461,14 +663,17 @@ static int32_t _SPIM_ReadData(SPIM_T *spim, uint8_t *pu8RxBuf, uint32_t u32NRx, 
 }
 
 /**
- * @brief       Set operation mode.
- * @param[in]   spim        The pointer of the specified SPIM module.
- * @param[in]   u32OPMode   SPI Function Operation Mode
- *              - \ref SPIM_CTL0_OPMODE_IO
- *              - \ref SPIM_CTL0_OPMODE_PAGEWRITE
- *              - \ref SPIM_CTL0_OPMODE_PAGEREAD
- *              - \ref SPIM_CTL0_OPMODE_DIRECTMAP
- * \hideinitializer
+ * @brief      Set operation mode.
+ *
+ * @param[in]  spim      The pointer of the specified SPIM module.
+ * @param[in]  u32OPMode SPI Function Operation Mode
+ *                       - \ref SPIM_CTL0_OPMODE_IO
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEWRITE
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEREAD
+ *                       - \ref SPIM_CTL0_OPMODE_DIRECTMAP
+ *                       \hideinitializer
+ *
+ * @return     None
  */
 void SPIM_SET_OPMODE(SPIM_T *spim, uint32_t u32OPMode)
 {
@@ -488,390 +693,12 @@ void SPIM_SET_OPMODE(SPIM_T *spim, uint32_t u32OPMode)
 }
 
 /**
- * @brief      Issue the "Read Status Register #1" command to the SPI Flash.
- * @param[out] pu8DataBuf  Pointer to the buffer to store the received status register data.
- * @param[in]  u32NRx      Number of bytes to receive.
- * @param[in]  u32NBit     Bit mode for SPI transmission/reception.
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
- * @return     None
- */
-void SPIM_ReadStatusRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
-{
-    /* 1-byte Read Status Register #1 command. */
-    const uint8_t au8CmdBuf[2] = {OPCODE_RDSR, OPCODE_RDSR};
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
-
-    (void)SPIM_IO_SendDummyByPhase(spim, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 8 : 0);
-
-    (void)_SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
-}
-
-/**
- * @brief      Issue the "Write Status Register #1" command to the SPI Flash.
- * @param[in]  pu8DataBuf  Pointer to the buffer containing data to be written.
- * @param[in]  u32NTx      Number of bytes to transmit.
- * @param[in]  u32NBit     Bit mode for SPI transmission.
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
- * @return     None
- */
-static void _SPIM_WriteStatusRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
-{
-    /* 1-byte Write Status Register #1 command + 1-byte data. */
-    uint8_t au8CmdBuf[4] = {OPCODE_WRSR, 0x00U, 0x00U, 0x00U};
-    uint32_t u32NTxTmp;
-
-    (void)u32NTx;
-
-    au8CmdBuf[1] = (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? au8CmdBuf[0] : pu8DataBuf[0];
-    au8CmdBuf[2] = pu8DataBuf[0];
-    au8CmdBuf[3] = pu8DataBuf[0];
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    u32NTxTmp = ((SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 4UL : 2UL);
-    (void)_SPIM_WriteData(spim, au8CmdBuf, u32NTxTmp, u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
-}
-
-/**
- * @brief      Issue the "Read Status Register #2" command.
- *
- * @param[in]  spim        Pointer to the SPIM instance.
- * @param[out] pu8DataBuf  Pointer to the buffer to store the received status register data.
- * @param[in]  u32NRx      Number of bytes to receive.
- * @param[in]  u32NBit     Bit mode used for the command and data transfer.
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit mode (Dual)
- *                         - \ref SPIM_BITMODE_4 : 4-bit mode (Quad)
- *                         - \ref SPIM_BITMODE_8 : 8-bit mode (Octal)
- *
- * @return     None
- */
-static void _SPIM_ReadStatusRegister2(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
-{
-    /* 1-byte Read Status Register #1 command. */
-    const uint8_t au8CmdBuf[2] = {OPCODE_RDSR2, OPCODE_RDSR2};
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
-
-    (void)SPIM_IO_SendDummyByPhase(spim, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 8UL : 0UL);
-
-    (void)_SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
-}
-
-/**
- * @brief      Issue the Winbond "Write Status Register" command.
- *
- * @param[in]  spim        Pointer to the SPIM peripheral instance.
- * @param[in]  pu8DataBuf  Pointer to the transmit buffer containing the status register values to write.
- * @param[in]  u32NTx      Number of bytes to transmit.
- * @param[in]  u32NBit     Bit mode used for command and data transfer:
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @return     None
- */
-static void _SPIM_WriteStatusRegister2(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
-{
-    uint8_t au8CmdBuf[6] = {OPCODE_WRSR, 0U, 0U, 0U, 0U, 0U};
-    uint8_t u8DTREn = SPIM_GET_DTR_MODE(spim);
-    uint32_t u32NTxTmp;
-
-    (void)u32NTx;
-    au8CmdBuf[1] = (u8DTREn == SPIM_OP_ENABLE) ? pu8DataBuf[0] : au8CmdBuf[0];
-    au8CmdBuf[2] = (u8DTREn == SPIM_OP_ENABLE) ? pu8DataBuf[0] : pu8DataBuf[1];
-    au8CmdBuf[3] = (u8DTREn == SPIM_OP_ENABLE) ? pu8DataBuf[0] : pu8DataBuf[1];
-    au8CmdBuf[4] = pu8DataBuf[1];
-    au8CmdBuf[5] = pu8DataBuf[1];
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    u32NTxTmp = (u8DTREn == SPIM_OP_ENABLE) ? 6UL : 3UL;
-    (void)_SPIM_WriteData(spim, au8CmdBuf, u32NTxTmp, u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
-}
-
-#if 0  /* not used */
-/**
- * @brief      Issue the "Write Status Register #3" command.
- *
- * @param[in]  spim        Pointer to the SPIM peripheral.
- * @param[in]  pu8DataBuf  Pointer to the transmit buffer containing the data to write to Status Register #3.
- * @param[in]  u32NTx      Number of bytes to transmit.
- * @param[in]  u32NBit     Bit mode used for command and data transfer:
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @return     None
- */
-static void SPIM_WriteStatusRegister3(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
-{
-    const uint8_t au8CmdBuf[] = {OPCODE_WRSR3, 0x00U};    /* 1-byte Write Status Register #2 command + 1-byte data. */
-    au8CmdBuf[1] = pu8DataBuf[0];
-
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);        /* CS activated. */
-
-    (void)_SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), u32NBit);
-
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);        /* CS deactivated. */
-}
-#endif
-
-/**
- * @brief      Issue the "Read Configuration Register #3" command.
- *
- * @param[in]  spim        Pointer to the SPIM peripheral.
- * @param[out] pu8DataBuf  Pointer to the receive buffer for the configuration register data.
- * @param[in]  u32NRx      Number of bytes to receive.
- * @param[in]  u32NBit     Bit mode used for transmit/receive:
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @return     None
- */
-static void _SPIM_ReadStatusRegister3(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
-{
-    /* 1-byte Read Status Register #1 command. */
-    const uint8_t au8CmdBuf[2] = {OPCODE_RDSR3, OPCODE_RDSR3};
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
-    (void)SPIM_IO_SendDummyByPhase(spim, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 8UL : 0UL);
-
-    (void)_SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
-}
-
-#if 0  /* not used */
-/**
- * @brief      Issue the "Write Security Register" command.
- *
- * @param[in]  spim        Pointer to the SPIM peripheral.
- * @param[in]  pu8DataBuf  Pointer to the transmit buffer containing the data to write.
- * @param[in]  u32NTx      Number of bytes to transmit.
- * @param[in]  u32NBit     Bit mode used for transmit/receive:
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @return     None
- */
-static void SPIM_WriteSecurityRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
-{
-    /* 1-byte Write Status Register #2 command + 1-byte data. */
-    uint8_t au8CmdBuf[] = {OPCODE_WRSCUR, 0x00U};
-
-    au8CmdBuf[1] = pu8DataBuf[0];
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    (void)_SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-}
-#endif
-
-/**
- * @brief      Issue the "Read Security Register" command.
- *
- * @param[in]  spim        Pointer to the SPIM peripheral.
- * @param[out] pu8DataBuf  Pointer to the receive buffer for storing the security register data.
- * @param[in]  u32NRx      Number of bytes to receive.
- * @param[in]  u32NBit     Bit mode used for transmit/receive:
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @return     None
- */
-static void _SPIM_ReadSecurityRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
-{
-    /* 1-byte Read Status Register #1 command. */
-    const uint8_t au8CmdBuf[2] = {OPCODE_RDSCUR, OPCODE_RDSCUR};
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
-
-    (void)SPIM_IO_SendDummyByPhase(spim, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 8UL : 0UL);
-
-    (void)_SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
-}
-
-/**
- * @brief      Issue the "Read Flag Status Register" command for Micron MT35X Octal SPI Flash.
- *
- * @param[in]  spim        Pointer to the SPIM peripheral instance.
- * @param[out] pu8DataBuf  Pointer to the receive buffer for storing the FSR data.
- * @param[in]  u32NRx      Number of bytes to receive.
- * @param[in]  u32NBit     Bit mode used for transmit/receive:
- *                         - \ref SPIM_BITMODE_1 : 1-bit mode
- *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @return     None
- *
- * @note       This command is used to check the current status of internal operations,
- *             such as program or erase progress.
- */
-static void _SPIM_ReadMT35xFlagRegister(SPIM_T *spim, uint8_t *pu8DataBuf,
-                                        uint32_t u32NRx, uint32_t u32NBit)
-{
-    /* 1-byte Read Status Register #1 command. */
-    const uint8_t au8CmdBuf[2] = {OPCODE_MICRON_RD_FLG, OPCODE_MICRON_RD_FLG};
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
-
-    /* CS activated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
-
-    (void)SPIM_IO_SendDummyByPhase(spim, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 8 : 0);
-
-    (void)_SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
-
-    /* CS deactivated. */
-    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-
-    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
-}
-
-/**
- * @brief      Check whether the SPI Flash erase or write operation has completed.
- *
- * @param[in]  spim     Pointer to the SPIM peripheral instance.
- * @param[in]  u32NBit  Bit mode used for transmit/receive:
- *                      - \ref SPIM_BITMODE_1 : 1-bit mode
- *                      - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                      - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                      - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @retval     1        Operation completed (Ready).
- * @retval     0        Operation still in progress (Busy).
- *
- * @note       Typically checks the WIP (Write-In-Progress) bit in the Flash status register.
- */
-static int _SPIM_IsWriteDone(SPIM_T *spim, uint32_t u32NBit)
-{
-    uint8_t au8Status[2] = {0};
-    SPIM_ReadStatusRegister(spim, au8Status, sizeof(au8Status), u32NBit);
-    return !(au8Status[0] & SR_WIP);
-}
-
-/**
- * @brief      Wait until the SPI Flash erase or write operation completes.
- *
- * @param[in]  spim     Pointer to the SPIM peripheral instance.
- * @param[in]  u32NBit  Bit mode used for transmit/receive:
- *                      - \ref SPIM_BITMODE_1 : 1-bit mode
- *                      - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
- *                      - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
- *                      - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
- *
- * @retval     SPIM_OK           Operation completed successfully.
- * @retval     SPIM_ERR_TIMEOUT  Operation timed out (erase/write did not complete in time).
- *
- * @note       This function typically polls the WIP (Write-In-Progress) bit in the SPI Flash
- *             Status Register until it is cleared, or until a timeout occurs.
- */
-static int _SPIM_WaitWriteDone(SPIM_T *spim, uint32_t u32NBit)
-{
-    volatile uint32_t u32Count;
-    int i32Ret = (int32_t)SPIM_ERR_FAIL;
-
-    for (u32Count = 0UL; u32Count < (SystemCoreClock / 1000UL); u32Count++)
-    {
-        if (_SPIM_IsWriteDone(spim, u32NBit))
-        {
-            i32Ret = SPIM_OK;
-            break;
-        }
-    }
-
-    if (i32Ret != SPIM_OK)
-    {
-        SPIM_DBGMSG("spim_wait_write_done time-out!!\n");
-    }
-
-    return i32Ret;
-}
-
-/**
  * @brief      Wait for the SPIM operation to complete and optionally check the busy status.
  *
- * @param[in]  spim       Pointer to the SPIM peripheral instance.
- * @param[in]  u32IsSync  Specify whether to wait until the operation completes:
- *                        - 0 : Do not wait (asynchronous mode).
- *                        - 1 : Wait for the busy flag to clear (synchronous mode).
+ * @param[in]  spim      Pointer to the SPIM peripheral instance.
+ * @param[in]  u32IsSync Specify whether to wait until the operation completes:
+ *                       - 0 : Do not wait (asynchronous mode).
+ *                       - 1 : Wait for the busy flag to clear (synchronous mode).
  *
  * @retval     SPIM_OK           Operation completed successfully.
  * @retval     SPIM_ERR_TIMEOUT  Operation failed due to timeout.
@@ -886,10 +713,10 @@ int32_t SPIM_WaitOpDone(SPIM_T *spim, uint32_t u32IsSync)
     /* Trigger SPIM operation. */
     SPIM_SET_GO(spim);
 
-    if (u32IsSync)
+    if (u32IsSync != 0UL)
     {
         /* Wait Busy Status. */
-        while (SPIM_IS_BUSY(spim))
+        while (SPIM_IS_BUSY(spim) != 0UL)
         {
             if (--i32TimeOutCount <= 0)
             {
@@ -903,17 +730,447 @@ int32_t SPIM_WaitOpDone(SPIM_T *spim, uint32_t u32IsSync)
 }
 
 /**
+ * @brief      Get the current SPIM serial clock frequency.
+ *
+ * @param[in]  spim Pointer to the SPIM peripheral instance.
+ *
+ * @return     The current SPIM serial clock frequency in Hz.
+ *
+ * @note       Ensure the SPIM clock source and divider are properly configured before calling this function.
+ */
+uint32_t SPIM_GetSClkFreq(const SPIM_T *spim)
+{
+    uint32_t u32ClkDiv = SPIM_GET_CLOCK_DIVIDER(spim);
+
+    return (u32ClkDiv != 0UL) ? SystemCoreClock / (u32ClkDiv * 2U) : SystemCoreClock;
+}
+
+
+/*---------------------------------------------------------------------------------------------------------*/
+/* SPI Flash Register Access and Common Commands                                                           */
+/*---------------------------------------------------------------------------------------------------------*/
+/**
+ * @brief       Issue the "Read Status Register #1" command to the SPI Flash.
+ *
+ * @param[in]   spim       Pointer to the SPIM instance.
+ * @param[out]  pu8DataBuf Pointer to the buffer to store the received status register data.
+ * @param[in]   u32NRx     Number of bytes to receive.
+ * @param[in]   u32NBit    Bit mode for SPI transmission/reception.
+ *                         - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                         - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                         - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                         - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ *
+ * @return      None
+ */
+void SPIM_ReadStatusRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
+{
+    /* 1-byte Read Status Register #1 command. */
+    const uint8_t au8CmdBuf[2] = {OPCODE_RDSR, OPCODE_RDSR};
+    uint32_t u32DTREn;
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+    u32DTREn = SPIM_GET_DTR_MODE(spim);
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    (void)SPIM_WriteData(spim, au8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+
+    (void)SPIM_IO_SendDummyByPhase(spim,
+                                   (u32DTREn == SPIM_OP_ENABLE) ? 8UL : 0UL,
+                                   u32NBit,
+                                   u32DTREn);
+
+    (void)SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
+}
+
+/**
+ * @brief      Issue the "Write Status Register #1" command to the SPI Flash.
+ *
+ * @param[in]  spim       Pointer to the SPIM instance.
+ * @param[in]  pu8DataBuf Pointer to the buffer containing data to be written.
+ * @param[in]  u32NTx     Number of bytes to transmit.
+ * @param[in]  u32NBit    Bit mode for SPI transmission.
+ *                        - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                        - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                        - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                        - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ *
+ * @return     None
+ */
+static void _SPIM_WriteStatusRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
+{
+    /* 1-byte Write Status Register #1 command + 1-byte data. */
+    uint8_t au8CmdBuf[4] = {OPCODE_WRSR, 0x00U, 0x00U, 0x00U};
+    uint32_t u32NTxTmp = 0UL;
+
+    (void)u32NTx;
+
+    au8CmdBuf[1] = (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? au8CmdBuf[0] : pu8DataBuf[0];
+    au8CmdBuf[2] = pu8DataBuf[0];
+    au8CmdBuf[3] = pu8DataBuf[0];
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    u32NTxTmp = ((SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 4UL : 2UL);
+    (void)SPIM_WriteData(spim, au8CmdBuf, u32NTxTmp, u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
+}
+
+/**
+ * @brief       Issue the "Read Status Register #2" command.
+ *
+ * @param[in]   spim       Pointer to the SPIM instance.
+ * @param[out]  pu8DataBuf Pointer to the buffer to store the received status register data.
+ * @param[in]   u32NRx     Number of bytes to receive.
+ * @param[in]   u32NBit    Bit mode used for the command and data transfer.
+ *                         - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                         - \ref SPIM_BITMODE_2 : 2-bit mode (Dual)
+ *                         - \ref SPIM_BITMODE_4 : 4-bit mode (Quad)
+ *                         - \ref SPIM_BITMODE_8 : 8-bit mode (Octal)
+ *
+ * @return      None
+ */
+static void _SPIM_ReadStatusRegister2(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
+{
+    /* 1-byte Read Status Register #1 command. */
+    const uint8_t au8CmdBuf[2] = {OPCODE_RDSR2, OPCODE_RDSR2};
+    uint32_t u32DTREn;
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+    u32DTREn = SPIM_GET_DTR_MODE(spim);
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    (void)SPIM_WriteData(spim, au8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+
+    (void)SPIM_IO_SendDummyByPhase(
+        spim, (u32DTREn == SPIM_OP_ENABLE) ? 8UL : 0UL, u32NBit, u32DTREn);
+
+    (void)SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
+}
+
+/**
+ * @brief      Issue the Winbond "Write Status Register" command.
+ *
+ * @param[in]  spim       Pointer to the SPIM peripheral instance.
+ * @param[in]  pu8DataBuf Pointer to the transmit buffer containing the status register values to write.
+ * @param[in]  u32NTx     Number of bytes to transmit.
+ * @param[in]  u32NBit    Bit mode used for command and data transfer:
+ *                        - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                        - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                        - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                        - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @return     None
+ */
+static void _SPIM_WriteStatusRegister2(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
+{
+    uint8_t au8CmdBuf[6] = {OPCODE_WRSR, 0U, 0U, 0U, 0U, 0U};
+    uint8_t u8DTREn = (uint8_t)SPIM_GET_DTR_MODE(spim);
+    uint32_t u32NTxTmp = 0UL;
+
+    (void)u32NTx;
+    au8CmdBuf[1] = (u8DTREn == SPIM_OP_ENABLE) ? pu8DataBuf[0] : au8CmdBuf[0];
+    au8CmdBuf[2] = (u8DTREn == SPIM_OP_ENABLE) ? pu8DataBuf[0] : pu8DataBuf[1];
+    au8CmdBuf[3] = (u8DTREn == SPIM_OP_ENABLE) ? pu8DataBuf[0] : pu8DataBuf[1];
+    au8CmdBuf[4] = pu8DataBuf[1];
+    au8CmdBuf[5] = pu8DataBuf[1];
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    u32NTxTmp = (u8DTREn == SPIM_OP_ENABLE) ? 6UL : 3UL;
+    (void)SPIM_WriteData(spim, au8CmdBuf, u32NTxTmp, u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
+}
+
+#if 0  /* not used */
+/**
+ * @brief      Issue the "Write Status Register #3" command.
+ *
+ * @param[in]  spim       Pointer to the SPIM peripheral.
+ * @param[in]  pu8DataBuf Pointer to the transmit buffer containing the data to write to Status Register #3.
+ * @param[in]  u32NTx     Number of bytes to transmit.
+ * @param[in]  u32NBit    Bit mode used for command and data transfer:
+ *                        - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                        - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                        - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                        - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @return     None
+ */
+static void SPIM_WriteStatusRegister3(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
+{
+    const uint8_t au8CmdBuf[] = {OPCODE_WRSR3, 0x00U}; /* 1-byte Write Status Register #2 command + 1-byte data. */
+    au8CmdBuf[1] = pu8DataBuf[0];
+
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE); /* CS activated. */
+
+    (void)SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), u32NBit);
+
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE); /* CS deactivated. */
+}
+#endif
+
+/**
+ * @brief       Issue the "Read Configuration Register #3" command.
+ *
+ * @param[in]   spim       Pointer to the SPIM peripheral.
+ * @param[out]  pu8DataBuf Pointer to the receive buffer for the configuration register data.
+ * @param[in]   u32NRx     Number of bytes to receive.
+ * @param[in]   u32NBit    Bit mode used for transmit/receive:
+ *                         - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @return      None
+ */
+static void _SPIM_ReadStatusRegister3(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
+{
+    /* 1-byte Read Status Register #1 command. */
+    const uint8_t au8CmdBuf[2] = {OPCODE_RDSR3, OPCODE_RDSR3};
+    uint32_t u32DTREn;
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+    u32DTREn = SPIM_GET_DTR_MODE(spim);
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    (void)SPIM_WriteData(spim, au8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+    (void)SPIM_IO_SendDummyByPhase(spim,
+                                   (u32DTREn == SPIM_OP_ENABLE) ? 8UL : 0UL,
+                                   u32NBit,
+                                   u32DTREn);
+
+    (void)SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
+}
+
+#if 0  /* not used */
+/**
+ * @brief      Issue the "Write Security Register" command.
+ *
+ * @param[in]  spim       Pointer to the SPIM peripheral.
+ * @param[in]  pu8DataBuf Pointer to the transmit buffer containing the data to write.
+ * @param[in]  u32NTx     Number of bytes to transmit.
+ * @param[in]  u32NBit    Bit mode used for transmit/receive:
+ *                        - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                        - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                        - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                        - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @return     None
+ */
+static void SPIM_WriteSecurityRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NTx, uint32_t u32NBit)
+{
+    /* 1-byte Write Status Register #2 command + 1-byte data. */
+    uint8_t au8CmdBuf[] = {OPCODE_WRSCUR, 0x00U};
+
+    au8CmdBuf[1] = pu8DataBuf[0];
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    (void)SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+}
+#endif
+
+/**
+ * @brief       Issue the "Read Security Register" command.
+ *
+ * @param[in]   spim       Pointer to the SPIM peripheral.
+ * @param[out]  pu8DataBuf Pointer to the receive buffer for storing the security register data.
+ * @param[in]   u32NRx     Number of bytes to receive.
+ * @param[in]   u32NBit    Bit mode used for transmit/receive:
+ *                         - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @return      None
+ */
+static void _SPIM_ReadSecurityRegister(SPIM_T *spim, uint8_t *pu8DataBuf, uint32_t u32NRx, uint32_t u32NBit)
+{
+    /* 1-byte Read Status Register #1 command. */
+    const uint8_t au8CmdBuf[2] = {OPCODE_RDSCUR, OPCODE_RDSCUR};
+    uint32_t u32DTREn;
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+    u32DTREn = SPIM_GET_DTR_MODE(spim);
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    (void)SPIM_WriteData(spim, au8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+
+    (void)SPIM_IO_SendDummyByPhase(spim,
+                                   (u32DTREn == SPIM_OP_ENABLE) ? 8UL : 0UL,
+                                   u32NBit,
+                                   u32DTREn);
+
+    (void)SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
+}
+
+/**
+ * @brief       Issue the "Read Flag Status Register" command for Micron MT35X Octal SPI Flash.
+ *
+ * @param[in]   spim       Pointer to the SPIM peripheral instance.
+ * @param[out]  pu8DataBuf Pointer to the receive buffer for storing the FSR data.
+ * @param[in]   u32NRx     Number of bytes to receive.
+ * @param[in]   u32NBit    Bit mode used for transmit/receive:
+ *                         - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                         - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                         - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                         - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @return      None
+ *
+ * @note       This command is used to check the current status of internal operations,
+ *             such as program or erase progress.
+ */
+static void _SPIM_ReadMT35xFlagRegister(SPIM_T *spim, uint8_t *pu8DataBuf,
+                                        uint32_t u32NRx, uint32_t u32NBit)
+{
+    /* 1-byte Read Status Register #1 command. */
+    const uint8_t au8CmdBuf[2] = {OPCODE_MICRON_RD_FLG, OPCODE_MICRON_RD_FLG};
+    uint32_t u32DTREn;
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+    u32DTREn = SPIM_GET_DTR_MODE(spim);
+
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+
+    (void)SPIM_WriteData(spim, au8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+
+    (void)SPIM_IO_SendDummyByPhase(spim,
+                                   (u32DTREn == SPIM_OP_ENABLE) ? 8UL : 0UL,
+                                   u32NBit,
+                                   u32DTREn);
+
+    (void)SPIM_ReadData(spim, pu8DataBuf, u32NRx, u32NBit);
+
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+
+    SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
+}
+
+/**
+ * @brief      Check whether the SPI Flash erase or write operation has completed.
+ *
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32NBit Bit mode used for transmit/receive:
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                     - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                     - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @retval     1        Operation completed (Ready).
+ * @retval     0        Operation still in progress (Busy).
+ *
+ * @note       Typically checks the WIP (Write-In-Progress) bit in the Flash status register.
+ */
+static uint32_t _SPIM_IsWriteDone(SPIM_T *spim, uint32_t u32NBit)
+{
+    uint8_t au8Status[2] = {0U, 0U};
+    SPIM_ReadStatusRegister(spim, au8Status, sizeof(au8Status), u32NBit);
+
+    return ((au8Status[0] & SR_WIP) == 0U) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
+}
+
+/**
+ * @brief      Wait until the SPI Flash erase or write operation completes.
+ *
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32NBit Bit mode used for transmit/receive:
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                     - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                     - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @retval     SPIM_OK           Operation completed successfully.
+ * @retval     SPIM_ERR_TIMEOUT  Operation timed out (erase/write did not complete in time).
+ *
+ * @note       This function typically polls the WIP (Write-In-Progress) bit in the SPI Flash
+ *             Status Register until it is cleared, or until a timeout occurs.
+ */
+static int32_t _SPIM_WaitWriteDone(SPIM_T *spim, uint32_t u32NBit)
+{
+    uint32_t u32Count = 0UL;
+    uint32_t u32TimeoutCount = SystemCoreClock / 1000UL;
+    int32_t i32Ret = SPIM_ERR_FAIL;
+
+    for (u32Count = 0UL; u32Count < u32TimeoutCount; u32Count++)
+    {
+        if (_SPIM_IsWriteDone(spim, u32NBit) == SPIM_OP_ENABLE)
+        {
+            i32Ret = SPIM_OK;
+            break;
+        }
+    }
+
+    if (i32Ret != SPIM_OK)
+    {
+        SPIM_DBGMSG("spim_wait_write_done time-out!!\n");
+    }
+
+    return i32Ret;
+}
+
+
+/**
  * @brief      Issues a Write Enable or Write Disable command to the SPI Flash device.
  *
- * @param[in]  spim      Pointer to the SPIM peripheral instance.
- * @param[in]  i32IsEn   Specify whether to enable or disable write operations:
- *                       - \ref SPIM_OP_ENABLE : Send Write Enable command (e.g., 0x06)
- *                       - \ref SPIM_OP_DISABLE: Send Write Disable command (e.g., 0x04)
- * @param[in]  u32NBit   SPI bus I/O width (bit mode):
- *                       - \ref SPIM_BITMODE_1 : 1-bit mode
- *                       - \ref SPIM_BITMODE_2 : 2-bit mode
- *                       - \ref SPIM_BITMODE_4 : 4-bit mode
- *                       - \ref SPIM_BITMODE_8 : 8-bit mode
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  i32IsEn Specify whether to enable or disable write operations:
+ *                     - \ref SPIM_OP_ENABLE : Send Write Enable command (e.g., 0x06)
+ *                     - \ref SPIM_OP_DISABLE: Send Write Disable command (e.g., 0x04)
+ * @param[in]  u32NBit SPI bus I/O width (bit mode):
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit mode
+ *                     - \ref SPIM_BITMODE_4 : 4-bit mode
+ *                     - \ref SPIM_BITMODE_8 : 8-bit mode
  *
  * @return     None.
  *
@@ -924,15 +1181,15 @@ void SPIM_SetWriteEnable(SPIM_T *spim, int32_t i32IsEn, uint32_t u32NBit)
     /* 1-byte Write Enable command. */
     uint8_t au8CmdBuf[2] = {0U, 0U};
 
-    au8CmdBuf[0] = (i32IsEn ? OPCODE_WREN : OPCODE_WRDI);
-    au8CmdBuf[1] = (i32IsEn ? OPCODE_WREN : OPCODE_WRDI);
+    au8CmdBuf[0] = (i32IsEn != 0L) ? OPCODE_WREN : OPCODE_WRDI;
+    au8CmdBuf[1] = (i32IsEn != 0L) ? OPCODE_WREN : OPCODE_WRDI;
 
     SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
 
     /* CS activated.   */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+    (void)SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
 
     /* CS deactivated.  */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
@@ -957,10 +1214,10 @@ void SPIM_SetWriteEnable(SPIM_T *spim, int32_t i32IsEn, uint32_t u32NBit)
 int32_t SPIM_SetWrapAroundEnable(SPIM_T *spim, int32_t i32IsEn)
 {
     const uint32_t u32CmdBuf[2] = {0x00000000, 0x11011101};
-    int32_t i32Ret;
-    uint32_t u32Mask;
-    uint32_t u32Val;
-    uint32_t u32IsQuadEn;
+    int32_t i32Ret = 0L;
+    uint32_t u32Mask = 0UL;
+    uint32_t u32Val = 0UL;
+    uint32_t u32IsQuadEn = 0UL;
 
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
@@ -1007,7 +1264,7 @@ int32_t SPIM_SetWrapAroundEnable(SPIM_T *spim, int32_t i32IsEn)
 /**
  * @brief      Issue the command to exit continuous read mode on SPI Flash.
  *
- * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  spim Pointer to the SPIM peripheral instance.
  *
  * @retval     0                  Operation completed successfully.
  * @retval     negative value     Operation failed (e.g., due to timeout or invalid configuration).
@@ -1020,8 +1277,8 @@ int32_t SPIM_SetWrapAroundEnable(SPIM_T *spim, int32_t i32IsEn)
  */
 static int32_t _SPIM_SetContReadDisable(SPIM_T *spim)
 {
-    int32_t i32Ret;
-    uint32_t u32IsQuadEn;
+    int32_t i32Ret = 0L;
+    uint32_t u32IsQuadEn = 0UL;
 
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
@@ -1063,6 +1320,7 @@ static int32_t _SPIM_SetContReadDisable(SPIM_T *spim)
 
 /**
  * @brief      Synchronize the 4-byte address mode state between the SPIM controller and the SPI Flash device.
+ *
  * @param[in]  spim           Pointer to the SPIM peripheral instance.
  * @param[in]  u32Is4ByteAddr Specify whether to enable (1) or disable (0) 4-byte address mode.
  * @param[in]  u32CmdBit      Bit mode used for the command transmission
@@ -1070,18 +1328,18 @@ static int32_t _SPIM_SetContReadDisable(SPIM_T *spim)
  *                            - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
  *                            - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
  *                            - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
  * @return     SPIM_OK on success, or an error code on failure.
  *
  * @note       This function ensures that the SPIM controller's 4-byte address mode setting
  *             matches the SPI Flash device's mode by sending the appropriate command
  *             (EN4B or EX4B) if a change is needed.
- *
  */
 static int32_t _SPIM_Sync4ByteAddrMode(SPIM_T *spim, uint32_t u32Is4ByteAddr, uint32_t u32CmdBit)
 {
     uint32_t u32Flash4BState = SPIM_Is4ByteModeEnable(spim, u32CmdBit);
 
-    /* If the current state is the same, skip resending EN4B/EX4B to avoid redundant commands */
+    /* If the current state is the same, skip resending EN4B/EX4B to avoid redundant commands. */
     if (u32Flash4BState != u32Is4ByteAddr)
     {
         int32_t i32Ret = SPIM_Enable_4Bytes_Mode(spim, u32Is4ByteAddr, u32CmdBit);
@@ -1092,18 +1350,102 @@ static int32_t _SPIM_Sync4ByteAddrMode(SPIM_T *spim, uint32_t u32Is4ByteAddr, ui
         }
     }
 
-    /* Sync SPIM mode only after flash-side state is confirmed or unchanged. */
+    /* B4ADDREN controls the controller address phase used by DMA/DMM. */
     SPIM_SET_4BYTE_ADDR(spim, u32Is4ByteAddr);
+
+    return SPIM_OK;
+}
+
+/**
+ * @brief      Prepare the SPI Flash address mode based on the command and address length.
+ *
+ * @param[in]  spim           Pointer to the SPIM peripheral instance.
+ * @param[in]  u32Cmd         The SPI Flash command opcode.
+ * @param[in]  u32Is4ByteAddr Specify whether the address is 4 bytes (1) or 3 bytes (0).
+ * @param[in]  u32CmdBit      Bit mode used for the command transmission
+ *                            - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                            - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                            - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                            - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ *
+ * @return     SPIM_OK on success, or an error code on failure.
+ */
+static int32_t _SPIM_PrepareAddressMode(SPIM_T *spim, uint32_t u32Cmd,
+                                        uint32_t u32Is4ByteAddr, uint32_t u32CmdBit)
+{
+    SPIM_ADDR_TYPE_E eAddrType;
+
+    /* A dedicated 4-byte opcode with a 3-byte address phase is internally
+       inconsistent. Reject it instead of silently issuing a malformed
+       transaction. */
+    if ((_SPIM_IsDedicated4ByteCommand(u32Cmd) != SPIM_OP_DISABLE) &&
+            (u32Is4ByteAddr == SPIM_OP_DISABLE))
+    {
+        return SPIM_ERR_FAIL;
+    }
+
+    eAddrType = _SPIM_GetAddressType(u32Cmd, u32Is4ByteAddr);
+
+    if (eAddrType == SPIM_ADDR_TYPE_4BYTE_OPCODE)
+    {
+        /* Dedicated 4-byte opcodes carry their own addressing semantics. The
+           controller still needs a 32-bit address phase, but the flash device
+           must not be forced into persistent EN4B mode. */
+        SPIM_SET_4BYTE_ADDR(spim, SPIM_OP_ENABLE);
+        return SPIM_OK;
+    }
+
+    return _SPIM_Sync4ByteAddrMode(spim,
+                                   (eAddrType == SPIM_ADDR_TYPE_4BYTE_MODE) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE,
+                                   u32CmdBit);
+}
+
+/**
+ * @brief      Prepare the SPI Flash transfer by ensuring the address mode and quad mode are correctly set.
+ *
+ * @param[in]  spim           Pointer to the SPIM peripheral instance.
+ * @param[in]  u32Cmd         The SPI Flash command opcode.
+ * @param[in]  u32Is4ByteAddr Specify whether the address is 4 bytes (1) or 3 bytes (0).
+ * @param[in]  u32CmdBit      Bit mode used for the command transmission
+ *                            - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                            - \ref SPIM_BITMODE_2 : 2-bit (Dual) mode
+ *                            - \ref SPIM_BITMODE_4 : 4-bit (Quad) mode
+ *                            - \ref SPIM_BITMODE_8 : 8-bit (Octal) mode
+ * @param[in]  u32QuadMode    Specify whether to enable (1) or disable (0) Quad mode for the transfer.
+ *
+ * @return     SPIM_OK on success, or an error code on failure.
+ */
+static int32_t _SPIM_PrepareFlashTransfer(SPIM_T *spim, uint32_t u32Cmd,
+                                          uint32_t u32Is4ByteAddr, uint32_t u32CmdBit,
+                                          uint32_t u32QuadMode)
+{
+    uint32_t u32IsQuadEn = SPIM_IsQuadEnabled(spim, u32CmdBit);
+    int32_t i32Ret = _SPIM_PrepareAddressMode(spim, u32Cmd, u32Is4ByteAddr, u32CmdBit);
+
+    if (i32Ret != SPIM_OK)
+    {
+        return i32Ret;
+    }
+
+    if ((u32QuadMode != SPIM_OP_DISABLE) && (u32IsQuadEn == SPIM_OP_DISABLE))
+    {
+        SPIM_SetQuadEnable(spim, SPIM_OP_ENABLE, u32CmdBit);
+    }
 
     return SPIM_OK;
 }
 
 /** @endcond HIDDEN_SYMBOLS */
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* Vendor-specific SPI Flash Protocol Mode Control                                                         */
+/*---------------------------------------------------------------------------------------------------------*/
 /**
  * @brief      Exit Infineon Octal I/O (OPI) mode and revert to legacy 1S-1S-1S SPI mode.
-
- * @param[in]  spim     Pointer to the SPIM peripheral instance.
+ *
+ * @param[in]  spim Pointer to the SPIM peripheral instance.
+ *
+ * @return     None
  *
  * @note       After this operation, all future communication with the flash device should use
  *             standard SPI commands. Make sure the controller SPI configuration is reverted
@@ -1124,8 +1466,22 @@ void SPIM_ExitOPIMode_IFX(SPIM_T *spim)
         .u32RDQS = SPIM_OP_DISABLE, .u32DcNum = 8
     };
     SPIM_PHASE_T sWrite8D = sPhase8D;
-    SPIM_PHASE_T sPhase8S = {0};
-    SPIM_PHASE_T sWrite8S = {0};
+    SPIM_PHASE_T sPhase8S =
+    {
+        .u32CMDCode = OPCODE_IFX_RD_VCR,
+        .u32CMDPhase = PHASE_OCTAL_MODE, .u32CMDWidth = PHASE_WIDTH_8, .u32CMDDTR = PHASE_DISABLE_DTR,
+        .u32AddrPhase = PHASE_OCTAL_MODE, .u32AddrWidth = PHASE_WIDTH_32, .u32AddrDTR = PHASE_DISABLE_DTR,
+        .u32DataPhase = PHASE_OCTAL_MODE, .u32ByteOrder = PHASE_ORDER_MODE0, .u32DataDTR = PHASE_DISABLE_DTR,
+        .u32RDQS = SPIM_OP_DISABLE, .u32DcNum = 0
+    };
+    SPIM_PHASE_T sWrite8S =
+    {
+        .u32CMDCode = OPCODE_IFX_WR_VCR,
+        .u32CMDPhase = PHASE_OCTAL_MODE, .u32CMDWidth = PHASE_WIDTH_8, .u32CMDDTR = PHASE_DISABLE_DTR,
+        .u32AddrPhase = PHASE_OCTAL_MODE, .u32AddrWidth = PHASE_WIDTH_32, .u32AddrDTR = PHASE_DISABLE_DTR,
+        .u32DataPhase = PHASE_OCTAL_MODE, .u32ByteOrder = PHASE_ORDER_MODE0, .u32DataDTR = PHASE_DISABLE_DTR,
+        .u32RDQS = SPIM_OP_DISABLE, .u32DcNum = 0
+    };
 
     sWrite8D.u32CMDCode = OPCODE_IFX_WR_VCR;
     sWrite8D.u32DcNum = 0;
@@ -1135,35 +1491,37 @@ void SPIM_ExitOPIMode_IFX(SPIM_T *spim)
 
     if ((u8CFR5Buf != 0xFFU) && (u8CFR5Buf != 0x00U))
     {
-        u8CFR5Buf &= ~0x03;
+        u8CFR5Buf = (uint8_t)(u8CFR5Buf & 0xFCU);
         SPIM_IO_WriteByPhase(spim, &sWrite8D, IFX_CFR5_ADDR, &u8CFR5Buf, 1, SPIM_OP_DISABLE);
     }
 
     // === Phase B: Try accessing CFR5V using Octal SDR (8S-8S-8S) ===
     u8CFR5Buf = 0xFFU;
-    sPhase8S = sPhase8D;
-    sPhase8S.u32CMDDTR = PHASE_DISABLE_DTR;
-    sPhase8S.u32AddrDTR = PHASE_DISABLE_DTR;
-    sPhase8S.u32DataDTR = PHASE_DISABLE_DTR;
-    sPhase8S.u32DcNum = 0;
-
-    sWrite8S = sPhase8S;
-    sWrite8S.u32CMDCode = OPCODE_IFX_WR_VCR;
 
     SPIM_IO_ReadByPhase(spim, &sPhase8S, IFX_CFR5_ADDR, &u8CFR5Buf, 1);
 
     if ((u8CFR5Buf != 0xFFU) && (u8CFR5Buf != 0x00U))
     {
-        u8CFR5Buf &= ~0x03;
+        u8CFR5Buf = (uint8_t)(u8CFR5Buf & 0xFCU);
         SPIM_IO_WriteByPhase(spim, &sWrite8S, IFX_CFR5_ADDR, &u8CFR5Buf, 1, SPIM_OP_DISABLE);
     }
 
     // === Phase C: Optional delay and hardware reset ===
-    for (u32Delay = 0; u32Delay < 50000UL; u32Delay++) {}
+    u32Delay = 0UL;
+
+    while (u32Delay < 50000UL)
+    {
+        u32Delay++;
+    }
 
     SPIM_SET_RSTN_MODE(spim, SPIM_OP_ENABLE);
 
-    for (u32Delay = 0; u32Delay < 50000UL; u32Delay++) {}
+    u32Delay = 0UL;
+
+    while (u32Delay < 50000UL)
+    {
+        u32Delay++;
+    }
 
     SPIM_SET_RSTN_MODE(spim, SPIM_OP_DISABLE);
 
@@ -1173,10 +1531,11 @@ void SPIM_ExitOPIMode_IFX(SPIM_T *spim)
 /**
  * @brief      Enter Infineon Octal I/O (OPI) mode in SDR or DDR.
  *
- * @param[in]  spim       Pointer to the SPIM peripheral instance.
- * @param[in]  i32IsDDR   DDR mode flag.
- *                        - \ref SPIM_OP_DISABLE : Enter OPI SDR mode (8S-8S-8S)
- *                        - \ref SPIM_OP_ENABLE  : Enter OPI DDR mode (8D-8D-8D)
+ * @param[in]  spim     Pointer to the SPIM peripheral instance.
+ * @param[in]  i32IsDDR DDR mode flag.
+ *                      - \ref SPIM_OP_DISABLE : Enter OPI SDR mode (8S-8S-8S)
+ *                      - \ref SPIM_OP_ENABLE  : Enter OPI DDR mode (8D-8D-8D)
+ *
  * @return     None.
  *
  * @note       Before calling this function, ensure that the Write Enable (WREN) command is issued.
@@ -1185,27 +1544,27 @@ void SPIM_ExitOPIMode_IFX(SPIM_T *spim)
  */
 void SPIM_EnterOPIMode_IFX(SPIM_T *spim, int i32IsDDR)
 {
-    uint8_t u8CFR5Buf = 0;
-    volatile uint32_t u32Delay = 0;
+    uint8_t u8CFR5Buf = 0U;
+    volatile uint32_t u32Delay = 0UL;
 
     // Phase setting for initial 1S-1S-1S
     SPIM_PHASE_T sCmdRead =
     {
-        .u32CMDCode   = OPCODE_IFX_RD_VCR, // 0x65: Read Any Register
-        .u32CMDPhase  = PHASE_NORMAL_MODE,
-        .u32CMDWidth  = PHASE_WIDTH_8,
-        .u32CMDDTR    = PHASE_DISABLE_DTR,
+        .u32CMDCode = OPCODE_IFX_RD_VCR, // 0x65: Read Any Register
+        .u32CMDPhase = PHASE_NORMAL_MODE,
+        .u32CMDWidth = PHASE_WIDTH_8,
+        .u32CMDDTR = PHASE_DISABLE_DTR,
 
         .u32AddrPhase = PHASE_NORMAL_MODE,
         .u32AddrWidth = PHASE_WIDTH_24,
-        .u32AddrDTR   = PHASE_DISABLE_DTR,
+        .u32AddrDTR = PHASE_DISABLE_DTR,
 
         .u32DataPhase = PHASE_NORMAL_MODE,
         .u32ByteOrder = PHASE_ORDER_MODE0,
-        .u32DataDTR   = PHASE_DISABLE_DTR,
+        .u32DataDTR = PHASE_DISABLE_DTR,
 
-        .u32RDQS      = SPIM_OP_DISABLE,
-        .u32DcNum     = 0,
+        .u32RDQS = SPIM_OP_DISABLE,
+        .u32DcNum = 0,
     };
 
     // Clone for write
@@ -1218,25 +1577,30 @@ void SPIM_EnterOPIMode_IFX(SPIM_T *spim, int i32IsDDR)
     SPIM_IO_ReadByPhase(spim, &sCmdRead, IFX_CFR5_ADDR, &u8CFR5Buf, sizeof(u8CFR5Buf));
 
     // Step 2: Set OPI-IT (bit 0) and SDRDDR (bit 1)
-    u8CFR5Buf |= 0x01; // OPI-IT = 1 Octal mode enable
+    u8CFR5Buf = (uint8_t)(u8CFR5Buf | 0x01U); // OPI-IT = 1 Octal mode enable
 
-    if (i32IsDDR)
+    if (i32IsDDR != 0)
     {
-        u8CFR5Buf |= 0x02; // SDRDDR = 1 DDR mode
+        u8CFR5Buf = (uint8_t)(u8CFR5Buf | 0x02U); // SDRDDR = 1 DDR mode
     }
     else
     {
-        u8CFR5Buf &= ~(0x02); // SDRDDR = 0 SDR mode
+        u8CFR5Buf = (uint8_t)(u8CFR5Buf & 0xFDU); // SDRDDR = 0 SDR mode
     }
 
     // Step 3: Write back updated value
     SPIM_IO_WriteByPhase(spim, &sCmdWrite, IFX_CFR5_ADDR, &u8CFR5Buf, sizeof(u8CFR5Buf), SPIM_OP_DISABLE);
 
     // Step 4: Wait for mode switch to take effect
-    for (u32Delay = 0; u32Delay < 50000UL; u32Delay++) {}
+    u32Delay = 0UL;
+
+    while (u32Delay < 50000UL)
+    {
+        u32Delay++;
+    }
 
     // Step 5: Update global DTR flag
-    if (i32IsDDR)
+    if (i32IsDDR != 0)
     {
         SPIM_SET_DTR_MODE(spim, SPIM_OP_ENABLE);
     }
@@ -1251,22 +1615,24 @@ void SPIM_EnterOPIMode_IFX(SPIM_T *spim, int i32IsDDR)
 /**
  * @brief      Exit Micron Octal I/O (OPI) mode and revert to 1S-1S-1S legacy SPI mode.
  *
- * @param[in]  spim     Pointer to the SPIM peripheral instance.
+ * @param[in]  spim Pointer to the SPIM peripheral instance.
  *
  * @note       This operation typically requires a Write Enable (WREN) command beforehand.
  * @note       After exiting OPI mode, reconfigure SPIM controller to match legacy SPI timing and bit mode.
+ *
+ * @return     None
  */
 void SPIM_ExitOPIMode_MICRON(SPIM_T *spim)
 {
     uint8_t u8CMDBuf[1] = {OPCODE_MICRON_SDR_DQS};
     SPIM_PHASE_T sWrNVCRegCMD =
     {
-        OPCODE_MICRON_WR_VCFG,                                                  //Command Code
-        PHASE_OCTAL_MODE, PHASE_WIDTH_8, PHASE_ENABLE_DTR,                      //Command Phase
-        PHASE_OCTAL_MODE, PHASE_WIDTH_32, PHASE_ENABLE_DTR,                     //Address Phase
-        PHASE_OCTAL_MODE, PHASE_ORDER_MODE0, PHASE_ENABLE_DTR, SPIM_OP_ENABLE,  //Data Phase
-        0,                                                                      //Dummy
-        PHASE_DISABLE_CONT_READ, 0, 0, 0,                                      //Continue Phase
+        OPCODE_MICRON_WR_VCFG,                              //Command Code
+        PHASE_OCTAL_MODE, PHASE_WIDTH_8, PHASE_ENABLE_DTR,  //Command Phase
+        PHASE_OCTAL_MODE, PHASE_WIDTH_32, PHASE_ENABLE_DTR, //Address Phase
+        PHASE_OCTAL_MODE, PHASE_ORDER_MODE0, PHASE_ENABLE_DTR, SPIM_OP_ENABLE, //Data Phase
+        0,                                                  //Dummy
+        PHASE_DISABLE_CONT_READ, 0, 0, 0,                   //Continue Phase
     };
 
     SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
@@ -1289,23 +1655,25 @@ void SPIM_ExitOPIMode_MICRON(SPIM_T *spim)
 /**
  * @brief      Enter Micron Octal I/O (OPI) mode in either SDR or DDR.
  *
- * @param[in]  spim       Pointer to the SPIM peripheral instance.
+ * @param[in]  spim Pointer to the SPIM peripheral instance.
  *
  * @note       A Write Enable (WREN) command is typically required before modifying VCR6.
  * @note       After enabling OPI mode, the SPIM controller must be reconfigured to match the selected
  *             OPI mode (DDR), including bit width, DQS, and dummy cycles.
+ *
+ * @return     None
  */
 void SPIM_EnterOPIMode_MICRON(SPIM_T *spim)
 {
     uint8_t u8CMDBuf[1] = {OPCODE_MICRON_OCTAL_DQS};
     SPIM_PHASE_T sWrNVCRegCMD =
     {
-        OPCODE_MICRON_WR_VCFG,                                                      //Command Code
-        PHASE_NORMAL_MODE, PHASE_WIDTH_8, PHASE_DISABLE_DTR,                        //Command Phase
-        PHASE_NORMAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR,                       //Address Phase
-        PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE,   //Data Phase
+        OPCODE_MICRON_WR_VCFG,                                //Command Code
+        PHASE_NORMAL_MODE, PHASE_WIDTH_8, PHASE_DISABLE_DTR,  //Command Phase
+        PHASE_NORMAL_MODE, PHASE_WIDTH_32, PHASE_DISABLE_DTR, //Address Phase
+        PHASE_NORMAL_MODE, PHASE_ORDER_MODE0, PHASE_DISABLE_DTR, SPIM_OP_DISABLE, //Data Phase
         0,
-        PHASE_DISABLE_CONT_READ, 0, 0, 0,                                          //Continue Phase
+        PHASE_DISABLE_CONT_READ, 0, 0, 0,                     //Continue Phase
     };
 
     SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
@@ -1326,30 +1694,65 @@ void SPIM_EnterOPIMode_MICRON(SPIM_T *spim)
 }
 
 /**
- * @brief      Get the current SPIM serial clock frequency.
+ * @brief      Unlock Winbond flash chip with security bit enabled.
  *
  * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32NBit Bit mode used for command transmission.
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                     - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                     - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
  *
- * @retval     uint32_t    SPI serial clock frequency in Hz.
+ * @return     None.
  *
- * @note       Ensure the SPIM clock source and divider are properly configured before calling this function.
+ * @note       This function issues the Winbond-specific unlock sequence
+ *             to disable security features and allow full chip access.
  */
-uint32_t SPIM_GetSClkFreq(const SPIM_T *spim)
+void SPIM_WinbondUnlock(SPIM_T *spim, uint32_t u32NBit)
 {
-    uint32_t u32ClkDiv = SPIM_GET_CLOCK_DIVIDER(spim);
+    uint8_t au8IdBuf[3] = {0U, 0U, 0U};
+    uint8_t dataBuf[4] = {0U, 0U, 0U, 0U};
 
-    return u32ClkDiv ? SystemCoreClock / (u32ClkDiv * 2U) : SystemCoreClock;
+    SPIM_ReadJedecId(spim, au8IdBuf, sizeof(au8IdBuf), u32NBit);
+
+    if ((au8IdBuf[0] != (uint8_t)MFGID_WINBOND) ||
+            (au8IdBuf[1] != 0x40U) ||
+            (au8IdBuf[2] != 0x16U))
+    {
+        SPIM_DBGMSG("SPIM_WinbondUnlock - Not W25Q32, do nothing.\n");
+        return;
+    }
+
+    SPIM_ReadStatusRegister(spim, &dataBuf[0], 1UL, u32NBit);
+    _SPIM_ReadStatusRegister2(spim, &dataBuf[1], 1UL, u32NBit);
+    SPIM_DBGMSG("Status Register: 0x%x - 0x%x\n", dataBuf[0], dataBuf[1]);
+
+    /* clear Status Register-1 SEC bit */
+    dataBuf[1] = (uint8_t)(dataBuf[1] & 0xBFU);
+
+    /* Write Enable.    */
+    SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, u32NBit);
+    _SPIM_WriteStatusRegister2(spim, dataBuf, sizeof(dataBuf), u32NBit);
+    (void)_SPIM_WaitWriteDone(spim, u32NBit);
+
+    SPIM_ReadStatusRegister(spim, &dataBuf[0], 1UL, u32NBit);
+    _SPIM_ReadStatusRegister2(spim, &dataBuf[1], 1UL, u32NBit);
+    SPIM_DBGMSG("Status Register (after unlock): 0x%x - 0x%x\n", dataBuf[0], dataBuf[1]);
 }
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* SPI Flash Initialization, Address and Protocol Configuration                                           */
+/*---------------------------------------------------------------------------------------------------------*/
 /**
  * @brief      Resets the connected SPI Flash device via SPIM.
  *
- * @param[in]  spim      Pointer to the SPIM instance.
- * @param[in]  u32NBit   N-bit transfer mode.
- *                       - \ref SPIM_BITMODE_1 : Standard SPI (1-bit)
- *                       - \ref SPIM_BITMODE_2 : Dual SPI (2-bit)
- *                       - \ref SPIM_BITMODE_4 : Quad SPI (4-bit)
- *                       - \ref SPIM_BITMODE_8 : Octal SPI (8-bit)
+ * @param[in]  spim    Pointer to the SPIM instance.
+ * @param[in]  u32NBit N-bit transfer mode.
+ *                     - \ref SPIM_BITMODE_1 : Standard SPI (1-bit)
+ *                     - \ref SPIM_BITMODE_2 : Dual SPI (2-bit)
+ *                     - \ref SPIM_BITMODE_4 : Quad SPI (4-bit)
+ *                     - \ref SPIM_BITMODE_8 : Octal SPI (8-bit)
+ *
  * @return     None
  *
  * @note       Some Flash chips (e.g., Winbond, Micron, ISSI, Macronix) require reset before switching modes (e.g., exiting OPI).
@@ -1357,7 +1760,7 @@ uint32_t SPIM_GetSClkFreq(const SPIM_T *spim)
  */
 static void _SPIM_ResetDevice(SPIM_T *spim, uint32_t u32NBit)
 {
-    uint8_t au8CmdBuf[2] = {0UL, 0UL};
+    uint8_t au8CmdBuf[2] = {0U, 0U};
 
     /* Reset Enable */
     au8CmdBuf[0] = OPCODE_RSTEN;
@@ -1366,7 +1769,7 @@ static void _SPIM_ResetDevice(SPIM_T *spim, uint32_t u32NBit)
     /* CS activated.    */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+    (void)SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
 
     /* CS deactivated.  */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
@@ -1378,10 +1781,77 @@ static void _SPIM_ResetDevice(SPIM_T *spim, uint32_t u32NBit)
     /* CS activated.    */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+    (void)SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
 
     /* CS deactivated.  */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+}
+
+/**
+ * @brief      Attempt to recover the SPI Flash device from an unknown or unsupported state.
+ *
+ * @param[in]  spim Pointer to the SPIM instance.
+ *
+ * @return     None.
+ * @note       This function tries to exit any OPI mode (Infineon or Micron) and resets the device.
+ */
+static void _SPIM_RecoverFlash(SPIM_T *spim)
+{
+    SPIM_ExitOPIMode_IFX(spim);
+    SPIM_ExitOPIMode_MICRON(spim);
+
+    /* The current device mode is unknown. Keep the released BSP recovery
+       sequence: try Quad reset first, then legacy Single-SPI reset. */
+    _SPIM_ResetDevice(spim, SPIM_BITMODE_4);
+    _SPIM_ResetDevice(spim, SPIM_BITMODE_1);
+}
+
+/**
+ * @brief      Clear the write protection bits of the SPI Flash device, if supported.
+ *
+ * @param[in]  spim Pointer to the SPIM instance.
+ *
+ * @return     None.
+ */
+static void _SPIM_ClearFlashWriteProtect(SPIM_T *spim)
+{
+    uint8_t au8DataBuf[1] = {0x00U};
+
+    SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, SPIM_BITMODE_1);
+    _SPIM_WriteStatusRegister(spim, au8DataBuf, sizeof(au8DataBuf), SPIM_BITMODE_1);
+    (void)_SPIM_WaitWriteDone(spim, SPIM_BITMODE_1);
+}
+
+/**
+ * @brief      Check if the given Manufacturer ID is in the supported list.
+ *
+ * @param[in]  u8MfgId Manufacturer ID to check.
+ *
+ * @return     SPIM_OP_ENABLE if supported, SPIM_OP_DISABLE otherwise.
+ */
+static uint32_t _SPIM_IsSupportedManufacturer(uint8_t u8MfgId)
+{
+    const uint8_t au8SupportedList[] =
+    {
+        (uint8_t)MFGID_WINBOND,
+        (uint8_t)MFGID_MXIC,
+        (uint8_t)MFGID_EON,
+        (uint8_t)MFGID_ISSI,
+        (uint8_t)MFGID_SPANSION,
+        (uint8_t)MFGID_MICRON,
+        (uint8_t)MFGID_IFX,
+    };
+    uint32_t u32i = 0UL;
+
+    for (u32i = 0UL; u32i < (sizeof(au8SupportedList) / sizeof(au8SupportedList[0])); u32i++)
+    {
+        if (u8MfgId == au8SupportedList[u32i])
+        {
+            return SPIM_OP_ENABLE;
+        }
+    }
+
+    return SPIM_OP_DISABLE;
 }
 
 /**
@@ -1403,72 +1873,33 @@ static void _SPIM_ResetDevice(SPIM_T *spim, uint32_t u32NBit)
  */
 int32_t SPIM_InitFlash(SPIM_T *spim, int32_t i32ClrWP)
 {
-    uint8_t au8IdBuf[3];
-    uint32_t u32i = 0;
-    int32_t i32Ret = (int32_t)SPIM_ERR_FAIL;
-    const uint8_t  u8Supported_List[] =
-    {
-        MFGID_WINBOND,
-        MFGID_MXIC,
-        MFGID_EON,
-        MFGID_ISSI,
-        MFGID_SPANSION,
-        MFGID_MICRON,
-        MFGID_IFX,
-    };
+    uint8_t au8IdBuf[3] = {0U, 0U, 0U};
+    int32_t i32Ret = SPIM_ERR_FAIL;
 
-    /* Enable SPI Flash Mode */
+    /* Enable SPI Flash Mode. */
     SPIM_SET_FLASH_MODE(spim);
-
-    /* Enable DLL */
-    (void)SPIM_INIT_DLL(spim);
 
     SPIM_SET_SS_ACTLVL(spim, SPIM_OP_DISABLE);
 
-    SPIM_ExitOPIMode_IFX(spim);
+    /* Keep the previous JEDEC ID available during recovery so repeated
+       SPIM_InitFlash() behavior remains compatible with the released BSP. */
+    /* Keep the released BSP recovery command order unchanged. */
+    _SPIM_RecoverFlash(spim);
 
-    SPIM_ExitOPIMode_MICRON(spim);
-
-    /*
-     * Because not sure in SPI or QPI mode, do QPI reset and then SPI reset.
-     */
-    /* Quad Mode Reset */
-    _SPIM_ResetDevice(spim, SPIM_BITMODE_4);
-
-    /* Single Mode Reset */
-    _SPIM_ResetDevice(spim, SPIM_BITMODE_1);
-
-    if (i32ClrWP)
+    if (i32ClrWP != 0L)
     {
-        uint8_t dataBuf[] = {0x00U};
-
-        /* Clear Block Protect. */
-        SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, SPIM_BITMODE_1);
-
-        _SPIM_WriteStatusRegister(spim, dataBuf, sizeof(dataBuf), SPIM_BITMODE_1);
-
-        (void)_SPIM_WaitWriteDone(spim, SPIM_BITMODE_1);
+        _SPIM_ClearFlashWriteProtect(spim);
     }
 
     SPIM_ReadJedecId(spim, au8IdBuf, sizeof(au8IdBuf), SPIM_BITMODE_1);
+    _SPIM_UpdateJedecId(spim, au8IdBuf, sizeof(au8IdBuf));
 
-    for (u32i = 0; u32i < sizeof(au8IdBuf); ++u32i)
+    if (_SPIM_IsSupportedManufacturer(au8IdBuf[0]) != SPIM_OP_DISABLE)
     {
-        gau8IDBuf[u32i] = au8IdBuf[u32i];
+        i32Ret = SPIM_OK;
     }
 
-    /* printf("ID: 0x%x, 0x%x, px%x\n", idBuf[0], idBuf[1], idBuf[2]); */
-
-    for (u32i = 0UL; u32i < sizeof(u8Supported_List) / sizeof(u8Supported_List[0]); u32i++)
-    {
-        if (au8IdBuf[0] == u8Supported_List[u32i])
-        {
-            i32Ret = SPIM_OK;
-            break;
-        }
-    }
-
-    if (i32Ret != 0)
+    if (i32Ret != SPIM_OK)
     {
         SPIM_DBGMSG("Flash initialize failed!! 0x%x\n", au8IdBuf[0]);
     }
@@ -1477,21 +1908,21 @@ int32_t SPIM_InitFlash(SPIM_T *spim, int32_t i32ClrWP)
 }
 
 /**
- * @brief      Issue JEDEC ID (0x9F) command to read manufacturer and product ID.
+ * @brief   Issue JEDEC ID (0x9F) command to read manufacturer and product ID.
  *
- * @param      spim       Pointer to the SPIM module.
- * @param      pu8IdBuf   Pointer to an ID buffer with space for 3 bytes:
- *                        - `pu8IdBuf[0]`: Manufacturer ID
- *                        - `pu8IdBuf[1]`: Memory Type / Product ID
- *                        - `pu8IdBuf[2]`: Capacity / Revision Code
- * @param      u32NRx     Number of bytes to read. Must be at least 3.
- * @param      u32NBit    N-bit transmit/receive mode. One of:
- *                        - \ref SPIM_BITMODE_1
- *                        - \ref SPIM_BITMODE_2
- *                        - \ref SPIM_BITMODE_4
- *                        - \ref SPIM_BITMODE_8
+ * @param   spim     Pointer to the SPIM module.
+ * @param   pu8IdBuf Pointer to an ID buffer with space for 3 bytes:
+ *                   - `pu8IdBuf[0]`: Manufacturer ID
+ *                   - `pu8IdBuf[1]`: Memory Type / Product ID
+ *                   - `pu8IdBuf[2]`: Capacity / Revision Code
+ * @param   u32NRx   Number of bytes to read. Must be at least 3.
+ * @param   u32NBit  N-bit transmit/receive mode. One of:
+ *                   - \ref SPIM_BITMODE_1
+ *                   - \ref SPIM_BITMODE_2
+ *                   - \ref SPIM_BITMODE_4
+ *                   - \ref SPIM_BITMODE_8
  *
- * @return     None.
+ * @return  None.
  *
  * @note       Some vendors may require dummy cycles or specific bit modes to return valid ID.
  * @note       This function assumes the SPI Flash is in legacy 1S-1S-1S mode before OPI mode is entered.
@@ -1500,23 +1931,28 @@ void SPIM_ReadJedecId(SPIM_T *spim, uint8_t *pu8IdBuf, uint32_t u32NRx, uint32_t
 {
     /* 1-byte JEDEC ID command. */
     const uint8_t au8CmdBuf[2] = {OPCODE_RDID, OPCODE_RDID};
-    int32_t i32Ret;
+    int32_t i32Ret = 0L;
+    uint32_t u32DTREn;
 
     SPIM_SetupConfigRegDiv(spim, SPIM_OP_DISABLE);
+    u32DTREn = SPIM_GET_DTR_MODE(spim);
 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    i32Ret = _SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+    i32Ret = SPIM_WriteData(spim, au8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
 
     if (i32Ret == SPIM_OK)
     {
-        i32Ret = SPIM_IO_SendDummyByPhase(spim, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 8UL : 0UL);
+        i32Ret = SPIM_IO_SendDummyByPhase(spim,
+                                          (u32DTREn == SPIM_OP_ENABLE) ? 8UL : 0UL,
+                                          u32NBit,
+                                          u32DTREn);
     }
 
     if (i32Ret == SPIM_OK)
     {
-        i32Ret = _SPIM_ReadData(spim, pu8IdBuf, u32NRx, u32NBit);
+        i32Ret = SPIM_ReadData(spim, pu8IdBuf, u32NRx, u32NBit);
     }
 
     /* CS deactivated. */
@@ -1524,23 +1960,23 @@ void SPIM_ReadJedecId(SPIM_T *spim, uint8_t *pu8IdBuf, uint32_t u32NRx, uint32_t
 
     SPIM_SetupConfigRegDiv(spim, SPIM_OP_ENABLE);
 
-    if ((i32Ret == SPIM_OK) && (pu8IdBuf != (uint8_t *)NULL) && (u32NRx >= sizeof(gau8IDBuf)))
+    if (i32Ret == SPIM_OK)
     {
-        (void)memcpy(gau8IDBuf, pu8IdBuf, sizeof(gau8IDBuf));
+        _SPIM_UpdateJedecId(spim, pu8IdBuf, u32NRx);
     }
 }
 
 /** @cond HIDDEN_SYMBOLS */
 
 /**
- * @brief      Enable or disable Spansion Quad Mode.
+ * @brief   Enable or disable Spansion Quad Mode.
  *
- * @param      spim     Pointer to the SPIM peripheral instance.
- * @param      u32IsEn  Operation mode:
- *                      - \ref SPIM_OP_ENABLE  : Enable Quad mode
- *                      - \ref SPIM_OP_DISABLE : Disable Quad mode
+ * @param   spim    Pointer to the SPIM peripheral instance.
+ * @param   u32IsEn Operation mode:
+ *                  - \ref SPIM_OP_ENABLE  : Enable Quad mode
+ *                  - \ref SPIM_OP_DISABLE : Disable Quad mode
  *
- * @return     None.
+ * @return  None.
  *
  * @note       This command sequence is specific to Spansion (Cypress) Flash devices.
  *             Make sure the flash device supports Quad Mode and follows the QE-bit definition
@@ -1548,9 +1984,9 @@ void SPIM_ReadJedecId(SPIM_T *spim, uint8_t *pu8IdBuf, uint32_t u32NRx, uint32_t
  */
 static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn)
 {
-    uint8_t au8CmdBuf[3];
-    uint8_t au8DataBuf[1];
-    uint8_t u8Status1;
+    uint8_t au8CmdBuf[3] = {0U, 0U, 0U};
+    uint8_t au8DataBuf[1] = {0U};
+    uint8_t u8Status1 = 0U;
     volatile int32_t i32Delay = 10000L;
 
     /* Read Status Register-1 */
@@ -1558,9 +1994,9 @@ static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn)
 
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, 1UL, SPIM_BITMODE_1);
+    (void)SPIM_WriteData(spim, au8CmdBuf, 1UL, SPIM_BITMODE_1);
 
-    (void)_SPIM_ReadData(spim, au8DataBuf, sizeof(au8DataBuf), SPIM_BITMODE_1);
+    (void)SPIM_ReadData(spim, au8DataBuf, sizeof(au8DataBuf), SPIM_BITMODE_1);
 
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
     /* SPIM_DBGMSG("SR1 = 0x%x\n", au8DataBuf[0]); */
@@ -1572,9 +2008,9 @@ static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn)
 
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, 1UL, SPIM_BITMODE_1);
+    (void)SPIM_WriteData(spim, au8CmdBuf, 1UL, SPIM_BITMODE_1);
 
-    (void)_SPIM_ReadData(spim, au8DataBuf, sizeof(au8DataBuf), SPIM_BITMODE_1);
+    (void)SPIM_ReadData(spim, au8DataBuf, sizeof(au8DataBuf), SPIM_BITMODE_1);
 
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
     /* SPIM_DBGMSG("CR1 = 0x%x\n", au8DataBuf[0]); */
@@ -1585,7 +2021,7 @@ static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn)
     au8CmdBuf[0] = OPCODE_WRSR;
     au8CmdBuf[1] = u8Status1;
 
-    if (u32IsEn)
+    if (u32IsEn != 0UL)
     {
         /* set QUAD */
         au8CmdBuf[2] = au8DataBuf[0] | 0x2U;
@@ -1598,20 +2034,20 @@ static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn)
 
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), SPIM_BITMODE_1);
+    (void)SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), SPIM_BITMODE_1);
 
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
 
-    SPIM_SetWriteEnable(spim, SPIM_OP_DISABLE, SPIM_BITMODE_1);
+    SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_DISABLE, SPIM_BITMODE_1);
 
     /* Read Configuration Register-2 */
     au8CmdBuf[0] = OPCODE_RDSR2;
 
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, 1UL, SPIM_BITMODE_1);
+    (void)SPIM_WriteData(spim, au8CmdBuf, 1UL, SPIM_BITMODE_1);
 
-    (void)_SPIM_ReadData(spim, au8DataBuf, sizeof(au8DataBuf), SPIM_BITMODE_1);
+    (void)SPIM_ReadData(spim, au8DataBuf, sizeof(au8DataBuf), SPIM_BITMODE_1);
 
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
 
@@ -1624,15 +2060,15 @@ static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn)
 /**
  * @brief      Enable or disable SPI Flash Quad Mode.
  *
- * @param[in]  spim     Pointer to the SPIM peripheral instance.
- * @param[in]  u32IsEn  Desired Quad Mode state.
- *                      - \ref SPIM_OP_ENABLE  : Enable Quad mode
- *                      - \ref SPIM_OP_DISABLE : Disable Quad mode
- * @param[in]  u32NBit  SPI transfer bit mode for issuing the command.
- *                      - \ref SPIM_BITMODE_1  : Standard 1-bit SPI mode
- *                      - \ref SPIM_BITMODE_2  : Dual output mode
- *                      - \ref SPIM_BITMODE_4  : Quad output mode
- *                      - \ref SPIM_BITMODE_8  : Octal output mode
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32IsEn Desired Quad Mode state.
+ *                     - \ref SPIM_OP_ENABLE  : Enable Quad mode
+ *                     - \ref SPIM_OP_DISABLE : Disable Quad mode
+ * @param[in]  u32NBit SPI transfer bit mode for issuing the command.
+ *                     - \ref SPIM_BITMODE_1  : Standard 1-bit SPI mode
+ *                     - \ref SPIM_BITMODE_2  : Dual output mode
+ *                     - \ref SPIM_BITMODE_4  : Quad output mode
+ *                     - \ref SPIM_BITMODE_8  : Octal output mode
  *
  * @return     None.
  *
@@ -1641,8 +2077,8 @@ static void _SPIM_EnableSpansionQuadMode(SPIM_T *spim, uint32_t u32IsEn)
  */
 void SPIM_SetQuadEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit)
 {
-    uint8_t au8IdBuf[3];
-    uint8_t dataBuf[2];
+    uint8_t au8IdBuf[3] = {0U, 0U, 0U};
+    uint8_t dataBuf[2] = {0U, 0U};
 
     SPIM_ReadJedecId(spim, au8IdBuf, sizeof(au8IdBuf), u32NBit);
 
@@ -1656,7 +2092,7 @@ void SPIM_SetQuadEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit)
             _SPIM_ReadStatusRegister2(spim, &dataBuf[1], 1UL, u32NBit);
             SPIM_DBGMSG("Status Register: 0x%x - 0x%x\n", dataBuf[0], dataBuf[1]);
 
-            if (u32IsEn)
+            if (u32IsEn != 0UL)
             {
                 dataBuf[1] |= SR2_QE;
             }
@@ -1666,7 +2102,7 @@ void SPIM_SetQuadEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit)
             }
 
             /* Write Enable. */
-            SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, u32NBit);
+            SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, u32NBit);
             _SPIM_WriteStatusRegister2(spim, dataBuf, sizeof(dataBuf), u32NBit);
             (void)_SPIM_WaitWriteDone(spim, u32NBit);
 
@@ -1682,9 +2118,9 @@ void SPIM_SetQuadEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit)
         /* ISSI SPI flash. */
         case MFGID_ISSI:
             /* Write Enable. */
-            SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, u32NBit);
+            SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, u32NBit);
 
-            dataBuf[0] = u32IsEn ? SR_QE : 0U;
+            dataBuf[0] = (u32IsEn != 0UL) ? SR_QE : 0U;
 
             _SPIM_WriteStatusRegister(spim, dataBuf, sizeof(dataBuf), u32NBit);
 
@@ -1698,17 +2134,18 @@ void SPIM_SetQuadEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit)
         default:
             break;
     }
+
 }
 
 /**
  * @brief      Get the current Quad Mode status of the connected SPI Flash.
  *
- * @param[in]  spim     Pointer to the SPIM peripheral instance.
- * @param[in]  u32NBit  SPI transfer bit mode for issuing the command.
- *                      - \ref SPIM_BITMODE_1  : Standard 1-bit SPI mode
- *                      - \ref SPIM_BITMODE_2  : Dual output mode
- *                      - \ref SPIM_BITMODE_4  : Quad output mode
- *                      - \ref SPIM_BITMODE_8  : Octal output mode
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32NBit SPI transfer bit mode for issuing the command.
+ *                     - \ref SPIM_BITMODE_1  : Standard 1-bit SPI mode
+ *                     - \ref SPIM_BITMODE_2  : Dual output mode
+ *                     - \ref SPIM_BITMODE_4  : Quad output mode
+ *                     - \ref SPIM_BITMODE_8  : Octal output mode
  *
  * @retval     uint32_t    Current Quad Mode status:
  *                         - `1` : Quad Mode is enabled
@@ -1724,7 +2161,13 @@ uint32_t SPIM_IsQuadEnabled(SPIM_T *spim, uint32_t u32NBit)
     uint8_t dataBuf[2] = {0U, 0U};
     uint32_t u32IsQuadMode = SPIM_OP_DISABLE;
 
-    (void)memcpy(au8IdBuf, gau8IDBuf, sizeof(au8IdBuf));
+    const SPIM_FLASH_CTX_T *psCtx = _SPIM_GetFlashContext(spim);
+
+    if (psCtx->u8IdValid != 0U)
+    {
+        (void)memcpy(au8IdBuf, psCtx->au8JedecId, sizeof(au8IdBuf));
+    }
+
     SPIM_DBGMSG("SPIM_IsQuadEnabled - Flash ID is 0x%x\n", au8IdBuf[0]);
 
     switch (au8IdBuf[0])
@@ -1761,49 +2204,35 @@ uint32_t SPIM_IsQuadEnabled(SPIM_T *spim, uint32_t u32NBit)
 }
 
 /**
- * @brief      Enable or disable QPI (Quad Peripheral Interface) mode.
+ * @brief      Exit EON SPI Flash QPI mode and revert to legacy SPI mode.
  *
- * @param[in]  spim    Pointer to the SPIM peripheral instance.
- * @param[in]  i32IsEn Set to 1 to enable QPI mode, or 0 to disable it.
- *                     - \ref SPIM_OP_ENABLE  : Enable QPI mode
- *                     - \ref SPIM_OP_DISABLE : Disable QPI mode
- * @return     None
+ * @param[in]  spim Pointer to the SPIM peripheral instance.
+ *
+ * @return     None.
+ *
+ * @note       This function assumes the EON SPI Flash is currently in QPI mode.
+ *             It sends the EXQPI command to exit QPI mode and then reads the status register to confirm the mode change.
+ *             After exiting QPI mode, the SPIM controller should be reconfigured to match legacy SPI timing and bit mode.
  */
-static void _SPIM_EonSetQpiMode(SPIM_T *spim, int32_t i32IsEn)
+static void _SPIM_EonExitQpiMode(SPIM_T *spim)
 {
     /* 1-byte command.  */
-    uint8_t au8CmdBuf[1];
-    uint8_t au8Status[1];
+    uint8_t au8CmdBuf[1] = {0U};
+    uint8_t au8Status[1] = {0U};
 
     SPIM_ReadStatusRegister(spim, au8Status, sizeof(au8Status), SPIM_BITMODE_1);
     SPIM_DBGMSG("Status: 0x%x\n", au8Status[0]);
 
-    if (i32IsEn)
-    {
-        /* Assume in SPI mode. */
-        au8CmdBuf[0] = OPCODE_ENQPI;
+    /* Assume in QPI mode. */
+    au8CmdBuf[0] = OPCODE_EXQPI;
 
-        /* CS activated. */
-        SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
+    /* CS activated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-        (void)_SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), SPIM_BITMODE_1);
+    (void)SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), SPIM_BITMODE_4);
 
-        /* CS deactivated. */
-        SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-    }
-    else
-    {
-        /* Assume in QPI mode. */
-        au8CmdBuf[0] = OPCODE_EXQPI;
-
-        /* CS activated. */
-        SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
-
-        (void)_SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), SPIM_BITMODE_4);
-
-        /* CS deactivated. */
-        SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
-    }
+    /* CS deactivated. */
+    SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
 
     SPIM_ReadStatusRegister(spim, au8Status, sizeof(au8Status), 1UL);
     SPIM_DBGMSG("Status: 0x%x\n", au8Status[0]);
@@ -1811,30 +2240,32 @@ static void _SPIM_EonSetQpiMode(SPIM_T *spim, int32_t i32IsEn)
 
 /**
  * @brief      Enable or disable 4-byte address mode for Spansion SPI Flash.
- * @param[in]  spim     Pointer to the SPIM peripheral instance.
- * @param[in]  u32IsEn  Enable or disable 4-byte address mode.
- *                      - \ref SPIM_OP_ENABLE
- *                      - \ref SPIM_OP_DISABLE
- * @param[in]  u32NBit  Bit mode used for command transmission.
- *                      - \ref SPIM_BITMODE_1 : 1-bit mode
- *                      - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                      - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                      - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ *
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32IsEn Enable or disable 4-byte address mode.
+ *                     - \ref SPIM_OP_ENABLE
+ *                     - \ref SPIM_OP_DISABLE
+ * @param[in]  u32NBit Bit mode used for command transmission.
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                     - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                     - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ *
  * @return     None
  */
 static void _SPIM_SPANSION4BytesEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit)
 {
-    uint8_t au8CmdBuf[2];
-    uint8_t au8DataBuf[1];
+    uint8_t au8CmdBuf[2] = {0U, 0U};
+    uint8_t au8DataBuf[1] = {0U};
 
     au8CmdBuf[0] = OPCODE_BRRD;
 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, 1UL, u32NBit);
+    (void)SPIM_WriteData(spim, au8CmdBuf, 1UL, u32NBit);
 
-    (void)_SPIM_ReadData(spim, au8DataBuf, 1UL, SPIM_BITMODE_1);
+    (void)SPIM_ReadData(spim, au8DataBuf, 1UL, SPIM_BITMODE_1);
 
     /* CS deactivated.  */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
@@ -1843,7 +2274,7 @@ static void _SPIM_SPANSION4BytesEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t 
 
     au8CmdBuf[0] = OPCODE_BRWR;
 
-    if (u32IsEn)
+    if (u32IsEn != 0UL)
     {
         /* set EXTADD */
         au8CmdBuf[1] = au8DataBuf[0] | 0x80U;
@@ -1857,7 +2288,7 @@ static void _SPIM_SPANSION4BytesEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), SPIM_BITMODE_1);
+    (void)SPIM_WriteData(spim, au8CmdBuf, sizeof(au8CmdBuf), SPIM_BITMODE_1);
 
     /* CS deactivated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
@@ -1866,22 +2297,28 @@ static void _SPIM_SPANSION4BytesEnable(SPIM_T *spim, uint32_t u32IsEn, uint32_t 
 /** @cond HIDDEN_SYMBOLS */
 /**
  * @brief      Query whether 4-byte address mode is enabled.
- * @param[in]  spim      Pointer to the SPIM peripheral instance.
- * @param[in]  u32NBit   Bit mode used for command transmission.
- *                       - \ref SPIM_BITMODE_1 : 1-bit mode
- *                       - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                       - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                       - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ *
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32NBit Bit mode used for command transmission.
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                     - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                     - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
  * @retval     0         4-byte address mode is disabled.
  * @retval     1         4-byte address mode is enabled.
  */
 uint32_t SPIM_Is4ByteModeEnable(SPIM_T *spim, uint32_t u32NBit)
 {
     uint32_t isEn = 0;
-    uint8_t idBuf[3];
-    uint8_t dataBuf[2];
+    uint8_t idBuf[3] = {0U, 0U, 0U};
+    uint8_t dataBuf[2] = {0U, 0U};
 
-    (void)memcpy(idBuf, gau8IDBuf, sizeof(idBuf));
+    const SPIM_FLASH_CTX_T *psCtx = _SPIM_GetFlashContext(spim);
+
+    if (psCtx->u8IdValid != 0U)
+    {
+        (void)memcpy(idBuf, psCtx->au8JedecId, sizeof(idBuf));
+    }
 
     switch (idBuf[0])
     {
@@ -1975,23 +2412,24 @@ uint32_t SPIM_Is4ByteModeEnable(SPIM_T *spim, uint32_t u32NBit)
 
 /**
  * @brief      Enter or exit 4-byte address mode on the SPI Flash device.
- * @param[in]  spim      Pointer to the SPIM peripheral instance.
- * @param[in]  u32IsEn   Enable or disable 4-byte address mode.
- *                       - \ref SPIM_OP_ENABLE  : Enter 4-byte address mode
- *                       - \ref SPIM_OP_DISABLE : Exit 4-byte address mode
- * @param[in]  u32NBit   Bit mode used for command transmission.
- *                       - \ref SPIM_BITMODE_1 : 1-bit mode
- *                       - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                       - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                       - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
- * @retval     SPIM_OK         Operation completed successfully.
- * @retval     SPIM_ERR_FAIL   Operation failed (e.g., unsupported command or communication error).
+ *
+ * @param[in]  spim    Pointer to the SPIM peripheral instance.
+ * @param[in]  u32IsEn Enable or disable 4-byte address mode.
+ *                     - \ref SPIM_OP_ENABLE  : Enter 4-byte address mode
+ *                     - \ref SPIM_OP_DISABLE : Exit 4-byte address mode
+ * @param[in]  u32NBit Bit mode used for command transmission.
+ *                     - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                     - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                     - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                     - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ *
+ * @return     SPIM_OK on success, SPIM_ERR_FAIL if the operation failed or is unsupported.
  */
 int32_t SPIM_Enable_4Bytes_Mode(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit)
 {
-    int32_t i32IsSupt = 0L;
+    uint32_t u32IsSupported = SPIM_OP_DISABLE;
     int32_t i32Ret = SPIM_ERR_FAIL;
-    uint8_t au8IdBuf[3];
+    uint8_t au8IdBuf[3] = {0U, 0U, 0U};
 
     SPIM_ReadJedecId(spim, au8IdBuf, sizeof(au8IdBuf), u32NBit);
 
@@ -1999,37 +2437,37 @@ int32_t SPIM_Enable_4Bytes_Mode(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit
     switch (au8IdBuf[0])
     {
         case MFGID_WINBOND:
-            i32IsSupt = (au8IdBuf[2] < 0x16U) ? SPIM_OP_DISABLE : SPIM_OP_ENABLE;
+            u32IsSupported = (au8IdBuf[2] < 0x16U) ? SPIM_OP_DISABLE : SPIM_OP_ENABLE;
             break;
 
         case MFGID_MXIC:
         case MFGID_EON:
-            i32IsSupt = (au8IdBuf[2] < 0x19U) ? SPIM_OP_DISABLE : SPIM_OP_ENABLE;
+            u32IsSupported = (au8IdBuf[2] < 0x19U) ? SPIM_OP_DISABLE : SPIM_OP_ENABLE;
             break;
 
         case MFGID_ISSI:
-            i32IsSupt = (au8IdBuf[2] < 0x49U) ? SPIM_OP_DISABLE : SPIM_OP_ENABLE;
+            u32IsSupported = (au8IdBuf[2] < 0x49U) ? SPIM_OP_DISABLE : SPIM_OP_ENABLE;
             break;
 
         case MFGID_SPANSION:
             _SPIM_SPANSION4BytesEnable(spim, u32IsEn, u32NBit);
-            i32IsSupt = SPIM_OP_ENABLE;
+            u32IsSupported = SPIM_OP_ENABLE;
             i32Ret = SPIM_OK;
             break;
 
         case MFGID_MICRON:
             //SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, u32NBit);
-            i32IsSupt = SPIM_OP_ENABLE;
+            u32IsSupported = SPIM_OP_ENABLE;
             break;
 
         default:
             break;
     }
 
-    if ((i32IsSupt) && (au8IdBuf[0] != (uint8_t)MFGID_SPANSION))
+    if ((u32IsSupported != SPIM_OP_DISABLE) && (au8IdBuf[0] != (uint8_t)MFGID_SPANSION))
     {
         /* 1-byte Enter/Exit 4-Byte Mode command. */
-        uint8_t u8CmdBuf[2];
+        uint8_t u8CmdBuf[2] = {0U, 0U};
         uint8_t u8Opcode = (u32IsEn != 0U) ? OPCODE_EN4B : OPCODE_EX4B;
 
         u8CmdBuf[0] = u8Opcode;
@@ -2038,7 +2476,7 @@ int32_t SPIM_Enable_4Bytes_Mode(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit
         /* CS activated. */
         SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-        (void)_SPIM_WriteData(spim, u8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+        (void)SPIM_WriteData(spim, u8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
 
         /* CS deactivated.  */
         SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
@@ -2055,11 +2493,21 @@ int32_t SPIM_Enable_4Bytes_Mode(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit
              *  About over 100 instrucsions executed, just want to give
              *  a time-out about 1 seconds to avoid infinite loop
              */
-            volatile int32_t i32TimeOutCount = (SystemCoreClock) / 100U;
+            volatile uint32_t u32TimeOutCount = SystemCoreClock / 100UL;
+            uint32_t u32ModeMatched = SPIM_OP_DISABLE;
 
-            while ((--i32TimeOutCount >= 0) && ((uint32_t)SPIM_Is4ByteModeEnable(spim, u32NBit) != u32IsEn)) {}
+            while (u32TimeOutCount > 0UL)
+            {
+                u32TimeOutCount--;
+                u32ModeMatched = (SPIM_Is4ByteModeEnable(spim, u32NBit) == u32IsEn) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
-            if (i32TimeOutCount <= 0L)
+                if (u32ModeMatched != SPIM_OP_DISABLE)
+                {
+                    break;
+                }
+            }
+
+            if (u32ModeMatched == SPIM_OP_DISABLE)
             {
                 i32Ret = SPIM_ERR_FAIL;
             }
@@ -2069,52 +2517,13 @@ int32_t SPIM_Enable_4Bytes_Mode(SPIM_T *spim, uint32_t u32IsEn, uint32_t u32NBit
     return i32Ret;
 }
 
-/**
- * @brief      Unlock Winbond flash chip with security bit enabled.
- * @param[in]  spim      Pointer to the SPIM peripheral instance.
- * @param[in]  u32NBit   Bit mode used for command transmission.
- *                       - \ref SPIM_BITMODE_1 : 1-bit mode
- *                       - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                       - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                       - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
- * @return     None.
- * @note       This function issues the Winbond-specific unlock sequence
- *             to disable security features and allow full chip access.
- */
-void SPIM_WinbondUnlock(SPIM_T *spim, uint32_t u32NBit)
-{
-    uint8_t au8IdBuf[3];
-    uint8_t dataBuf[4];
 
-    SPIM_ReadJedecId(spim, au8IdBuf, sizeof(au8IdBuf), u32NBit);
-
-    if ((au8IdBuf[0] != (uint8_t)MFGID_WINBOND) ||
-            (au8IdBuf[1] != 0x40U) ||
-            (au8IdBuf[2] != 0x16U))
-    {
-        SPIM_DBGMSG("SPIM_WinbondUnlock - Not W25Q32, do nothing.\n");
-        return;
-    }
-
-    SPIM_ReadStatusRegister(spim, &dataBuf[0], 1UL, u32NBit);
-    _SPIM_ReadStatusRegister2(spim, &dataBuf[1], 1UL, u32NBit);
-    SPIM_DBGMSG("Status Register: 0x%x - 0x%x\n", dataBuf[0], dataBuf[1]);
-
-    /* clear Status Register-1 SEC bit */
-    dataBuf[1] &= ~0x40;
-
-    /* Write Enable.    */
-    SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, u32NBit);
-    _SPIM_WriteStatusRegister2(spim, dataBuf, sizeof(dataBuf), u32NBit);
-    (void)_SPIM_WaitWriteDone(spim, u32NBit);
-
-    SPIM_ReadStatusRegister(spim, &dataBuf[0], 1UL, u32NBit);
-    _SPIM_ReadStatusRegister2(spim, &dataBuf[1], 1UL, u32NBit);
-    SPIM_DBGMSG("Status Register (after unlock): 0x%x - 0x%x\n", dataBuf[0], dataBuf[1]);
-}
-
+/*---------------------------------------------------------------------------------------------------------*/
+/* SPI Flash Memory Operations                                                                             */
+/*---------------------------------------------------------------------------------------------------------*/
 /**
  * @brief      Erase the entire SPI flash chip.
+ *
  * @param[in]  spim      Pointer to the SPIM peripheral instance.
  * @param[in]  u32NBit   Bit mode used for command transmission.
  *                       - \ref SPIM_BITMODE_1 : 1-bit mode
@@ -2124,6 +2533,7 @@ void SPIM_WinbondUnlock(SPIM_T *spim, uint32_t u32NBit)
  * @param[in]  i32IsSync Whether to wait until the erase operation is completed.
  *                       - 1: Wait (blocking mode)
  *                       - 0: Return immediately (non-blocking)
+ *
  * @return     None.
  * @note       The chip erase operation may take several seconds to complete.
  *             Ensure the flash is write-enabled before calling this function.
@@ -2134,17 +2544,17 @@ void SPIM_ChipErase(SPIM_T *spim, uint32_t u32NBit, int32_t i32IsSync)
     const uint8_t cmdBuf[2] = {OPCODE_CHIP_ERASE, OPCODE_CHIP_ERASE};
 
     /* Write Enable. */
-    SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, u32NBit);
+    SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, u32NBit);
 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, cmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
+    (void)SPIM_WriteData(spim, cmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBit);
 
     /* CS deactivated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
 
-    if (i32IsSync)
+    if (i32IsSync != 0L)
     {
         (void)_SPIM_WaitWriteDone(spim, u32NBit);
     }
@@ -2152,23 +2562,25 @@ void SPIM_ChipErase(SPIM_T *spim, uint32_t u32NBit, int32_t i32IsSync)
 
 /**
  * @brief      Erase a specific block in SPI flash memory.
- * @param[in]  spim            Pointer to the SPIM peripheral instance.
- * @param[in]  u32Addr         Target address within the block to erase.
- * @param[in]  u32Is4ByteAddr  Whether the flash uses a 4-byte address.
- *                             - 0: 3-byte address mode
- *                             - 1: 4-byte address mode
- * @param[in]  u32ErsCmd       Block erase command opcode.
- *                             - \ref OPCODE_SE_4K  : Sector Erase 4KB
- *                             - \ref OPCODE_BE_32K : Block Erase 32KB
- *                             - \ref OPCODE_BE_64K : Block Erase 64KB
- * @param[in]  u32NBit         Bit mode used for transmission.
- *                             - \ref SPIM_BITMODE_1 : 1-bit mode
- *                             - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
- *                             - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
- *                             - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
- * @param[in]  i32IsSync       Whether to wait for the erase to complete.
- *                             - 1: Wait until erase is complete (blocking mode)
- *                             - 0: Return immediately (non-blocking mode)
+ *
+ * @param[in]  spim           Pointer to the SPIM peripheral instance.
+ * @param[in]  u32Addr        Target address within the block to erase.
+ * @param[in]  u32Is4ByteAddr Whether the flash uses a 4-byte address.
+ *                            - 0: 3-byte address mode
+ *                            - 1: 4-byte address mode
+ * @param[in]  u32ErsCmd      Block erase command opcode.
+ *                            - \ref OPCODE_SE_4K  : Sector Erase 4KB
+ *                            - \ref OPCODE_BE_32K : Block Erase 32KB
+ *                            - \ref OPCODE_BE_64K : Block Erase 64KB
+ * @param[in]  u32NBit        Bit mode used for transmission.
+ *                            - \ref SPIM_BITMODE_1 : 1-bit mode
+ *                            - \ref SPIM_BITMODE_2 : 2-bit (dual) mode
+ *                            - \ref SPIM_BITMODE_4 : 4-bit (quad) mode
+ *                            - \ref SPIM_BITMODE_8 : 8-bit (octal) mode
+ * @param[in]  i32IsSync      Whether to wait for the erase to complete.
+ *                            - 1: Wait until erase is complete (blocking mode)
+ *                            - 0: Return immediately (non-blocking mode)
+ *
  * @return     None.
  * @note       Ensure the flash is write-enabled before calling this function.
  *             The erase command will affect the entire block that contains the given address.
@@ -2190,7 +2602,7 @@ void SPIM_EraseBlock(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, ui
         u32Is4ByteAddrTmp = SPIM_OP_ENABLE;
     }
 
-    if (u32Is4ByteAddrTmp)
+    if (u32Is4ByteAddrTmp != 0UL)
     {
         cmdBuf[buf_idx] = (uint8_t)((u32Addr >> 24U) & 0xFFU);
         buf_idx++;
@@ -2204,23 +2616,23 @@ void SPIM_EraseBlock(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, ui
     buf_idx++;
 
     /* Enable 4-byte address mode */
-    if (_SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddrTmp, u32NBit) != SPIM_OK)
+    if (_SPIM_PrepareAddressMode(spim, u32ErsCmd, u32Is4ByteAddrTmp, u32NBit) != SPIM_OK)
     {
         return;
     }
 
     /* Write Enable. */
-    SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, u32NBit);
+    SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, u32NBit);
 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    (void)_SPIM_WriteData(spim, cmdBuf, buf_idx, u32NBit);
+    (void)SPIM_WriteData(spim, cmdBuf, buf_idx, u32NBit);
 
     /* CS deactivated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
 
-    if (i32IsSync)
+    if (i32IsSync != 0L)
     {
         (void)_SPIM_WaitWriteDone(spim, u32NBit);
     }
@@ -2231,55 +2643,59 @@ void SPIM_EraseBlock(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, ui
 
 /**
  * @brief      Write data within a single page using the specified I/O mode.
+ *
+ * @param[in]  spim           Pointer to the SPIM peripheral instance.
  * @param[in]  u32Addr        Start address to write.
  * @param[in]  u32Is4ByteAddr Whether to use 4-byte addressing.
- *                             - 0: 3-byte address mode
- *                             - 1: 4-byte address mode
+ *                            - 0: 3-byte address mode
+ *                            - 1: 4-byte address mode
  * @param[in]  u32NTx         Number of bytes to write.
  * @param[in]  pu8TxBuf       Pointer to transmit buffer.
  * @param[in]  u8WrCmd        Write command opcode.
  * @param[in]  u32NBitCmd     Bit width for command phase.
- *                             - \ref SPIM_BITMODE_1
- *                             - \ref SPIM_BITMODE_2
- *                             - \ref SPIM_BITMODE_4
- *                             - \ref SPIM_BITMODE_8
+ *                            - \ref SPIM_BITMODE_1
+ *                            - \ref SPIM_BITMODE_2
+ *                            - \ref SPIM_BITMODE_4
+ *                            - \ref SPIM_BITMODE_8
  * @param[in]  u32NBitAddr    Bit width for address phase.
- *                             - \ref SPIM_BITMODE_1
- *                             - \ref SPIM_BITMODE_2
- *                             - \ref SPIM_BITMODE_4
- *                             - \ref SPIM_BITMODE_8
+ *                            - \ref SPIM_BITMODE_1
+ *                            - \ref SPIM_BITMODE_2
+ *                            - \ref SPIM_BITMODE_4
+ *                            - \ref SPIM_BITMODE_8
  * @param[in]  u32NBitDat     Bit width for data phase.
- *                             - \ref SPIM_BITMODE_1
- *                             - \ref SPIM_BITMODE_2
- *                             - \ref SPIM_BITMODE_4
- *                             - \ref SPIM_BITMODE_8
- * @param[in]  u32IsSync      Whether to wait until operation completes.
- *                             - 1: Blocking mode (wait for write to complete)
- *                             - 0: Non-blocking mode
+ *                            - \ref SPIM_BITMODE_1
+ *                            - \ref SPIM_BITMODE_2
+ *                            - \ref SPIM_BITMODE_4
+ *                            - \ref SPIM_BITMODE_8
+ *
  * @return     None.
- * @note       The data must not cross a page boundary. Caller must ensure write buffer stays within the same page.
+ *
+ * @note       The data must not cross a page boundary.
+ *            Caller must ensure write buffer stays within the same page.
  */
 static void _SPIM_WriteInPageDataByIo(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NTx, const uint8_t pu8TxBuf[], uint8_t u8WrCmd,
-                                      uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat, uint32_t u32IsSync)
+                                      uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat)
 {
-    uint8_t au8CmdBuf[16] = {0};
-    uint32_t u32BufIdx = 0;
+    uint8_t au8CmdBuf[16] = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U,
+                             0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U
+                            };
+    uint32_t u32BufIdx = 0UL;
 
     au8CmdBuf[0] = (uint8_t)u8WrCmd;
     au8CmdBuf[1] = (uint8_t)u8WrCmd;
 
     /* Write Enable. */
-    SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, u32NBitCmd);
+    SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, u32NBitCmd);
 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
     /* Write out command. */
-    (void)_SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBitCmd);
+    (void)SPIM_WriteData(spim, au8CmdBuf, (SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE) ? 2UL : 1UL, u32NBitCmd);
 
     u32BufIdx = 0UL;
 
-    if (u32Is4ByteAddr)
+    if (u32Is4ByteAddr != 0UL)
     {
         au8CmdBuf[u32BufIdx] = (uint8_t)(u32Addr >> 24U);
         u32BufIdx++;
@@ -2293,44 +2709,38 @@ static void _SPIM_WriteInPageDataByIo(SPIM_T *spim, uint32_t u32Addr, uint32_t u
     u32BufIdx++;
 
     /* Write out u32Address. */
-    (void)_SPIM_WriteData(spim, au8CmdBuf, u32BufIdx, u32NBitAddr);
+    (void)SPIM_WriteData(spim, au8CmdBuf, u32BufIdx, u32NBitAddr);
 
     /* Write out data. */
-    (void)_SPIM_WriteData(spim, pu8TxBuf, u32NTx, u32NBitDat);
+    (void)SPIM_WriteData(spim, pu8TxBuf, u32NTx, u32NBitDat);
 
     /* CS deactivated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
 
-    if (u32IsSync)
-    {
-        (void)_SPIM_WaitWriteDone(spim, u32NBitCmd);
-    }
+    (void)_SPIM_WaitWriteDone(spim, u32NBitCmd);
 }
 
 /**
  * @brief      Write data within a single page using Page Write mode.
+ *
+ * @param[in]  spim           Pointer to the SPIM peripheral instance.
  * @param[in]  u32Addr        Start address to write.
  * @param[in]  u32Is4ByteAddr Whether to use 4-byte addressing.
- *                             - 0: 3-byte address mode
- *                             - 1: 4-byte address mode
+ *                            - 0: 3-byte address mode
+ *                            - 1: 4-byte address mode
  * @param[in]  u32NTx         Number of bytes to write.
  * @param[in]  pu8TxBuf       Pointer to transmit buffer.
  * @param[in]  u8WrCmd        Write command opcode.
- * @param[in]  u32IsSync         Whether to wait for the write to complete.
- *                             - 1: Blocking mode (wait for completion)
- *                             - 0: Non-blocking mode
- * @retval     SPIM_OK           Operation completed successfully.
- * @retval     SPIM_ERR_TIMEOUT  Operation aborted due to timeout.
- * @note       If a timeout occurs while waiting for the operation to complete,
- *             this function sets @ref g_SPIM_i32ErrCode to @ref SPIM_TIMEOUT_ERR.
- * @warning    The write must not cross a page boundary. Caller is responsible for ensuring data fits within one page.
+ * @param[in]  u32IsSync      Whether to wait for the write to complete.
+ *
+ * @return     SPIM_OK on success, or an error code on failure.
  */
 static int32_t _SPIM_WriteInPageDataByPageWrite(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NTx,
                                                 const uint8_t pu8TxBuf[], uint8_t u8WrCmd, uint32_t u32IsSync)
 {
-    int32_t i32Ret;
-    uintptr_t uSramAddr;
-    uint32_t u32WrCmdCode;
+    int32_t i32Ret = 0L;
+    uintptr_t uSramAddr = 0UL;
+    uint32_t u32WrCmdCode = 0UL;
     uint32_t u32Target4B = (SPIM_GET_PHDMAW_ADDR_WIDTH(spim) == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
     i32Ret = _SPIM_ValidateDmaTransfer(u32Addr, pu8TxBuf, u32NTx);
@@ -2350,18 +2760,18 @@ static int32_t _SPIM_WriteInPageDataByPageWrite(SPIM_T *spim, uint32_t u32Addr, 
     uSramAddr = (uintptr_t)pu8TxBuf;
 
     /* Write Enable. */
-    SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, SPIM_PhaseModeToNBit(SPIM_GET_PHDMAW_CMD_BITMODE(spim)));
+    SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, SPIM_PhaseModeToNBit(SPIM_GET_PHDMAW_CMD_BITMODE(spim)));
 
-    if ((SPIM_GET_PHDMAW_CMD_DTR(spim) == SPIM_OP_ENABLE) &&
-            (SPIM_GET_PHDMAW_CMD_WIDTH(spim) == PHASE_WIDTH_16))
+    u32WrCmdCode = (uint32_t)u8WrCmd;
+
+    if (SPIM_GET_PHDMAW_CMD_DTR(spim) == SPIM_OP_ENABLE)
     {
-        /* Promote to uint32_t BEFORE shifting (MISRA compliant). */
-        uint32_t u32Cmd = (uint32_t)u8WrCmd;
-        u32WrCmdCode = (u32Cmd << 8U) | u32Cmd;
-    }
-    else
-    {
-        u32WrCmdCode = (uint32_t)(u8WrCmd);
+        if (SPIM_GET_PHDMAW_CMD_WIDTH(spim) == PHASE_WIDTH_16)
+        {
+            /* Promote to uint32_t BEFORE shifting (MISRA compliant). */
+            uint32_t u32Cmd = (uint32_t)u8WrCmd;
+            u32WrCmdCode = (u32Cmd << 8U) | u32Cmd;
+        }
     }
 
     /* Switch to Page Write mode. */
@@ -2393,7 +2803,7 @@ static int32_t _SPIM_WriteInPageDataByPageWrite(SPIM_T *spim, uint32_t u32Addr, 
     if (u8WrCmd == CMD_QUAD_PAGE_PROGRAM_EON)
     {
         /* Exit QPI mode. */
-        _SPIM_EonSetQpiMode(spim, 0);
+        _SPIM_EonExitQpiMode(spim);
     }
 
     return SPIM_OK;
@@ -2403,65 +2813,66 @@ static int32_t _SPIM_WriteInPageDataByPageWrite(SPIM_T *spim, uint32_t u32Addr, 
 
 /**
  * @brief      Write data to SPI Flash using manual command sequence (I/O mode).
- * @param[in]  spim         Pointer to the SPIM instance.
- * @param[in]  u32Addr      Start address to write.
+ *
+ * @param[in]  spim           Pointer to the SPIM instance.
+ * @param[in]  u32Addr        Start address to write.
  * @param[in]  u32Is4ByteAddr
- *                          Specify address mode.
- *                          - 0: 3-byte address mode
- *                          - 1: 4-byte address mode
- * @param[in]  u32NTx       Number of bytes to write.
- * @param[in]  pu8TxBuf     Pointer to the transmit buffer.
- * @param[in]  u8WrCmd      Write command opcode.
- * @param[in]  u32NBitCmd   N-bit mode for transmitting the command.
- *                          - \ref SPIM_BITMODE_1
- *                          - \ref SPIM_BITMODE_2
- *                          - \ref SPIM_BITMODE_4
- *                          - \ref SPIM_BITMODE_8
- * @param[in]  u32NBitAddr  N-bit mode for transmitting the address.
- *                          - \ref SPIM_BITMODE_1
- *                          - \ref SPIM_BITMODE_2
- *                          - \ref SPIM_BITMODE_4
- *                          - \ref SPIM_BITMODE_8
- * @param[in]  u32NBitDat   N-bit mode for transmitting the data.
- *                          - \ref SPIM_BITMODE_1
- *                          - \ref SPIM_BITMODE_2
- *                          - \ref SPIM_BITMODE_4
- *                          - \ref SPIM_BITMODE_8
+ *                            Specify address mode.
+ *                            - 0: 3-byte address mode
+ *                            - 1: 4-byte address mode
+ * @param[in]  u32NTx         Number of bytes to write.
+ * @param[in]  pu8TxBuf       Pointer to the transmit buffer.
+ * @param[in]  u8WrCmd        Write command opcode.
+ * @param[in]  u32NBitCmd     N-bit mode for transmitting the command.
+ *                            - \ref SPIM_BITMODE_1
+ *                            - \ref SPIM_BITMODE_2
+ *                            - \ref SPIM_BITMODE_4
+ *                            - \ref SPIM_BITMODE_8
+ * @param[in]  u32NBitAddr    N-bit mode for transmitting the address.
+ *                            - \ref SPIM_BITMODE_1
+ *                            - \ref SPIM_BITMODE_2
+ *                            - \ref SPIM_BITMODE_4
+ *                            - \ref SPIM_BITMODE_8
+ * @param[in]  u32NBitDat     N-bit mode for transmitting the data.
+ *                            - \ref SPIM_BITMODE_1
+ *                            - \ref SPIM_BITMODE_2
+ *                            - \ref SPIM_BITMODE_4
+ *                            - \ref SPIM_BITMODE_8
+ *
  * @return     None.
  *
- * @note       This function does not check for page boundary crossing. Caller must ensure
- *             data does not span across pages unless supported by the flash chip.
+ * @note       The write is automatically split at 256-byte page boundaries.
  *
- * @warning    This function assumes that the flash is already write-enabled. Be sure to
- *             call the appropriate Write Enable command before using this function.
+ * @warning    The actual page size is defined by @ref SPIM_FLH_PAGE_SIZE and must match
+ *             the connected SPI Flash device.
  */
 void SPIM_IO_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint32_t u32NTx, uint8_t pu8TxBuf[], uint8_t u8WrCmd,
                    uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat)
 {
-    int32_t i32Ret;
+    int32_t i32Ret = 0L;
     /* Write out data to SPI Flash in small chunks (max 256 bytes per chunk) */
     /* index into tx buffer */
     uint32_t u32BufIdx = 0UL;
     uint32_t u32NTxTmp = u32NTx;
     uint32_t u32AddrTmp = u32Addr;
 
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddr, SPIM_PhaseModeToNBit(SPIM_GET_PHDMM_CMD_BITMODE(spim)));
+    /* Enable/disable 4-Byte Address. Use the command bit mode provided by
+       this Normal I/O API instead of the unrelated DMM phase setting. */
+    i32Ret = _SPIM_PrepareAddressMode(spim, (uint32_t)u8WrCmd, u32Is4ByteAddr, u32NBitCmd);
 
     if (i32Ret != SPIM_OK)
     {
         return;
     }
 
-    while (u32NTxTmp)
+    while (u32NTxTmp != 0UL)
     {
         /* number of bytes to write in this chunk */
         uint32_t u32ToWr = _SPIM_GetPageChunkSize(u32AddrTmp, u32NTxTmp);
 
         _SPIM_WriteInPageDataByIo(spim, u32AddrTmp, u32Is4ByteAddr,
                                   u32ToWr, &pu8TxBuf[u32BufIdx], u8WrCmd,
-                                  u32NBitCmd, u32NBitAddr, u32NBitDat,
-                                  SPIM_OP_ENABLE);
+                                  u32NBitCmd, u32NBitAddr, u32NBitDat);
         u32AddrTmp += u32ToWr;
         u32NTxTmp -= u32ToWr;
         u32BufIdx += u32ToWr;
@@ -2469,34 +2880,35 @@ void SPIM_IO_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint
 }
 
 /**
- * @brief      Read data from SPI Flash using manual command sequence (I/O mode).
- * @param[in]  spim         Pointer to the SPIM instance.
- * @param[in]  u32Addr      Start address to read.
- * @param[in]  u32Is4ByteAddr
- *                          Specify address mode.
- *                          - 0: 3-byte address mode
- *                          - 1: 4-byte address mode
- * @param[in]  u32NRx       Number of bytes to read.
- * @param[out] pu8RxBuf     Pointer to the receive buffer.
- * @param[in]  rdCmd        Read command opcode.
- * @param[in]  u32NBitCmd   N-bit mode for transmitting the command.
- *                          - \ref SPIM_BITMODE_1
- *                          - \ref SPIM_BITMODE_2
- *                          - \ref SPIM_BITMODE_4
- *                          - \ref SPIM_BITMODE_8
- * @param[in]  u32NBitAddr  N-bit mode for transmitting the address.
- *                          - \ref SPIM_BITMODE_1
- *                          - \ref SPIM_BITMODE_2
- *                          - \ref SPIM_BITMODE_4
- *                          - \ref SPIM_BITMODE_8
- * @param[in]  u32NBitDat   N-bit mode for transmitting/receiving data.
- *                          - \ref SPIM_BITMODE_1
- *                          - \ref SPIM_BITMODE_2
- *                          - \ref SPIM_BITMODE_4
- *                          - \ref SPIM_BITMODE_8
- * @param[in]  u32NDummy    Number of dummy cycles (clock cycles) after address phase.
+ * @brief       Read data from SPI Flash using manual command sequence (I/O mode).
  *
- * @return     None.
+ * @param[in]   spim           Pointer to the SPIM instance.
+ * @param[in]   u32Addr        Start address to read.
+ * @param[in]   u32Is4ByteAddr
+ *                             Specify address mode.
+ *                             - 0: 3-byte address mode
+ *                             - 1: 4-byte address mode
+ * @param[in]   u32NRx         Number of bytes to read.
+ * @param[out]  pu8RxBuf       Pointer to the receive buffer.
+ * @param[in]   rdCmd          Read command opcode.
+ * @param[in]   u32NBitCmd     N-bit mode for transmitting the command.
+ *                             - \ref SPIM_BITMODE_1
+ *                             - \ref SPIM_BITMODE_2
+ *                             - \ref SPIM_BITMODE_4
+ *                             - \ref SPIM_BITMODE_8
+ * @param[in]   u32NBitAddr    N-bit mode for transmitting the address.
+ *                             - \ref SPIM_BITMODE_1
+ *                             - \ref SPIM_BITMODE_2
+ *                             - \ref SPIM_BITMODE_4
+ *                             - \ref SPIM_BITMODE_8
+ * @param[in]   u32NBitDat     N-bit mode for transmitting/receiving data.
+ *                             - \ref SPIM_BITMODE_1
+ *                             - \ref SPIM_BITMODE_2
+ *                             - \ref SPIM_BITMODE_4
+ *                             - \ref SPIM_BITMODE_8
+ * @param[in]   u32NDummy      Number of dummy cycles (clock cycles) after address phase.
+ *
+ * @return      None.
  *
  * @note       Caller must ensure that the read command is compatible with the selected bit
  *             modes and that the flash is ready for read operation.
@@ -2508,14 +2920,15 @@ void SPIM_IO_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint3
                   uint32_t u32NBitCmd, uint32_t u32NBitAddr, uint32_t u32NBitDat, uint32_t u32NDummy)
 {
     uint8_t cmdBuf[8] = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U};
-    int32_t i32Ret;
+    int32_t i32Ret = 0L;
     uint32_t buf_idx = 0UL;
 
     cmdBuf[0] = rdCmd;
     cmdBuf[1] = rdCmd;
 
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddr, SPIM_PhaseModeToNBit(SPIM_GET_PHDMM_CMD_BITMODE(spim)));
+    /* Enable/disable 4-Byte Address. Use the command bit mode provided by
+       this Normal I/O API instead of the unrelated DMM phase setting. */
+    i32Ret = _SPIM_PrepareAddressMode(spim, (uint32_t)rdCmd, u32Is4ByteAddr, u32NBitCmd);
 
     if (i32Ret != SPIM_OK)
     {
@@ -2526,9 +2939,9 @@ void SPIM_IO_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint3
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
     /* Write out command. */
-    (void)_SPIM_WriteData(spim, cmdBuf, SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE ? 2UL : 1UL, u32NBitCmd);
+    (void)SPIM_WriteData(spim, cmdBuf, SPIM_GET_DTR_MODE(spim) == SPIM_OP_ENABLE ? 2UL : 1UL, u32NBitCmd);
 
-    if (u32Is4ByteAddr)
+    if (u32Is4ByteAddr != 0UL)
     {
         cmdBuf[buf_idx] = (uint8_t)(u32Addr >> 24U);
         buf_idx++;
@@ -2544,20 +2957,24 @@ void SPIM_IO_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint3
     /* Add a byte for the address phase for dual or quad mode for read mode */
     buf_idx += ((u32NBitAddr == SPIM_BITMODE_2) || (u32NBitAddr == SPIM_BITMODE_4)) ? 1UL : 0UL;
 
-    (void)_SPIM_WriteData(spim, cmdBuf, buf_idx, u32NBitAddr);    /* Write out u32Address. */
+    (void)SPIM_WriteData(spim, cmdBuf, buf_idx, u32NBitAddr); /* Write out u32Address. */
 
     /* Same bit mode as above. */
-    (void)SPIM_IO_SendDummyByPhase(spim, u32NDummy);              /* Write out dummy bytes. */
+    (void)SPIM_IO_SendDummyByPhase(spim, u32NDummy, u32NBitAddr, SPIM_GET_DTR_MODE(spim)); /* Write out dummy bytes. */
 
     /* Read back data. */
-    (void)_SPIM_ReadData(spim, pu8RxBuf, u32NRx, u32NBitDat);
+    (void)SPIM_ReadData(spim, pu8RxBuf, u32NRx, u32NBitDat);
 
     /* CS deactivated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
 }
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* DMA and Direct Memory Mapping Operations                                                                */
+/*---------------------------------------------------------------------------------------------------------*/
 /**
  * @brief      Write data to SPI Flash using Page Write mode with PHDMAW.
+ *
  * @param[in]  spim           Pointer to the SPIM instance.
  * @param[in]  u32Addr        Start address to write.
  * @param[in]  u32Is4ByteAddr Specify whether 4-byte address mode is used.
@@ -2570,20 +2987,23 @@ void SPIM_IO_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr, uint3
  * @note       This function is optimized for aligned and page-boundary write operations.
  *             Make sure that the flash is write-enabled and ready before calling this function.
  *             The number of bytes to write must be a multiple of 8 (for DMA alignment).
+ *
+ * @return     None
  */
 void SPIM_DMA_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
                     uint32_t u32NTx, uint8_t *pu8TxBuf, uint32_t u8WrCmd)
 {
-    int32_t i32Ret;
+    int32_t i32Ret = 0L;
     /* index into tx buffer */
     uint32_t u32BufIdx = 0UL;
     uint32_t u32NTxTmp = u32NTx;
     uint32_t u32AddrTmp = u32Addr;
     uint32_t u32CMDBits = SPIM_PhaseModeToNBit(SPIM_GET_PHDMAW_CMD_BITMODE(spim));
     uint32_t u32Target4B = (SPIM_GET_PHDMAW_ADDR_WIDTH(spim) == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
-    uint32_t u32IsQuadEn;
-    uint32_t u32QuadMode = (((SPIM_GET_PHDMAW_ADDR_BITMODE(spim) == PHASE_QUAD_MODE) ||
-                             (SPIM_GET_PHDMAW_DATA_BITMODE(spim) == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
+    uint32_t u32AddrBitMode = SPIM_GET_PHDMAW_ADDR_BITMODE(spim);
+    uint32_t u32DataBitMode = SPIM_GET_PHDMAW_DATA_BITMODE(spim);
+    uint32_t u32QuadMode = ((u32AddrBitMode == PHASE_QUAD_MODE) ||
+                            (u32DataBitMode == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
     i32Ret = _SPIM_ValidateDmaTransfer(u32Addr, pu8TxBuf, u32NTx);
 
@@ -2602,27 +3022,21 @@ void SPIM_DMA_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
 
-    u32IsQuadEn = SPIM_IsQuadEnabled(spim, u32CMDBits);
-
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Target4B, u32CMDBits);
+    i32Ret = _SPIM_PrepareFlashTransfer(spim, u8WrCmd, u32Target4B, u32CMDBits, u32QuadMode);
 
     if (i32Ret != SPIM_OK)
     {
         return;
     }
 
-    if (u32QuadMode && (u32IsQuadEn == SPIM_OP_DISABLE))
-    {
-        SPIM_SetQuadEnable(spim, u32QuadMode, u32CMDBits);
-    }
-
-    while (u32NTxTmp)
+    while (u32NTxTmp != 0UL)
     {
         /* number of bytes to write in this chunk */
         uint32_t u32ToWr = _SPIM_GetPageChunkSize(u32AddrTmp, u32NTxTmp);
 
-        i32Ret = _SPIM_WriteInPageDataByPageWrite(spim, u32AddrTmp, u32Is4ByteAddr, u32ToWr, &pu8TxBuf[u32BufIdx], u8WrCmd, SPIM_OP_ENABLE);
+        i32Ret = _SPIM_WriteInPageDataByPageWrite(spim, u32AddrTmp, u32Is4ByteAddr, u32ToWr,
+                                                  &pu8TxBuf[u32BufIdx], (uint8_t)u8WrCmd,
+                                                  SPIM_OP_ENABLE);
 
         if (i32Ret != SPIM_OK)
         {
@@ -2637,18 +3051,19 @@ void SPIM_DMA_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
 }
 
 /**
- * @brief      Read data from SPI Flash using Page Read mode with PHDMAR.
- * @param[in]  spim           Pointer to the SPIM instance.
- * @param[in]  u32Addr        Start address to read.
- * @param[in]  u32Is4ByteAddr Specify whether 4-byte address mode is used.
- *                            - 0: 3-byte address mode
- *                            - 1: 4-byte address mode
- * @param[in]  u32NRx         Number of bytes to read.
- * @param[out] pu8RxBuf       Pointer to the receive buffer.
- * @param[in]  u8RdCmd        Read command opcode.
- * @param[in]  u32IsSync      Specify whether to use blocking mode.
- *                            - 0: Non-blocking (return immediately)
- *                            - 1: Blocking (wait for completion)
+ * @brief       Read data from SPI Flash using Page Read mode with PHDMAR.
+ *
+ * @param[in]   spim           Pointer to the SPIM instance.
+ * @param[in]   u32Addr        Start address to read.
+ * @param[in]   u32Is4ByteAddr Specify whether 4-byte address mode is used.
+ *                             - 0: 3-byte address mode
+ *                             - 1: 4-byte address mode
+ * @param[in]   u32NRx         Number of bytes to read.
+ * @param[out]  pu8RxBuf       Pointer to the receive buffer.
+ * @param[in]   u8RdCmd        Read command opcode.
+ * @param[in]   u32IsSync      Specify whether to use blocking mode.
+ *                             - 0: Non-blocking (return immediately)
+ *                             - 1: Blocking (wait for completion)
  *
  * @retval     SPIM_OK            Operation completed successfully.
  * @retval     SPIM_ERR_TIMEOUT   Operation failed due to timeout.
@@ -2657,17 +3072,18 @@ void SPIM_DMA_Write(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
  *             @ref SPIM_DMADMM_InitPhase with appropriate settings for PHDMAR (Page High-Speed DMA Read).
  */
 int32_t SPIM_DMA_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
-                      uint32_t u32NRx, const uint8_t pu8RxBuf[], uint8_t u8RdCmd,
+                      uint32_t u32NRx, const uint8_t *pu8RxBuf, uint8_t u8RdCmd,
                       uint32_t u32IsSync)
 {
-    int32_t i32Ret;
-    uintptr_t uSramAddr;
+    int32_t i32Ret = 0L;
+    uintptr_t uSramAddr = 0UL;
     uint32_t u32Is4ByteAddrTmp = (SPIM_GET_PHDMAR_ADDR_WIDTH(spim) == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
-    uint32_t u32RdCmdTmp;
+    uint32_t u32RdCmdTmp = 0UL;
     uint32_t u32CMDBits = SPIM_PhaseModeToNBit(SPIM_GET_PHDMAR_CMD_BITMODE(spim));
-    uint32_t u32IsQuadEn;
-    uint32_t u32QuadMode = (((SPIM_GET_PHDMAR_ADDR_BITMODE(spim) == PHASE_QUAD_MODE) ||
-                             (SPIM_GET_PHDMAR_DATA_BITMODE(spim) == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
+    uint32_t u32AddrBitMode = SPIM_GET_PHDMAR_ADDR_BITMODE(spim);
+    uint32_t u32DataBitMode = SPIM_GET_PHDMAR_DATA_BITMODE(spim);
+    uint32_t u32QuadMode = ((u32AddrBitMode == PHASE_QUAD_MODE) ||
+                            (u32DataBitMode == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
     i32Ret = _SPIM_ValidateDmaTransfer(u32Addr, pu8RxBuf, u32NRx);
 
@@ -2688,38 +3104,37 @@ int32_t SPIM_DMA_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
 
-    u32IsQuadEn = SPIM_IsQuadEnabled(spim, u32CMDBits);
-
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddrTmp, u32CMDBits);
+    i32Ret = _SPIM_PrepareFlashTransfer(spim, (uint32_t)u8RdCmd, u32Is4ByteAddrTmp, u32CMDBits, u32QuadMode);
 
     if (i32Ret != SPIM_OK)
     {
         return i32Ret;
     }
 
-    if (u32QuadMode && (u32IsQuadEn == SPIM_OP_DISABLE))
+    if (SPIM_GET_PHDMAR_MODE_DATAWIDTH(spim) != PHASE_WIDTH_0)
     {
-        SPIM_SetQuadEnable(spim, u32QuadMode, u32CMDBits);
+        if (_SPIM_IsCrenAllowed(u8RdCmd) == SPIM_OP_ENABLE)
+        {
+            /*
+             * DMA Page Read is an independent transaction.  Send the flash
+             * continuous-read disable value so the next DMA read starts with
+             * its command and address phases.  Direct Map Mode handles its
+             * own continuous-read enable sequence in SPIM_EnterDirectMapMode.
+             */
+            SPIM_SET_MODE_DATA(spim, SPIM_DMM_DISABLE_CREN);
+        }
     }
 
-    if ((SPIM_GET_PHDMAR_MODE_DATAWIDTH(spim) != PHASE_WIDTH_0) &&
-            (_SPIM_IsCrenAllowed(u8RdCmd) == SPIM_OP_ENABLE))
-    {
-        SPIM_SET_MODE_DATA(spim, SPIM_DMM_ENABLE_CREN);
-        //SPIM_ENABLE_DMM_CREN(spim);
-    }
+    u32RdCmdTmp = (uint32_t)u8RdCmd;
 
-    if ((SPIM_GET_PHDMAR_CMD_DTR(spim) == SPIM_OP_ENABLE) &&
-            (SPIM_GET_PHDMAR_CMD_WIDTH(spim) == PHASE_WIDTH_16))
+    if (SPIM_GET_PHDMAR_CMD_DTR(spim) == SPIM_OP_ENABLE)
     {
-        /* Promote to uint32_t BEFORE shifting (MISRA compliant). */
-        uint32_t u32Cmd = (uint32_t)u8RdCmd;
-        u32RdCmdTmp = (u32Cmd << 8U) | u32Cmd;
-    }
-    else
-    {
-        u32RdCmdTmp = (uint32_t)(u8RdCmd);
+        if (SPIM_GET_PHDMAR_CMD_WIDTH(spim) == PHASE_WIDTH_16)
+        {
+            /* Promote to uint32_t BEFORE shifting (MISRA compliant). */
+            uint32_t u32Cmd = (uint32_t)u8RdCmd;
+            u32RdCmdTmp = (u32Cmd << 8U) | u32Cmd;
+        }
     }
 
     /* Switch to Page Read mode. */
@@ -2740,12 +3155,12 @@ int32_t SPIM_DMA_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
 /**
  * @brief      Enter Direct Map Mode (DMM) for memory-mapped SPI Flash access.
  *
- * @param[in]  spim            Pointer to the SPIM instance.
- * @param[in]  u32Is4ByteAddr  Specify whether 4-byte address mode is used.
- *                             - 0: Use 3-byte address mode.
- *                             - 1: Use 4-byte address mode.
- * @param[in]  u8RdCmd         SPI Flash read command used in DMM mode (e.g., 0x0B, 0x6B, 0xEB).
- * @param[in]  u32IdleIntvl    Idle interval between transactions, in SPIM clock cycles.
+ * @param[in]  spim           Pointer to the SPIM instance.
+ * @param[in]  u32Is4ByteAddr Specify whether 4-byte address mode is used.
+ *                            - 0: Use 3-byte address mode.
+ *                            - 1: Use 4-byte address mode.
+ * @param[in]  u8RdCmd        SPI Flash read command used in DMM mode (e.g., 0x0B, 0x6B, 0xEB).
+ * @param[in]  u32IdleIntvl   Idle interval between transactions, in SPIM clock cycles.
  *
  * @return     None.
  *
@@ -2754,13 +3169,14 @@ int32_t SPIM_DMA_Read(SPIM_T *spim, uint32_t u32Addr, uint32_t u32Is4ByteAddr,
  */
 void SPIM_EnterDirectMapMode(SPIM_T *spim, uint32_t u32Is4ByteAddr, uint8_t u8RdCmd, uint32_t u32IdleIntvl)
 {
-    int32_t i32Ret;
-    uint32_t u32RdCmdTmp;
+    int32_t i32Ret = 0L;
+    uint32_t u32RdCmdTmp = 0UL;
     uint32_t u32CMDBits = SPIM_PhaseModeToNBit(SPIM_GET_PHDMM_CMD_BITMODE(spim));
     uint32_t u32Is4ByteAddrTmp = (SPIM_GET_PHDMM_ADDR_WIDTH(spim) == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
-    uint32_t u32IsQuadEn;
-    uint32_t u32QuadMode = (((SPIM_GET_PHDMM_ADDR_BITMODE(spim) == PHASE_QUAD_MODE) ||
-                             (SPIM_GET_PHDMM_DATA_BITMODE(spim) == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
+    uint32_t u32AddrBitMode = SPIM_GET_PHDMM_ADDR_BITMODE(spim);
+    uint32_t u32DataBitMode = SPIM_GET_PHDMM_DATA_BITMODE(spim);
+    uint32_t u32QuadMode = ((u32AddrBitMode == PHASE_QUAD_MODE) ||
+                            (u32DataBitMode == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE;
 
     i32Ret = _SPIM_Validate4ByteAddrMode(u32Is4ByteAddr, u32Is4ByteAddrTmp);
 
@@ -2772,38 +3188,32 @@ void SPIM_EnterDirectMapMode(SPIM_T *spim, uint32_t u32Is4ByteAddr, uint8_t u8Rd
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
 
-    u32IsQuadEn = SPIM_IsQuadEnabled(spim, u32CMDBits);
-
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddrTmp, u32CMDBits);
+    i32Ret = _SPIM_PrepareFlashTransfer(spim, (uint32_t)u8RdCmd, u32Is4ByteAddrTmp, u32CMDBits, u32QuadMode);
 
     if (i32Ret != SPIM_OK)
     {
         return;
     }
 
-    if (u32QuadMode && (u32IsQuadEn == SPIM_OP_DISABLE))
+    if (SPIM_GET_PHDMM_MODE_DATAWIDTH(spim) != PHASE_WIDTH_0)
     {
-        SPIM_SetQuadEnable(spim, u32QuadMode, u32CMDBits);
+        if (_SPIM_IsCrenAllowed(u8RdCmd) == SPIM_OP_ENABLE)
+        {
+            SPIM_SET_MODE_DATA(spim, SPIM_DMM_ENABLE_CREN);
+            SPIM_ENABLE_DMM_CREN(spim);
+        }
     }
 
-    if ((SPIM_GET_PHDMM_MODE_DATAWIDTH(spim) != PHASE_WIDTH_0) &&
-            (_SPIM_IsCrenAllowed(u8RdCmd) == SPIM_OP_ENABLE))
-    {
-        SPIM_SET_MODE_DATA(spim, SPIM_DMM_ENABLE_CREN);
-        SPIM_ENABLE_DMM_CREN(spim);
-    }
+    u32RdCmdTmp = (uint32_t)u8RdCmd;
 
-    if ((SPIM_GET_PHDMM_CMD_WIDTH(spim) == PHASE_WIDTH_16) &&
-            (SPIM_GET_PHDMM_CMD_DTR(spim) == SPIM_OP_ENABLE))
+    if (SPIM_GET_PHDMM_CMD_WIDTH(spim) == PHASE_WIDTH_16)
     {
-        /* Promote to uint32_t BEFORE shifting (MISRA compliant). */
-        uint32_t u32Cmd = (uint32_t)u8RdCmd;
-        u32RdCmdTmp = (u32Cmd << 8U) | u32Cmd;
-    }
-    else
-    {
-        u32RdCmdTmp = (uint32_t)(u8RdCmd);
+        if (SPIM_GET_PHDMM_CMD_DTR(spim) == SPIM_OP_ENABLE)
+        {
+            /* Promote to uint32_t BEFORE shifting (MISRA compliant). */
+            uint32_t u32Cmd = (uint32_t)u8RdCmd;
+            u32RdCmdTmp = (u32Cmd << 8U) | u32Cmd;
+        }
     }
 
     /* SPIM mode. */
@@ -2816,7 +3226,9 @@ void SPIM_EnterDirectMapMode(SPIM_T *spim, uint32_t u32Is4ByteAddr, uint8_t u8Rd
 
 /**
  * @brief      Exit Direct Map Mode (DMM).
- * @param[in]  spim    Pointer to the SPIM instance.
+ *
+ * @param[in]  spim Pointer to the SPIM instance.
+ *
  * @return     None.
  * @note       Call this function before switching to normal command-based access mode.
  */
@@ -2824,7 +3236,7 @@ void SPIM_ExitDirectMapMode(SPIM_T *spim)
 {
     if (SPIM_GET_DMM_BWEN(spim) == SPIM_OP_ENABLE)
     {
-        (void)SPIM_SetWrapAroundEnable(spim, 0UL);
+        (void)SPIM_SetWrapAroundEnable(spim, (int32_t)SPIM_OP_DISABLE);
     }
 
     if (SPIM_GET_MODE_DATA(spim) == SPIM_DMM_ENABLE_CREN)
@@ -2833,13 +3245,16 @@ void SPIM_ExitDirectMapMode(SPIM_T *spim)
     }
 }
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* Phase-based I/O, DMA and DMM Operations                                                                */
+/*---------------------------------------------------------------------------------------------------------*/
 /**
  * @brief      Convert I/O phase mode to bit width size.
  *
- * @param[in]  u32Phase  I/O phase mode.
- *                       - \ref PHASE_NORMAL_MODE : 1-bit mode
- *                       - \ref PHASE_DUAL_MODE   : 2-bit mode
- *                       - \ref PHASE_QUAD_MODE   : 4-bit mode
+ * @param[in]  u32Phase I/O phase mode.
+ *                      - \ref PHASE_NORMAL_MODE : 1-bit mode
+ *                      - \ref PHASE_DUAL_MODE   : 2-bit mode
+ *                      - \ref PHASE_QUAD_MODE   : 4-bit mode
  *
  * @return     Bit width of the specified phase mode (1, 2, or 4).
  */
@@ -2865,7 +3280,7 @@ uint32_t SPIM_PhaseModeToNBit(uint32_t u32Phase)
  */
 static volatile uint32_t *_SPIM_SwitchPhaseRegister(SPIM_T *spim, uint32_t u32OPMode)
 {
-    volatile uint32_t *pu32Addr;
+    volatile uint32_t *pu32Addr = (volatile uint32_t *)NULL;
 
     if (u32OPMode == SPIM_CTL0_OPMODE_PAGEWRITE)
     {
@@ -2890,32 +3305,32 @@ static volatile uint32_t *_SPIM_SwitchPhaseRegister(SPIM_T *spim, uint32_t u32OP
 /**
  * @brief      Set the command phase configuration for DMA or Direct Map operation.
  *
- * @param[in]  spim        Pointer to the SPIM instance.
- * @param[in]  u32OPMode   SPI operation mode.
- *                         - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
- *                         - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
- *                         - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
- * @param[in]  u32NBit     Command bit mode.
- *                         - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
- *                         - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
- *                         - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
- *                         - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
- * @param[in]  u32Width    Command width.
- *                         - \ref PHASE_WIDTH_8     : 8-bit command
- *                         - \ref PHASE_WIDTH_16    : 16-bit command
- *                         - \ref PHASE_WIDTH_24    : 24-bit command
- *                         - \ref PHASE_WIDTH_32    : 32-bit command
- * @param[in]  u32DTREn    Enable or disable DTR (Double Transfer Rate) mode.
- *                         - SPIM_OP_DISABLE : Disable DTR
- *                         - SPIM_OP_ENABLE  : Enable DTR
+ * @param[in]  spim      Pointer to the SPIM instance.
+ * @param[in]  u32OPMode SPI operation mode.
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
+ *                       - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
+ * @param[in]  u32NBit   Command bit mode.
+ *                       - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
+ *                       - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
+ *                       - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
+ *                       - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
+ * @param[in]  u32Width  Command width.
+ *                       - \ref PHASE_WIDTH_8     : 8-bit command
+ *                       - \ref PHASE_WIDTH_16    : 16-bit command
+ *                       - \ref PHASE_WIDTH_24    : 24-bit command
+ *                       - \ref PHASE_WIDTH_32    : 32-bit command
+ * @param[in]  u32DTREn  Enable or disable DTR (Double Transfer Rate) mode.
+ *                       - SPIM_OP_DISABLE : Disable DTR
+ *                       - SPIM_OP_ENABLE  : Enable DTR
  *
  * @return     None.
  */
 static int32_t _SPIM_SetCMDPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32NBit, uint32_t u32Width, uint32_t u32DTREn)
 {
-    volatile uint32_t *pu32PhaseReg = (uint32_t *)_SPIM_SwitchPhaseRegister(spim, u32OPMode);
+    volatile uint32_t *pu32PhaseReg = _SPIM_SwitchPhaseRegister(spim, u32OPMode);
 
-    if (pu32PhaseReg == (uint32_t *)NULL)
+    if (pu32PhaseReg == (volatile uint32_t *)NULL)
     {
         return SPIM_ERR_FAIL;
     }
@@ -2933,33 +3348,33 @@ static int32_t _SPIM_SetCMDPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32N
 /**
  * @brief      Set the address phase configuration for DMA or Direct Map operation.
  *
- * @param[in]  spim        Pointer to the SPIM instance.
- * @param[in]  u32OPMode   SPI operation mode.
- *                         - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
- *                         - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
- *                         - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
- * @param[in]  u32NBit     Address bit mode.
- *                         - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
- *                         - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
- *                         - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
- *                         - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
- * @param[in]  u32Width    Address width.
- *                         - \ref PHASE_WIDTH_8     : 8-bit address
- *                         - \ref PHASE_WIDTH_16    : 16-bit address
- *                         - \ref PHASE_WIDTH_24    : 24-bit address
- *                         - \ref PHASE_WIDTH_32    : 32-bit address
- * @param[in]  u32DTREn    Enable or disable DTR (Double Transfer Rate) mode.
- *                         - 0: Disable DTR
- *                         - 1: Enable DTR
+ * @param[in]  spim      Pointer to the SPIM instance.
+ * @param[in]  u32OPMode SPI operation mode.
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
+ *                       - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
+ * @param[in]  u32NBit   Address bit mode.
+ *                       - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
+ *                       - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
+ *                       - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
+ *                       - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
+ * @param[in]  u32Width  Address width.
+ *                       - \ref PHASE_WIDTH_8     : 8-bit address
+ *                       - \ref PHASE_WIDTH_16    : 16-bit address
+ *                       - \ref PHASE_WIDTH_24    : 24-bit address
+ *                       - \ref PHASE_WIDTH_32    : 32-bit address
+ * @param[in]  u32DTREn  Enable or disable DTR (Double Transfer Rate) mode.
+ *                       - 0: Disable DTR
+ *                       - 1: Enable DTR
  *
  * @retval     SPIM_OK          Address phase configured successfully.
  * @retval     SPIM_ERR_FAIL    Invalid parameters or unsupported configuration.
  */
 static int32_t _SPIM_SetAddrPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32NBit, uint32_t u32Width, uint32_t u32DTREn)
 {
-    volatile uint32_t *pu32PhaseReg = (uint32_t *)_SPIM_SwitchPhaseRegister(spim, u32OPMode);
+    volatile uint32_t *pu32PhaseReg = _SPIM_SwitchPhaseRegister(spim, u32OPMode);
 
-    if (pu32PhaseReg == (uint32_t *)NULL)
+    if (pu32PhaseReg == (volatile uint32_t *)NULL)
     {
         return SPIM_ERR_FAIL;
     }
@@ -2974,10 +3389,21 @@ static int32_t _SPIM_SetAddrPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32
     return SPIM_OK;
 }
 
-
+/**
+ * @brief      Clear the Continue Read phase for DMA or Direct Map operation.
+ *
+ * @param[in]  spim      Pointer to the SPIM instance.
+ * @param[in]  u32OPMode SPI operation mode.
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
+ *                       - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
+ *
+ * @return     None.
+ *
+ * @note       This function is typically called before setting a new Continue Read phase configuration.
+ */
 static void _SPIM_ClearContReadPhase(SPIM_T *spim, uint32_t u32OPMode)
 {
-    volatile uint32_t *pu32PhaseReg = (uint32_t *)_SPIM_SwitchPhaseRegister(spim, u32OPMode);
+    volatile uint32_t *pu32PhaseReg = _SPIM_SwitchPhaseRegister(spim, u32OPMode);
 
     *pu32PhaseReg &= ~(0xFFUL << PHASE_CLR_READMODE_Pos);
 }
@@ -2985,35 +3411,35 @@ static void _SPIM_ClearContReadPhase(SPIM_T *spim, uint32_t u32OPMode)
 /**
  * @brief      Set the Continue Read phase for DMA or Direct Map operation.
  *
- * @param[in]  spim       Pointer to the SPIM instance.
- * @param[in]  u32OPMode  SPI operation mode.
- *                        - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
- *                        - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
- * @param[in]  u32NBit    Bit mode used to transmit continue read command.
- *                        - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
- *                        - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
- *                        - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
- *                        - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
- * @param[in]  u32Width   Command width.
- *                        - \ref PHASE_WIDTH_8     : 8-bit command
- *                        - \ref PHASE_WIDTH_16    : 16-bit command
- *                        - \ref PHASE_WIDTH_24    : 24-bit command
- *                        - \ref PHASE_WIDTH_32    : 32-bit command
- * @param[in]  u32ContEn  Enable or disable Continue Read mode.
- *                        - \ref PHASE_ENABLE_CONT_READ    : Enable Continue Read mode
- *                        - \ref PHASE_DISABLE_CONT_READ   : Disable Continue Read mode
- * @param[in]  u32DTREn   Enable or disable DTR (Double Transfer Rate) mode.
- *                        - 0: Disable DTR
- *                        - 1: Enable DTR
+ * @param[in]  spim      Pointer to the SPIM instance.
+ * @param[in]  u32OPMode SPI operation mode.
+ *                       - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
+ *                       - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
+ * @param[in]  u32NBit   Bit mode used to transmit continue read command.
+ *                       - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
+ *                       - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
+ *                       - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
+ *                       - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
+ * @param[in]  u32Width  Command width.
+ *                       - \ref PHASE_WIDTH_8     : 8-bit command
+ *                       - \ref PHASE_WIDTH_16    : 16-bit command
+ *                       - \ref PHASE_WIDTH_24    : 24-bit command
+ *                       - \ref PHASE_WIDTH_32    : 32-bit command
+ * @param[in]  u32ContEn Enable or disable Continue Read mode.
+ *                       - \ref PHASE_ENABLE_CONT_READ    : Enable Continue Read mode
+ *                       - \ref PHASE_DISABLE_CONT_READ   : Disable Continue Read mode
+ * @param[in]  u32DTREn  Enable or disable DTR (Double Transfer Rate) mode.
+ *                       - 0: Disable DTR
+ *                       - 1: Enable DTR
  *
  * @retval     SPIM_OK          Continue Read phase set successfully.
  * @retval     SPIM_ERR_FAIL    Invalid configuration or operation failed.
  */
 static int32_t _SPIM_SetContReadPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32NBit, uint32_t u32Width, uint32_t u32ContEn, uint32_t u32DTREn)
 {
-    volatile uint32_t *pu32PhaseReg = (uint32_t *)_SPIM_SwitchPhaseRegister(spim, u32OPMode);
+    volatile uint32_t *pu32PhaseReg = _SPIM_SwitchPhaseRegister(spim, u32OPMode);
 
-    if (pu32PhaseReg == (uint32_t *)NULL)
+    if (pu32PhaseReg == (volatile uint32_t *)NULL)
     {
         return SPIM_ERR_FAIL;
     }
@@ -3048,27 +3474,27 @@ static int32_t _SPIM_SetContReadPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t
 /**
  * @brief      Set the Data Phase configuration for DMA or Direct Map operation.
  *
- * @param[in]  spim          Pointer to the SPIM instance.
- * @param[in]  u32OPMode     SPI operation mode.
- *                           - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
- *                           - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
- *                           - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
- * @param[in]  u32NBit       Bit mode used during the data phase.
- *                           - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
- *                           - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
- *                           - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
- *                           - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
- * @param[in]  u32ByteOrder  Data byte order for Octal SPI Flash during read phase.
- *                           - \ref PHASE_ORDER_MODE0 : {byte0, byte1, byte2, byte3, byte4, byte5, byte6, byte7}
- *                           - \ref PHASE_ORDER_MODE1 : {byte7, byte6, byte5, byte4, byte3, byte2, byte1, byte0}
- *                           - \ref PHASE_ORDER_MODE2 : {byte1, byte0, byte3, byte2, byte5, byte4, byte7, byte6}
- *                           - \ref PHASE_ORDER_MODE3 : {byte6, byte7, byte4, byte5, byte2, byte3, byte0, byte1}
- * @param[in]  u32DTREn      Enable or disable DTR (Double Transfer Rate) mode.
- *                           - \ref SPIM_OP_ENABLE
- *                           - \ref SPIM_OP_DISABLE
- * @param[in]  u32RdDQS      Enable or disable Read DQS (Data Strobe).
- *                           - \ref SPIM_OP_ENABLE
- *                           - \ref SPIM_OP_DISABLE
+ * @param[in]  spim         Pointer to the SPIM instance.
+ * @param[in]  u32OPMode    SPI operation mode.
+ *                          - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
+ *                          - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
+ *                          - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Map mode
+ * @param[in]  u32NBit      Bit mode used during the data phase.
+ *                          - \ref PHASE_NORMAL_MODE : Standard mode (1-bit)
+ *                          - \ref PHASE_DUAL_MODE   : Dual mode (2-bit)
+ *                          - \ref PHASE_QUAD_MODE   : Quad mode (4-bit)
+ *                          - \ref PHASE_OCTAL_MODE  : Octal mode (8-bit)
+ * @param[in]  u32ByteOrder Data byte order for Octal SPI Flash during read phase.
+ *                          - \ref PHASE_ORDER_MODE0 : {byte0, byte1, byte2, byte3, byte4, byte5, byte6, byte7}
+ *                          - \ref PHASE_ORDER_MODE1 : {byte7, byte6, byte5, byte4, byte3, byte2, byte1, byte0}
+ *                          - \ref PHASE_ORDER_MODE2 : {byte1, byte0, byte3, byte2, byte5, byte4, byte7, byte6}
+ *                          - \ref PHASE_ORDER_MODE3 : {byte6, byte7, byte4, byte5, byte2, byte3, byte0, byte1}
+ * @param[in]  u32DTREn     Enable or disable DTR (Double Transfer Rate) mode.
+ *                          - \ref SPIM_OP_ENABLE
+ *                          - \ref SPIM_OP_DISABLE
+ * @param[in]  u32RdDQS     Enable or disable Read DQS (Data Strobe).
+ *                          - \ref SPIM_OP_ENABLE
+ *                          - \ref SPIM_OP_DISABLE
  *
  * @retval     SPIM_OK       Configuration successful.
  * @retval     SPIM_ERR_FAIL Configuration failed.
@@ -3076,9 +3502,9 @@ static int32_t _SPIM_SetContReadPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t
 static int32_t _SPIM_SetDataPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32NBit,
                                   uint32_t u32ByteOrder, uint32_t u32DTREn, uint32_t u32RdDQS)
 {
-    volatile uint32_t *pu32PhaseReg = (uint32_t *)_SPIM_SwitchPhaseRegister(spim, u32OPMode);
+    volatile uint32_t *pu32PhaseReg = _SPIM_SwitchPhaseRegister(spim, u32OPMode);
 
-    if (pu32PhaseReg == (uint32_t *)NULL)
+    if (pu32PhaseReg == (volatile uint32_t *)NULL)
     {
         return SPIM_ERR_FAIL;
     }
@@ -3097,14 +3523,14 @@ static int32_t _SPIM_SetDataPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32
 /**
  * @brief      Initialize command phase settings for DMA/DMM SPI Flash operations.
  *
- * @param[in]  spim           Pointer to the SPIM instance.
- * @param[in]  psPhaseTable   Pointer to the command phase table. This table must be
- *                            defined according to the supported command codes of the
- *                            target SPI Flash device.
- * @param[in]  u32OPMode      SPI operation mode:
- *                            - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
- *                            - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
- *                            - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Memory Mapping mode
+ * @param[in]  spim         Pointer to the SPIM instance.
+ * @param[in]  psPhaseTable Pointer to the command phase table. This table must be
+ *                          defined according to the supported command codes of the
+ *                          target SPI Flash device.
+ * @param[in]  u32OPMode    SPI operation mode:
+ *                          - \ref SPIM_CTL0_OPMODE_PAGEWRITE : DMA write mode
+ *                          - \ref SPIM_CTL0_OPMODE_PAGEREAD  : DMA read mode
+ *                          - \ref SPIM_CTL0_OPMODE_DIRECTMAP : Direct Memory Mapping mode
  * @note  Invoke SPIM_DMADMM_InitPhase before any DMA read, DMA write, or
  *        Direct Map (DMM) access to configure command / address / data phases.
  *
@@ -3117,20 +3543,22 @@ static int32_t _SPIM_SetDataPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32
  *
  * @return     None.
  */
-void SPIM_DMADMM_InitPhase(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable, uint32_t u32OPMode)
+void SPIM_DMADMM_InitPhase(SPIM_T *spim, const SPIM_PHASE_T *psPhaseTable, uint32_t u32OPMode)
 {
-    int32_t i32Ret;
+    int32_t i32Ret = 0L;
     uint32_t u32SavedDTREn = SPIM_GET_DTR_MODE(spim);
-    uint32_t u32Is4ByteAddr = 0;
+    uint32_t u32Is4ByteAddr = 0UL;
     uint32_t u32QuadMode = (((psPhaseTable->u32AddrPhase == PHASE_QUAD_MODE) ||
                              (psPhaseTable->u32DataPhase == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
     uint32_t u32CmdBit = SPIM_PhaseModeToNBit(psPhaseTable->u32CMDPhase);
-    uint32_t u32IsQuadEn;
+    uint32_t u32IsQuadEn = 0UL;
 
     SPIM_DISABLE_DMM_BWEN(spim);
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
 
+    /* Preserve the released BSP ordering: query QE using the current transfer
+       state before switching the controller to the new phase-table DTR mode. */
     u32IsQuadEn = SPIM_IsQuadEnabled(spim, u32CmdBit);
 
     /* Set SPIM DTR Mode */
@@ -3138,8 +3566,8 @@ void SPIM_DMADMM_InitPhase(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable, uint32_t u3
 
     u32Is4ByteAddr = ((psPhaseTable->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
 
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddr, u32CmdBit);
+    i32Ret = _SPIM_PrepareAddressMode(spim, psPhaseTable->u32CMDCode,
+                                      u32Is4ByteAddr, u32CmdBit);
 
     if (i32Ret != SPIM_OK)
     {
@@ -3147,9 +3575,9 @@ void SPIM_DMADMM_InitPhase(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable, uint32_t u3
         return;
     }
 
-    if (u32QuadMode && (u32IsQuadEn == SPIM_OP_DISABLE))
+    if ((u32QuadMode != SPIM_OP_DISABLE) && (u32IsQuadEn == SPIM_OP_DISABLE))
     {
-        SPIM_SetQuadEnable(spim, u32QuadMode, u32CmdBit);
+        SPIM_SetQuadEnable(spim, SPIM_OP_ENABLE, u32CmdBit);
     }
 
     /* Set Flash Command Phase */
@@ -3203,19 +3631,20 @@ void SPIM_DMADMM_InitPhase(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable, uint32_t u3
 /**
  * @brief      Send command phase in Normal I/O mode.
  *
- * @param[in]  spim         Pointer to the SPIM instance.
- * @param[in]  u32OPMode    Normal I/O operation mode:
- *                          - \ref SPIM_IO_WRITE_PHASE : Write command phase
- *                          - \ref SPIM_IO_READ_PHASE  : Read command phase
- * @param[in]  u32OpCMD     SPI Flash command to send, defined by the SPI Flash specification.
- * @param[in]  u32CMDPhase  Command bit mode:
- *                          - \ref PHASE_NORMAL_MODE : Send command using Standard mode
- *                          - \ref PHASE_DUAL_MODE   : Send command using Dual mode
- *                          - \ref PHASE_QUAD_MODE   : Send command using Quad mode
- *                          - \ref PHASE_OCTAL_MODE  : Send command using Octal mode
- * @param[in]  u32DTREn     Enable or disable Double Transfer Rate (DTR) mode:
- *                          - \ref SPIM_OP_ENABLE
- *                          - \ref SPIM_OP_DISABLE
+ * @param[in]  spim        Pointer to the SPIM instance.
+ * @param[in]  u32OPMode   Normal I/O operation mode:
+ *                         - \ref SPIM_IO_WRITE_PHASE : Write command phase
+ *                         - \ref SPIM_IO_READ_PHASE  : Read command phase
+ * @param[in]  u32OpCMD    SPI Flash command to send, defined by the SPI Flash specification.
+ * @param[in]  u32CMDPhase Command bit mode:
+ *                         - \ref PHASE_NORMAL_MODE : Send command using Standard mode
+ *                         - \ref PHASE_DUAL_MODE   : Send command using Dual mode
+ *                         - \ref PHASE_QUAD_MODE   : Send command using Quad mode
+ *                         - \ref PHASE_OCTAL_MODE  : Send command using Octal mode
+ * @param[in]  u32DTREn    Enable or disable Double Transfer Rate (DTR) mode:
+ *                         - \ref SPIM_OP_ENABLE
+ *                         - \ref SPIM_OP_DISABLE
+ *
  * @return     None.
  */
 void SPIM_IO_SendCommandByPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32OpCMD,
@@ -3229,14 +3658,14 @@ void SPIM_IO_SendCommandByPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32Op
     if (u32OPMode == SPIM_IO_WRITE_PHASE)
     {
         /* Write Enable. */
-        SPIM_SetWriteEnable(spim, SPIM_OP_ENABLE, SPIM_PhaseModeToNBit(u32CMDPhase));
+        SPIM_SetWriteEnable(spim, (int32_t)SPIM_OP_ENABLE, SPIM_PhaseModeToNBit(u32CMDPhase));
     }
 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
     /* Write out command. */
-    (void)_SPIM_WriteData(spim, u8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, SPIM_PhaseModeToNBit(u32CMDPhase));
+    (void)SPIM_WriteData(spim, u8CmdBuf, (u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL, SPIM_PhaseModeToNBit(u32CMDPhase));
 
     /* DTR Deactivated. */
     SPIM_SET_DTR_MODE(spim, SPIM_OP_DISABLE);
@@ -3245,17 +3674,18 @@ void SPIM_IO_SendCommandByPhase(SPIM_T *spim, uint32_t u32OPMode, uint32_t u32Op
 /**
  * @brief      Send address phase in Normal I/O mode.
  *
- * @param[in]  spim             Pointer to the SPIM instance.
- * @param[in]  u32Is4ByteAddr   Specify whether to use 4-byte address mode (1: 4-byte, 0: 3-byte).
- * @param[in]  u32Addr          The starting read/write address to be sent.
- * @param[in]  u32AddrPhase     Address bit mode:
- *                              - \ref PHASE_NORMAL_MODE : Send address using Standard mode.
- *                              - \ref PHASE_DUAL_MODE   : Send address using Dual mode.
- *                              - \ref PHASE_QUAD_MODE   : Send address using Quad mode.
- *                              - \ref PHASE_OCTAL_MODE  : Send address using Octal mode.
- * @param[in]  u32DTREn         Enable or disable Double Transfer Rate (DTR) mode:
- *                              - \ref SPIM_OP_ENABLE
- *                              - \ref SPIM_OP_DISABLE
+ * @param[in]  spim           Pointer to the SPIM instance.
+ * @param[in]  u32Is4ByteAddr Specify whether to use 4-byte address mode (1: 4-byte, 0: 3-byte).
+ * @param[in]  u32Addr        The starting read/write address to be sent.
+ * @param[in]  u32AddrPhase   Address bit mode:
+ *                            - \ref PHASE_NORMAL_MODE : Send address using Standard mode.
+ *                            - \ref PHASE_DUAL_MODE   : Send address using Dual mode.
+ *                            - \ref PHASE_QUAD_MODE   : Send address using Quad mode.
+ *                            - \ref PHASE_OCTAL_MODE  : Send address using Octal mode.
+ * @param[in]  u32DTREn       Enable or disable Double Transfer Rate (DTR) mode:
+ *                            - \ref SPIM_OP_ENABLE
+ *                            - \ref SPIM_OP_DISABLE
+ *
  * @return     None.
  */
 void SPIM_IO_SendAddressByPhase(SPIM_T *spim,
@@ -3273,7 +3703,7 @@ void SPIM_IO_SendAddressByPhase(SPIM_T *spim,
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    if (u32Is4ByteAddr)
+    if (u32Is4ByteAddr != 0UL)
     {
         u8CmdBuf[u8BufIdx] = (uint8_t)(u32Addr >> 24);
         u8BufIdx++;
@@ -3287,7 +3717,7 @@ void SPIM_IO_SendAddressByPhase(SPIM_T *spim,
     u8BufIdx++;
 
     /* This field is for continuous read mode, but the I/O mode is not supported. */
-    if ((gau8IDBuf[0] == (uint8_t)MFGID_WINBOND) &&
+    if ((_SPIM_GetManufacturerId(spim) == (uint8_t)MFGID_WINBOND) &&
             ((SPIM_PhaseModeToNBit(u32AddrPhase) == 2UL) ||
              (SPIM_PhaseModeToNBit(u32AddrPhase) == 4UL)))
     {
@@ -3295,77 +3725,125 @@ void SPIM_IO_SendAddressByPhase(SPIM_T *spim,
     }
 
     /* Write out u32Address. */
-    (void)_SPIM_WriteData(spim, u8CmdBuf, u8BufIdx, SPIM_PhaseModeToNBit(u32AddrPhase));
+    (void)SPIM_WriteData(spim, u8CmdBuf, u8BufIdx, SPIM_PhaseModeToNBit(u32AddrPhase));
 
     /* DTR Deactivated. */
     SPIM_SET_DTR_MODE(spim, SPIM_OP_DISABLE);
 }
 
 /**
- * @brief      Send dummy cycles in Normal I/O mode.
+ * @brief      Send dummy cycles in Normal I/O mode using the selected data phase.
  *
- * @param[in]  spim       Pointer to the SPIM instance.
- * @param[in]  u32NDummy  Number of dummy clock cycles to insert, typically defined by the SPI Flash command specification.
+ * @param[in]  spim      Pointer to the SPIM instance.
+ * @param[in]  u32NDummy Number of dummy clock cycles to insert.
+ * @param[in]  u32NBit   Data pins driven during each clock edge.
+ * @param[in]  u32DTREn  Enable or disable Double Transfer Rate (DTR) mode.
  *
- * @retval     SPIM_OK        Operation completed successfully.
- * @retval     SPIM_ERR_FAIL  Operation failed due to invalid configuration or hardware issue.
+ * @retval     SPIM_OK            Dummy cycles were transmitted successfully.
+ * @retval     SPIM_ERR_FAIL      Parameter or transfer configuration is invalid.
+ * @retval     SPIM_ERR_TIMEOUT   Dummy-cycle transfer timed out.
  */
-int32_t SPIM_IO_SendDummyByPhase(SPIM_T *spim, uint32_t u32NDummy)
+int32_t SPIM_IO_SendDummyByPhase(SPIM_T *spim, uint32_t u32NDummy, uint32_t u32NBit, uint32_t u32DTREn)
 {
-    uint32_t u32DTREn = 0;
+    uint32_t u32BitsPerClock = 0UL;
+    uint32_t u32ClocksPerWord = 0UL;
+    uint32_t u32RemainClocks = u32NDummy;
+    uint32_t u32SavedDTREn = 0UL;
     int32_t i32Ret = SPIM_OK;
+
+    if ((spim == (SPIM_T *)NULL) ||
+            ((u32NBit != SPIM_BITMODE_1) &&
+             (u32NBit != SPIM_BITMODE_2) &&
+             (u32NBit != SPIM_BITMODE_4) &&
+             (u32NBit != SPIM_BITMODE_8)))
+    {
+        return SPIM_ERR_FAIL;
+    }
 
     if (u32NDummy == 0UL)
     {
         return SPIM_OK;
     }
 
-    u32DTREn = SPIM_GET_DTR_MODE(spim);
-
-    /* DTR Deactivated. */
-    SPIM_SET_DTR_MODE(spim, SPIM_OP_DISABLE);
+    u32SavedDTREn = SPIM_GET_DTR_MODE(spim);
+    u32BitsPerClock = u32NBit * ((u32DTREn == SPIM_OP_ENABLE) ? 2UL : 1UL);
+    u32ClocksPerWord = 32UL / u32BitsPerClock;
 
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    SPIM_SwitchNBitInput(spim, SPIM_BITMODE_1);
-    spim->TX[0] = 0x00;
-
-    /* Switch to Normal mode. */
     SPIM_SET_OPMODE(spim, SPIM_CTL0_OPMODE_IO);
-    SPIM_SET_DATA_WIDTH(spim, u32NDummy);
-    SPIM_SET_BURST_DATA(spim, (uint32_t)SPIM_BURSTNUM_1);
-
-    i32Ret = SPIM_WaitOpDone(spim, SPIM_OP_ENABLE);
-
-    /* Restore DTR Mode. */
     SPIM_SET_DTR_MODE(spim, u32DTREn);
+    SPIM_SwitchNBitOutput(spim, u32NBit);
+
+    while (u32RemainClocks >= u32ClocksPerWord)
+    {
+        uint32_t u32BurstCount = u32RemainClocks / u32ClocksPerWord;
+        uint32_t u32Index;
+
+        if (u32BurstCount > SPIM_BURSTNUM_4)
+        {
+            u32BurstCount = SPIM_BURSTNUM_4;
+        }
+
+        u32Index = u32BurstCount;
+
+        while (u32Index > 0UL)
+        {
+            u32Index--;
+            spim->TX[u32Index] = 0UL;
+        }
+
+        SPIM_SET_DATA_WIDTH(spim, 32UL);
+        SPIM_SET_BURST_DATA(spim, u32BurstCount);
+
+        i32Ret = SPIM_WaitOpDone(spim, SPIM_OP_ENABLE);
+
+        if (i32Ret != SPIM_OK)
+        {
+            SPIM_SET_DTR_MODE(spim, u32SavedDTREn);
+            return i32Ret;
+        }
+
+        u32RemainClocks -= u32BurstCount * u32ClocksPerWord;
+    }
+
+    if (u32RemainClocks != 0UL)
+    {
+        spim->TX[0] = 0UL;
+        SPIM_SET_DATA_WIDTH(spim, u32RemainClocks * u32BitsPerClock);
+        SPIM_SET_BURST_DATA(spim, SPIM_BURSTNUM_1);
+
+        i32Ret = SPIM_WaitOpDone(spim, SPIM_OP_ENABLE);
+    }
+
+    SPIM_SET_DTR_MODE(spim, u32SavedDTREn);
 
     return i32Ret;
 }
 
 /**
- * @brief      Execute data phase in Normal I/O mode.
+ * @brief          Execute data phase in Normal I/O mode.
  *
- * @param[in]  spim           Pointer to the SPIM instance.
- * @param[in]  u32OPMode      Operation mode for Normal I/O.
- *                            - \ref SPIM_IO_WRITE_PHASE : Write mode.
- *                            - \ref SPIM_IO_READ_PHASE  : Read mode.
- * @param[in,out] pu8TRxBuf   Pointer to transmit or receive data buffer.
- *                            - In write mode: pointer to transmit data.
- *                            - In read mode: buffer for received data.
- * @param[in]  u32TRxSize     Size of data to transmit or receive in bytes.
- * @param[in]  u32DataPhase   Data phase bit mode.
- *                            - \ref PHASE_NORMAL_MODE : Standard mode.
- *                            - \ref PHASE_DUAL_MODE   : Dual mode.
- *                            - \ref PHASE_QUAD_MODE   : Quad mode.
- *                            - \ref PHASE_OCTAL_MODE  : Octal mode.
- * @param[in]  u32DTREn       Enable or disable DTR (Double Transfer Rate) mode.
- *                            - \ref SPIM_OP_ENABLE
- *                            - \ref SPIM_OP_DISABLE
- * @param[in]  u32RdDQS       Enable or disable DQS input during read.
- *                            - \ref SPIM_OP_ENABLE
- *                            - \ref SPIM_OP_DISABLE
+ * @param[in]      spim         Pointer to the SPIM instance.
+ * @param[in]      u32OPMode    Operation mode for Normal I/O.
+ *                              - \ref SPIM_IO_WRITE_PHASE : Write mode.
+ *                              - \ref SPIM_IO_READ_PHASE  : Read mode.
+ * @param[in,out]  pu8TRxBuf    Pointer to transmit or receive data buffer.
+ *                              - In write mode: pointer to transmit data.
+ *                              - In read mode: buffer for received data.
+ * @param[in]      u32TRxSize   Size of data to transmit or receive in bytes.
+ * @param[in]      u32DataPhase Data phase bit mode.
+ *                              - \ref PHASE_NORMAL_MODE : Standard mode.
+ *                              - \ref PHASE_DUAL_MODE   : Dual mode.
+ *                              - \ref PHASE_QUAD_MODE   : Quad mode.
+ *                              - \ref PHASE_OCTAL_MODE  : Octal mode.
+ * @param[in]      u32DTREn     Enable or disable DTR (Double Transfer Rate) mode.
+ *                              - \ref SPIM_OP_ENABLE
+ *                              - \ref SPIM_OP_DISABLE
+ * @param[in]      u32RdDQS     Enable or disable DQS input during read.
+ *                              - \ref SPIM_OP_ENABLE
+ *                              - \ref SPIM_OP_DISABLE
  *
  * @retval     SPIM_OK        Operation successful.
  * @retval     SPIM_ERR_FAIL  Operation failed.
@@ -3379,7 +3857,7 @@ void SPIM_IO_RWDataByPhase(SPIM_T *spim, uint32_t u32OPMode, uint8_t *pu8TRxBuf,
     /* CS activated. */
     SPIM_SET_SS_EN(spim, SPIM_OP_ENABLE);
 
-    if (gau8IDBuf[0] == (uint8_t)MFGID_IFX)
+    if (_SPIM_GetManufacturerId(spim) == (uint8_t)MFGID_IFX)
     {
         SPIM_SET_RDQS_MODE(spim, u32RdDQS);
     }
@@ -3387,12 +3865,12 @@ void SPIM_IO_RWDataByPhase(SPIM_T *spim, uint32_t u32OPMode, uint8_t *pu8TRxBuf,
     if (u32OPMode == SPIM_IO_WRITE_PHASE)
     {
         /* Write out data. */
-        (void)_SPIM_WriteData(spim, pu8TRxBuf, u32TRxSize, SPIM_PhaseModeToNBit(u32DataPhase));
+        (void)SPIM_WriteData(spim, pu8TRxBuf, u32TRxSize, SPIM_PhaseModeToNBit(u32DataPhase));
     }
     else
     {
         /* Read back data. */
-        (void)_SPIM_ReadData(spim, pu8TRxBuf, u32TRxSize, SPIM_PhaseModeToNBit(u32DataPhase));
+        (void)SPIM_ReadData(spim, pu8TRxBuf, u32TRxSize, SPIM_PhaseModeToNBit(u32DataPhase));
     }
 
     /* CS Deactivated. */
@@ -3407,17 +3885,17 @@ void SPIM_IO_RWDataByPhase(SPIM_T *spim, uint32_t u32OPMode, uint8_t *pu8TRxBuf,
 /**
  * @brief      Write data to SPI Flash using command and phase settings in Normal I/O mode.
  *
- * @param[in]  spim            Pointer to the SPIM instance.
- * @param[in]  psPhaseTable    Pointer to the SPIM phase table, which contains command and phase configuration.
- * @param[in]  u32Addr         Target address in SPI Flash to write data.
- * @param[in]  u32Is4ByteAddr  Set to 1 for 4-byte addressing mode, 0 for 3-byte mode.
- * @param[in]  pu8TxBuf        Pointer to the data buffer to be written to SPI Flash.
- * @param[in]  u32RdSize       Number of bytes to write.
- * @param[in]  u32WrDone       Set to 1 to wait for write complete; 0 to return immediately.
+ * @param[in]  spim           Pointer to the SPIM instance.
+ * @param[in]  psPhaseTable   Pointer to the SPIM phase table, which contains command and phase configuration.
+ * @param[in]  u32Addr        Target address in SPI Flash to write data.
+ * @param[in]  u32Is4ByteAddr Set to 1 for 4-byte addressing mode, 0 for 3-byte mode.
+ * @param[in]  pu8TxBuf       Pointer to the data buffer to be written to SPI Flash.
+ * @param[in]  u32RdSize      Number of bytes to write.
+ * @param[in]  u32WrDone      Set to 1 to wait for write complete; 0 to return immediately.
  *
  * @return     None.
  */
-static void SPIM_WriteInPageDataByPhaseIO(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable,
+static void SPIM_WriteInPageDataByPhaseIO(SPIM_T *spim, const SPIM_PHASE_T *psPhaseTable,
                                           uint32_t u32Addr, uint32_t u32Is4ByteAddr,
                                           uint8_t *pu8TxBuf, uint32_t u32RdSize,
                                           uint32_t u32WrDone)
@@ -3433,7 +3911,14 @@ static void SPIM_WriteInPageDataByPhaseIO(SPIM_T *spim, SPIM_PHASE_T *psPhaseTab
                                psPhaseTable->u32AddrDTR);
 
     /* Write out dummy bytes. */
-    (void)SPIM_IO_SendDummyByPhase(spim, psPhaseTable->u32DcNum);
+    if (SPIM_IO_SendDummyByPhase(spim,
+                                 psPhaseTable->u32DcNum,
+                                 SPIM_PhaseModeToNBit(psPhaseTable->u32DataPhase),
+                                 psPhaseTable->u32DataDTR) != SPIM_OK)
+    {
+        SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+        return;
+    }
 
     /* Write out data bytes. */
     SPIM_IO_RWDataByPhase(spim,
@@ -3444,7 +3929,7 @@ static void SPIM_WriteInPageDataByPhaseIO(SPIM_T *spim, SPIM_PHASE_T *psPhaseTab
                           psPhaseTable->u32DataDTR,
                           psPhaseTable->u32RDQS);
 
-    if (u32WrDone)
+    if (u32WrDone != 0UL)
     {
         /* DTR Activated. */
         SPIM_SET_DTR_MODE(spim, psPhaseTable->u32CMDDTR);
@@ -3459,20 +3944,23 @@ static void SPIM_WriteInPageDataByPhaseIO(SPIM_T *spim, SPIM_PHASE_T *psPhaseTab
 /**
  * @brief      Write data to SPI Flash using specified phase settings (I/O mode).
  *
- * @param[in]  spim          Pointer to the SPIM instance.
- * @param[in]  psPhaseTable  Pointer to the phase table based on SPI Flash specifications.
- *                           This table defines the command and associated phase parameters.
- * @param[in]  u32Addr       Target address in SPI Flash to begin writing.
- * @param[in]  pu8TxBuf      Pointer to the data buffer to be written.
- * @param[in]  u32WrSize     Number of bytes to write.
- * @param[in]  u32WrDone     Set to 1 to wait for write completion; 0 to skip waiting.
+ * @param[in]  spim         Pointer to the SPIM instance.
+ * @param[in]  psPhaseTable Pointer to the phase table based on SPI Flash specifications.
+ *                          This table defines the command and associated phase parameters.
+ * @param[in]  u32Addr      Target address in SPI Flash to begin writing.
+ * @param[in]  pu8TxBuf     Pointer to the data buffer to be written.
+ * @param[in]  u32WrSize    Number of bytes to write.
+ * @param[in]  u32WrDone    Set to 1 to wait for final-page completion; 0 to return
+ *                          after the final page program has been issued. Intermediate
+ *                          pages are always completed before the next page is started.
  *
  * @return     None.
+ * @note       The write is automatically split at @ref SPIM_FLH_PAGE_SIZE page boundaries.
  */
-void SPIM_IO_WriteByPhase(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable,
+void SPIM_IO_WriteByPhase(SPIM_T *spim, const SPIM_PHASE_T *psPhaseTable,
                           uint32_t u32Addr, uint8_t *pu8TxBuf, uint32_t u32WrSize, uint32_t u32WrDone)
 {
-    int32_t i32Ret;
+    int32_t i32Ret = 0L;
     uint32_t u32DTREn = SPIM_GET_DTR_MODE(spim);
     /* Buffer index. */
     uint32_t u32BufIdx = 0UL;
@@ -3486,16 +3974,13 @@ void SPIM_IO_WriteByPhase(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable,
     uint32_t u32CMDBits = SPIM_PhaseModeToNBit(psPhaseTable->u32CMDPhase);
     uint32_t u32QuadMode = (((psPhaseTable->u32AddrPhase == PHASE_QUAD_MODE) ||
                              (psPhaseTable->u32DataPhase == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
-    uint32_t u32IsQuadEn;
 
     SPIM_DISABLE_DMM_BWEN(spim);
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
 
-    u32IsQuadEn = SPIM_IsQuadEnabled(spim, u32CMDBits);
-
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddr, u32CMDBits);
+    i32Ret = _SPIM_PrepareFlashTransfer(spim, psPhaseTable->u32CMDCode,
+                                        u32Is4ByteAddr, u32CMDBits, u32QuadMode);
 
     if (i32Ret != SPIM_OK)
     {
@@ -3503,66 +3988,62 @@ void SPIM_IO_WriteByPhase(SPIM_T *spim, SPIM_PHASE_T *psPhaseTable,
         return;
     }
 
-    if (u32QuadMode && (u32IsQuadEn == SPIM_OP_DISABLE))
+    while (u32WrSizeTmp != 0UL)
     {
-        SPIM_SetQuadEnable(spim, u32QuadMode, u32CMDBits);
-    }
+        /* Limit each program operation to the bytes remaining in the current
+           flash page. This prevents a write that starts near the end of a page
+           from wrapping into the beginning of the same page on devices that
+           implement standard page-program semantics. */
+        uint32_t u32ToWr = _SPIM_GetPageChunkSize(u32AddrTmp, u32WrSizeTmp);
+        uint32_t u32Remain = u32WrSizeTmp - u32ToWr;
+        uint32_t u32WaitDone = (u32Remain != 0UL) ? SPIM_OP_ENABLE : u32WrDone;
 
-    while (u32WrSizeTmp)
-    {
-        /* The number of bytes to write*/
-        uint32_t toWr = (u32WrSizeTmp < SPIM_FLH_PAGE_SIZE) ? u32WrSizeTmp : SPIM_FLH_PAGE_SIZE;
-
-        SPIM_WriteInPageDataByPhaseIO(spim, psPhaseTable, u32AddrTmp, u32Is4ByteAddr, &pu8TxBuf[u32BufIdx], toWr, u32WrDone);
+        /* Every intermediate page must complete before the next Page Program
+           command is issued. The caller's u32WrDone setting is applied only
+           to the final page so multi-page non-blocking writes remain valid. */
+        SPIM_WriteInPageDataByPhaseIO(spim, psPhaseTable, u32AddrTmp, u32Is4ByteAddr,
+                                      &pu8TxBuf[u32BufIdx], u32ToWr, u32WaitDone);
         /* Advance indicator. */
-        u32AddrTmp += toWr;
-        u32WrSizeTmp -= toWr;
-        u32BufIdx += toWr;
+        u32AddrTmp += u32ToWr;
+        u32WrSizeTmp = u32Remain;
+        u32BufIdx += u32ToWr;
     }
 
     SPIM_SET_DTR_MODE(spim, u32DTREn);
 }
 
 /**
- * @brief      Read data from SPI Flash using specified phase settings (I/O mode).
+ * @brief       Read data from SPI Flash using specified phase settings (I/O mode).
  *
- * @param[in]  spim          Pointer to the SPIM instance.
- * @param[in]  psPhaseTable  Pointer to the SPI Flash phase configuration table.
+ * @param[in]   spim         Pointer to the SPIM instance.
+ * @param[in]   psPhaseTable Pointer to the SPI Flash phase configuration table.
  *                           This table defines supported commands and transfer phases.
- * @param[in]  u32Addr       Starting address in SPI Flash to read from.
- * @param[out] pu8RxBuf      Pointer to the buffer to store read data.
- * @param[in]  u32RdSize     Number of bytes to read.
+ * @param[in]   u32Addr      Starting address in SPI Flash to read from.
+ * @param[out]  pu8RxBuf     Pointer to the buffer to store read data.
+ * @param[in]   u32RdSize    Number of bytes to read.
  *
- * @return     None.
+ * @return      None.
  */
 void SPIM_IO_ReadByPhase(SPIM_T *spim, const SPIM_PHASE_T *psPhaseTable, uint32_t u32Addr, uint8_t *pu8RxBuf, uint32_t u32RdSize)
 {
-    int32_t i32Ret;
+    int32_t i32Ret = 0L;
     uint32_t u32DTREn = SPIM_GET_DTR_MODE(spim);
     uint32_t u32Is4ByteAddr = ((psPhaseTable->u32AddrWidth == PHASE_WIDTH_32) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
     uint32_t u32CMDBits = SPIM_PhaseModeToNBit(psPhaseTable->u32CMDPhase);
     uint32_t u32QuadMode = (((psPhaseTable->u32AddrPhase == PHASE_QUAD_MODE) ||
                              (psPhaseTable->u32DataPhase == PHASE_QUAD_MODE)) ? SPIM_OP_ENABLE : SPIM_OP_DISABLE);
-    uint32_t u32IsQuadEn;
 
     SPIM_DISABLE_DMM_BWEN(spim);
     SPIM_DISABLE_DMM_CREN(spim);
     SPIM_CLEAR_MODE_DATA(spim);
 
-    u32IsQuadEn = SPIM_IsQuadEnabled(spim, u32CMDBits);
-
-    /* Enable/disable 4-Byte Address. */
-    i32Ret = _SPIM_Sync4ByteAddrMode(spim, u32Is4ByteAddr, u32CMDBits);
+    i32Ret = _SPIM_PrepareFlashTransfer(spim, psPhaseTable->u32CMDCode,
+                                        u32Is4ByteAddr, u32CMDBits, u32QuadMode);
 
     if (i32Ret != SPIM_OK)
     {
         SPIM_SET_DTR_MODE(spim, u32DTREn);
         return;
-    }
-
-    if (u32QuadMode && (u32IsQuadEn == SPIM_OP_DISABLE))
-    {
-        SPIM_SetQuadEnable(spim, u32QuadMode, u32CMDBits);
     }
 
     /* send command, address, dummy, data */
@@ -3579,7 +4060,15 @@ void SPIM_IO_ReadByPhase(SPIM_T *spim, const SPIM_PHASE_T *psPhaseTable, uint32_
                                psPhaseTable->u32AddrDTR);
 
     /* Write out dummy bytes. */
-    (void)SPIM_IO_SendDummyByPhase(spim, psPhaseTable->u32DcNum);
+    if (SPIM_IO_SendDummyByPhase(spim,
+                                 psPhaseTable->u32DcNum,
+                                 SPIM_PhaseModeToNBit(psPhaseTable->u32DataPhase),
+                                 psPhaseTable->u32DataDTR) != SPIM_OK)
+    {
+        SPIM_SET_SS_EN(spim, SPIM_OP_DISABLE);
+        SPIM_SET_DTR_MODE(spim, u32DTREn);
+        return;
+    }
 
     SPIM_IO_RWDataByPhase(spim,
                           SPIM_IO_READ_PHASE,
@@ -3592,10 +4081,13 @@ void SPIM_IO_ReadByPhase(SPIM_T *spim, const SPIM_PHASE_T *psPhaseTable, uint32_
     SPIM_SET_DTR_MODE(spim, u32DTREn);
 }
 
+/*---------------------------------------------------------------------------------------------------------*/
+/* DLL Initialization and Delay Control                                                                   */
+/*---------------------------------------------------------------------------------------------------------*/
 /**
  * @brief      Enable the SPIM DLL (Delay Locked Loop) circuit.
  *
- * @param[in]  spim      Pointer to the SPIM instance.
+ * @param[in]  spim Pointer to the SPIM instance.
  *
  * @retval     SPIM_OK           DLL locked successfully.
  * @retval     SPIM_ERR_TIMEOUT  DLL lock failed due to timeout.
@@ -3609,26 +4101,26 @@ int32_t SPIM_INIT_DLL(SPIM_T *spim)
     volatile int i32TimeoutCount = (int32_t)SPIM_TIMEOUT;
     uint32_t u32SclkHz = CLK_GetSCLKFreq();
     uint32_t u32ClkDiv = SPIM_GET_CLOCK_DIVIDER(spim);
-    uint32_t u32BusClkHz;
-    uint32_t u32ClkNs;
+    uint32_t u32BusClkHz = 0UL;
+    uint32_t u32ClkNs = 0UL;
     uint32_t u32Divisor;
-    const uint32_t u32DllLockUs  = 20;
+    const uint32_t u32DllLockUs = 20;
     const uint32_t u32DllValidUs = 50;
     const uint32_t u32DllClkOnUs = 20;
-    const uint32_t u32DllTrimUs  = 20;
+    const uint32_t u32DllTrimUs = 20;
     uint32_t u32DelayCycleCount = 0;
     // Convert to cycles
-    uint32_t u32DLLLKNUM;
-    uint32_t u32DLLOVNUM;
-    uint32_t u32CLKONNUM;
-    uint32_t u32TRIMNUM;
+    uint32_t u32DLLLKNUM = 0UL;
+    uint32_t u32DLLOVNUM = 0UL;
+    uint32_t u32CLKONNUM = 0UL;
+    uint32_t u32TRIMNUM = 0UL;
     uint32_t u32Div = (u32ClkDiv == 0UL) ? 1UL : (u32ClkDiv * 2UL);
-    uint32_t u32FreqMHz;
-    uint32_t u32FastEn;
+    uint32_t u32FreqMHz = 0UL;
+    uint32_t u32FastEn = 0UL;
     uint32_t u32DllDivCode = (u32Div <= 1UL) ? 0UL : (u32Div == 2UL) ? 1UL : (u32Div == 4UL) ? 2UL : 3UL;
     uint32_t u32RegLockLevel = SYS_IsRegLocked();
 
-    if (u32RegLockLevel)
+    if (u32RegLockLevel != 0UL)
     {
         SYS_UnlockReg();
     }
@@ -3649,6 +4141,17 @@ int32_t SPIM_INIT_DLL(SPIM_T *spim)
     }
 
     u32ClkNs = (1000000000UL / u32BusClkHz);
+
+    if (u32ClkNs == 0UL)
+    {
+        if (u32RegLockLevel != 0UL)
+        {
+            SYS_LockReg();
+        }
+
+        return SPIM_ERR_FAIL;
+    }
+
     u32FreqMHz = (u32BusClkHz / 1000000UL);
     u32FastEn = (u32FreqMHz <= 100UL) ? SPIM_OP_DISABLE : SPIM_OP_ENABLE;
 
@@ -3754,16 +4257,21 @@ int32_t SPIM_INIT_DLL(SPIM_T *spim)
     }
 
     /* wait for auto trim setting */
-    u32DelayCycleCount = ((u32BusClkHz / 1000UL) * 3UL);  // 3ms = 3 * (Hz / 1000)
+    u32DelayCycleCount = ((u32BusClkHz / 1000UL) * 3UL); // 3ms = 3 * (Hz / 1000)
 
-    for (i32TimeoutCount = 0; i32TimeoutCount < (int32_t)u32DelayCycleCount; i32TimeoutCount++) {}
+    i32TimeoutCount = 0L;
+
+    while (i32TimeoutCount < (int32_t)u32DelayCycleCount)
+    {
+        i32TimeoutCount++;
+    }
 
     SPIM_DISABLE_SYSDLL0ATCTL0_TRIMUPDOFF();
 
     SPIM_SET_INTERNAL_RWDS(spim, SPIM_OP_DISABLE);
 #endif
 
-    if (u32RegLockLevel)
+    if (u32RegLockLevel != 0UL)
     {
         SYS_LockReg();
     }
@@ -3831,3 +4339,5 @@ int32_t SPIM_SetDLLDelayNum(SPIM_T *spim, uint32_t u32DelayNum)
 /** @} end of group SPIM_EXPORTED_FUNCTIONS */
 /** @} end of group SPIM_Driver */
 /** @} end of group Standard_Driver */
+
+/*** (C) COPYRIGHT 2023 Nuvoton Technology Corp. ***/
